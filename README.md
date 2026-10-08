@@ -14,12 +14,21 @@ For now, the existing implementations remain separate:
 
 Creating this repository does not merge the other repositories, change their compiler pins, or establish feature parity.
 
+## Core decisions
+
+- Keep **two independent compilers and borrow checkers** for now. Neither backend waits for the other to implement a feature.
+- Share the language specification, TypeSpec/JSON Schema contracts, source fixtures and conformance expectations immediately.
+- Consolidate semantic compiler source here later, starting with a proven HIR → MIR boundary.
+- **Trusted code, shared actors and isolated actors must eventually support complete AOT in LLVM.** Equivalent Java/Graal guest-code AOT is a target to prove.
+- Untrusted guest code may be JIT-compiled, interpreted under policy, or optionally AOT-compiled. It does not require AOT.
+- Trust, actor isolation and compilation strategy are independent policy dimensions.
+
 ## Intended pipeline
 
 ```mermaid
 flowchart TD
-  S["Oreslang source"] --> F["Frontend and semantic analysis"]
-  F --> H["Typed HIR"]
+  S["Oreslang source"] --> F["Independent frontends initially"]
+  F --> H["Common typed HIR contract"]
   H --> M["Verified MIR"]
   M --> L["LLVM adapter"]
   M --> G["Java/Graal adapter"]
@@ -46,6 +55,8 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 ## Documents
 
 - [Architecture proposal](docs/ARCHITECTURE.md)
+- [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
+- [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
 
 ## Decision status
