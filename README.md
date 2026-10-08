@@ -55,9 +55,11 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 ## Documents
 
 - [Architecture proposal](docs/ARCHITECTURE.md)
+- [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
+- [Decisions, non-goals and unresolved choices](docs/DECISIONS.md)
 
 ## Decision status
 
