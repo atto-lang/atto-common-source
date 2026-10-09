@@ -1,6 +1,6 @@
 # Native Oreslang I/O naming and execution contract
 
-**Status:** normative language/API decision; backend enforcement is pending. This document does **not** claim that an I/O effect checker or the full native I/O library currently exists.
+**Status:** normative language/API and scheduling decision; the Java/Graal feature branch implements canonical native `_blocking` entry points with an opt-in strict compiler naming gate, but default enforcement and versioned release are **pending**. LLVM does not yet implement native I/O or continuation lowering: its compiler must fail closed. This document does not claim full cross-backend conformance or production readiness.
 
 ## Rule
 
@@ -72,3 +72,13 @@ Testing the naming validator alone is insufficient to establish non-blocking sch
 ## Evidence and responsibility
 
 The common source repository owns this contract. The separate LLVM and Java/Graal repositories own compiler/builtin/runtime implementation and executable tests for now; do not merge their sources just to adopt this rule. Record versioned conformance evidence and a migration/rollback status for each backend before declaring completion.
+
+## Implementation and verification receipts (2026-10-09)
+
+| Component | Executable evidence | Release limitation |
+| --- | --- | --- |
+| Java/Graal [PR #522](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/522) | [GraalVM/JDK 25 run #38005034460](https://github.com/athlet-o/athleto-e2e/actions/runs/38005034460): 20 JUnit cases plus 4 real CLI command tests, all passed; single-carrier actor progress, deny-all authority, strict naming, first-class `_blocking` alias refusal and nested tail-call continuations covered | Strict naming is opt-in; legacy bare entry points remain available pending versioned client migration; broader compiler matrix and distribution tests remain |
+| Native Oreslang Stack CLI [PR #12](https://github.com/ores-truffle-oreslang/oreslang-stack-cli/pull/12) | 69 source-level native I/O sites migrated; the exact CLI source passed strict typechecking and actual init/check/routes/deploy-denial runtime checks in the same GraalVM run | Cannot merge until the compiler dependency is released and pinned; deployment/hot reload and self-contained build artifacts are separate features |
+| LLVM [PR #29](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/29) | [LLVM 18 CTest run #38005361640](https://github.com/athlet-o/athleto-e2e/actions/runs/38005361640): both bare and suffixed unimplemented I/O calls rejected with no IR emission | No native I/O registry, async ABI, typed continuation lowering or runtime I/O semantics exist; negative tests are not implementation parity |
+
+**Mandatory production cutover:** pin a shared contract version in generators and compilers; migrate remaining bare stdlib users; enable strict naming by default for that version with a separately versioned legacy compatibility mode; run actor isolation, cancellation, backpressure, timeouts, context teardown and full backend conformance. Do not enable LLVM native I/O by spelling alone or silently park an actor carrier.
