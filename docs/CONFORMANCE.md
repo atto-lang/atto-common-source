@@ -46,6 +46,10 @@ These are historical starting points, not claims about their current heads, merg
 
 Leave the working contract integrations in their backend repositories for now. If this repository later distributes a canonical contract package, pin its version and verify fixture identity in both consumers; avoid an unversioned three-way copy of normative files.
 
+## Native I/O API naming
+
+Source-visible native synchronous I/O operations **must** end in `_blocking`. Async I/O operations may (but need not) end in `_async`; names alone never replace execution/effect validation. See [the normative naming contract](NATIVE_IO_NAMING.md) for scope, existing Java/Graal migration gaps, LLVM support status, negative tests and versioned rollout.
+
 ## Next contract groups
 
 1. Move/copy/borrow/aliasing rules, lifetime violations, recursive types and cyclic references.
