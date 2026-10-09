@@ -4,24 +4,24 @@
 
 ## Rule
 
-Every **source-visible, synchronously blocking I/O operation** must have an identifier ending in `_blocking`. Async I/O operations **may** end in `_async`, but that suffix is **not required**. This is an API contract, not a new operator, parser keyword, or declaration syntax.
+Every **source-visible, logically synchronous I/O operation** must have an identifier ending in `_blocking`. This name means the *actor* waits for the result, **not** that the actor carrier may block. Async I/O operations **may** end in `_async`, but that suffix is **not required**. This is an API and scheduler contract, not a new operator, parser keyword, or declaration syntax.
 
 | Kind | Rule | Examples |
 | --- | --- | --- |
-| Synchronously blocking I/O | `_blocking` suffix required | `fs.read_text_blocking(path)`, `fs.list_dir_blocking(path)`, `http.get_text_blocking(url)`, `stdio.println_blocking(value)` |
+| Synchronous-looking, continuation-suspending I/O | `_blocking` suffix required | `fs.read_text_blocking(path)`, `fs.list_dir_blocking(path)`, `http.get_text_blocking(url)`, `stdio.println_blocking(value)` |
 | Async I/O | `_async` suffix optional | `await fs.read_text_async(path)`; alternatively an explicitly async API without that suffix |
 | Pure/local computation | No I/O suffix required | `calculate_hash(data)`, `parse_header(data)` |
 
-A blocking I/O operation may wait on disk, filesystem metadata, terminal/stdin/stdout, socket, DNS, networking, or another external I/O resource. This includes operations that are usually fast but *can* synchronously block, such as filesystem `exists` or directory enumeration. The relevant property is **whether the caller's execution carrier can be blocked**, not the expected duration.
+A `_blocking` I/O operation is sequential from the source actor's point of view. At runtime it **must submit I/O to a non-carrier execution mechanism, suspend the actor continuation without parking an OS scheduler carrier, and resume the continuation on its owning scheduler**. This applies to filesystem metadata, terminal/stdin/stdout, sockets, DNS, networking and I/O usually expected to complete quickly. An implementation may use an OS asynchronous API, completion queue, bounded virtual-thread I/O worker, or another independently scheduled I/O engine. A blocking host syscall on a separate bounded/virtual I/O worker is a portability fallback; it may pin an I/O worker but never the actor carrier.
 
-The name alone is not proof of a safe implementation. A function named `*_async` is not asynchronous merely because of the suffix; it must expose an async/future execution contract and must not block the actor carrier while performing I/O. Conversely, `*_blocking` is a warning and an API requirement, not permission to circumvent capability checks.
+The name alone is not proof of a safe implementation. A function named `*_async` is not asynchronous merely because of the suffix; it must expose an async/future execution contract and must not block the actor carrier while performing I/O. Conversely, `*_blocking` is an API requirement for a synchronous-looking result, **not permission to call blocking host I/O on an actor carrier**, nor permission to bypass capability checks. It must not call `Future.join()`, `Future.get()` or a spin loop on the actor carrier.
 
 The rule applies to exported Oreslang standard-library/native I/O functions, module functions, object methods and user-defined I/O wrappers that directly expose a blocking I/O operation. It does **not** rename host C/C++/Rust functions, ordinary compute functions, or every higher-level workflow routine that happens to *call* an I/O function; language entrypoints such as `main` keep their specified names.
 
 ## Examples
 
 ```ores
-// Synchronous call: the operation can block the executing thread.
+// Synchronous to this actor: continuation yields; its OS carrier stays available.
 val String text = fs.read_text_blocking(path);
 
 // Async call: the actor can suspend and let its carrier do other work.
@@ -38,9 +38,9 @@ The examples describe the **target** API, not a claim that all names above are a
 
 ## Semantic requirements
 
-1. **Classify by actual execution behavior.** The native built-in/FFI registry must record I/O kind (`io` versus non-I/O) and whether it can synchronously block the caller. A name-only regex over arbitrary functions is not sufficient.
-2. **Reject missing suffixes.** Whenever a native I/O import, builtin or generated binding is resolved, an entry marked blocking I/O without `_blocking` must produce a stable compiler/binding diagnostic. The check must also cover methods and aliases. Do not infer the effect solely from the suffix.
-3. **Async is semantically enforced.** An async I/O entry must have the correct future/awaitable contract and submit without blocking the actor carrier; `_async` is merely conventional. Reject/flag a falsely annotated async binding.
+1. **Classify by semantic effect and execution behavior.** The native built-in/FFI registry must record I/O kind (`io` versus non-I/O), result shape (`T` for `_blocking`; `Future<T>` for async) and suspension requirements. A name-only regex over arbitrary functions is not sufficient. Calls to `_blocking` must be lowered as suspension points even inside ordinary (non-async) source routines.
+2. **Reject missing suffixes.** Whenever a native I/O import, builtin or generated binding is resolved, an entry marked synchronous-looking I/O without `_blocking` must produce a stable compiler/binding diagnostic. The check must also cover methods and aliases. Do not infer the effect solely from the suffix.
+3. **Both forms release the carrier.** An async I/O entry must have the correct future/awaitable contract and submit without blocking the actor carrier; `_async` is merely conventional. A `_blocking` entry must return `T` in source but be lowered into the same continuation-suspending completion path, without requiring an explicit `await`. Reject/flag a falsely annotated binding.
 4. **Isolation and permissions remain in force.** Both variants require the same relevant capability authorization. Async cancellation/completion and memory ownership need separate validation. Neither spelling grants privileges.
 5. **Uniform source contract across backends.** LLVM AOT, Java/Graal JIT, and hybrid execution must expose consistent compliant source names when the relevant capability is implemented. An unsupported capability still fails closed.
 
@@ -58,16 +58,16 @@ The Java/Graal runtime currently documents bare synchronous names (including `fs
 
 | Scenario | Expected |
 | --- | --- |
-| Registered blocking FS/HTTP/TCP/stdio I/O API ending in `_blocking` | Admitted, subject to capability grants |
+| Registered synchronous-looking FS/HTTP/TCP/stdio I/O API ending in `_blocking` | Admitted only when compiled to async-backed continuation suspension, subject to capability grants |
 | Registered blocking I/O API called or exported without `_blocking` | Rejected with an explicit blocking-I/O naming diagnostic |
 | Blocking method or alias hides a bare synchronous I/O entry | Rejected; aliases cannot bypass the check |
 | Registered async I/O API named `*_async` | Admitted when its async execution and future contract are valid |
 | Registered async I/O API without `_async` | Admitted when declared and implemented as async |
-| Fake `*_async` API that blocks the carrier | Rejected at binding validation or caught by carrier-concurrency integration test |
+| `_blocking` or fake `*_async` API that blocks the carrier | Rejected at binding validation or caught by single-carrier concurrency integration test |
 | Pure function without either suffix | Admitted |
 | Unknown/unsupported I/O builtin or capability | Fails closed; no silent host fallback |
 
-Testing the naming validator alone is insufficient to establish non-blocking scheduling, fault isolation, secure path resolution or cancellation safety. Each backend must additionally execute blocking and async operations under concurrency and denied-capability cases.
+Testing the naming validator alone is insufficient to establish non-blocking scheduling, fault isolation, secure path resolution or cancellation safety. The mandatory test launches two actors on **one** scheduler carrier; actor A performs slow `_blocking` I/O while actor B must make progress before I/O completion. Verify error propagation, timeouts, backpressure, actor cancellation, shutdown, and that no guest callback runs on an I/O worker. Each backend must additionally execute blocking and async operations under concurrency and denied-capability cases.
 
 ## Evidence and responsibility
 
