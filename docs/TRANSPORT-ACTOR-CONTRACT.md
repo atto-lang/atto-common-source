@@ -72,6 +72,62 @@ protocol, and diagnostic codes are not implemented yet. Admission
 is to be enforced by the runtime transport broker, not trusted to
 application actors.
 
+## Construction and per-instance concurrency overrides (proposed)
+
+An actor is a specialized class **declaration**, not a caller-owned
+class instance. Ordinary `new Class(args)` still runs a class
+constructor immediately. `new Actor(args)` must instead produce an
+**inert** `ActorSpec<Actor>`, carrying validated actor constructor
+arguments and optional per-instance concurrency overrides. It must
+not run actor code or allocate actor state in the caller. `spawn spec`
+atomically consumes the spec, reserves capacity and creates an
+`ActorRef<Actor>`. Actor field initialization, a future explicit
+`constructor(...)`, and `on_start()` run only within the child actor
+domain, in that order. Constructor execution is synchronous; async
+initialization belongs in `on_start()`.
+
+```ores
+// All forms here are proposed, except existing 'spawn Worker()'.
+val regularSpec = new Worker(42); // ActorSpec<Worker>, no running actor.
+regularSpec.set_concurrency(6);   // ONE control: messages.
+val regularRef = spawn regularSpec;
+
+val httpSpec = new WebHandler();
+httpSpec.set_concurrency(128, 8); // TWO: connections, messages per connection.
+val httpRef = spawn httpSpec;
+
+val defaultRef = spawn Worker();   // Existing source syntax: preserve it.
+```
+
+`spawn Worker(args)` can desugar to `spawn new Worker(args)`. Parsing
+`spawn spec` must distinguish a typed spec expression from a
+type-name constructor invocation, including qualified imports.
+
+`ActorSpec<T>` has only built-in, non-overridable configuration methods.
+For `generic`/`isoactor`, `set_concurrency(messages)` has arity 1;
+for `http`/`tcp`/`ws`, `set_concurrency(connections,
+messages_per_connection)` has arity 2. The fixed one-writer actor
+execution lease is not configurable. A declaration
+`@concurrency(...)` specifies defaults; pre-spawn `set_concurrency`
+overrides them for **one** spawned actor. Effective values are validated
+against supervisor/tenant budgets and actual backend capability at
+spawn; no silent clamping or false promise that suspended receive
+interleaving is implemented.
+
+Oreslang `const` forbids referent mutation; `val` is the correct
+binding for `spec.set_concurrency(...)`. Alternatively, a pure
+`with_concurrency(...)` should yield a new spec for readonly
+`const spec = new Worker().with_concurrency(6)`. A spec must not be
+copied across mailboxes or reused after consumption. A running
+`ActorRef<T>` **cannot** expose synchronous `set_concurrency`;
+future live adjustment, if needed, is a separate supervisor-authorized,
+asynchronous and versioned reconfiguration operation.
+
+For Java/Graal implementation details and full validity/acceptance
+matrix, see [actor spawn specification](https://github.com/ores-truffle-oreslang/oreslang-source.java/blob/harden/http-request-scoped-actor-handoff-20261009/docs/ACTOR_SPAWN_SPEC_DESIGN.md).
+**None of these actor-constructor/spec/builder forms have parser or
+runtime support yet.**
+
 ## Source declaration shape
 
 ```ores
@@ -197,6 +253,16 @@ and **either** `concurrency.messages` (regular) **or** the pair
 `concurrency.connections` / `concurrency.messages_per_connection`
 (network), never both forms.
 
+HIR additionally needs `ActorConstructorDecl` with parameter
+signature, actor-only initialization effect and visibility policy,
+plus `ActorSpecCreate`, `ActorSpecConfigure`, and
+`ActorSpecConsume` nodes carrying the concrete actor type, frozen
+constructor-argument schema, declaration defaults, instance override
+and source-span diagnostics. An `ActorSpec` is affine/non-sendable,
+distinct from both `ActorType` and `ActorRef<ActorType>`.
+No actor instance initializer or constructor can execute during
+`ActorSpecCreate`.
+
 MIR must express `AcquireActorLease` / `ReleaseActorLease`,
 `IngressDequeue`, `SuspendIo`, `ResumeContinuation`,
 `CheckExchangeGeneration`, `RespondStart/Chunk/Finish/Abort`,
@@ -206,6 +272,12 @@ sharing a heap or an OS descriptor representation.
 
 ## Minimum shared conformance gates
 
+- Constructor and spawn conformance: `new Worker()` must be inert,
+  `spawn spec` consumes once, and actor constructor/`on_start` run in
+  actor domain before `ready`. Compiler rejects wrong overload arity,
+  mutating a `const` spec, post-spawn mutation, double spawn,
+  constructor arguments escaping isolation, and `ActorRef` methods on
+  unspawned specs. Bound checks reject quota escalation.
 - Parser accepts correctly qualified declarations, rejects duplicate/
   conflicting `receive*`, mismatched message types, ordinary actor
   methods masquerading as transport ingress and invalid callback escapes.
