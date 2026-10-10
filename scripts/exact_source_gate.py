@@ -13,7 +13,7 @@ import re
 import sys
 from pathlib import Path
 
-SHA = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\\Z")
+SHA = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})")
 
 
 class GateError(ValueError):
