@@ -46,6 +46,10 @@ These are historical starting points, not claims about their current heads, merg
 
 Leave the working contract integrations in their backend repositories for now. If this repository later distributes a canonical contract package, pin its version and verify fixture identity in both consumers; avoid an unversioned three-way copy of normative files.
 
+## Memory safety and performance gates
+
+The [ownership-first memory and performance contract](MEMORY_SAFETY_AND_PERFORMANCE.md) sets separate targets for collector-free LLVM native execution and low-garbage Java/Graal execution, alongside identical safe-source behavior and C++/Rust comparison workloads. Semantic admission alone does **not** prove deterministic drops, zero tracing collector reachability, independent heaps or benchmark parity. Each backend must provide real executed release-mode evidence for allocation, ownership, actor/async quiescence, FFI reachability, cleanup and GC/pause tails. Unsupported operations reject without output; a draft native arena implementation is not proof of complete source-language safety.
+
 ## Native I/O API naming
 
 Source-visible native synchronous I/O operations **must** end in `_blocking`. Async I/O operations may (but need not) end in `_async`; names alone never replace execution/effect validation. See [the normative naming contract](NATIVE_IO_NAMING.md) for scope, existing Java/Graal migration gaps, LLVM support status, negative tests and versioned rollout.
