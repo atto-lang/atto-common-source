@@ -9,6 +9,12 @@
 5. **Trusted AOT is a target.** Full guest-code AOT for trusted routines and actors is required in LLVM and targeted in Graal. JIT optimization may be optional; an AOT-only program must not depend on guest JIT. Untrusted guest code may use JIT in both backends and need not be AOT.
 6. **Specialize safely.** Native-only privileged hardware/realtime features and Java-specific host interop may diverge behind declared capabilities without splitting core Oreslang semantics.
 
+## Performance and memory targets (2026-10-10)
+
+7. **LLVM Oreslang execution is collector-free by design.** The native runtime must never require a tracing GC; native heap allocations are allowed but require ownership-correct, deterministic reclamation. Tracing-managed foreign components are outside any certified zero-GC execution profile. Ownership cycles are handled using actor/arena ownership and non-owning generational links, not implicit tracing.
+8. **Java/Graal remains ownership-first, with minimal guest garbage.** The host JVM/Natively compiled Java runtime may still GC; zero-allocation steady-state hot loops and explicit resource lifetime control are targets to measure, not automatically established guarantees.
+9. **Rust-class safe-source memory/concurrency safety and C++-class speed are acceptance targets for both backends.** Complete borrow/drop checking across suspension, actors, cancellation and FFI is a safety prerequisite. Prove performance with equivalent C++/Rust baselines, never by backend choice alone. See [memory and performance contract](MEMORY_SAFETY_AND_PERFORMANCE.md).
+
 ## Explicitly not decided
 
 - A single parser/front end versus two HIR producers.

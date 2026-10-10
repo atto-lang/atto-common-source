@@ -59,6 +59,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
+- [Ownership-first, zero-GC native and low-GC Graal performance contract](docs/MEMORY_SAFETY_AND_PERFORMANCE.md)
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
 - [Decisions, non-goals and unresolved choices](docs/DECISIONS.md)
 

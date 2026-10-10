@@ -33,6 +33,10 @@ These are independent workstreams, not prerequisites for beginning useful work i
 
 Automatic preemption must cover compiler-generated and collection loops as well as ordinary source loops. Effects, purity, allocation/resource contracts, cyclic references, macros, SIMD, FFI and tail-call guarantees belong in the feature ledger with explicit implementation and test status. Native hardware guarantees remain capability-scoped.
 
+### Cross-backend memory and performance release gates
+
+Follow [the zero-GC native / low-GC Graal contract](MEMORY_SAFETY_AND_PERFORMANCE.md): LLVM must have collector-free transitive native execution and deterministic source-level reclamation; Java/Graal must measure and minimize allocations in warm hot paths while retaining truthful host GC reporting. Neither is yet fully proven. Add a shared deterministic game-tick/ECS workload plus C++20/Rust baselines, exact-source verification, and positive/negative ownership, cancellation, actor/FFI retirement and cycle tests as explicit release gates. Do not confuse an allocation-free frame with a no-GC process, or an arena microtest with full borrow safety.
+
 ## First implementation tasks
 
 - [ ] Write an initial architecture decision for the shared implementation language and package boundary.
