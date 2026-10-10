@@ -62,6 +62,11 @@ define http actor WebHandler as
 end
 ```
 
+The proposal has a strict [HIR concurrency envelope schema](../contracts/actor-concurrency.v0.schema.json):
+`generic` carries **only** `messages`; `http`, `tcp`, and `ws`
+carry **only** `connections` and `messages_per_connection`. Additional
+concurrency settings are rejected, not silently ignored.
+
 The annotation spelling, bounds, defaults, dynamic reconfiguration
 protocol, and diagnostic codes are not implemented yet. Admission
 is to be enforced by the runtime transport broker, not trusted to
