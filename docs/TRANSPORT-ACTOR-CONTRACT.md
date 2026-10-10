@@ -115,10 +115,11 @@ spawn; no silent clamping or false promise that suspended receive
 interleaving is implemented.
 
 Oreslang `const` forbids referent mutation; `val` is the correct
-binding for `spec.set_concurrency(...)`. Alternatively, a pure
+binding for `spec.set_concurrency(...)`. Alternatively, a functional, **consuming**
 `with_concurrency(...)` should yield a new spec for readonly
-`const spec = new Worker().with_concurrency(6)`. A spec must not be
-copied across mailboxes or reused after consumption. A running
+`const spec = new Worker().with_concurrency(6)`. Its original affine
+spec is consumed, not copied or left with a duplicate spawn permit.
+A spec must not be copied across mailboxes or reused after consumption. A running
 `ActorRef<T>` **cannot** expose synchronous `set_concurrency`;
 future live adjustment, if needed, is a separate supervisor-authorized,
 asynchronous and versioned reconfiguration operation.
