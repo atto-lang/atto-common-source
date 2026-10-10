@@ -4,6 +4,69 @@ Status: **proposal for independent Java/Graal and C++/LLVM compiler teams**.
 Nothing in this repository is executable or currently mandatory. Companion
 runtime hardening: [Graal HTTP request lifetimes PR #529](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/529).
 
+## Two-axis network-actor concurrency contract
+
+User-exposed concurrency configuration is **protocol-specific**:
+
+| Declaration | User-configurable concurrency dimensions |
+| --- | --- |
+| `actor` / `isoactor` | `messages` only |
+| `http actor` | `connections`, `messages_per_connection` |
+| `tcp actor` | `connections`, `messages_per_connection` |
+| `ws actor` | `connections`, `messages_per_connection` |
+
+`messages=N` controls how many ordinary actor receive handlers may be
+**in flight** at once. Network actors have **exactly two** user-facing
+concurrency values: distinct transport sessions assigned to the actor,
+and concurrent in-flight message handlers admitted **for each such
+session**. These are admission/continuation limits, not the number of
+threads simultaneously executing guest code. An `await` relinquishes
+the carrier but retains the handler's message permit until completion,
+failure or cancellation. The actor-wide one-writer execution lease is
+**fixed**, not a third user-configurable concurrency knob.
+
+A connection is an opaque, incarnation-fenced broker session, **not**
+an HTTP request, JVM exchange or transferable raw OS FD. In HTTP/1.1
+this corresponds to a keep-alive connection; HTTP/2 and HTTP/3 may
+multiplex many concurrent requests/streams over one connection.
+`messages_per_connection` counts admitted application-delivered
+`receive_http`/`receive_tcp`/`receive_ws` envelopes (one
+handler invocation per envelope), **not bytes, TCP segments, WebSocket
+fragments, or total lifetime message count**. A connection with a
+completed or suspended handler can receive subsequent envelopes,
+subject to its active-message limit. When the request itself spans
+several envelopes, retain the request ID and generation in each.
+
+An actor may therefore retain up to `connections *
+messages_per_connection` in-flight network handlers if host-wide
+resource budgets permit. Message work is fair-scheduled between
+connections; all guest entrypoints and continuations continue to
+acquire the same **one-writer actor execution lease**. Bounded queues
+outside the admitted set, transport backpressure, and process/tenant
+limits remain separate host security/resource controls, not additional
+actor declaration concurrency knobs. Saturated per-connection capacity
+must not stall unrelated sessions. Client disconnect cancels that
+session's admitted message handlers only; actor shutdown revokes all.
+
+**Proposed surface only (not parser-accepted):**
+
+```ores
+@concurrency(messages = 16)
+define actor BackgroundWorker as
+  receive(ActorMail<String> m): void { }
+end
+
+@concurrency(connections = 128, messages_per_connection = 8)
+define http actor WebHandler as
+  receive_http(HttpMessage m): void { }
+end
+```
+
+The annotation spelling, bounds, defaults, dynamic reconfiguration
+protocol, and diagnostic codes are not implemented yet. Admission
+is to be enforced by the runtime transport broker, not trusted to
+application actors.
+
 ## Source declaration shape
 
 ```ores
@@ -49,12 +112,14 @@ and AOT vs JIT remain orthogonal. Standard
    continuation, timer, on-start, supervision event and cleanup routine
    enters through the mailbox-backed scheduler. No two worker/carrier
    threads execute guest instructions for the same actor simultaneously.
-2. `max_active_requests`, `max_pending_events` and
-   `max_parallel_guest_segments=1` are distinct quotas. A long-lived
-   actor can own many live HTTP requests and WebSocket/TCP connections,
-   even though only one guest code segment executes at once.
-   A suspension relinquishes its carrier; interleaved continuations
-   require an explicit actor-lease-safe scheduler implementation.
+2. Ordinary actors configure one `messages` in-flight handler
+   limit; transport actors configure independent `connections` and
+   `messages_per_connection` handler limits. Each permit lives across
+   suspension and is released on completion/cancel, not per I/O call.
+   The actor-wide single guest-execution lease is invariant, not an
+   additional user control. Fair interleaving of suspended handlers
+   needs an actor-lease-safe scheduler; it is not yet established by
+   the existing source actor implementation.
 3. HTTP envelope identity is `(request_id, request_generation,
    actor_incarnation, event_sequence)`, not just a connection FD.
    TCP/WS envelope identity uses `(connection_id, generation,
@@ -103,17 +168,29 @@ and AOT vs JIT remain orthogonal. Standard
     and stream state. Reject duplicated/out-of-order terminal commands,
     wrong actors, revoked epochs, invalid headers, oversized buffers and
     unauthorized protocol upgrades.
-12. The default one-guest-segment rule must include async continuations.
-    Increasing ingress event concurrency above 1 in the future requires
-    an explicit opt-in concurrency mode plus isolation/borrowing rules;
-    concurrency is never inferred from connection or request count.
+12. The actor's one-guest-segment execution lease includes **all**
+    async continuations, irrespective of in-flight handler counts.
+    `messages` or `messages_per_connection` greater than one permits
+    logically overlapping handlers whose suspended work may interleave,
+    **not simultaneous guest execution on multiple carrier threads**.
+    No implicit transport callbacks can bypass this invariant.
+13. The broker must prove a connection's admission and sequence against
+    the correct actor incarnation, enforce both network quotas
+    independently, release a message slot exactly once on all terminal
+    paths, and reclaim an entire connection's slots upon close. A failed
+    quota admission must not consume its sequence/ID. Test queue limits
+    and slow-consumer behavior without inventing a third public
+    concurrency parameter.
 
 ## Future HIR / MIR contract
 
 A future HIR `ActorDecl` should preserve:
 `ingress_protocol = generic | http | tcp | ws`,
 `entry_method`, `envelope_type`, `actor_kind`,
-`trust_policy`, source span, declared capabilities and compilation mode.
+`trust_policy`, source span, declared capabilities, compilation mode,
+and **either** `concurrency.messages` (regular) **or** the pair
+`concurrency.connections` / `concurrency.messages_per_connection`
+(network), never both forms.
 
 MIR must express `AcquireActorLease` / `ReleaseActorLease`,
 `IngressDequeue`, `SuspendIo`, `ResumeContinuation`,
@@ -127,6 +204,11 @@ sharing a heap or an OS descriptor representation.
 - Parser accepts correctly qualified declarations, rejects duplicate/
   conflicting `receive*`, mismatched message types, ordinary actor
   methods masquerading as transport ingress and invalid callback escapes.
+- A regular actor admits at most N logically active handlers. Network actors
+  independently enforce C live connections and M in-flight handler envelopes
+  on **each** connection; rejected admission consumes no sequence, and
+  completed/cancelled handlers free permits without freeing a live connection.
+  Duplicate connection IDs and stale actor incarnations fail closed.
 - Two simultaneously admitted HTTP requests on one actor produce distinct
   responses, IDs and completion events. Two messages per same request
   retain one correlation ID; A/B/A event interleaving never swaps sinks.
