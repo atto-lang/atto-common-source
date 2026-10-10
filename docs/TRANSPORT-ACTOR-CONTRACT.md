@@ -99,6 +99,12 @@ val httpRef = spawn httpSpec;
 val defaultRef = spawn Worker();   // Existing source syntax: preserve it.
 ```
 
+Java/Graal PR #529 now parses `spawn Worker()`,
+`spawn new Worker()`, and `spawn (new Worker())` as the **same AST**,
+with unchanged actor ownership checks and no constructor arguments.
+The zero-argument alias is implemented, but standalone `new Actor()`
+spec values and actor constructors remain future work.
+
 `spawn Worker(args)` can desugar to `spawn new Worker(args)`. Parsing
 `spawn spec` must distinguish a typed spec expression from a
 type-name constructor invocation, including qualified imports.
