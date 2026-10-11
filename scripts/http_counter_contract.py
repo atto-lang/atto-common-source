@@ -5,7 +5,7 @@ of claimed remote execution. Provenance must still be checked independently.
 """
 import re
 
-COUNTER_CASE = re.compile(r"counter_response\((-?(?:0|[1-9][0-9]*))\)\Z")
+COUNTER_CASE = re.compile(r"counter_response\(((?:0|-[1-9][0-9]*|[1-9][0-9]*))\)\Z")
 REQUIRED_CASES = frozenset({
     "main()",
     "counter_response(-1)",
