@@ -10,6 +10,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from http_counter_contract import CounterContractError, verify_counter_observations
 
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
@@ -65,6 +66,11 @@ def compare(graal, llvm, fixture_blob):
         raise ParityError("invalid required fixture blob")
     left = validate(graal, "graal", fixture_blob)
     right = validate(llvm, "llvm", fixture_blob)
+    try:
+        verify_counter_observations(left)
+        verify_counter_observations(right)
+    except CounterContractError as error:
+        raise ParityError(str(error)) from error
     if left.keys() != right.keys():
         raise ParityError("backends reported different sets of executed cases")
     mismatches = [key for key in left if left[key] != right[key]]
