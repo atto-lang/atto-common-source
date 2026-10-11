@@ -58,6 +58,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
+- [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
 - [Ownership-first, zero-GC native and low-GC Graal performance contract](docs/MEMORY_SAFETY_AND_PERFORMANCE.md)
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
