@@ -68,6 +68,19 @@ positive `run_id`/`job_id`/`runner_id`, `conclusion: success`, positive
 and integer `observed` results keyed by case. The gate rejects source
 drift, missing execution evidence, divergent case sets or outputs.
 
+For the canonical HTTP counter fixture, the parity gate also validates each
+backend against an **independent observable oracle**, rather than merely
+comparing two potentially identically-wrong outputs. It requires `main()`
+and `counter_response(-1)`, `counter_response(0)`,
+`counter_response(1)`, and `counter_response(2)` with results
+`43`, `-43`, `0`, `43`, and `86` respectively. Other probes
+may be provided, but must use canonical signed i64 argument notation and
+have a nonoverflowing exact mathematical result `43 * count`. The gate
+fails closed on unknown cases, missing mandatory probes, boolean results
+or wrong arithmetic. Both backends must actually execute these cases and
+record their observed results on pinned source trees; hardcoded JSON does
+not constitute proof of execution.
+
 These JSON records are **not authenticated by the script**. The caller must
 first fetch actual Git trees, workflow jobs and logs from GitHub and check
 their source identity and runner execution using `exact_source_gate.py`.
