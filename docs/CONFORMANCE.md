@@ -58,6 +58,25 @@ The [ownership syntax contract](OWNERSHIP_SYNTAX.md) makes by-value ownership im
 
 Source-visible native synchronous I/O operations **must** end in `_blocking`. Async I/O operations may (but need not) end in `_async`; names alone never replace execution/effect validation. See [the normative naming contract](NATIVE_IO_NAMING.md) for scope, existing Java/Graal migration gaps, LLVM support status, negative tests and versioned rollout.
 
+## Executed guest result comparison
+
+Use `scripts/executed_parity_gate.py` after each backend has compiled and
+executed the **same exact Git-blob source fixture**. Inputs are two JSON
+records with `backend`, `fixture_blob`, `source_tree`, `compiler_sha`,
+positive `run_id`/`job_id`/`runner_id`, `conclusion: success`, positive
+`executed_tests`, zero `skipped_tests`/`failed_tests`/`errored_tests`,
+and integer `observed` results keyed by case. The gate rejects source
+drift, missing execution evidence, divergent case sets or outputs.
+
+These JSON records are **not authenticated by the script**. The caller must
+first fetch actual Git trees, workflow jobs and logs from GitHub and check
+their source identity and runner execution using `exact_source_gate.py`.
+Never invent or assume CI observations from passing compilation alone.
+The first common executable fixture is
+`fixtures/http-guest-counter-handler.ores` (Git blob
+`a0b3fc658d1460eab62c85b3cc897143ea77a7ff`); it establishes a
+public guest-handler slice, **not** actor, HTTP socket or AOT feature parity.
+
 ## Next contract groups
 
 1. Move/copy/borrow/aliasing rules, lifetime violations, recursive types and cyclic references.
