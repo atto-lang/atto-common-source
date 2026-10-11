@@ -67,8 +67,8 @@ def compare(graal, llvm, fixture_blob):
     left = validate(graal, "graal", fixture_blob)
     right = validate(llvm, "llvm", fixture_blob)
     try:
-        verify_counter_observations(left)
-        verify_counter_observations(right)
+        verify_counter_observations(left, require_full_matrix=True)
+        verify_counter_observations(right, require_full_matrix=True)
     except CounterContractError as error:
         raise ParityError(str(error)) from error
     if left.keys() != right.keys():
