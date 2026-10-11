@@ -18,24 +18,40 @@ def record(backend):
         "run_id": 4000,
         "job_id": 9000,
         "runner_id": 20,
-        "executed_tests": 3,
+        "executed_tests": 5,
         "skipped_tests": 0,
         "failed_tests": 0,
         "errored_tests": 0,
         "conclusion": "success",
-        "observed": {"counter_response(1)": 43, "counter_response(2)": 86},
+        "observed": {
+            "main()": 43,
+            "counter_response(-1)": -43,
+            "counter_response(0)": 0,
+            "counter_response(1)": 43,
+            "counter_response(2)": 86,
+        },
     }
 
 
 class ExecutedParityProofTest(unittest.TestCase):
     def test_real_result_records_match(self):
-        self.assertEqual(2, compare(record("graal"), record("llvm"), BLOB))
+        self.assertEqual(5, compare(record("graal"), record("llvm"), BLOB))
 
     def assert_reject(self, update, backend="llvm"):
         left, right = record("graal"), record("llvm")
         update(right if backend == "llvm" else left)
         with self.assertRaises(ParityError):
             compare(left, right, BLOB)
+
+    def test_identically_wrong_result_is_not_parity(self):
+        left, right = record("graal"), record("llvm")
+        left["observed"]["counter_response(1)"] = 44
+        right["observed"]["counter_response(1)"] = 44
+        with self.assertRaisesRegex(ParityError, "expected 43"):
+            compare(left, right, BLOB)
+
+    def test_missing_edge_probe_rejected(self):
+        self.assert_reject(lambda r: r["observed"].pop("counter_response(-1)"))
 
     def test_no_real_runner(self):
         self.assert_reject(lambda r: r.update(runner_id=0))
