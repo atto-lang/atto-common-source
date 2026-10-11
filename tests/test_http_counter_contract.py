@@ -38,16 +38,29 @@ class HttpCounterContractTest(unittest.TestCase):
         for case in ("arbitrary()", "counter_response(01)", "counter_response(+1)",
                      "counter_response(1) trailing", "counter_response(-0)"):
             with self.subTest(case=case):
-                with self.assertRaises(CounterContractError):
+                with self.assertRaisesRegex(CounterContractError, "unknown case"):
                     verify_counter_observations(dict(CASES, **{case: 1}))
 
     def test_reject_overflow_inputs(self):
-        for argument in (2**63, -(2**63) - 1, 2**63 // 43):
+        for argument in (2**63, -(2**63) - 1):
             with self.subTest(argument=argument):
-                with self.assertRaises(CounterContractError):
+                with self.assertRaisesRegex(CounterContractError, "outside signed i64"):
                     verify_counter_observations(dict(CASES, **{
                         f"counter_response({argument})": 0
                     }))
+        with self.assertRaisesRegex(CounterContractError, "arithmetic overflow"):
+            argument = (2**63 // 43) + 1
+            verify_counter_observations(dict(CASES, **{
+                f"counter_response({argument})": 0
+            }))
+
+    def test_largest_safe_positive_probe(self):
+        argument = 2**63 // 43
+        expected = argument * 43
+        self.assertLessEqual(expected, 2**63 - 1)
+        self.assertEqual(7, verify_counter_observations(dict(CASES, **{
+            f"counter_response({argument})": expected
+        })))
 
     def test_reject_boolean_outputs(self):
         with self.assertRaises(CounterContractError):
