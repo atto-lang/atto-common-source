@@ -82,7 +82,7 @@ def normalize(backend, raw_log, fixture_blob):
         if type(observed) is not dict or int(match.group(1)) != len(observed):
             raise LogAdapterError("llvm: reported execution case count mismatch")
     try:
-        verify_counter_observations(observed)
+        verify_counter_observations(observed, require_full_matrix=True)
     except CounterContractError as error:
         raise LogAdapterError(str(error)) from error
     return {"backend": backend, "fixture_blob": fixture_blob, "observed": observed}

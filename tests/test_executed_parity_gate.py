@@ -7,6 +7,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from executed_parity_gate import ParityError, compare
 
 BLOB = "a0b3fc658d1460eab62c85b3cc897143ea77a7ff"
+OBSERVED = {
+    "main()": 43, "counter_response(-1)": -43, "counter_response(0)": 0,
+}
+OBSERVED.update({f"counter_response({i})": 43 * i for i in range(1, 129)})
 
 
 def record(backend):
@@ -18,24 +22,18 @@ def record(backend):
         "run_id": 4000,
         "job_id": 9000,
         "runner_id": 20,
-        "executed_tests": 5,
+        "executed_tests": len(OBSERVED),
         "skipped_tests": 0,
         "failed_tests": 0,
         "errored_tests": 0,
         "conclusion": "success",
-        "observed": {
-            "main()": 43,
-            "counter_response(-1)": -43,
-            "counter_response(0)": 0,
-            "counter_response(1)": 43,
-            "counter_response(2)": 86,
-        },
+        "observed": dict(OBSERVED),
     }
 
 
 class ExecutedParityProofTest(unittest.TestCase):
     def test_real_result_records_match(self):
-        self.assertEqual(5, compare(record("graal"), record("llvm"), BLOB))
+        self.assertEqual(131, compare(record("graal"), record("llvm"), BLOB))
 
     def assert_reject(self, update, backend="llvm"):
         left, right = record("graal"), record("llvm")

@@ -13,6 +13,7 @@ CASES = {
     "counter_response(0)": 0, "counter_response(1)": 43,
     "counter_response(2)": 86,
 }
+CASES.update({f"counter_response({i})": 43 * i for i in range(1, 129)})
 
 
 def graal(values=None):
@@ -57,7 +58,7 @@ class HttpGuestLogAdapterTest(unittest.TestCase):
 
     def test_llvm_count_and_blob_checks(self):
         with self.assertRaisesRegex(LogAdapterError, "count mismatch"):
-            normalize("llvm", llvm(case_count=6), FIXTURE_BLOB)
+            normalize("llvm", llvm(case_count=len(CASES) + 1), FIXTURE_BLOB)
         with self.assertRaisesRegex(LogAdapterError, "fixture identity"):
             normalize("llvm", llvm(fixture_blob="0" * 40), FIXTURE_BLOB)
 

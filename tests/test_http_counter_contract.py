@@ -21,6 +21,25 @@ class HttpCounterContractTest(unittest.TestCase):
     def test_canonical_semantics(self):
         self.assertEqual(6, verify_counter_observations(CASES))
 
+    def test_full_131_matrix_required_for_parity(self):
+        full = dict(CASES)
+        full.update({f"counter_response({i})": 43 * i for i in range(1, 129)})
+        self.assertEqual(131, verify_counter_observations(full, require_full_matrix=True))
+        with self.assertRaisesRegex(CounterContractError, "missing"):
+            verify_counter_observations(CASES, require_full_matrix=True)
+        missing = dict(full)
+        del missing["counter_response(128)"]
+        with self.assertRaisesRegex(CounterContractError, "missing"):
+            verify_counter_observations(missing, require_full_matrix=True)
+        extra = dict(full)
+        extra["counter_response(129)"] = 129 * 43
+        with self.assertRaisesRegex(CounterContractError, "unexpected full-matrix"):
+            verify_counter_observations(extra, require_full_matrix=True)
+        bad = dict(full)
+        bad["counter_response(127)"] = -1
+        with self.assertRaisesRegex(CounterContractError, "expected"):
+            verify_counter_observations(bad, require_full_matrix=True)
+
     def test_identically_wrong_backends_cannot_pass(self):
         bad = dict(CASES, **{"counter_response(1)": 44})
         with self.assertRaisesRegex(CounterContractError, "expected 43"):
