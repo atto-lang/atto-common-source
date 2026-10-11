@@ -90,6 +90,36 @@ The first common executable fixture is
 `a0b3fc658d1460eab62c85b3cc897143ea77a7ff`); it establishes a
 public guest-handler slice, **not** actor, HTTP socket or AOT feature parity.
 
+## Parsing actual backend stdout
+
+The two backend tests emit **different machine-observation shapes**. The
+versioned adapter `scripts/http_guest_log_adapter.py` converts *captured raw
+guest-test stdout*, not GitHub's rendered page or a manually fabricated list,
+into a canonical `{backend, fixture_blob, observed}` JSON fragment:
+
+```sh
+python3 scripts/http_guest_log_adapter.py --backend graal --log graal-stdout.txt > graal-observed.json
+python3 scripts/http_guest_log_adapter.py --backend llvm --log llvm-stdout.txt > llvm-observed.json
+```
+
+It requires exactly one backend-specific execution marker, rejects duplicate
+JSON fields, checks the LLVM case count and source identity marker, and
+applies the independent HTTP guest arithmetic oracle. The two backend
+companion PRs are [Java #608](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/608)
+and [LLVM #116](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/116).
+They request 131 observations (main plus -1, 0, and 1..128). Their code
+and logs still require funded exact-source runtime execution before use as
+parity proof.
+
+**This adapter does not authenticate logs or create CI provenance.**
+Its output is deliberately only a fragment; it cannot be fed directly to
+the full executed-parity gate without an independently verified binding
+to each actual source tree, compiler revision, successful runner/job,
+executed test count and zero skips/failures. The producer must verify those
+facts against GitHub and attach them before invoking
+`scripts/executed_parity_gate.py`. Never manufacture a run ID or assume
+that the presence of a marker alone proves guest execution.
+
 ## Next contract groups
 
 1. Move/copy/borrow/aliasing rules, lifetime violations, recursive types and cyclic references.
