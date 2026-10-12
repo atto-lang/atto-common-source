@@ -1,5 +1,5 @@
 ---------------- MODULE DispatchReturnFourForms ----------------
-EXTENDS Naturals
+EXTENDS Integers
 
 CONSTANT ReturnRule
 
