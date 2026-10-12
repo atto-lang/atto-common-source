@@ -153,3 +153,20 @@ an unsound mutation (permit yielding while any loan remains) that must be
 detected. **This is a model test, not an LLVM or GraalVM runtime preemption
 proof.** Source-level actor loop code generation, unknown blocking FFI, and
 state-loan capability resumption remain separate implementation gates.
+
+## Further hardening: borrowing must survive representation changes
+
+The Java checker now rejects `as?` on a borrowed value because
+`Option<Owned>` would otherwise discard the lease. Checked `as T` cannot
+be stored under an owned binding when its runtime source remains borrowed;
+this includes explicitly declared `T` bindings and inferred declarations.
+Conditional expressions merging borrowed and owned branches, or joining
+borrowed paths without trackable provenance, also fail closed until
+path-dependent borrow sets/lifetimes exist. Genuine owned casts and Copy-only
+`rt copy`/`rt share` operations remain legal positive controls.
+
+Cross-branch integration must run the full type-checker, not only the standalone
+`OwnershipChecker`: the critical/effect checker branch is stacked over the
+feature baseline, whereas the ownership matrix is based on main. The exact
+combined Git tree and guest runtime must be validated before either branch is
+treated as cross-feature-safe.
