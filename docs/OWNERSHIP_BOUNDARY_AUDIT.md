@@ -128,3 +128,28 @@ The new source-branch Actions jobs have not yet produced executable results.
 They must be run on an authorized private runner/mirror before any of these
 new tests can be marked passed. Do not treat pre-runner failures as failures
 of Oreslang programs, nor publish private source into a public mirror.
+
+## Follow-up security audit: delegated yields and deferred cleanup
+
+A generator `yield*` delegates values carried by an iterator handle. It is
+**not** sufficient to check that the iterator itself is owned: its element
+type must also be free from borrowed components, recursively through generic
+wrappers such as `Option<borrow T>`. Until explicit generator yield lifetimes
+are implemented, the Java checker rejects such escapes. Keep a positive
+`Iterator<int>` delegation control so safety checks do not silently prohibit
+ordinary delegation.
+
+A `defer` registration has a different effect meaning from merely constructing
+an ordinary closure. The cleanup body executes on function exit, including
+failure paths, so `using` and `requires` checks must include the deferred
+body's potential blocking, allocating, IO, and suspension effects. Treat an
+unknown deferred callee as unverified, rather than eliding it. The Java effect
+PR now checks this explicitly.
+
+The Java ownership PR also adds a bounded-exhaustive model that combines
+ordinary/state/native loans with reduction charges, actual carrier handoff,
+fuel continuity, cancellation, and effect replay fences. The model includes
+an unsound mutation (permit yielding while any loan remains) that must be
+detected. **This is a model test, not an LLVM or GraalVM runtime preemption
+proof.** Source-level actor loop code generation, unknown blocking FFI, and
+state-loan capability resumption remain separate implementation gates.
