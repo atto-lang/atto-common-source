@@ -57,6 +57,22 @@ zero steps does not demonstrate executable conformance.
   active descendant branches. A test that expects a `do` arm's `return` to be
   discarded is a *negative indicator*, not a valid compatibility contract.
 
+## Unresolved legacy statement aliases (strict-mode blocker)
+
+Some older Java branches still accept **bare statement** `match` or
+`switch` and interpret an arm's `return` as a function exit. That
+historical statement syntax is not the four-form value-expression contract.
+It must be migrated to an explicit `do` spelling or rejected under
+canonical strict admission. Do not count legacy statement acceptance as
+implementation of value-producing `match` / `switch`.
+
+On updated Java branches, `Ast.SwitchStmt.procedural` is set only by
+explicit `do switch` parsing. The three-argument compatibility constructor
+defaults to `false`. This marker prevents later AST passes from guessing
+the return destination, but does not by itself implement the missing
+`ValueSwitchExpr`/ARM_RESULT lowering or make bare legacy statements
+conformant. The release gate must cover strict admission and AST preservation.
+
 ## Evidence gate
 
 Run identical checked-in fixtures under both backends. Record the input
