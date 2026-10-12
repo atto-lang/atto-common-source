@@ -74,3 +74,6 @@ is not proof of zero-GC linked-runtime behavior or of optimized code speed.
 See [shared conformance](CONFORMANCE.md) and the separate
 [draft zero-GC native / low-GC Graal contract PR #10](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/10)
 for the proposed runtime/performance acceptance criteria.
+
+See [ownership boundary audit](OWNERSHIP_BOUNDARY_AUDIT.md) for suspension,
+critical state loan, runtime operation and effect-contract admission rules.
