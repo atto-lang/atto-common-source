@@ -1,0 +1,49 @@
+{
+  "version": "dispatch-return-v1",
+  "cases": [
+    {
+      "id": "value-match-arm-result",
+      "form": "match",
+      "return_destination": "ARM_RESULT",
+      "expected_result": 42,
+      "support": {
+        "llvm": "candidate",
+        "graal": "candidate"
+      },
+      "source": "pub fnc main(): int { return match<ret=int> 7 over on 7 { return 42; } default { return 0; } end }"
+    },
+    {
+      "id": "do-match-function-return",
+      "form": "do match",
+      "return_destination": "FUNCTION_RETURN",
+      "expected_result": 42,
+      "support": {
+        "llvm": "candidate",
+        "graal": "candidate"
+      },
+      "source": "pub fnc main(): int { do match 7 over on 7 { return 42; } default { return 0; } end return 99; }"
+    },
+    {
+      "id": "value-switch-arm-result",
+      "form": "switch",
+      "return_destination": "ARM_RESULT",
+      "expected_result": 42,
+      "support": {
+        "llvm": "candidate",
+        "graal": "unsupported"
+      },
+      "source": "pub fnc main(): int { return switch 7 default { return 0; } case 7 { return 42; } end }"
+    },
+    {
+      "id": "do-switch-function-return",
+      "form": "do switch",
+      "return_destination": "FUNCTION_RETURN",
+      "expected_result": 42,
+      "support": {
+        "llvm": "candidate",
+        "graal": "candidate"
+      },
+      "source": "pub fnc main(): int { do switch 7 case 7 { return 42; } default { return 0; } end return 99; }"
+    }
+  ]
+}
