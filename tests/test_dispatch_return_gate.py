@@ -49,7 +49,7 @@ class FourFormsDispatchContractTest(unittest.TestCase):
         l, r = copy.deepcopy(self.graal), copy.deepcopy(self.llvm)
         mutate(r if backend == "llvm" else l)
         with self.assertRaises(DispatchParityError):
-            compare(l, r, self.manifest)
+            compare(l, r, self.manifest, require_full=False)
 
     def test_all_four_forms_have_distinct_required_destinations(self):
         self.assertEqual(
@@ -63,7 +63,7 @@ class FourFormsDispatchContractTest(unittest.TestCase):
             compare(self.graal, self.llvm, self.manifest, require_full=True)
 
     def test_synthetic_selftest_records_only(self):
-        self.assertEqual(3, compare(self.graal, self.llvm, self.manifest))
+        self.assertEqual(3, compare(self.graal, self.llvm, self.manifest, require_full=False))
 
     def test_result_value_cannot_mask_wrong_return_destination(self):
         self.assert_rejected(lambda r: r["observed"]["value-match-arm-result"]
@@ -95,6 +95,38 @@ class FourFormsDispatchContractTest(unittest.TestCase):
 
     def test_skipped_is_not_green(self):
         self.assert_rejected(lambda r: r.update(skipped_tests=1))
+
+    def test_default_partial_parity_is_forbidden(self):
+        with self.assertRaisesRegex(DispatchParityError, "not supported"):
+            compare(self.graal, self.llvm, self.manifest)
+
+    def test_synthetic_receipts_cannot_be_execution_evidence(self):
+        self.assert_rejected(lambda r: r.update(synthetic=True))
+
+    def test_duplicated_forms_cannot_shrink_the_oracle(self):
+        manifest = copy.deepcopy(self.manifest)
+        manifest["cases"][3]["form"] = "match"
+        # The file-reading oracle validator must reject duplicate forms;
+        # in-memory compare is not a replacement for manifest validation.
+        from tempfile import TemporaryDirectory
+        import json
+        with TemporaryDirectory() as temp:
+            p = Path(temp) / "bad.json"
+            p.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(DispatchParityError, "duplicate dispatch form"):
+                oracle(p)
+
+    def test_boolean_or_out_of_range_expected_result_fails_closed(self):
+        from tempfile import TemporaryDirectory
+        import json
+        for value in (True, 1 << 63, -(1 << 63) - 1):
+            manifest = copy.deepcopy(self.manifest)
+            manifest["cases"][0]["expected_result"] = value
+            with TemporaryDirectory() as temp:
+                p = Path(temp) / "bad.json"
+                p.write_text(json.dumps(manifest), encoding="utf-8")
+                with self.assertRaisesRegex(DispatchParityError, "signed i64"):
+                    oracle(p)
 
 
 if __name__ == "__main__":
