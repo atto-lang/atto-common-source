@@ -74,3 +74,57 @@ not be described as behavior already shipped on main.
 The organization currently has independent Java/Graal and LLVM checkers; the
 common-source and platform-conformance repositories define contracts and harnesses.
 A pass in one implementation does not establish the other's safety.
+
+## Expanded 2026-10-12 adversarial matrix and release gates
+
+The Java/Graal compiler candidate [ownership PR #740](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/740)
+contains `OwnershipFiftyProgramBoundaryMatrixTest`: 50 distinct Oreslang
+programs covering five callable kinds, `await`, `rt cooperate`,
+blocking `readch`/`writech`, static/dynamic `select`, synchronous and
+asynchronous generator `yield`, nonblocking registration, ending lexical
+loans, and `rt copy`/`rt share`/`rt take`. Each negative requires
+successful parsing first and the intended ownership diagnostic; positive
+fixtures must be admitted.
+
+[Critical/effects PR #739](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/739)
+adds 12 distinct parser-checked effect programs. Distinguish **suspension**
+from **potential waiting**: a blocking channel read/write or static select
+without a default must contribute `block` as well as `suspend`. Nonblocking
+registrations, and a static select with an unconditional default arm, do not
+contribute `block` merely by their syntax. Dynamic blocking select is
+conservatively treated as potentially waiting. `requires no_block` must
+reject potential blocking even without `using`; `using suspend` is not
+permission to block. A `_blocking` suffix is a naming convention, not a
+trusted, independently verified effect summary.
+
+**Do not call this a data-race-freedom certificate.** Compiler admission
+alone cannot prove that FFI/native aliases, unsafe host callbacks, actor
+shared-state handles, generated continuation frames, and the underlying
+scheduler preserve exclusivity. A complete claim also needs a sound
+interprocedural alias/effect analysis, drop and cancellation proof, runtime
+object-graph isolation, and executable cross-backend checks.
+
+Reduction-budget/reentrancy obligations for LLVM and GraalVM:
+
+1. Every potentially unbounded guest execution path must reach an **actual**
+   continuation-lowered, yield-safe scheduler boundary within the configured
+   work budget, or fail admission; ordinary safepoint polling is not preemption.
+2. The live-loan set at each boundary must be empty of conflicting state and
+   native/FFM loans; permitted continuation-owned locals must stay pinned to
+   their saved lifetime/identity, even across carrier migration.
+3. A budget-triggered yield must release the physical carrier only after
+   continuation publication, preserve logical actor single-flight, and never
+   replay completed external effects; cancellation must retire each loan once.
+4. Untrusted actor fuel/CPU/wall budgets must remain monotonic across resume,
+   not reset per carrier dispatch. Unknown `*_blocking` callees require a
+   trusted effect summary or rejection, not optimistic assumption.
+5. Run the same source through Java/GraalVM JVM, Native Image and LLVM guest
+   execution, recording exact blob IDs, positive and negative diagnostics,
+   sanitizer evidence, and deterministic preemption/interleaving schedules.
+   LLVM fail-closed unsupported-channel diagnostics are useful but are **not**
+   proof of LLVM execution parity.
+
+The new source-branch Actions jobs have not yet produced executable results.
+They must be run on an authorized private runner/mirror before any of these
+new tests can be marked passed. Do not treat pre-runner failures as failures
+of Oreslang programs, nor publish private source into a public mirror.
