@@ -106,6 +106,7 @@ class FourFormsDispatchContractTest(unittest.TestCase):
     def test_duplicated_forms_cannot_shrink_the_oracle(self):
         manifest = copy.deepcopy(self.manifest)
         manifest["cases"][3]["form"] = "match"
+        manifest["cases"][3]["return_destination"] = "ARM_RESULT"
         # The file-reading oracle validator must reject duplicate forms;
         # in-memory compare is not a replacement for manifest validation.
         from tempfile import TemporaryDirectory
