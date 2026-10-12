@@ -170,3 +170,30 @@ Cross-branch integration must run the full type-checker, not only the standalone
 feature baseline, whereas the ownership matrix is based on main. The exact
 combined Git tree and guest runtime must be validated before either branch is
 treated as cross-feature-safe.
+
+## Post-audit 2026-10-12 closure: operands and synchronous sinks
+
+The Java/GraalVM hardening branch now rejects a newly constructed
+`rt borrow` used as the operand of `await`, channel read/write, a static
+select arm, or dynamic select-plan registration. Checking existing lexical
+loans before operand evaluation is insufficient: the operand may itself
+produce a temporary borrowed view. The compiler must check both the
+pre-evaluation live loans and the evaluated value's ownership provenance
+before any blocking operation or deferred registration. These are
+**compiler-pass regressions** until funded CI confirms them; they are not
+LLVM runtime parity.
+
+A synchronous `stdio.print/println` is potentially blocking, even though
+its observable effect also includes `io`. `requires no_block` must reject
+these operations absent a separately verified nonblocking implementation.
+Explicit `using io` does not implicitly grant `block`: an admitted
+unrestricted console-writing function needs both effects. Any direct
+`stdio.*` call in a sealed synchronous critical state callback is
+conservatively rejected while its actor-state loan remains active. Future
+verified off-carrier I/O requires a distinct effect summary and loan-release
+proof; naming a function `*_blocking` supplies no evidence either way.
+
+A full data-race-freedom claim remains blocked on live-source compiler
+execution, native/FFM alias coverage, and reducer-inserted continuation
+proofs. Existing source-repository Actions attempts terminated without test
+steps; do not claim the new programs passed.
