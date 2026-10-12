@@ -34,6 +34,7 @@ def oracle(path: str | Path) -> dict:
     if data.get("version") != "dispatch-return-v1" or not isinstance(data.get("cases"), list):
         raise DispatchParityError("invalid oracle version or cases")
     unique = set()
+    unique_forms = set()
     for item in data["cases"]:
         if not isinstance(item, dict):
             raise DispatchParityError("invalid case")
@@ -44,8 +45,12 @@ def oracle(path: str | Path) -> dict:
         unique.add(name)
         if form not in EXPECTED_DEST or item.get("return_destination") != EXPECTED_DEST[form]:
             raise DispatchParityError("wrong destination in oracle")
-        if type(item.get("expected_result")) is not int:
-            raise DispatchParityError("non-integer expected result")
+        if form in unique_forms:
+            raise DispatchParityError("duplicate dispatch form in oracle")
+        unique_forms.add(form)
+        result = item.get("expected_result")
+        if type(result) is not int or not -(1 << 63) <= result < (1 << 63):
+            raise DispatchParityError("expected result is not signed i64")
         if not isinstance(item.get("source"), str) or not item["source"].strip():
             raise DispatchParityError("missing source")
         support = item.get("support")
@@ -53,8 +58,8 @@ def oracle(path: str | Path) -> dict:
             raise DispatchParityError("unsupported backend declaration")
         if any(v not in ("candidate", "unsupported") for v in support.values()):
             raise DispatchParityError("invalid support status")
-    if set(EXPECTED_DEST) - {c["form"] for c in data["cases"]}:
-        raise DispatchParityError("missing one of four dispatch forms")
+    if unique_forms != set(EXPECTED_DEST) or len(data["cases"]) != len(EXPECTED_DEST):
+        raise DispatchParityError("exactly four dispatch forms required")
     return data
 
 
@@ -80,6 +85,8 @@ def _record(record: dict, backend: str, included: list[dict]) -> None:
         raise DispatchParityError("missing or unexpected executable case")
     if record["executed_tests"] < len(included):
         raise DispatchParityError("insufficient executed tests")
+    if record.get("synthetic") is True:
+        raise DispatchParityError("synthetic records cannot be execution evidence")
     for case in included:
         actual = observed[case["id"]]
         if not isinstance(actual, dict) or type(actual.get("result")) is not int:
@@ -94,7 +101,13 @@ def _record(record: dict, backend: str, included: list[dict]) -> None:
             raise DispatchParityError("fixture blob mismatch")
 
 
-def compare(graal: dict, llvm: dict, manifest: dict, *, require_full: bool = False) -> int:
+def compare(graal: dict, llvm: dict, manifest: dict, *, require_full: bool = True) -> int:
+    # This validates an externally acquired receipt's SHAPE and semantics.
+    # It cannot independently authenticate GitHub runner status, compiler
+    # identity, or actual guest execution. A release decision MUST separately
+    # fetch immutable CI job evidence and verify the cited source Git trees.
+    # The default rejects a partial four-form subset; callers requesting a
+    # partial audit must explicitly opt in with require_full=False.
     common = [
         c for c in manifest["cases"]
         if c["support"]["graal"] == c["support"]["llvm"] == "candidate"
