@@ -45,8 +45,7 @@
           },
           "expected_result": {
             "type": "integer",
-            "minimum": -9223372036854776000,
-            "maximum": 9223372036854776000
+            "description": "JSON integer represented exactly in test oracle; signed-i64 range checked by compiler/runtime adapters, not JS number rounding"
           },
           "return_destination": {
             "enum": [
