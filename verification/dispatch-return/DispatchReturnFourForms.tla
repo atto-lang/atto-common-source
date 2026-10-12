@@ -47,7 +47,11 @@ ReturnFromEnclosingFunction ==
     /\ functionCount' = functionCount + 1
     /\ UNCHANGED <<form, armResult, armCount>>
 
-Next == SelectArm \/ ReturnFromSelectedArm \/ ReturnFromEnclosingFunction
+TerminalStutter ==
+    /\ pc = "done"
+    /\ UNCHANGED vars
+
+Next == SelectArm \/ ReturnFromSelectedArm \/ ReturnFromEnclosingFunction \/ TerminalStutter
 Spec == Init /\ [][Next]_vars
 
 TypeOK ==
