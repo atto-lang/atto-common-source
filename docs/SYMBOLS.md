@@ -61,6 +61,13 @@ Compiler requirements: represent record/class member keys with a tagged Key disc
 
 Safe initial rollout: implement and verify immutable first-class Symbol values, then `Map<Symbol,V>` with a dedicated guest map runtime and typed key ABI, then closed record/struct Symbol fields, finally class Symbol slots. Each phase includes compiler checks, formatter roundtrip, runtime execution, untrusted nested-message checks, and shared-source Java/LLVM parity before being marked complete.
 
+
+**Additive tagged-key codec draft, not the existing record ABI:** Java draft [PR #893](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/893) introduces a standalone key wire envelope `4F 4B 01 <kind:u8> <length:u16 big-endian> <UTF-8 bytes>`, with kind `00` for ordinary String, `01` for PROCESS Symbol, and `02` for STABLE Symbol. The protocol carries no VM handle or process-local intern ID. String keys remain uninterpreted text even when prefixed with `#`; Symbol decode requires strict Unicode and canonical NFC, and must never permanently intern. The current draft limits textual keys to 16,384 UTF-8 bytes, Symbol names to 256 bytes and per-object keys to 4,096; these limits apply only to this opt-in codec. `decodeForUntrusted` requires an explicit destination-scoped allowlist for non-core identities. This is an *experimental additive format* pending LLVM parity and ABI review; it does **not** replace the legacy string-named struct/record layout or automatically wire new Symbol properties into JSON, protobuf or MessagePack.
+
+**Formatter draft:** [oreslang-format PR #45](https://github.com/ores-truffle-oreslang/oreslang-format/pull/45) canonicalizes single-quoted `#'name'` to `#"name"` without altering ordinary strings/comments; Rust test execution and Java parse-format-parse verification are still pending.
+
+
+
 ### Key-layout compatibility and security gates
 
 - **Class inheritance and privacy:** Symbol-key slots use independent typed identity. Overriding an inherited `[#tag]` may be legal only under existing class-field override and visibility rules; it is never an overload of an ordinary method or `.tag` field. Construction, partial initialization, `final`, teardown, actor ownership and private-member checks apply equally to Symbol slots. For untrusted actors, a publicly visible Symbol identity does **not** make a private class field public.
