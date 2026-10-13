@@ -1,12 +1,12 @@
 import module Z from "./constants.ores";
 
 pub routine main(): void {
-  match Z.sym1 over
+  do match Z.sym1 over
     on #zzz -> { stdio.stdout.write("match-1|"); }
     on _ -> { stdio.stdout.write("wrong-1|"); }
   end
 
-  switch Z.sym2
+  do switch Z.sym2
     case #abc -> { stdio.stdout.write("match-2|"); }
     default -> { stdio.stdout.write("wrong-2|"); }
   end
