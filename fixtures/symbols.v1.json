@@ -1,0 +1,199 @@
+{
+  "schema_version": "symbols-v1-proposal",
+  "status": "contract-vectors-not-backend-execution",
+  "equality": [
+    {
+      "label": "same literal across actors",
+      "left": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "right": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "equal": true
+    },
+    {
+      "label": "same name across OS processes",
+      "left": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "right": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "equal": true
+    },
+    {
+      "label": "different symbolic names",
+      "left": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "right": {
+        "kind": "process",
+        "name": "failed"
+      },
+      "equal": false
+    },
+    {
+      "label": "domain separates process and stable",
+      "left": {
+        "kind": "process",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "right": {
+        "kind": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "equal": false
+    },
+    {
+      "label": "stable roundtrip",
+      "left": {
+        "kind": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "right": {
+        "kind": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "equal": true
+    },
+    {
+      "label": "canonical NFC constructors",
+      "left": {
+        "kind": "process",
+        "name": "café"
+      },
+      "right": {
+        "kind": "process",
+        "name": "café"
+      },
+      "equal": true,
+      "constructor_normalizes_nfc": true
+    }
+  ],
+  "distinct_types": [
+    {
+      "symbol": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "string": "ready",
+      "equal": false
+    }
+  ],
+  "valid_keys": [
+    {
+      "label": "simple identifier",
+      "value": "ready"
+    },
+    {
+      "label": "punctuation allowed via constructor",
+      "value": "http.ok"
+    },
+    {
+      "label": "multibyte UTF-8 within limit",
+      "value": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+    }
+  ],
+  "invalid_keys": [
+    {
+      "label": "empty",
+      "value": ""
+    },
+    {
+      "label": "NUL",
+      "value": "abc\u0000def"
+    },
+    {
+      "label": "C1 control",
+      "value": "hi"
+    },
+    {
+      "label": "bidi override",
+      "value": "abc‮def"
+    },
+    {
+      "label": "257 UTF-8 bytes",
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "label": "overlong UTF-8",
+      "utf8_hex": "c080"
+    },
+    {
+      "label": "unpaired surrogate",
+      "value": "\ud800"
+    }
+  ],
+  "wire_decoding": [
+    {
+      "label": "known name creates noninterning value",
+      "input": {
+        "$symbol": "process",
+        "name": "ready"
+      },
+      "accept": true,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "unknown name does not intern",
+      "input": {
+        "$symbol": "process",
+        "name": "client_defined_tag"
+      },
+      "accept": true,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "stable UUID canonical",
+      "input": {
+        "$symbol": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "accept": true,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "unknown kind",
+      "input": {
+        "$symbol": "local",
+        "name": "ready"
+      },
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "unknown field",
+      "input": {
+        "$symbol": "process",
+        "name": "ready",
+        "id": 77
+      },
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "invalid stable UUID",
+      "input": {
+        "$symbol": "stable",
+        "name": "hello"
+      },
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "wire requires canonical NFC",
+      "input": {
+        "$symbol": "process",
+        "name": "café"
+      },
+      "accept": false,
+      "permanent_table_delta": 0
+    }
+  ]
+}
