@@ -138,7 +138,8 @@
         "name": "ready"
       },
       "accept": true,
-      "permanent_table_delta": 0
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
     },
     {
       "label": "unknown name does not intern",
@@ -147,7 +148,8 @@
         "name": "client_defined_tag"
       },
       "accept": true,
-      "permanent_table_delta": 0
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
     },
     {
       "label": "stable UUID canonical",
@@ -156,7 +158,8 @@
         "name": "550e8400-e29b-41d4-a716-446655440000"
       },
       "accept": true,
-      "permanent_table_delta": 0
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
     },
     {
       "label": "unknown kind",
@@ -165,7 +168,8 @@
         "name": "ready"
       },
       "accept": false,
-      "permanent_table_delta": 0
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
     },
     {
       "label": "unknown field",
@@ -175,7 +179,8 @@
         "id": 77
       },
       "accept": false,
-      "permanent_table_delta": 0
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
     },
     {
       "label": "invalid stable UUID",
@@ -184,7 +189,8 @@
         "name": "hello"
       },
       "accept": false,
-      "permanent_table_delta": 0
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
     },
     {
       "label": "wire requires canonical NFC",
@@ -193,7 +199,181 @@
         "name": "café"
       },
       "accept": false,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    }
+  ],
+  "visibility_policy": {
+    "std_core_manifest": {
+      "version": "core-symbols-v1-fixture",
+      "allowed_process_keys": [
+        "ready",
+        "error",
+        "Symbol.iterator"
+      ]
+    },
+    "private_userland_process_keys": [
+      "userland/secret",
+      "userland/ready"
+    ],
+    "scoped_userland_exports": [
+      {
+        "tenant": "tenant-a",
+        "endpoint": "actor-notification",
+        "protocol": "v1",
+        "allowed_process_keys": [
+          "userland/alert"
+        ]
+      }
+    ]
+  },
+  "syntax": [
+    {
+      "source": "final Symbol foo: :ready",
+      "expected": "accept",
+      "notes": "first colon is field initializer separator, second begins Symbol literal"
+    },
+    {
+      "source": "final int foo: :ready",
+      "expected": "type_error",
+      "notes": "typed int cannot be initialized from Symbol; no syntax ambiguity"
+    },
+    {
+      "source": "final Symbol foo = :ready",
+      "expected": "accept",
+      "notes": "optional compatibility initializer spelling"
+    },
+    {
+      "source": "let x = infer struct{foo: :ready}",
+      "expected": "accept",
+      "notes": "container consumes the first colon; expression parser consumes next"
+    },
+    {
+      "source": "let x = struct{foo: Symbol}{foo: :ready}",
+      "expected": "accept",
+      "notes": "shape field annotation followed by literal in initializer"
+    },
+    {
+      "source": "let x = infer struct{foo: :}",
+      "expected": "parse_error",
+      "notes": "literal name missing"
+    },
+    {
+      "source": "let x = infer struct{foo: :123}",
+      "expected": "parse_error",
+      "notes": "Symbol literal requires identifier"
+    },
+    {
+      "source": "let x = infer struct{foo:}",
+      "expected": "parse_error",
+      "notes": "field value missing"
+    }
+  ],
+  "admission": [
+    {
+      "label": "untrusted core literal",
+      "operation": "source_literal",
+      "kind": "process",
+      "name": "ready",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true
+    },
+    {
+      "label": "untrusted userland literal blocked",
+      "operation": "source_literal",
+      "kind": "process",
+      "name": "userland/secret",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": false
+    },
+    {
+      "label": "untrusted core wire",
+      "operation": "wire",
+      "kind": "process",
+      "name": "error",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true,
       "permanent_table_delta": 0
+    },
+    {
+      "label": "untrusted userland wire blocked",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/secret",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland visible to correct tenant endpoint",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland hidden from other tenant",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-b",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland hidden from other endpoint",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-metrics",
+      "protocol": "v1",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland hidden from other protocol version",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v2",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "trusted userland allowed",
+      "operation": "source_literal",
+      "kind": "process",
+      "name": "userland/secret",
+      "policy": "trusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true
     }
   ]
 }
