@@ -183,6 +183,20 @@ class SymbolContractVectorsTest(unittest.TestCase):
                 self.assertIsInstance(case["left_source"], str)
                 self.assertIsInstance(case["right_source"], str)
 
+    def test_keyed_container_contract_is_explicitly_staged(self):
+        cases = self.vectors["keyed_containers"]
+        self.assertEqual(len(cases), len({case["source"] for case in cases}))
+        self.assertEqual({case["kind"] for case in cases},
+                         {"map", "record", "struct", "class"})
+        expected = {"future_accept", "type_error", "duplicate_key_error"}
+        self.assertEqual({case["expect"] for case in cases}, expected)
+        self.assertIn("infer struct{foo: 1, [#foo]: 2}",
+                      {case["source"] for case in cases})
+        self.assertIn("let r = infer struct{foo: 1}; r[#foo]",
+                      {case["source"] for case in cases if case["expect"] == "type_error"})
+        self.assertTrue(any("NFC" in c["note"] for c in cases))
+        # These fixtures are design expectations; this self-check never runs a guest compiler.
+
     def test_duplicate_wire_fields_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate"):
             json.loads('{"$symbol":"process","name":"ok","name":"evil"}',
