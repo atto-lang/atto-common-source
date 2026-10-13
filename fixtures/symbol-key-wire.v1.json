@@ -10,7 +10,8 @@
   "limits": {
     "max_text_bytes": 16384,
     "max_symbol_bytes": 256,
-    "max_keys": 4096
+    "max_keys": 4096,
+    "max_key_set_wire_bytes": 1048576
   },
   "golden": [
     {
