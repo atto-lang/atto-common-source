@@ -23,8 +23,9 @@ zero steps does not demonstrate executable conformance.
 3. In a procedural `do` form, `return` exits the enclosing lexical callable.
    Never lower it to a discarded expression or an `ARM_RESULT` signal.
 4. A partial `do` form with no matching arm may continue after the statement.
-   `return do match` and `return do switch` require an exhaustive proof and
-   terminal function-return path from **every** reachable selected arm.
+   `return do match` and `return do switch` are **invalid syntax**.
+   Use `return match` or `return switch` when returning the result,
+   or `do match` / `do switch` for procedural dispatch.
 5. All value forms require exhaustive value production (without confusing
    nontermination, nested callable returns, or cleanup with proof of result).
    An unsupported type/pattern/effect must produce a diagnostic **and no IR**.
@@ -40,6 +41,25 @@ zero steps does not demonstrate executable conformance.
    destination from runtime return-value type or whether a caller ignores it.
 9. The `match<ret=T>` / `match<T>` contract applies to ARM_RESULT type.
    `do match<ret=T>` constrains enclosing callable returns, not an arm result.
+
+## Select is subject to the same explicit dispatch rule
+
+In a statement context, `do select { ... }` is a procedural blocking
+operation. A winning arm's `return`, `break`, or `continue` propagates
+to its lexical enclosing callable or loop. Never discard a blocking
+`do select` return as if it were an arm-local result.
+
+The result-producing `return select from cases` remains an expression
+return. A bare `select { ... }` statement is prohibited, as is a bare
+`select from cases` expression statement that discards the result.
+Standalone nonblocking `do nb select` currently uses a detached actor
+continuation and must not be mistaken for an ordinary procedural return;
+its future/result semantics require explicit completion tracking.
+
+`return match` and `return switch` denote expression-result dispatch;
+`do match` and `do switch` denote procedural dispatch. In all cases the
+difference must be represented in typed IR, not inferred from the presence
+of a returned value.
 
 ## Older PR adoption and compatibility
 
