@@ -475,19 +475,19 @@
   "keyed_containers": [
     {
       "kind": "map",
-      "source": "let m: Map<Symbol, int> = Map<Symbol, int>.new(); m[#foo] = 2",
+      "source": "val m: Map<Symbol, int> = Map<Symbol, int>.new(); m[#foo] = 2",
       "expect": "future_accept",
       "note": "typed Symbol map keys; not implemented on current main"
     },
     {
       "kind": "map",
-      "source": "let m: Map<String, int> = Map<String, int>.new(); m[#foo] = 2",
+      "source": "val m: Map<String, int> = Map<String, int>.new(); m[#foo] = 2",
       "expect": "type_error",
       "note": "Map<String> does not implicitly accept Symbol"
     },
     {
       "kind": "map",
-      "source": "let m: Map<Symbol | String, int> = Map<Symbol | String, int>.new()",
+      "source": "val m: Map<Symbol | String, int> = Map<Symbol | String, int>.new()",
       "expect": "future_accept",
       "note": "heterogeneous explicit union; no key coercion"
     },
