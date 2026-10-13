@@ -67,6 +67,24 @@ def reject_duplicate_members(pairs):
     return result
 
 
+def admitted_symbol(case, visibility):
+    """Illustrative policy evaluator; NOT an Oreslang runtime security check."""
+    if case["policy"] == "trusted":
+        return True
+    if case["policy"] != "untrusted" or case["kind"] != "process":
+        return False
+    public = visibility["std_core_manifest"]["allowed_process_keys"]
+    if case["name"] in public:
+        return True
+    return any(
+        rule["tenant"] == case["tenant"]
+        and rule["endpoint"] == case["endpoint"]
+        and rule["protocol"] == case["protocol"]
+        and case["name"] in rule["allowed_process_keys"]
+        for rule in visibility["scoped_userland_exports"]
+    )
+
+
 class SymbolContractVectorsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -110,6 +128,33 @@ class SymbolContractVectorsTest(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         decode_wire(case["input"])
                 self.assertEqual(before, case["permanent_table_delta"])
+
+    def test_core_and_private_userland_admission_matrix(self):
+        visibility = self.vectors["visibility_policy"]
+        self.assertTrue(set(visibility["std_core_manifest"]["allowed_process_keys"]).isdisjoint(
+            visibility["private_userland_process_keys"]))
+        for case in self.vectors["admission"]:
+            with self.subTest(case=case["label"]):
+                self.assertIs(admitted_symbol(case, visibility), case["accept"])
+                if "permanent_table_delta" in case:
+                    self.assertEqual(case["permanent_table_delta"], 0)
+
+    def test_colon_syntax_contract_vectors(self):
+        # Tests vector consistency only. Java and LLVM guests must actually
+        # compile/execute these source snippets in separate parity checks.
+        cases = self.vectors["syntax"]
+        self.assertEqual(len({c["source"] for c in cases}), len(cases))
+        self.assertEqual(
+            {c["expected"] for c in cases},
+            {"accept", "type_error", "parse_error"},
+        )
+        field = next(c for c in cases if c["source"] == "final Symbol foo: :ready")
+        self.assertEqual(field["expected"], "accept")
+        self.assertIn("foo: :ready", field["source"])
+        mismatch = next(c for c in cases if c["source"] == "final int foo: :ready")
+        self.assertEqual(mismatch["expected"], "type_error")
+        inferred = next(c for c in cases if "infer struct{foo: :ready}" in c["source"])
+        self.assertEqual(inferred["expected"], "accept")
 
     def test_duplicate_wire_fields_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate"):
