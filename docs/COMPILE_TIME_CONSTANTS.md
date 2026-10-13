@@ -53,6 +53,14 @@ a String to int. `const int x = "bar"` is a compile-time type error.
 
 ## 2a. Symbol literals in match arms and switch cases
 
+Source dispatch must be explicitly qualified: `return match`/`return switch`
+for value-returning arms and `do match`/`do switch` for procedural
+control flow. The same distinction applies to `return select` and
+blocking `do select`; bare statement forms are not legal. An arm's
+`return` in procedural `do` dispatch returns from the enclosing
+function, never silently discards a value. Standalone dynamic select
+results must be returned or bound to a variable.
+
 Both equality-based `switch` and exhaustiveness-checked `match` must
 understand first-class `Symbol` literals, including quoted hash symbols:
 
@@ -60,7 +68,7 @@ understand first-class `Symbol` literals, including quoted hash symbols:
 define pub const Symbol connected = Symbol.for("connected");
 
 pub fnc describe(Symbol event): String {
-    match event over
+    return match event over
         on #connected -> { return "connected"; }
         on #'needs attention' -> { return "attention"; }
         on _ -> { return "other"; }
@@ -68,7 +76,7 @@ pub fnc describe(Symbol event): String {
 }
 
 pub fnc code(Symbol event): int {
-    switch event
+    return switch event
         case #connected -> { return 1; }
         case #'needs attention' -> { return 2; }
         default -> { return 0; }
