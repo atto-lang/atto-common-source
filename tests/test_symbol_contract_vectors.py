@@ -139,22 +139,49 @@ class SymbolContractVectorsTest(unittest.TestCase):
                 if "permanent_table_delta" in case:
                     self.assertEqual(case["permanent_table_delta"], 0)
 
-    def test_colon_syntax_contract_vectors(self):
-        # Tests vector consistency only. Java and LLVM guests must actually
-        # compile/execute these source snippets in separate parity checks.
+    def test_hash_symbol_syntax_contract_vectors(self):
+        # This checks the proposed fixture matrix, not Java/LLVM execution.
         cases = self.vectors["syntax"]
         self.assertEqual(len({c["source"] for c in cases}), len(cases))
         self.assertEqual(
             {c["expected"] for c in cases},
             {"accept", "type_error", "parse_error"},
         )
-        field = next(c for c in cases if c["source"] == "final Symbol foo: :ready")
-        self.assertEqual(field["expected"], "accept")
-        self.assertIn("foo: :ready", field["source"])
-        mismatch = next(c for c in cases if c["source"] == "final int foo: :ready")
-        self.assertEqual(mismatch["expected"], "type_error")
-        inferred = next(c for c in cases if "infer struct{foo: :ready}" in c["source"])
-        self.assertEqual(inferred["expected"], "accept")
+        expected = {
+            "final Symbol foo: #abc": "accept",
+            "final int foo: #ready": "type_error",
+            "let x = infer struct{foo: #ready}": "accept",
+            "let y = #'ready foo'": "accept",
+            'let y = #"ready foo"': "accept",
+            "let y = #class": "accept",
+            "let y = :ready": "parse_error",
+            "let x = infer struct{foo: :ready}": "parse_error",
+            "let y = #": "parse_error",
+            "let y = # ready": "parse_error",
+            "let y = #123": "parse_error",
+            "let y = new Symbol('ready')": "type_error",
+            "let y = Symbol.process('ready')": "accept",
+        }
+        actual = {c["source"]: c["expected"] for c in cases}
+        for snippet, outcome in expected.items():
+            with self.subTest(snippet=snippet):
+                self.assertEqual(actual[snippet], outcome)
+
+    def test_literal_equivalence_and_quoted_spelling(self):
+        cases = {c["label"]: c for c in self.vectors["literal_equivalence"]}
+        same = cases["single and double quotes same canonical name"]
+        self.assertEqual(same["left_source"], "#'ready foo'")
+        self.assertEqual(same["right_source"], '#"ready foo"')
+        self.assertEqual(canonical_identity(same), ("process", "ready foo"))
+        self.assertIs(same["same"], True)
+        factory = cases["unquoted symbol equals trusted factory by kind and key"]
+        self.assertEqual(canonical_identity(factory), ("process", "ready"))
+        self.assertIs(factory["same"], True)
+        for case in self.vectors["literal_equivalence"]:
+            with self.subTest(label=case["label"]):
+                self.assertIsInstance(case["same"], bool)
+                self.assertIsInstance(case["left_source"], str)
+                self.assertIsInstance(case["right_source"], str)
 
     def test_duplicate_wire_fields_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate"):
