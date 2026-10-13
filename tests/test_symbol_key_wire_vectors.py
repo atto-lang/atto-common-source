@@ -45,6 +45,24 @@ def encode_key(kind, value):
     return b"OK\x01" + struct.pack(">BH", tag, len(encoded)) + encoded
 
 
+def decode_distinct_keys(frames, max_keys=4096, max_bytes=1_048_576):
+    if len(frames) > max_keys:
+        raise ValueError("too many keys")
+    used = 0
+    seen = set()
+    decoded = []
+    for frame in frames:
+        used += len(frame)
+        if used > max_bytes:
+            raise ValueError("tagged keys exceed aggregate budget")
+        key = decode_key(frame)
+        if key in seen:
+            raise ValueError("duplicate logical key")
+        seen.add(key)
+        decoded.append(key)
+    return tuple(decoded)
+
+
 class TaggedSymbolKeyVectorsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -70,6 +88,21 @@ class TaggedSymbolKeyVectorsTest(unittest.TestCase):
             actual = decode_key(bytes.fromhex(entries[pair["left"]]["hex"]))
             other = decode_key(bytes.fromhex(entries[pair["right"]]["hex"]))
             self.assertIs(actual == other, pair["equal"])
+
+    def test_immutable_key_set_and_duplicate_rejection(self):
+        original = encode_key("process", "foo")
+        frames = [original, encode_key("string", "foo")]
+        decoded = decode_distinct_keys(frames)
+        self.assertEqual(decoded, (("process", "foo"), ("string", "foo")))
+        self.assertIsInstance(decoded, tuple)
+        with self.assertRaises(ValueError):
+            decode_distinct_keys([original, encode_key("process", "foo")])
+
+    def test_total_bytes_budget(self):
+        frames = [encode_key("string", "x" * 16_000 + str(i))
+                  for i in range(70)]
+        with self.assertRaises(ValueError):
+            decode_distinct_keys(frames)
 
     def test_legacy_text_key_hash_prefix_remains_text(self):
         tagged = encode_key("string", "#foo")
