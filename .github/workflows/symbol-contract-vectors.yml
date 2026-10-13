@@ -4,15 +4,19 @@ on:
     paths:
       - "docs/SYMBOLS.md"
       - "fixtures/symbols.v1.json"
+      - "fixtures/symbol-key-wire.v1.json"
       - "tests/test_symbol_contract_vectors.py"
       - "tests/test_symbol_key_model.py"
+      - "tests/test_symbol_key_wire_vectors.py"
       - ".github/workflows/symbol-contract-vectors.yml"
   push:
     paths:
       - "docs/SYMBOLS.md"
       - "fixtures/symbols.v1.json"
+      - "fixtures/symbol-key-wire.v1.json"
       - "tests/test_symbol_contract_vectors.py"
       - "tests/test_symbol_key_model.py"
+      - "tests/test_symbol_key_wire_vectors.py"
       - ".github/workflows/symbol-contract-vectors.yml"
 permissions:
   contents: read
