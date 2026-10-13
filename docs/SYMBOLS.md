@@ -7,41 +7,49 @@ Status: **normative design proposal, NOT implemented or certified** in Java/Graa
 `Symbol` is an immutable, nominal guest value that denotes a *name*, not an address, capability, actor reference, heap pointer or UUID object. Oreslang equality and hash semantics use the canonical value pair `(kind, key)`, never an internal numeric handle, object identity, classloader, carrier thread, heap address, isolate ID, process random UUID, arena generation or registry slot.
 
 Kinds:
-- `process` (default): `:ready`, `Symbol.process("ready")`, and a decoded `{"$symbol":"process","name":"ready"}` compare equal regardless of actor, isolate, arena, native allocation, Java classloader, separate OS process or machine. "Process" describes **optional caching/interning lifetime**, not an equality namespace. Within one process the implementation *may* intern one object/handle; that optimization must not be exposed as a semantic guarantee of physical pointer equality.
+- `process` (default): `#ready`, `Symbol.process("ready")`, and a decoded `{"$symbol":"process","name":"ready"}` compare equal regardless of actor, isolate, arena, native allocation, Java classloader, separate OS process or machine. "Process" describes **optional caching/interning lifetime**, not an equality namespace. Within one process the implementation *may* intern one object/handle; that optimization must not be exposed as a semantic guarantee of physical pointer equality.
 - `stable` (optional compatibility): `Symbol.stable("550e8400-e29b-41d4-a716-446655440000")` is a separate kind, keyed by canonical UUID string. It compares equal across processes solely by `(kind, key)`, and does not equal a `process` Symbol with the same string.
 
 There is no public `Symbol.local` kind in v1. Existing drafts that propose an actor-local `Symbol.local` conflict with the global identity invariant. If opaque fresh identity is needed, specify `UniqueToken`/actor-owned `Ref` separately, with explicit non-Sendable ownership. A Symbol is **not** an unforgeable capability.
 
 `Symbol` is nominally distinct from `String`; Symbols are case-sensitive. Symbol values are immutable and may be copied across actor boundaries, including into untrusted actors **only when explicitly visible to that destination under its Symbol-admission policy**. Never share writable backing buffers or handles across isolation; cross-process/isolate transport reconstructs an owned/frozen logical value.
 
-## B. Canonical textual identity and syntax
+## B. Canonical textual identity and `#`-only Symbol syntax
 
-1. Accept only valid UTF-8 Unicode scalar sequences. Normalize keys to **NFC** in source/runtime constructors and require already-canonical NFC in wire decoders (reject non-NFC encodings); compare the resulting Unicode scalar sequence (or its canonical UTF-8 bytes) exactly. Reject malformed UTF-8, unpaired UTF-16 surrogates, NUL, C0/C1 controls and bidi formatting controls. Require nonempty key, at most **256 UTF-8 bytes after NFC**. Implementations must count bytes, not Java UTF-16 code units.
-2. Ordinary literal syntax: `:<identifier>`, initially ASCII `[A-Za-z_][A-Za-z0-9_]*` and max 128 UTF-8 bytes. `:ready` is `process/ready`. A quoted `:"http.ok"` form may be added later for non-identifier names, with literal escapes decoded then NFC-normalized; **no interpolation** is allowed in a literal (dynamic construction uses an explicit API).
-3. The colon introduces a Symbol only where an **expression operand is expected**. `foo: int`, `foo: 5`, named arguments, type annotations and map/struct members retain their existing grammar. Don't silently treat `{foo: 3}` as a map with Symbol key unless the map's declared key type explicitly requires that conversion; prefer `{:foo: 3}` or an unambiguous explicit map syntax after grammar review. The lexer should continue to return separate `COLON` tokens, not an atomic `:identifier` token; a future `::` operator must have an explicitly separate grammar decision.
-4. `Symbol.iterator` is a well-known protocol identifier, not automatically the same as `:iterator`. Specify its kind/name in the protocol registry, avoiding collisions with ordinary user symbols.
-5. Public display/diagnostic rendering should be reversible and escaped. Never substitute toString() for a wire schema.
+**Final selected source spelling: `#ready`; no colon-prefixed Symbol literals.** Colons remain entirely available for types, field declarations, named values and initializers. Any earlier `#ready` proposal in Java draft #123/#160 or in this contract is superseded. Do not add a compatibility alias for `#ready`, since that would preserve the syntactic ambiguity this choice removes.
 
+1. Accept only valid UTF-8 Unicode scalar sequences. Normalize keys to **NFC** in source/runtime constructors and require already-canonical NFC in wire decoders (reject non-NFC encodings); compare canonical UTF-8 bytes and `(kind, key)` exactly. Reject malformed UTF-8, unpaired UTF-16 surrogates, NUL, C0/C1 controls and bidi formatting controls. Require nonempty key, at most **256 UTF-8 bytes after NFC**. Implementations must count bytes, not Java UTF-16 code units.
+2. Ordinary literal syntax: `#<identifier>`, initially ASCII `[A-Za-z_][A-Za-z0-9_]*` and max **128 UTF-8 bytes**. `#ready` denotes the canonical `process/ready` Symbol. `#true` or `#class` is a Symbol name (not a Boolean or a declaration keyword): the lexer captures the name as a Symbol, not as a reserved-word token. No whitespace allowed between `#` and its name.
+3. Quoted literal syntax: `#'ready foo'` and `#"ready foo"` both denote `process/ready foo`; quoted form admits spaces, punctuation, and otherwise nonidentifier content subject to the same **256-byte validated-name bound**. Use the existing Oreslang string escape grammar (including Unicode escapes), with **no interpolation**. `oreslang-format` canonicalizes to `#"ready foo"` and preserves exact decoded identity; strings and Symbols remain nominally different. Quoted names add value for interoperability with external protocols and long-lived data schemas, but ordinary identifier literals should be preferred for internal tags.
+4. Lexing: `#` is reserved exclusively as a Symbol literal introducer in source expressions/patterns. It **must not** be interpreted as a comment or preprocessor directive. Emit a dedicated `SYMBOL_LITERAL` token with the decoded name and source span, or a semantically equivalent token pair that handles keyword-shaped names. Reject an isolated `#`, whitespace (`# ready`), malformed string escapes, invalid UTF-8, noncanonical quoting, and trailing source syntax as appropriate. Other kinds of `#` constructs require an explicit future grammar revision.
+5. Parsing: a Symbol literal is an atomic primary expression and (where allowed) a literal match pattern, never a type annotation, map field separator, or constructor call. In `final Symbol foo: #abc` and `infer struct{foo: #abc}`, the **single `COLON` belongs to the declaration or field**, and the separate `SYMBOL_LITERAL` token denotes its value. Avoid token-scanning heuristics based on spaces. `#foo` is a value in the struct, **not** a Symbol-valued field name unless a future explicit map-key grammar says so.
+6. `Symbol.iterator` is a well-known protocol identity, not automatically the same name as `#iterator`. Specify its canonical key in the core manifest, avoiding collisions with user tags.
+7. Public rendering is reversible and escaped: `#ready`, `#"ready foo"`; never substitute `toString()` for a wire codec. Formatter output must satisfy idempotence and compiler parse/format/parse AST equivalence.
 
-### Disambiguating adjacent colons (proposal, not supported on current main)
+### Representative source (target language grammar)
 
 ```ores
-final Symbol state: :ready;           // VALID: initializer separator, then Symbol literal
-final int count: 3;                   // VALID under proposed type-first colon initializer
-final int bad: :ready;                // TYPE ERROR, not a parser ambiguity
-let status = infer struct{foo: :ready, count: 3};  // VALID Symbol-valued field
-let x = struct{foo: Symbol}{foo: :ready};          // VALID explicit shape
+final Symbol foo: #abc
+final int count: 3
+let a: Symbol = #ready
+let b = #ready
+let message = (#user_joined, 42)
+let data = infer struct{foo: #abc, message: #"ready foo"}
+let explicit = struct{foo: Symbol}{foo: #abc}
+let with_keywords = (#true, #class)
+let single_quote = #'ready foo'
+let double_quote = #"ready foo"
 ```
 
-The parser distinguishes `fieldName COLON expression` from `COLON IDENT` as an expression literal. Example token sequence: `foo : :ready` becomes `IDENT(foo) COLON COLON IDENT(ready)`, where the *first* colon is consumed by the container or declaration and the *second* by `parsePrimary` as a prefix literal. Whitespace does not matter semantically, but `oreslang-format` should emit **`foo: :ready`**, including after type-first fields. Never parse the first colon as a symbol merely because the next token also is a colon. `final Symbol state = :ready` may remain accepted as an alternative and formatted to `final Symbol state: :ready` after compiler support is established.
+`final int bad: #ready` is a **type error**, not a parser ambiguity. `infer struct{foo: #}`, `# ready` and `#123` are **lexical/parse errors**. No source syntax `#ready` is accepted for Symbols, including after a colon initializer. Reject its use rather than silently assigning another meaning.
 
-Avoid grammar shortcuts that make `:ready` a prefix *pattern* in place of a type annotation without context. Pattern parsing must also accept `:ready` as a literal only where a pattern operand is expected. Rejection fixtures include `foo::ready` if a future namespace `::` operator is introduced, `foo: :`, `foo: :123`, `foo: :bad-name` (interpreted as a Symbol then subtraction only where grammar permits), and missing-value field separators.
+**Runtime API:** `#ready` has the same *logical* `(process,"ready")` identity as `Symbol.process("ready")` for trusted calls, including after isolate/arena copy. Process interning/physical object identity is an implementation detail. `new Symbol("ready")` is **not part of v1**: `Symbol` is a primitive immutable value, not an allocatable object or fresh capability. Historical Java drafts overloaded `new Symbol(uuid)` for STABLE UUID identity, and redefining it as `process` would silently change semantics. Retire the constructor syntax and require `Symbol.stable(uuid)` for stable UUIDs; explicitly diagnose old forms. The optional `Symbol.value(name)` factory, if later supported, is trusted-only unless policy-proven; untrusted actors cannot forge hidden userland Symbols by naming them.
 
-**Current implementation caveat:** Java `main` already tokenizes every colon separately, and `parseObjectLiteral` consumes `COLON` followed by `parseExpression`, so it is straightforward to add literal parsing in `parsePrimary`. However Java `main` does **not** yet support the full `final Type field: expression` form, and `:name` is only implemented in a stale draft. These examples are target syntax, not proven executable source.
+**Current implementation caveat:** Java `main` lexes `#` as an unexpected character and does not yet implement the full `final Type name: expression` form. The LLVM lexer also rejects `#` and currently uses `Kind::Symbol` only for punctuation (unrelated to the guest `Symbol` type). These examples remain design targets until both compiler frontends, typecheckers, runtimes and `oreslang-format` implement and execute them.
 
 ## C. Untrusted actors, std/core visibility, and allocation authority
 
-**Global identity does not imply global visibility.** A Symbol named `:ready` has the same immutable logical identity everywhere it is legitimately admitted, but an untrusted actor must not automatically be able to obtain or receive every userland Symbol.
+**Global identity does not imply global visibility.** A Symbol named `#ready` has the same immutable logical identity everywhere it is legitimately admitted, but an untrusted actor must not automatically be able to obtain or receive every userland Symbol.
 
 Visibility policy is explicit and fail-closed:
 
@@ -51,7 +59,7 @@ Visibility policy is explicit and fail-closed:
 4. **Dynamic inputs:** untrusted code may call `Symbol.lookup(name)` only against its public and explicitly exported allowlist, without inserting new identities or probing hidden names. A dynamic `Symbol.value(name)` constructor is **trusted-only**; allowing arbitrary untrusted creation would let it forge hidden userland Symbols because identity is `(kind, key)`. Untrusted arbitrary labels must stay Strings (or separate non-Symbol tokens). No untrusted `Symbol.process`, `Symbol.stable` or decode path can insert into a permanent table.
 5. **No Symbol capabilities:** a name is forgeable by any trusted code and must never be used by itself as a security proof. The receiver authenticates actor/tenant/message rights separately from its Symbol tag.
 
-Collision rule: `:ready` denotes a single global identity; if std/core publicly reserves that exact `(kind,key)`, userland code cannot redeclare it as a *different private Symbol* with the same name. Reject private declarations colliding with reserved std/core keys, or require a qualified userland name such as `Symbol.process("com.example/ready")`. Do **not** silently distinguish same-text Symbols by hidden source provenance: it would violate global canonical equality. Qualified symbols remain globally canonical by their full key. The std/core manifest itself must be authenticated against untrusted replacement or registration.
+Collision rule: `#ready` denotes a single global identity; if std/core publicly reserves that exact `(kind,key)`, userland code cannot redeclare it as a *different private Symbol* with the same name. Reject private declarations colliding with reserved std/core keys, or require a qualified userland name such as `Symbol.process("com.example/ready")`. Do **not** silently distinguish same-text Symbols by hidden source provenance: it would violate global canonical equality. Qualified symbols remain globally canonical by their full key. The std/core manifest itself must be authenticated against untrusted replacement or registration.
 
 No actor may gain a permission by merely possessing a Symbol: receivers enforce authority on *operations* and sender identity/capability, not on tag equality.
 
@@ -68,11 +76,11 @@ No actor may gain a permission by merely possessing a Symbol: receivers enforce 
 - Java/Graal: JVM static maps do not prove a single shared allocation across distinct classloaders or Graal Native Image isolates. Ensure logical equality and explicit copying/bridge translation regardless.
 - Native/LLVM: a process cache, if used, must be concurrency-safe, bounded and outside actor-owned arenas; use immutable owned bytes or a generation-checked handle. Native heaps need deterministic reclamation; no tracing GC assumption.
 - Wire encoding (after independently authorizing the receiving boundary) v1 is strictly `{"$symbol":"process","name":"ready"}` or `{"$symbol":"stable","name":"<canonical UUID>"}`; no raw pointer/address/registry index or implicit string-to-Symbol coercion. Unknown wire kinds/fields, duplicate JSON members, invalid UTF-8, invalid UUIDs, noncanonical NFC and oversized values fail closed. Decoding must not allocate in a permanent table and must reject hidden symbols on an untrusted boundary.
-- For cross-process "globally unique fresh IDs" use cryptographically generated UUID/UniqueToken (with authentication if security-relevant). A shared name like `:ready` is deliberately forgeable and equal everywhere, not an authorization secret.
+- For cross-process "globally unique fresh IDs" use cryptographically generated UUID/UniqueToken (with authentication if security-relevant). A shared name like `#ready` is deliberately forgeable and equal everywhere, not an authorization secret.
 
 ## E. Completion gates (not yet met)
 
-1. Compiler parsing, typing, pattern, field-colon ambiguity, formatter roundtrip, and explicit `String != Symbol` tests on **both** frontends.
+1. Compiler parsing, typing, pattern, hash-token lexing, colon field coexistence, quoted literal escaping, formatter roundtrip, and explicit `String != Symbol` tests on **both** frontends.
 2. Same guest-source acceptance and execution across Graal JVM, Graal Native Image (where supported), LLVM JIT and AOT; no host-only substitute for guest execution.
 3. Concurrent interning/idempotent equality and hash, separate classloader/isolate tests, actor teardown & new actor reuse, repeated process restart/interop/wire roundtrip.
 4. Adversarial flood of unique Symbols, std/core manifest spoofing, userland-hidden literal/compiler rejection, cross-tenant export isolation, concurrent tenant load, malformed text, nested decoding, quota boundaries, trust laundering and revocation races. Verify process table size is unchanged after untrusted ingress.
