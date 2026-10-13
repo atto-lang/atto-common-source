@@ -128,6 +128,10 @@
     {
       "label": "unpaired surrogate",
       "value": "\ud800"
+    },
+    {
+      "label": "invisible format U+FEFF",
+      "value": "foo﻿bar"
     }
   ],
   "wire_decoding": [
