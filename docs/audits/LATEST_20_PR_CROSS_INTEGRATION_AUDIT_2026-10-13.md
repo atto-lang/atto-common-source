@@ -100,6 +100,15 @@ until actual executable conformance proves ARM_RESULT vs FUNCTION_RETURN.
   the result; rejected zero-divisor remainder explicitly.
 - Denied sibling-module qualified access through a private named module,
   even if the nested field itself has `pub`, and added negative tests.
+- Introduced a complete pre-evaluation static dependency-graph check. Dead
+  branches and short-circuits cannot hide unknown names, runtime `val`/`let`
+  references, non-whitelisted operators or constant cycles. Dependency
+  depth and validation steps are bounded independently from evaluation.
+- On older Java #404, removed the unsafe blocking `do select` parser rewrite
+  that converted `return value;` into `ExprStmt(value)`. Blocking/probe
+  arm returns now fail closed until #886's correct control-flow propagation
+  lands; detached legacy `do nb select` remains explicitly separate.
+  Regression tests no longer certify returned values being swallowed.
 
 ## Merge and verification gates
 
