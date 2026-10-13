@@ -5,12 +5,14 @@ on:
       - "docs/SYMBOLS.md"
       - "fixtures/symbols.v1.json"
       - "tests/test_symbol_contract_vectors.py"
+      - "tests/test_symbol_key_model.py"
       - ".github/workflows/symbol-contract-vectors.yml"
   push:
     paths:
       - "docs/SYMBOLS.md"
       - "fixtures/symbols.v1.json"
       - "tests/test_symbol_contract_vectors.py"
+      - "tests/test_symbol_key_model.py"
       - ".github/workflows/symbol-contract-vectors.yml"
 permissions:
   contents: read
@@ -21,4 +23,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Self-check Symbol contract data (not a backend compiler test)
-        run: python3 -m unittest discover -s tests -p 'test_symbol_contract_vectors.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_symbol_*.py' -v
