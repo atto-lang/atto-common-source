@@ -471,5 +471,85 @@
       "right_source": "Symbol.stable('550e8400-e29b-41d4-a716-446655440000')",
       "same": false
     }
+  ],
+  "keyed_containers": [
+    {
+      "kind": "map",
+      "source": "let m: Map<Symbol, int> = Map<Symbol, int>.new(); m[#foo] = 2",
+      "expect": "future_accept",
+      "note": "typed Symbol map keys; not implemented on current main"
+    },
+    {
+      "kind": "map",
+      "source": "let m: Map<String, int> = Map<String, int>.new(); m[#foo] = 2",
+      "expect": "type_error",
+      "note": "Map<String> does not implicitly accept Symbol"
+    },
+    {
+      "kind": "map",
+      "source": "let m: Map<Symbol | String, int> = Map<Symbol | String, int>.new()",
+      "expect": "future_accept",
+      "note": "heterogeneous explicit union; no key coercion"
+    },
+    {
+      "kind": "record",
+      "source": "let r = infer struct{foo: 1, [#foo]: 2}",
+      "expect": "future_accept",
+      "note": "string and Symbol slots distinct"
+    },
+    {
+      "kind": "record",
+      "source": "let n = r.foo; let s = r[#foo]",
+      "expect": "future_accept",
+      "note": "dot resolves textual slot and index resolves typed symbolic slot"
+    },
+    {
+      "kind": "struct",
+      "source": "let s = struct{foo: int, [#foo]: int}{foo: 1, [#foo]: 2}",
+      "expect": "future_accept",
+      "note": "closed statically known symbol property"
+    },
+    {
+      "kind": "struct",
+      "source": "let s = infer struct{[#foo]: 1, [#foo]: 2}",
+      "expect": "duplicate_key_error",
+      "note": "canonical duplicate Symbol key forbidden"
+    },
+    {
+      "kind": "struct",
+      "source": "let s = infer struct{[#'cafe\\u0301']: 1, [#\"café\"]: 2}",
+      "expect": "duplicate_key_error",
+      "note": "canonical NFC collisions forbidden"
+    },
+    {
+      "kind": "record",
+      "source": "let r = infer struct{foo: 1}; r[#foo]",
+      "expect": "type_error",
+      "note": "no implicit string/symbol member alias"
+    },
+    {
+      "kind": "record",
+      "source": "let r = infer struct{foo: 1}; r[key]",
+      "expect": "type_error",
+      "note": "closed record requires proven literal key"
+    },
+    {
+      "kind": "class",
+      "source": "define class C as final int foo: 1; final int [#foo]: 2; end",
+      "expect": "future_accept",
+      "note": "separate Symbol field layout and textual member"
+    },
+    {
+      "kind": "class",
+      "source": "let x = c.foo; let y = c[#foo]",
+      "expect": "future_accept",
+      "note": "dot dispatch unchanged"
+    },
+    {
+      "kind": "class",
+      "source": "define class C as final int [#foo]: 1; final int [#foo]: 2; end",
+      "expect": "duplicate_key_error",
+      "note": "reject canonical repeated keys"
+    }
   ]
 }
