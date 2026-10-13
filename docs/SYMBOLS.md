@@ -16,7 +16,7 @@ There is no public `Symbol.local` kind in v1. Existing drafts that propose an ac
 
 ## B. Canonical textual identity and `#`-only Symbol syntax
 
-**Final selected source spelling: `#ready`; no colon-prefixed Symbol literals.** Colons remain entirely available for types, field declarations, named values and initializers. Any earlier `#ready` proposal in Java draft #123/#160 or in this contract is superseded. Do not add a compatibility alias for `#ready`, since that would preserve the syntactic ambiguity this choice removes.
+**Final selected source spelling: `#ready`; no colon-prefixed Symbol literals.** Colons remain entirely available for types, field declarations, named values and initializers. Any earlier `:ready` proposal in Java draft #123/#160 or in this contract is superseded. Do not add a compatibility alias for `:ready`, since that would preserve the syntactic ambiguity this choice removes.
 
 1. Accept only valid UTF-8 Unicode scalar sequences. Normalize keys to **NFC** in source/runtime constructors and require already-canonical NFC in wire decoders (reject non-NFC encodings); compare canonical UTF-8 bytes and `(kind, key)` exactly. Reject malformed UTF-8, unpaired UTF-16 surrogates, NUL, C0/C1 controls and bidi formatting controls. Require nonempty key, at most **256 UTF-8 bytes after NFC**. Implementations must count bytes, not Java UTF-16 code units.
 2. Ordinary literal syntax: `#<identifier>`, initially ASCII `[A-Za-z_][A-Za-z0-9_]*` and max **128 UTF-8 bytes**. `#ready` denotes the canonical `process/ready` Symbol. `#true` or `#class` is a Symbol name (not a Boolean or a declaration keyword): the lexer captures the name as a Symbol, not as a reserved-word token. No whitespace allowed between `#` and its name.
@@ -41,7 +41,7 @@ let single_quote = #'ready foo'
 let double_quote = #"ready foo"
 ```
 
-`final int bad: #ready` is a **type error**, not a parser ambiguity. `infer struct{foo: #}`, `# ready` and `#123` are **lexical/parse errors**. No source syntax `#ready` is accepted for Symbols, including after a colon initializer. Reject its use rather than silently assigning another meaning.
+`final int bad: #ready` is a **type error**, not a parser ambiguity. `infer struct{foo: #}`, `# ready` and `#123` are **lexical/parse errors**. No source syntax `:ready` is accepted for Symbols, including after a colon initializer. Reject its use rather than silently assigning another meaning.
 
 **Runtime API:** `#ready` has the same *logical* `(process,"ready")` identity as `Symbol.process("ready")` for trusted calls, including after isolate/arena copy. Process interning/physical object identity is an implementation detail. `new Symbol("ready")` is **not part of v1**: `Symbol` is a primitive immutable value, not an allocatable object or fresh capability. Historical Java drafts overloaded `new Symbol(uuid)` for STABLE UUID identity, and redefining it as `process` would silently change semantics. Retire the constructor syntax and require `Symbol.stable(uuid)` for stable UUIDs; explicitly diagnose old forms. The optional `Symbol.value(name)` factory, if later supported, is trusted-only unless policy-proven; untrusted actors cannot forge hidden userland Symbols by naming them.
 
