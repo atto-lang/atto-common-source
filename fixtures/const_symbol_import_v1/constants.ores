@@ -1,0 +1,17 @@
+define pub const int base = 40;
+
+define pub module Z as
+  pub const int answer = base + 2;
+  pub const Symbol sym1 = #zzz;
+  pub const Symbol sym2 = Symbol.for("abc");
+
+  pub fnc trigger(): void {
+    stdio.stdout.write("called");
+    return;
+  }
+end
+
+fnc init(): void {
+  stdio.stdout.write("init|");
+  return;
+}
