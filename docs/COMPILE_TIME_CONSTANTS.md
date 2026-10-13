@@ -51,6 +51,53 @@ to a file-root namespace with the normal package visibility rules.
 `string` is a separate alias/formatter decision, never a way to silently coerce
 a String to int. `const int x = "bar"` is a compile-time type error.
 
+## 2a. Symbol literals in match arms and switch cases
+
+Both equality-based `switch` and exhaustiveness-checked `match` must
+understand first-class `Symbol` literals, including quoted hash symbols:
+
+```ores
+define pub const Symbol connected = Symbol.for("connected");
+
+pub fnc describe(Symbol event): String {
+    match event over
+        on #connected -> { return "connected"; }
+        on #'needs attention' -> { return "attention"; }
+        on _ -> { return "other"; }
+    end
+}
+
+pub fnc code(Symbol event): int {
+    switch event
+        case #connected -> { return 1; }
+        case #'needs attention' -> { return 2; }
+        default -> { return 0; }
+    end
+}
+```
+
+- `#connected` and statically folded global `Symbol.for("connected")`
+  denote equal **global process Symbols**, irrespective of allocation/pooling.
+  Symbol equality is canonical logical identity, not String comparison.
+- A `#connected` pattern never matches `"connected"`, and no implicit
+  `String`/Symbol conversion is permitted in `switch`.
+- Literal `match` arms use the same Symbol identity/equality rules as
+  `switch`. Duplicate or subsumed **unguarded** arms are rejected as
+  unreachable; duplicate `switch` cases are rejected.
+- `Symbol` is an open domain. A `match` limited to finitely many literal
+  Symbols is not exhaustive without a guaranteed fallback or type proof.
+  Guards do not establish exhaustiveness.
+- Across actors, supervisors, isolates and code generations, Symbol values
+  must transport canonical logical identity; never use process-local pointer
+  or registry handle equality. Panic/control/error metadata remains separate
+  from ordinary status Symbol messages.
+- A future scoped `define symbol #name` is a distinct versioned identity
+  contract and must not silently become equal to a global `#name` literal.
+
+The Java lexer/parser already has first-stage `SYMBOL_LITERAL` support;
+executable regression coverage is added on Java draft PR #892. Native LLVM
+matching and wire-format parity are release gates, **not claimed complete**.
+
 ## 3. Const-evaluation admission
 
 For a **file/module-level** `const`, accept only expressions in a deterministic,
