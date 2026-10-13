@@ -22,7 +22,8 @@ def canonical_key(value):
     if not normalized or len(normalized.encode("utf-8")) > 256:
         raise ValueError("empty or oversized Symbol name")
     if any(ord(ch) < 0x20 or 0x7F <= ord(ch) <= 0x9F
-           or ord(ch) in BIDI_CONTROLS for ch in normalized):
+           or ord(ch) in BIDI_CONTROLS or unicodedata.category(ch) == "Cf"
+           for ch in normalized):
         raise ValueError("unsafe Symbol code point")
     return normalized
 
