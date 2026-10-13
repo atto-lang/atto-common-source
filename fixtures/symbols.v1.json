@@ -229,44 +229,104 @@
   },
   "syntax": [
     {
-      "source": "final Symbol foo: :ready",
+      "source": "final Symbol foo: #abc",
       "expected": "accept",
-      "notes": "first colon is field initializer separator, second begins Symbol literal"
+      "notes": "colon separator followed by atomic hash-Symbol literal"
     },
     {
-      "source": "final int foo: :ready",
+      "source": "final int foo: #ready",
       "expected": "type_error",
-      "notes": "typed int cannot be initialized from Symbol; no syntax ambiguity"
+      "notes": "Symbol is nominally distinct from int"
     },
     {
-      "source": "final Symbol foo = :ready",
+      "source": "final Symbol foo = #ready",
       "expected": "accept",
-      "notes": "optional compatibility initializer spelling"
+      "notes": "compatibility initializer spelling"
+    },
+    {
+      "source": "let a: Symbol = #ready",
+      "expected": "accept",
+      "notes": "typed Symbol value"
+    },
+    {
+      "source": "let m = (#user_joined, 42)",
+      "expected": "accept",
+      "notes": "Symbol in tuple"
+    },
+    {
+      "source": "let x = infer struct{foo: #ready}",
+      "expected": "accept",
+      "notes": "struct colon is separator, hash belongs to value"
+    },
+    {
+      "source": "let x = struct{foo: Symbol}{foo: #ready}",
+      "expected": "accept",
+      "notes": "explicit typed struct initializer"
+    },
+    {
+      "source": "let y = #'ready foo'",
+      "expected": "accept",
+      "notes": "single-quoted Symbol with spaces"
+    },
+    {
+      "source": "let y = #\"ready foo\"",
+      "expected": "accept",
+      "notes": "double-quoted Symbol with spaces"
+    },
+    {
+      "source": "let y = #\"http.ok\"",
+      "expected": "accept",
+      "notes": "Symbol containing punctuation"
+    },
+    {
+      "source": "let y = #true",
+      "expected": "accept",
+      "notes": "hash lexer consumes keyword-like name"
+    },
+    {
+      "source": "let y = #class",
+      "expected": "accept",
+      "notes": "reserved keyword works as Symbol name"
+    },
+    {
+      "source": "let y = #",
+      "expected": "parse_error",
+      "notes": "hash lacks a name"
+    },
+    {
+      "source": "let y = # ready",
+      "expected": "parse_error",
+      "notes": "whitespace between hash and literal forbidden"
+    },
+    {
+      "source": "let y = #123",
+      "expected": "parse_error",
+      "notes": "numeric name not an identifier"
+    },
+    {
+      "source": "let y = :ready",
+      "expected": "parse_error",
+      "notes": "Ruby-style colon literals explicitly rejected"
     },
     {
       "source": "let x = infer struct{foo: :ready}",
-      "expected": "accept",
-      "notes": "container consumes the first colon; expression parser consumes next"
-    },
-    {
-      "source": "let x = struct{foo: Symbol}{foo: :ready}",
-      "expected": "accept",
-      "notes": "shape field annotation followed by literal in initializer"
-    },
-    {
-      "source": "let x = infer struct{foo: :}",
       "expected": "parse_error",
-      "notes": "literal name missing"
-    },
-    {
-      "source": "let x = infer struct{foo: :123}",
-      "expected": "parse_error",
-      "notes": "Symbol literal requires identifier"
+      "notes": "prior ambiguous double-colon form not supported"
     },
     {
       "source": "let x = infer struct{foo:}",
       "expected": "parse_error",
       "notes": "field value missing"
+    },
+    {
+      "source": "let y = new Symbol('ready')",
+      "expected": "type_error",
+      "notes": "v1 no constructor; use Symbol.process('ready')"
+    },
+    {
+      "source": "let y = Symbol.process('ready')",
+      "expected": "accept",
+      "notes": "trusted runtime path; logically equal to #ready"
     }
   ],
   "admission": [
@@ -374,6 +434,42 @@
       "endpoint": "actor-notification",
       "protocol": "v1",
       "accept": true
+    }
+  ],
+  "literal_equivalence": [
+    {
+      "label": "unquoted symbol equals trusted factory by kind and key",
+      "left_source": "#ready",
+      "right_source": "Symbol.process('ready')",
+      "kind": "process",
+      "name": "ready",
+      "same": true
+    },
+    {
+      "label": "single and double quotes same canonical name",
+      "left_source": "#'ready foo'",
+      "right_source": "#\"ready foo\"",
+      "kind": "process",
+      "name": "ready foo",
+      "same": true
+    },
+    {
+      "label": "keyword symbol doesn't equal bool",
+      "left_source": "#true",
+      "right_source": "true",
+      "same": false
+    },
+    {
+      "label": "Symbol distinct from string",
+      "left_source": "#ready",
+      "right_source": "'ready'",
+      "same": false
+    },
+    {
+      "label": "Symbol literal not UUID stable kind",
+      "left_source": "#ready",
+      "right_source": "Symbol.stable('550e8400-e29b-41d4-a716-446655440000')",
+      "same": false
     }
   ]
 }
