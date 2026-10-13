@@ -140,6 +140,26 @@ class SymbolContractVectorsTest(unittest.TestCase):
                 if "permanent_table_delta" in case:
                     self.assertEqual(case["permanent_table_delta"], 0)
 
+    def test_untrusted_stable_symbol_cannot_use_process_export(self):
+        stable_uuid = "550e8400-e29b-41d4-a716-446655440000"
+        visibility = {
+            "std_core_manifest": {"allowed_process_keys": [stable_uuid]},
+            "scoped_userland_exports": [{
+                "tenant": "tenant-a",
+                "endpoint": "worker",
+                "protocol": "v1",
+                "allowed_process_keys": [stable_uuid],
+            }],
+        }
+        case = {
+            "policy": "untrusted", "kind": "stable", "name": stable_uuid,
+            "tenant": "tenant-a", "endpoint": "worker", "protocol": "v1",
+        }
+        self.assertFalse(admitted_symbol(case, visibility),
+                         "stable Symbols never inherit process-name admission")
+        case["kind"] = "process"
+        self.assertTrue(admitted_symbol(case, visibility))
+
     def test_hash_symbol_syntax_contract_vectors(self):
         # This checks the proposed fixture matrix, not Java/LLVM execution.
         cases = self.vectors["syntax"]
