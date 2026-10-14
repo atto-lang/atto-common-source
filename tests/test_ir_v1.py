@@ -141,6 +141,22 @@ class IRV1Tests(unittest.TestCase):
         with self.assertRaises(IRValidationError):
             validate_mir(mir)
 
+    def test_ssa_temporary_ids_never_collide_with_parameter_names(self):
+        hir = copy.deepcopy(self.hir)
+        fn = next(f for f in hir["functions"] if f["name"] == "double")
+        fn["params"][0]["name"] = "v0"
+        fn["body"]["lhs"]["name"] = "v0"
+        mir = lower(hir)
+        self.assertEqual(execute(mir, "double", [5]), 10)
+
+    def test_branch_values_cannot_escape_without_phi_arguments(self):
+        mir = copy.deepcopy(self.mir)
+        fn = next(f for f in mir["functions"] if f["name"] == "choose")
+        then_id = fn["blocks"][1]["term"]["args"][0]
+        fn["blocks"][2]["term"]["args"][0] = then_id
+        with self.assertRaises(IRValidationError):
+            validate_mir(mir)
+
     def test_random_differential_1000_arithmetic_expressions(self):
         rng = random.Random(42)
         hir = copy.deepcopy(self.hir)
