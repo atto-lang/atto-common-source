@@ -7,7 +7,7 @@ on:
       - "fixtures/ir-v1/**"
       - "contracts/ores-*-v1.experimental.schema.json"
       - "docs/EXPERIMENTAL_HIR_MIR_V1.md"
-      - "tests/test_ir_v1.py"
+      - "tests/test_ir_v1*.py"
       - ".github/workflows/experimental-hir-mir-v1.yml"
   pull_request:
     paths:
@@ -15,7 +15,7 @@ on:
       - "fixtures/ir-v1/**"
       - "contracts/ores-*-v1.experimental.schema.json"
       - "docs/EXPERIMENTAL_HIR_MIR_V1.md"
-      - "tests/test_ir_v1.py"
+      - "tests/test_ir_v1*.py"
       - ".github/workflows/experimental-hir-mir-v1.yml"
 
 permissions:
@@ -34,10 +34,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install pinned schema test dependency
+        run: python -m pip install jsonschema==4.26.0
       - name: Verify no syntax errors
-        run: python -m compileall -q experiments/ir_v1 tests/test_ir_v1.py
-      - name: Test all experimental IR semantics
-        run: python -m unittest discover -s tests -p 'test_ir_v1.py' -v
+        run: python -m compileall -q experiments/ir_v1 tests/test_ir_v1.py tests/test_ir_v1_hardening.py tests/test_ir_v1_schema.py
+      - name: Test all experimental IR semantics and schema conformance
+        run: python -m unittest discover -s tests -p 'test_ir_v1*.py' -v
       - name: Check JSON schemas parse
         run: |
           python -m json.tool contracts/ores-hir-v1.experimental.schema.json >/dev/null
