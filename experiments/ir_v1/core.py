@@ -221,11 +221,15 @@ class Builder:
         self.function = function
         self.blocks = []
         self.temp = 0
+        self.used = {p["name"] for p in function["params"]}
         self.current = self.block(function["params"])
 
     def fresh(self):
+        while f"v{self.temp}" in self.used:
+            self.temp += 1
         v = f"v{self.temp}"
         self.temp += 1
+        self.used.add(v)
         return v
 
     def block(self, params):
