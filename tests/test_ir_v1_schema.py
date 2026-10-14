@@ -56,7 +56,8 @@ class IRV1JSONSchemaTests(unittest.TestCase):
 
     def test_schema_rejects_wrong_instruction_type_or_missing_field(self):
         doc = copy.deepcopy(self.mir)
-        doc["functions"][0]["blocks"][0]["instructions"][0]["type"] = "bool"
+        double = next(f for f in doc["functions"] if f["name"] == "double")
+        double["blocks"][0]["instructions"][0]["type"] = "bool"
         with self.assertRaises(ValidationError):
             self.mir_validator.validate(doc)
         doc = copy.deepcopy(self.mir)
