@@ -1,0 +1,42 @@
+[
+  {
+    "function": "choose",
+    "args": [
+      -3
+    ],
+    "expected": 3
+  },
+  {
+    "function": "choose",
+    "args": [
+      5
+    ],
+    "expected": 10
+  },
+  {
+    "function": "double",
+    "args": [
+      6
+    ],
+    "expected": 12
+  },
+  {
+    "function": "is_neg",
+    "args": [
+      -1
+    ],
+    "expected": true
+  },
+  {
+    "function": "is_neg",
+    "args": [
+      0
+    ],
+    "expected": false
+  },
+  {
+    "function": "main",
+    "args": [],
+    "expected": 7
+  }
+]
