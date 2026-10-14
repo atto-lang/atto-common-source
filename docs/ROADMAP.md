@@ -1,10 +1,10 @@
 # Future work and migration roadmap
 
-Status: proposed future work, 2026-10-08. All implementation milestones below are open.
+Status: proposed production roadmap, 2026-10-08. A small, explicitly **experimental** HIR/MIR reference implementation is now present; production compiler integration and all cross-backend acceptance gates remain open. See [experimental HIR/MIR v1](EXPERIMENTAL_HIR_MIR_V1.md).
 
 ## Current boundary
 
-Keep development and releases in oreslang-source.java and oreslang-source.llvm independent. This repository starts with documentation only. Do not copy entire backend implementations here or migrate consumers merely to populate the repository.
+Keep development and releases in oreslang-source.java and oreslang-source.llvm independent. This repository began with documentation and now hosts an isolated reference implementation. The production Java and LLVM frontends remain separate. Do not copy entire backend implementations here or migrate consumers merely to populate the repository.
 
 The immediate shared work is the language specification plus TypeSpec/JSON Schema conformance contracts and identical source fixtures. Keep their existing backend integrations working; centralizing their distribution later must not stall either compiler. Their presence does not mean a shared semantic compiler exists.
 
