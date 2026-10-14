@@ -94,6 +94,8 @@ class IRV1HardeningTests(unittest.TestCase):
             '{"x":1.0}', '{"x":1e2}', '{"x":-0.0}',
             '{"x":Infinity}', '{"x":NaN}', '{"x":1,"x":2}',
             '{"x":' + "9"*100 + '}',
+            '{"x":"\\ud800"}',
+            "[" * 70 + "0" + "]" * 70,
             '{"x":"unterminated',
         ]:
             with self.subTest(raw=raw[:40]):
