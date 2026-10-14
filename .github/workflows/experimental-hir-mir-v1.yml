@@ -1,0 +1,50 @@
+name: Experimental HIR MIR v1
+
+on:
+  push:
+    paths:
+      - "experiments/ir_v1/**"
+      - "fixtures/ir-v1/**"
+      - "contracts/ores-*-v1.experimental.schema.json"
+      - "docs/EXPERIMENTAL_HIR_MIR_V1.md"
+      - "tests/test_ir_v1.py"
+      - ".github/workflows/experimental-hir-mir-v1.yml"
+  pull_request:
+    paths:
+      - "experiments/ir_v1/**"
+      - "fixtures/ir-v1/**"
+      - "contracts/ores-*-v1.experimental.schema.json"
+      - "docs/EXPERIMENTAL_HIR_MIR_V1.md"
+      - "tests/test_ir_v1.py"
+      - ".github/workflows/experimental-hir-mir-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Verify no syntax errors
+        run: python -m compileall -q experiments/ir_v1 tests/test_ir_v1.py
+      - name: Test all experimental IR semantics
+        run: python -m unittest discover -s tests -p 'test_ir_v1.py' -v
+      - name: Check JSON schemas parse
+        run: |
+          python -m json.tool contracts/ores-hir-v1.experimental.schema.json >/dev/null
+          python -m json.tool contracts/ores-mir-v1.experimental.schema.json >/dev/null
+      - name: Verify fixture and executable result
+        run: |
+          python -m experiments.ir_v1.cli verify-hir fixtures/ir-v1/arithmetic.hir.json
+          python -m experiments.ir_v1.cli verify-mir fixtures/ir-v1/arithmetic.mir.json
+          result="$(python -m experiments.ir_v1.cli run fixtures/ir-v1/arithmetic.mir.json --function main --args-json '[]')"
+          test "$result" = "7"
