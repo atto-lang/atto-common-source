@@ -1,0 +1,523 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oreslang:experimental:ores-mir:1.0.0",
+  "title": "Experimental Oreslang MIR v1 subset; no ABI stability",
+  "description": "Structural validation only. The Python semantic verifier must additionally check types, i64 bounds, SSA dominance, CFG reachability, function calls and budgets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ir_family",
+    "schema_version",
+    "module_id",
+    "required_features",
+    "functions"
+  ],
+  "properties": {
+    "ir_family": {
+      "const": "ores-mir"
+    },
+    "schema_version": {
+      "const": "1.0.0-experimental"
+    },
+    "module_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+      "maxLength": 128
+    },
+    "required_features": {
+      "const": [
+        "bool.v1",
+        "checked-i64.v1",
+        "control-flow.v1",
+        "functions.v1"
+      ]
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/function"
+      }
+    }
+  },
+  "$defs": {
+    "instruction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "value"
+          ],
+          "properties": {
+            "op": {
+              "const": "const_i64"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "i64"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(?:0|-?[1-9][0-9]*)$",
+              "maxLength": 21
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "value"
+          ],
+          "properties": {
+            "op": {
+              "const": "const_bool"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "bool"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "lhs",
+            "rhs"
+          ],
+          "properties": {
+            "op": {
+              "const": "add_i64"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "i64"
+            },
+            "lhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "rhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "lhs",
+            "rhs"
+          ],
+          "properties": {
+            "op": {
+              "const": "sub_i64"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "i64"
+            },
+            "lhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "rhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "lhs",
+            "rhs"
+          ],
+          "properties": {
+            "op": {
+              "const": "mul_i64"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "i64"
+            },
+            "lhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "rhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "lhs",
+            "rhs"
+          ],
+          "properties": {
+            "op": {
+              "const": "lt_i64"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "bool"
+            },
+            "lhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "rhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "lhs",
+            "rhs"
+          ],
+          "properties": {
+            "op": {
+              "const": "eq_i64"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "const": "bool"
+            },
+            "lhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "rhs": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "id",
+            "type",
+            "function",
+            "args"
+          ],
+          "properties": {
+            "op": {
+              "const": "call"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "i64",
+                "bool"
+              ]
+            },
+            "function": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "args": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              }
+            }
+          }
+        }
+      ]
+    },
+    "terminator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "value"
+          ],
+          "properties": {
+            "op": {
+              "const": "return"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "target",
+            "args"
+          ],
+          "properties": {
+            "op": {
+              "const": "jump"
+            },
+            "target": {
+              "type": "string",
+              "pattern": "^b[0-9]+$"
+            },
+            "args": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "cond",
+            "then",
+            "then_args",
+            "else",
+            "else_args"
+          ],
+          "properties": {
+            "op": {
+              "const": "branch"
+            },
+            "cond": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "then": {
+              "type": "string",
+              "pattern": "^b[0-9]+$"
+            },
+            "then_args": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              }
+            },
+            "else": {
+              "type": "string",
+              "pattern": "^b[0-9]+$"
+            },
+            "else_args": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              }
+            }
+          }
+        }
+      ]
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "params",
+        "instructions",
+        "term"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^b[0-9]+$"
+        },
+        "params": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "i64",
+                  "bool"
+                ]
+              }
+            }
+          }
+        },
+        "instructions": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": {
+            "$ref": "#/$defs/instruction"
+          }
+        },
+        "term": {
+          "$ref": "#/$defs/terminator"
+        }
+      }
+    },
+    "function": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "params",
+        "result_type",
+        "blocks"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "maxLength": 128
+        },
+        "params": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "i64",
+                  "bool"
+                ]
+              }
+            }
+          }
+        },
+        "result_type": {
+          "type": "string",
+          "enum": [
+            "i64",
+            "bool"
+          ]
+        },
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        }
+      }
+    }
+  }
+}
