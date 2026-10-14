@@ -164,6 +164,10 @@ class IRV1Tests(unittest.TestCase):
             execute(self.mir, "double", [5], max_steps=2)
         self.assertEqual(execute(self.mir, "double", [5], max_steps=3), 10)
 
+    def test_malformed_unicode_is_rejected_in_fingerprints(self):
+        with self.assertRaises(IRValidationError):
+            fingerprint({"broken": "\ud800"})
+
     def test_random_differential_1000_arithmetic_expressions(self):
         rng = random.Random(42)
         hir = copy.deepcopy(self.hir)
