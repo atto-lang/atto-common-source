@@ -1,6 +1,6 @@
 # Oreslang common source
 
-**Status: future architecture and planning only. No shared compiler implementation exists in this repository yet.**
+**Status: experimental reference implementation only.** This repository now includes a small Python HIR → MIR lowering, semantic verifier, and interpreter for checked i64 arithmetic/functions. **Neither the Java/Graal compiler nor the LLVM compiler consumes this IR, and no production shared compiler exists yet.**
 
 This repository is the intended home for Oreslang's future common semantic compiler layer: **HIR → MIR**, before backend-specific lowering to LLVM and Java/Graal.
 
@@ -56,6 +56,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 - [Architecture proposal](docs/ARCHITECTURE.md)
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
+- [Experimental HIR/MIR v1 contract, examples and verifier](docs/EXPERIMENTAL_HIR_MIR_V1.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
@@ -70,4 +71,4 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 **Proposals requiring implementation evidence:** exact IR forms, packaging, frontend consolidation, shared optimizations, and adapter APIs.
 
-No runtime parity, performance improvement, or completed migration is claimed by these documents.
+The experimental Python interpreter tests are not compiler-backend parity evidence. No runtime parity, production performance improvement, or completed migration is claimed by this repository.
