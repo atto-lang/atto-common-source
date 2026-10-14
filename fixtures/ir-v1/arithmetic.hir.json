@@ -1,0 +1,139 @@
+{
+  "ir_family": "ores-hir",
+  "schema_version": "1.0.0-experimental",
+  "module_id": "arithmetic",
+  "required_features": [
+    "bool.v1",
+    "checked-i64.v1",
+    "control-flow.v1",
+    "functions.v1"
+  ],
+  "functions": [
+    {
+      "name": "choose",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64"
+        }
+      ],
+      "result_type": "i64",
+      "body": {
+        "kind": "if",
+        "condition": {
+          "kind": "call",
+          "function": "is_neg",
+          "args": [
+            {
+              "kind": "var",
+              "name": "x"
+            }
+          ]
+        },
+        "then": {
+          "kind": "bin",
+          "op": "sub",
+          "lhs": {
+            "kind": "int",
+            "value": "0"
+          },
+          "rhs": {
+            "kind": "var",
+            "name": "x"
+          }
+        },
+        "else": {
+          "kind": "call",
+          "function": "double",
+          "args": [
+            {
+              "kind": "var",
+              "name": "x"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "double",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64"
+        }
+      ],
+      "result_type": "i64",
+      "body": {
+        "kind": "bin",
+        "op": "mul",
+        "lhs": {
+          "kind": "var",
+          "name": "x"
+        },
+        "rhs": {
+          "kind": "int",
+          "value": "2"
+        }
+      }
+    },
+    {
+      "name": "is_neg",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64"
+        }
+      ],
+      "result_type": "bool",
+      "body": {
+        "kind": "bin",
+        "op": "lt",
+        "lhs": {
+          "kind": "var",
+          "name": "x"
+        },
+        "rhs": {
+          "kind": "int",
+          "value": "0"
+        }
+      }
+    },
+    {
+      "name": "main",
+      "params": [],
+      "result_type": "i64",
+      "body": {
+        "kind": "let",
+        "name": "y",
+        "value": {
+          "kind": "call",
+          "function": "choose",
+          "args": [
+            {
+              "kind": "int",
+              "value": "-3"
+            }
+          ]
+        },
+        "body": {
+          "kind": "bin",
+          "op": "add",
+          "lhs": {
+            "kind": "call",
+            "function": "double",
+            "args": [
+              {
+                "kind": "var",
+                "name": "y"
+              }
+            ]
+          },
+          "rhs": {
+            "kind": "int",
+            "value": "1"
+          }
+        }
+      }
+    }
+  ]
+}
