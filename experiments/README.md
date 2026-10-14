@@ -31,9 +31,10 @@ The model illustrates:
 - Fail-closed missing signatures, effects, bodies, calls, inline metadata,
   and target toolchain contracts
 - A bounded query-depth guard and cycle recovery
-- 60 seeded incremental-vs-fresh reference comparisons, plus adversarial cases
+- 60 seeded incremental-vs-fresh comparisons and a separate 1,000-edit
+  differential stress test exercising nine query families per edit
 
-The executable suite now contains **16 tests**, and the three checked local
+The executable suite now contains **17 tests**, and the three checked local
 files were verified against their Git blob SHA values before running on
 Python 3.13. GitHub Actions jobs can fail before starting any runner steps;
 such a CI failure is not equivalent to a test failure or a passing run.
