@@ -47,12 +47,27 @@ python3 -m unittest discover -s tests -p 'test_ir_v1.py' -v
 
 The `main` example returns `7`. See
 [expected observations](../fixtures/ir-v1/results.json).
-The tests include 1,000 deterministic arithmetic transformations and compare
-their interpreted MIR values to an independent arithmetic oracle.
+The test suite currently contains **35** cases: the original 20 verifier/
+interpreter tests, nine additional adversarial admission and differential
+conditional tests (300 deterministic cases), and six JSON Schema 2020-12
+conformance tests. The arithmetic test includes 1,000 deterministic
+transformations compared against an independent Python arithmetic oracle.
+
+Run all IR tests (the schema test suite uses pinned `jsonschema==4.26.0`
+as a **test-only** dependency):
+
+```sh
+python3 -m pip install jsonschema==4.26.0
+python3 -m unittest discover -s tests -p 'test_ir_v1*.py' -v
+```
 
 ## Validity checks and resource limits
 
 The reference verifier rejects:
+- Non-string JSON object keys, Python tuple/set/float coercions, cyclic objects,
+  nested objects deeper than 64 levels and JSON integers over 256 bits.
+- JSON floating-point encodings (`1.0`, `1e2`), oversized JSON integers,
+  duplicate fields, malformed Unicode and nonfinite values.
 - Unknown opcodes and terminators, unknown versions and feature sets.
 - Duplicate/unknown symbols or SSA values, malformed or undominated uses,
   invalid call arguments, wrong edge arity/types, unreachable or cyclic CFG.
@@ -65,6 +80,14 @@ The interpreter verifies MIR **before executing** it, bounds instructions
 (default 10,000), and rejects runtime overflow. This experiment is not a
 security-grade sandbox: it must never execute hostile artifacts without
 external isolation, OS controls and resource limits.
+
+## CI status and interpretation
+
+GitHub Actions is currently failing before Python runner steps begin in this
+private repository; see [runner diagnosis issue #27](https://github.com/ores-truffle-oreslang/oreslang-common-source/issues/27).
+The test matrix being *defined* is not evidence that either Python version has
+executed successfully. Keep this work in draft until a green exact-head
+run provides inspectable test logs. Local tests must be reported separately.
 
 ## Incrementality boundary
 
