@@ -55,7 +55,7 @@ def canonical_bytes(value):
     try:
         raw = json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False,
                          separators=(",", ":")).encode("utf-8")
-    except (TypeError, ValueError, RecursionError) as exc:
+    except (TypeError, ValueError, UnicodeError, RecursionError) as exc:
         raise IRValidationError("invalid canonical JSON value") from exc
     require(len(raw) <= MAX_BYTES, "IR exceeds the one MiB limit")
     return raw
