@@ -483,6 +483,8 @@ def execute(mir, function, args, *, max_steps=10_000):
                         raise IRRuntimeError("checked i64 arithmetic overflow")
                 env[ins["id"]] = value
             budget[0] -= 1
+            if budget[0] < 0:
+                raise IRRuntimeError("instruction budget exceeded")
             term = block["term"]
             if term["op"] == "return":
                 return env[term["value"]]
