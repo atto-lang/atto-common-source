@@ -119,9 +119,11 @@ def load_json(raw):
         return value
 
     try:
-        return json.loads(raw, object_pairs_hook=no_duplicates,
-                          parse_constant=invalid_constant, parse_float=invalid_float,
-                          parse_int=limited_int)
+        parsed = json.loads(raw, object_pairs_hook=no_duplicates,
+                            parse_constant=invalid_constant, parse_float=invalid_float,
+                            parse_int=limited_int)
+        canonical_bytes(parsed)  # Apply the depth/type/Unicode budgets at import.
+        return parsed
     except IRValidationError:
         raise
     except (UnicodeError, ValueError, TypeError, RecursionError) as exc:
