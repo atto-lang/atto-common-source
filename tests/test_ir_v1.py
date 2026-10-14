@@ -157,6 +157,13 @@ class IRV1Tests(unittest.TestCase):
         with self.assertRaises(IRValidationError):
             validate_mir(mir)
 
+    def test_step_limit_includes_terminators(self):
+        with self.assertRaises(IRRuntimeError):
+            execute(self.mir, "double", [5], max_steps=1)
+        with self.assertRaises(IRRuntimeError):
+            execute(self.mir, "double", [5], max_steps=2)
+        self.assertEqual(execute(self.mir, "double", [5], max_steps=3), 10)
+
     def test_random_differential_1000_arithmetic_expressions(self):
         rng = random.Random(42)
         hir = copy.deepcopy(self.hir)
