@@ -52,6 +52,34 @@ def i64_literal(value):
 
 
 def canonical_bytes(value):
+    """Hash only strict, acyclic JSON; reject Python coercions and key aliases."""
+    visiting = set()
+
+    def check(v, depth):
+        require(depth <= 64, "IR nesting exceeds 64 levels")
+        if v is None or type(v) in (str, bool):
+            return
+        if type(v) is int:
+            require(v.bit_length() <= 256, "JSON integer exceeds 256 bits")
+            return
+        if type(v) not in (list, dict):
+            raise IRValidationError("IR contains a non-canonical JSON value")
+        ref = id(v)
+        require(ref not in visiting, "IR contains a cyclic container")
+        visiting.add(ref)
+        try:
+            if type(v) is dict:
+                require(all(type(k) is str for k in v),
+                        "IR object keys must be strings")
+                for item in v.values():
+                    check(item, depth + 1)
+            else:
+                for item in v:
+                    check(item, depth + 1)
+        finally:
+            visiting.remove(ref)
+
+    check(value, 0)
     try:
         raw = json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False,
                          separators=(",", ":")).encode("utf-8")
@@ -80,10 +108,23 @@ def load_json(raw):
     def invalid_constant(v):
         raise IRValidationError(f"nonfinite JSON value: {v}")
 
+    def invalid_float(v):
+        raise IRValidationError("floating-point JSON numbers are not in the v1 subset")
+
+    def limited_int(v):
+        if len(v) > 80:
+            raise IRValidationError("JSON integer exceeds the v1 parser budget")
+        value = int(v)
+        require(value.bit_length() <= 256, "JSON integer exceeds 256 bits")
+        return value
+
     try:
         return json.loads(raw, object_pairs_hook=no_duplicates,
-                          parse_constant=invalid_constant)
-    except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+                          parse_constant=invalid_constant, parse_float=invalid_float,
+                          parse_int=limited_int)
+    except IRValidationError:
+        raise
+    except (UnicodeError, ValueError, TypeError, RecursionError) as exc:
         raise IRValidationError("invalid or overnested JSON document") from exc
 
 
