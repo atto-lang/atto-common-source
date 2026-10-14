@@ -98,3 +98,19 @@ This proposal complements common-source PR #20's four-form return-destination co
 3. Coordinate the formatter and exact-head CI before declaring any syntax supported.
 4. Preserve '<ret=T>' compatibility if already shipped; normalize it to the preferred '<T>' only after the parser/formatter/source-compatibility tests agree.
 5. Roll back feature admission, not return semantics, if a backend cannot prove cleanup or borrow safety.
+
+## Select result modes (proposed, not yet implemented)
+
+- `select<T> over ... end` is a **blocking/suspendable value expression**. It returns a `T` only after one selected arm completes normally. It does not require every operation to be simultaneously ready, and it may wait indefinitely without an explicit timeout or cancellation.
+- `nb select<T> over ... end` is the proposed nonblocking-start form yielding `Future<T>`. Exactly one arm completion or failure settles the Future. Detached fire-and-forget behavior is **not** suitable for a value expression.
+- `try select<T> over ... end` is the proposed immediate readiness probe yielding `Option<T>`: `None` indicates no ready arm; `Some(value)` indicates that an arm was selected and completed normally. A ready `default` arm can supply `Some(T)`.
+- Cancellation, channel closure, and arm exceptions must preserve their established typed error/effect behavior; they are **not** silently converted into `T` or the no-readiness `None` case.
+- The annotation `-> T { ... }` always constrains the **arm-produced value**. On `when readch channel: Payload item -> T { ... }`, `Payload` is independently checked against `Channel<Payload>`.
+- A blocking select expression cannot be lowered to a procedural `do select` whose selected-arm return exits the enclosing function. Suspension must retain distinct `ARM_RESULT` continuation ownership.
+
+## Current implementation tracking
+
+- **Java/GraalVM draft [#911](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/911)**, stacked on value-match [#900](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/900), proposes actual `match<T>` / `match<ret=T>` AST, parser, type and ownership-preserving lowering, plus complement type patterns and focused JUnit tests. It is **not CI-verified**, and `switch<T>` / `select<T>` remain unimplemented in that branch.
+- **Java draft [#886](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/886)** preserves the procedural `do select` return destination, a prerequisite but not value-select support.
+- The compiler's `Any` and `Unknown` runtime/static boundaries need independent reconciliation with [Java #844](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/844) before asserting that `match<T>` examples over `Any` compile on both backends.
+- Rust formatter, LLVM frontend/codegen, Java Native Image AOT/hybrid, synchronous and suspendable source runtime, and shared conformance verification all remain gating work. Passing parser-only tests does not certify production semantics.
