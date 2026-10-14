@@ -1,0 +1,249 @@
+{
+  "ir_family": "ores-mir",
+  "schema_version": "1.0.0-experimental",
+  "module_id": "arithmetic",
+  "required_features": [
+    "bool.v1",
+    "checked-i64.v1",
+    "control-flow.v1",
+    "functions.v1"
+  ],
+  "functions": [
+    {
+      "name": "choose",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64"
+        }
+      ],
+      "result_type": "i64",
+      "blocks": [
+        {
+          "id": "b0",
+          "params": [
+            {
+              "name": "x",
+              "type": "i64"
+            }
+          ],
+          "instructions": [
+            {
+              "op": "call",
+              "id": "v0",
+              "type": "bool",
+              "function": "is_neg",
+              "args": [
+                "x"
+              ]
+            }
+          ],
+          "term": {
+            "op": "branch",
+            "cond": "v0",
+            "then": "b1",
+            "then_args": [],
+            "else": "b2",
+            "else_args": []
+          }
+        },
+        {
+          "id": "b1",
+          "params": [],
+          "instructions": [
+            {
+              "op": "const_i64",
+              "id": "v1",
+              "type": "i64",
+              "value": "0"
+            },
+            {
+              "op": "sub_i64",
+              "id": "v2",
+              "type": "i64",
+              "lhs": "v1",
+              "rhs": "x"
+            }
+          ],
+          "term": {
+            "op": "jump",
+            "target": "b3",
+            "args": [
+              "v2"
+            ]
+          }
+        },
+        {
+          "id": "b2",
+          "params": [],
+          "instructions": [
+            {
+              "op": "call",
+              "id": "v3",
+              "type": "i64",
+              "function": "double",
+              "args": [
+                "x"
+              ]
+            }
+          ],
+          "term": {
+            "op": "jump",
+            "target": "b3",
+            "args": [
+              "v3"
+            ]
+          }
+        },
+        {
+          "id": "b3",
+          "params": [
+            {
+              "name": "v4",
+              "type": "i64"
+            }
+          ],
+          "instructions": [],
+          "term": {
+            "op": "return",
+            "value": "v4"
+          }
+        }
+      ]
+    },
+    {
+      "name": "double",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64"
+        }
+      ],
+      "result_type": "i64",
+      "blocks": [
+        {
+          "id": "b0",
+          "params": [
+            {
+              "name": "x",
+              "type": "i64"
+            }
+          ],
+          "instructions": [
+            {
+              "op": "const_i64",
+              "id": "v0",
+              "type": "i64",
+              "value": "2"
+            },
+            {
+              "op": "mul_i64",
+              "id": "v1",
+              "type": "i64",
+              "lhs": "x",
+              "rhs": "v0"
+            }
+          ],
+          "term": {
+            "op": "return",
+            "value": "v1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "is_neg",
+      "params": [
+        {
+          "name": "x",
+          "type": "i64"
+        }
+      ],
+      "result_type": "bool",
+      "blocks": [
+        {
+          "id": "b0",
+          "params": [
+            {
+              "name": "x",
+              "type": "i64"
+            }
+          ],
+          "instructions": [
+            {
+              "op": "const_i64",
+              "id": "v0",
+              "type": "i64",
+              "value": "0"
+            },
+            {
+              "op": "lt_i64",
+              "id": "v1",
+              "type": "bool",
+              "lhs": "x",
+              "rhs": "v0"
+            }
+          ],
+          "term": {
+            "op": "return",
+            "value": "v1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "main",
+      "params": [],
+      "result_type": "i64",
+      "blocks": [
+        {
+          "id": "b0",
+          "params": [],
+          "instructions": [
+            {
+              "op": "const_i64",
+              "id": "v0",
+              "type": "i64",
+              "value": "-3"
+            },
+            {
+              "op": "call",
+              "id": "v1",
+              "type": "i64",
+              "function": "choose",
+              "args": [
+                "v0"
+              ]
+            },
+            {
+              "op": "call",
+              "id": "v2",
+              "type": "i64",
+              "function": "double",
+              "args": [
+                "v1"
+              ]
+            },
+            {
+              "op": "const_i64",
+              "id": "v3",
+              "type": "i64",
+              "value": "1"
+            },
+            {
+              "op": "add_i64",
+              "id": "v4",
+              "type": "i64",
+              "lhs": "v2",
+              "rhs": "v3"
+            }
+          ],
+          "term": {
+            "op": "return",
+            "value": "v4"
+          }
+        }
+      ]
+    }
+  ]
+}
