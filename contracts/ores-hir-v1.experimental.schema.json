@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oreslang:experimental:ores-hir:1.0.0",
+  "title": "Experimental Oreslang HIR v1 subset; no ABI stability",
+  "description": "Structural validation only. The Python semantic verifier must additionally check types, i64 bounds, SSA dominance, CFG reachability, function calls and budgets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ir_family",
+    "schema_version",
+    "module_id",
+    "required_features",
+    "functions"
+  ],
+  "properties": {
+    "ir_family": {
+      "const": "ores-hir"
+    },
+    "schema_version": {
+      "const": "1.0.0-experimental"
+    },
+    "module_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+      "maxLength": 128
+    },
+    "required_features": {
+      "const": [
+        "bool.v1",
+        "checked-i64.v1",
+        "control-flow.v1",
+        "functions.v1"
+      ]
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/function"
+      }
+    }
+  },
+  "$defs": {
+    "expr": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "int"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(?:0|-?[1-9][0-9]*)$",
+              "maxLength": 21
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bool"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "var"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "op",
+            "lhs",
+            "rhs"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bin"
+            },
+            "op": {
+              "enum": [
+                "add",
+                "sub",
+                "mul",
+                "lt",
+                "eq"
+              ]
+            },
+            "lhs": {
+              "$ref": "#/$defs/expr"
+            },
+            "rhs": {
+              "$ref": "#/$defs/expr"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "function",
+            "args"
+          ],
+          "properties": {
+            "kind": {
+              "const": "call"
+            },
+            "function": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "args": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/expr"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name",
+            "value",
+            "body"
+          ],
+          "properties": {
+            "kind": {
+              "const": "let"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "maxLength": 128
+            },
+            "value": {
+              "$ref": "#/$defs/expr"
+            },
+            "body": {
+              "$ref": "#/$defs/expr"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "condition",
+            "then",
+            "else"
+          ],
+          "properties": {
+            "kind": {
+              "const": "if"
+            },
+            "condition": {
+              "$ref": "#/$defs/expr"
+            },
+            "then": {
+              "$ref": "#/$defs/expr"
+            },
+            "else": {
+              "$ref": "#/$defs/expr"
+            }
+          }
+        }
+      ]
+    },
+    "function": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "params",
+        "result_type",
+        "body"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "maxLength": 128
+        },
+        "params": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+                "maxLength": 128
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "i64",
+                  "bool"
+                ]
+              }
+            }
+          }
+        },
+        "result_type": {
+          "type": "string",
+          "enum": [
+            "i64",
+            "bool"
+          ]
+        },
+        "body": {
+          "$ref": "#/$defs/expr"
+        }
+      }
+    }
+  }
+}
