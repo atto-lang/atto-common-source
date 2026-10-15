@@ -125,7 +125,7 @@ class WorkspaceAuditTests(unittest.TestCase):
     def test_formatter_must_not_emit_invalid_utf8(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
-                "import sys\\n"
+                "import sys\n"
                 "sys.stdout.buffer.write(bytes([255]))\n")
             report = module.audit(roots, binary)
             self.assertEqual(report["counts"]["invalid_utf8"], 7)
@@ -133,7 +133,7 @@ class WorkspaceAuditTests(unittest.TestCase):
     def test_invalid_utf8_source_is_not_submitted_to_formatter(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
-                "import sys\\n"
+                "import sys\n"
                 "sys.stdout.buffer.write(b'never')\n")
             for root in roots.values():
                 (root / "test.ores").write_bytes(bytes([255]))
