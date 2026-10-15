@@ -258,3 +258,36 @@ or successfully verified by executable CI.
   remains draft with zero-step source CI, and source-main protection remains
   unresolved. Keep the original 50 task issue states unchanged until each
   applicable backend and policy is validated.
+
+
+### Exact-head permission and CI validation — 2026-10-15
+
+- [Java #1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034):
+  added fail-closed validation for serialized scoped `--ores-permission-*`
+  rules missing the `--ores-permission-explicit=true` protocol marker.
+  Preserved explicitly documented legacy no-policy-args embedding support;
+  marker is a format invariant, not cryptographic authorization.
+  Regression `serializedScopedRulesRequireExplicitPolicyMarker`
+  extends the network/runtime JUnit suite to 19 methods. Commit
+  `fe23e414baed72628304285dd76bd94a62374e1d` had 12/12
+  static source-inspection invariants verified. These are **not executed
+  JUnit tests**. Java source-org [fast-ci 38822505679](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38822505679)
+  and [ci 38822505677](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38822505677)
+  again failed with **zero test steps**. PR remains draft and requires
+  actual JDK25/GraalVM execution and independent review.
+- [oreslang-cli PR #9](https://github.com/ores-truffle-oreslang/oreslang-cli/pull/9):
+  added two actual CLI process regressions testing forged inherited permission
+  variables and explicit-argv-only forwarding with an unprivileged fake backend.
+  [Exact-head Actions 38822807118](https://github.com/ores-truffle-oreslang/oreslang-cli/actions/runs/38822807118)
+  on `50a5dab187443acd86bb0d24f0d4b605d606e6cb` executed
+  `cargo fmt --all --check`, `cargo test --workspace --locked`
+  (**24 passed, zero failed**), and public CLI smoke; all succeeded.
+  **This verifies only the Rust CLI boundary**, not private Java/LLVM runtime.
+- CI carrier assessment: private
+  `ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-infra`
+  repository ID `1412142815` has successful Actions runs. It is
+  proposed in unmerged [Java PR #1031](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1031);
+  the source main's destination allowlist remains empty and `main`
+  currently reports `protected: false`. Capacity is **not authorization**.
+  No private source transferred, no cross-org branch created and no
+  unverified Java test success claimed.
