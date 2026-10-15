@@ -523,7 +523,7 @@ def execute(mir, function, args, *, max_steps=10_000):
                     else:
                         raise AssertionError("verifier missed opcode")
                     if op in ("add_i64", "sub_i64", "mul_i64") and not MIN_I64 <= value <= MAX_I64:
-                        raise IRRuntimeError("checked i64 arithmetic overflow")
+                        raise IRRuntimeError("ORES_I64_OVERFLOW: checked i64 arithmetic overflow")
                 env[ins["id"]] = value
             budget[0] -= 1
             if budget[0] < 0:
