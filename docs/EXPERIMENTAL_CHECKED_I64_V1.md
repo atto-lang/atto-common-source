@@ -74,12 +74,18 @@ An overflow has fixed cross-backend identity:
   4**, respectively. Invalid tags (including 0 or 5) must not be accepted as
   a checked arithmetic failure. Neither source operands nor Java host cause
   objects can enter actor CONTROL notifications.
-- **Normalized experimental outcome:** success is a signed-i64 value and
-  zero effect status; checked arithmetic overflow is a `Throw` with status
-  `0x494F0001` and one of the four operation tags above, with **no** value.
-  Host process code 86 is only an interim uncaught CLI translation of that
-  outcome. Never compare the process code to the native effect code or treat
-  it as a source-visible catchable guest Error object.
+- **Target normalized experimental outcome:** success is a signed-i64 value
+  and zero effect status; checked arithmetic overflow is a `Throw` with status
+  `0x494F0001`, an operation tag above, and **no** result value. Host process
+  code 86 is only an interim uncaught CLI translation. Never compare the
+  process code to the native effect code or treat it as a source-visible
+  catchable guest Error object.
+  **Not yet fully implemented:** Java's internal typed signal carries the
+  operation tag, but LLVM's generated invocation-status pointer currently
+  carries only the effect code, not operation metadata. The Python reference
+  interpreter reports the diagnostic identity, not a guest Error object.
+  Cross-backend operation-tag equivalence therefore remains an explicit
+  conformance gate.
 
 This identity is explicitly **not** a stable serialization of source-level
 `Error`, nor does this experiment yet provide cross-backend catch/recover,
