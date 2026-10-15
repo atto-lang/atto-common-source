@@ -28,6 +28,32 @@ class IRRuntimeError(RuntimeError):
     pass
 
 
+class CheckedI64Overflow(IRRuntimeError):
+    """Structured *reference-interpreter* checked overflow, not a guest Error.
+
+    The effect and operation tags agree with the Java/LLVM experimental host
+    profile. MIR currently has only binary add/sub/mul, not unary negation.
+    Do not expose source operands or Python host exception causes.
+    """
+
+    error_code = "ORES_I64_OVERFLOW"
+    guest_error_name = "ArithmeticOverflowError"
+    effect_kind = "Throw"
+    effect_code = 0x494F0001
+    _operations = {
+        "add_i64": ("add", 1),
+        "sub_i64": ("subtract", 2),
+        "mul_i64": ("multiply", 3),
+    }
+
+    def __init__(self, opcode):
+        if opcode not in self._operations:
+            raise ValueError("unsupported checked MIR arithmetic opcode")
+        self.operation, self.operation_tag = self._operations[opcode]
+        self.packed_status = (self.operation_tag << 32) | self.effect_code
+        super().__init__("ORES_I64_OVERFLOW: checked i64 arithmetic overflow")
+
+
 def require(ok, message):
     if not ok:
         raise IRValidationError(message)
@@ -523,7 +549,7 @@ def execute(mir, function, args, *, max_steps=10_000):
                     else:
                         raise AssertionError("verifier missed opcode")
                     if op in ("add_i64", "sub_i64", "mul_i64") and not MIN_I64 <= value <= MAX_I64:
-                        raise IRRuntimeError("ORES_I64_OVERFLOW: checked i64 arithmetic overflow")
+                        raise CheckedI64Overflow(op)
                 env[ins["id"]] = value
             budget[0] -= 1
             if budget[0] < 0:
