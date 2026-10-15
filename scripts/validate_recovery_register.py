@@ -28,7 +28,7 @@ ISSUE_ROW = re.compile(
 def verify_register(document: str) -> list[str]:
     """Return a list of problems; never claim the remote issues are still open."""
     problems: list[str] = []
-    if "October 6–15, 2026" not in document.splitlines()[0]:
+    if not document.splitlines() or "October 6–15, 2026" not in document.splitlines()[0]:
         problems.append("register heading must describe the October 6–15 window")
     if document.count("\n## ") < len(SECTIONS):
         problems.append("missing recovery sections")
@@ -60,7 +60,8 @@ def verify_register(document: str) -> list[str]:
                 continue
             if not match["title"].strip() or not match["next"].strip():
                 problems.append(f"{heading}: empty title or next action")
-            ref = match["repo"] + "#" + match["number"]
+            # GitHub repository names are case-insensitive; canonicalize IDs.
+            ref = match["repo"].casefold() + "#" + match["number"]
             if ref in identifiers:
                 problems.append(f"duplicate issue reference: {ref}")
             identifiers.add(ref)
