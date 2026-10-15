@@ -172,10 +172,9 @@
       "kind": "native_exit",
       "backends": {
         "llvm": "required",
-        "graal": "pending"
+        "graal": "required"
       },
-      "expected_exit": 42,
-      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+      "expected_exit": 42
     },
     {
       "id": "generic.scalar.positional-plus-named",
@@ -183,10 +182,9 @@
       "kind": "native_exit",
       "backends": {
         "llvm": "required",
-        "graal": "pending"
+        "graal": "required"
       },
-      "expected_exit": 42,
-      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+      "expected_exit": 42
     },
     {
       "id": "generic.scalar.inferred-hole-with-other-default",
@@ -194,10 +192,9 @@
       "kind": "native_exit",
       "backends": {
         "llvm": "required",
-        "graal": "pending"
+        "graal": "required"
       },
-      "expected_exit": 42,
-      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+      "expected_exit": 42
     },
     {
       "id": "generic.scalar.dependent-hole-cannot-default",
@@ -205,12 +202,12 @@
       "kind": "diagnostic",
       "backends": {
         "llvm": "required",
-        "graal": "pending"
+        "graal": "required"
       },
       "diagnostics": {
-        "llvm": "cannot infer generic parameter"
-      },
-      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+        "llvm": "cannot infer generic parameter",
+        "graal": "cannot resolve dependent default"
+      }
     },
     {
       "id": "generic.scalar.duplicate-generic-declaration",
@@ -218,12 +215,12 @@
       "kind": "diagnostic",
       "backends": {
         "llvm": "required",
-        "graal": "pending"
+        "graal": "required"
       },
       "diagnostics": {
-        "llvm": "duplicate generic parameter"
-      },
-      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+        "llvm": "duplicate generic parameter",
+        "graal": "invalid or duplicate generic parameter"
+      }
     },
     {
       "id": "generic.scalar.self-dependent-default",
@@ -231,12 +228,12 @@
       "kind": "diagnostic",
       "backends": {
         "llvm": "required",
-        "graal": "pending"
+        "graal": "required"
       },
       "diagnostics": {
-        "llvm": "forward or self-referential generic default"
-      },
-      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+        "llvm": "forward or self-referential generic default",
+        "graal": "forward or self-referential generic default"
+      }
     }
   ]
 }
