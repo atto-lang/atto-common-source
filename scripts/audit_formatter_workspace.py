@@ -138,10 +138,16 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
         if not files:
             raise ValueError(f"no .ores source files under {repo}")
         for path in files:
-            original = path.read_bytes()
+            # Read at most one byte past the cap; the former read_bytes()
+            # allocated the entire input before it could reject huge files.
+            with path.open("rb") as source:
+                original = source.read(max_bytes + 1)
+            oversized = len(original) > max_bytes
             item = {"repository": repo, "path": path.relative_to(root).as_posix(),
-                    "input_sha256": hashlib.sha256(original).hexdigest()}
-            if len(original) > max_bytes:
+                    # No truncated-prefix digest masquerading as a source SHA.
+                    "input_sha256": None if oversized
+                    else hashlib.sha256(original).hexdigest()}
+            if oversized:
                 item.update(status="oversize", detail="file exceeds audit size limit")
             else:
                 first = formatter_pass(formatter, original, timeout, max_bytes * 2)
@@ -160,8 +166,11 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
                     if "exit_code" in first:
                         item["exit_code"] = first["exit_code"]
             # Source remains outside the formatter's temporary working directory.
-            if path.read_bytes() != original:
-                item["status"] = "source_changed"
+            # A bounded post-read also detects a concurrent oversized rewrite.
+            if not oversized:
+                with path.open("rb") as source:
+                    if source.read(max_bytes + 1) != original:
+                        item["status"] = "source_changed"
             results.append(item)
     counts = {kind: sum(item["status"] == kind for item in results) for kind in
               ("formatted", "rejected", "unstable", "tool_error", "unsafe_temp_write",
