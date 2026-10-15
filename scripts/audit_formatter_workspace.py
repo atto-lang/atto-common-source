@@ -254,6 +254,8 @@ def main(argv: list[str] | None = None) -> int:
         workspace = args.workspace.resolve(strict=True)
         roots = {name: workspace / name for name in REPOSITORIES}
         report = audit(roots, binary, args.timeout)
+        if report["formatter_sha256"] != digest:
+            raise ValueError("formatter binary changed during audit")
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     report["formatter_pinned"] = bool(args.formatter_sha256)
