@@ -113,6 +113,31 @@ structural typing, enum variants, closures or compiler specialization.
 
 ## Minimum conformance
 
+### Implementation checkpoint, 2026-10-15
+
+Java #443 now distinguishes owning `Pointer<T>` from a borrowed view at local
+Channel admission. A local `rt take` consumes the source binding; runtime
+dereference checks original execution-domain identity. Actor mailboxes still
+reject Pointer recursively, including copy/share/take attempts. No runtime
+domain reassignment, deep pointer copy or shared immutable pointer conversion
+has been implemented. Host-created enums and numeric subclasses are not
+implicitly immutable or Sendable: they can conceal owning capabilities.
+
+The Java branch predates the current symbol runtime and does not define an
+OresSymbol class. String/Symbol/enum **value** semantics in this proposal must
+not be read as current support for `Pointer<String>`, `Pointer<Symbol>` or
+payload-carrying enum pointers. Those pointer targets remain unsupported.
+
+For local channel failure/cancellation, compiler consumption is conservative:
+the sender binding is not restored after an unsuccessful probe. This is not
+the proposed recoverable affine-send protocol. Do not claim deterministic
+destruction or a complete transport implementation from local take support.
+
+LLVM #415 is a rejection gate only. Its compiler-executed Rust matrix tests
+all ref/unref/deref operations nested under copy/take/share and requires empty
+stdout on rejection, with a successful scalar program as a positive control.
+Wasm/Forge/.NET support remains unverified; no backend parity claim follows.
+
 Positive: primitive, String, public symbol, immutable record/struct, enum,
 deep-copy array/record, same-domain moved unique pointer, shared immutable
 pointer with valid policy. Negative: Serializable-only class with live
