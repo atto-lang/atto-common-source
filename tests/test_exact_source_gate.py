@@ -17,8 +17,10 @@ def tree(entries, truncated=False):
 def run(head=C, conclusion="success", steps=None):
     if steps is None:
         steps = [{"name": "mvn verify", "status": "completed", "conclusion": "success"}]
-    return {"run": {"head_sha": head, "status": "completed", "conclusion": conclusion},
-            "jobs": [{"name": "compiler", "status": "completed",
+    return {"run": {"id": 101, "run_attempt": 2, "head_sha": head,
+                    "status": "completed", "conclusion": conclusion},
+            "jobs": [{"id": 201, "run_id": 101, "run_attempt": 2, "head_sha": head,
+                      "name": "compiler", "status": "completed",
                       "conclusion": "success", "steps": steps}]}
 
 
@@ -63,6 +65,26 @@ class ExactSourceGateTest(unittest.TestCase):
 
     def test_successful_executed_job(self):
         self.assertEqual(1, verify_workflows([run()], C, ["compiler"], ["mvn verify"]))
+
+    def test_jobs_from_another_run_attempt_or_head_are_rejected(self):
+        for field, wrong in (("run_id", 102), ("run_attempt", 1), ("head_sha", A),
+                             ("run_id", True), ("run_attempt", True)):
+            with self.subTest(field=field, wrong=wrong):
+                evidence = run()
+                evidence["jobs"][0][field] = wrong
+                with self.assertRaisesRegex(GateError, "does not belong"):
+                    verify_workflows([evidence], C, ["compiler"], ["mvn verify"])
+
+    def test_missing_run_identity_fails_closed(self):
+        for field in ("id", "run_attempt"):
+            evidence = run()
+            del evidence["run"][field]
+            with self.assertRaisesRegex(GateError, "run ID or attempt"):
+                verify_workflows([evidence], C, ["compiler"], ["mvn verify"])
+
+    def test_duplicate_job_cannot_be_reused_across_evidence(self):
+        with self.assertRaisesRegex(GateError, "duplicate job"):
+            verify_workflows([run(), run()], C, ["compiler"], ["mvn verify"])
 
     def test_stale_workflow_rejected(self):
         with self.assertRaisesRegex(GateError, "stale"):

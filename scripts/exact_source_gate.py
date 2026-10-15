@@ -75,6 +75,7 @@ def verify_workflows(evidence: list[dict], mirror_head: str,
     job_names: set[str] = set()
     step_names: set[str] = set()
     count = 0
+    seen_jobs: set[int] = set()
     for bundle in evidence:
         if not isinstance(bundle, dict):
             raise GateError("malformed run evidence")
@@ -82,6 +83,9 @@ def verify_workflows(evidence: list[dict], mirror_head: str,
         jobs = bundle.get("jobs")
         if not isinstance(run, dict) or not isinstance(jobs, list) or not jobs:
             raise GateError("run missing job records")
+        run_id, attempt = run.get("id"), run.get("run_attempt")
+        if type(run_id) is not int or run_id <= 0 or type(attempt) is not int or attempt <= 0:
+            raise GateError("run evidence missing valid run ID or attempt")
         if run.get("head_sha") != mirror_head:
             raise GateError("stale or mismatched workflow head")
         if run.get("status") != "completed" or run.get("conclusion") != "success":
@@ -89,6 +93,14 @@ def verify_workflows(evidence: list[dict], mirror_head: str,
         for job in jobs:
             if not isinstance(job, dict) or not isinstance(job.get("name"), str):
                 raise GateError("malformed job evidence")
+            job_id = job.get("id")
+            if type(job_id) is not int or job_id <= 0 or job_id in seen_jobs:
+                raise GateError("invalid or duplicate job ID")
+            seen_jobs.add(job_id)
+            if (type(job.get("run_id")) is not int or job["run_id"] != run_id
+                    or type(job.get("run_attempt")) is not int or job["run_attempt"] != attempt
+                    or job.get("head_sha") != mirror_head):
+                raise GateError("job does not belong to the evidenced run, attempt and head")
             if job.get("status") != "completed" or job.get("conclusion") != "success":
                 raise GateError(f"failed/skipped/incomplete job: {job['name']}")
             steps = job.get("steps")

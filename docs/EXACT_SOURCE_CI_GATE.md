@@ -58,3 +58,5 @@ Local regression suite:
 ```sh
 python3 -m unittest discover -s tests -p 'test_exact_source_gate.py' -v
 ```
+
+Job receipts must include the GitHub job ID, run ID, run attempt and head SHA. Each job must belong to the supplied run and attempt; duplicate job IDs and jobs borrowed from other runs are rejected. Fetch the run and jobs from the same authenticated GitHub Actions run endpoint.
