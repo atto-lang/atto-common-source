@@ -219,3 +219,24 @@ or successfully verified by executable CI.
 - Next merge gate: independently confirm source confidentiality and reviewer controls,
   execute targeted and full Java/Graal tests (and LLVM parity where required), then
   carefully reconcile PRs #938/#1027/#1034. No work-item closure from these static commits.
+
+
+### Cross-repository permission gate update — 2026-10-15
+
+- [oreslang-cli PR #9](https://github.com/ores-truffle-oreslang/oreslang-cli/pull/9)
+  removes 19 ambient `ORESLANG_ALLOW_*`/`DENY_*` and other permission
+  environment bindings from Clap. Adds Rust parser-metadata regression
+  verifying 57 Check/Run/Lsp bindings have no implicit environment grants.
+  Branch head at creation: 29639ad5b8b009ff88545841d12e5286ea108465.
+  This is interim host-I/O containment; the required flags-2-env sole-parser
+  migration remains [oreslang-cli #8](https://github.com/ores-truffle-oreslang/oreslang-cli/issues/8).
+- Java [#1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034)
+  reconciled new network policy guards from #1027: invalid control bytes /
+  surrogate resource spellings and duplicated serialized authority entries,
+  while retaining stage-before-commit CSV rules. Latest integrated head:
+  8feb0ffc030797c0e12c7621784b634156e4b3f3 with 18 network-focused
+  JUnit methods and linked launcher tests. The exact-head Java GitHub CI
+  again failed with **zero executed steps** (fast-ci 38813465513,
+  main CI 38813465458): no Java tests or native-image proof are claimed.
+- Scope remains open: no permission issue marked done, no cross-org private
+  source copied, no compiler/backend parity test proved, no unsafe main merge.
