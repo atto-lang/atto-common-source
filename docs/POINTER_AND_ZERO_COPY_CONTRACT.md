@@ -73,4 +73,6 @@ The following must fail closed: `rt ref (rt borrow owner)`; `rt copy pointer`; `
 3. **Wasm, Forge, .NET**: refuse unsupported pointer syntax and prevent untyped wire handles from being mistaken for pointer authority. Admit only after executable per-backend conformance, fuzz/race/sanitizer testing where applicable.
 4. Version shared positive/negative fixtures, run exact-tree tests in both native and Java, and prove no forbidden operation produces code. Keep relevant PRs draft until LLVM and managed implementations pass tests; a GitHub Actions job with zero executed steps is not evidence.
 
+Actor transfers are governed by the distinct draft [Sendable/Shareable actor-transfer contract](ACTOR_TRANSFER_TRAITS.md). `Serializable` for HTTP/TCP/WebSocket codecs is **not** actor Sendable proof. Ordinary local `Channel<T>` ownership movement is not equivalent to an actor mailbox. Until compiler/runtime proof and lowerings exist, the Java/LLVM actor pointer gates remain fail-closed.
+
 See [ownership syntax](OWNERSHIP_SYNTAX.md), [ownership boundary audit](OWNERSHIP_BOUNDARY_AUDIT.md), and [memory safety](MEMORY_SAFETY_AND_PERFORMANCE.md).
