@@ -240,3 +240,21 @@ or successfully verified by executable CI.
   main CI 38813465458): no Java tests or native-image proof are claimed.
 - Scope remains open: no permission issue marked done, no cross-org private
   source copied, no compiler/backend parity test proved, no unsafe main merge.
+
+
+### Verified Rust CLI execution — 2026-10-15
+
+- [oreslang-cli #9](https://github.com/ores-truffle-oreslang/oreslang-cli/pull/9)
+  is **ready for independent review** (not merged): ambient
+  `ORESLANG_ALLOW_*` permission bindings removed from direct Clap CLI.
+  Exact tested commit: `29639ad5b8b009ff88545841d12e5286ea108465`.
+- [Executed GitHub Actions run 38813792970](https://github.com/ores-truffle-oreslang/oreslang-cli/actions/runs/38813792970)
+  completed **success**: Rust formatting passed; `cargo test --workspace --locked`
+  produced **22 passing tests**, including the 57-option metadata gate;
+  public CLI smoke tests passed. The job had an allocated runner and real
+  executed steps.
+- This actual Rust CLI pass is **not** Java/Graal/LLVM proof. Exact-head
+  Java [#1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034)
+  remains draft with zero-step source CI, and source-main protection remains
+  unresolved. Keep the original 50 task issue states unchanged until each
+  applicable backend and policy is validated.
