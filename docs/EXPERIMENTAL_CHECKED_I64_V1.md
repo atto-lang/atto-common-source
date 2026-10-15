@@ -80,12 +80,13 @@ An overflow has fixed cross-backend identity:
   code 86 is only an interim uncaught CLI translation. Never compare the
   process code to the native effect code or treat it as a source-visible
   catchable guest Error object.
-  **Not yet fully implemented:** Java's internal typed signal carries the
-  operation tag, but LLVM's generated invocation-status pointer currently
-  carries only the effect code, not operation metadata. The Python reference
-  interpreter reports the diagnostic identity, not a guest Error object.
-  Cross-backend operation-tag equivalence therefore remains an explicit
-  conformance gate.
+  **Implementation status:** Java's internal typed signal carries operation
+  tags. LLVM now packs each operation tag into the high 32 bits of its
+  invocation-local 64-bit status; the low 32 bits hold `0x494F0001`.
+  The Python reference interpreter still reports diagnostic identity, not a
+  guest Error object. Cross-backend executable parity remains a conformance
+  gate until the new LLVM revision and Java runtime both pass on the same
+  fixtures.
 
 This identity is explicitly **not** a stable serialization of source-level
 `Error`, nor does this experiment yet provide cross-backend catch/recover,
@@ -100,16 +101,20 @@ must preserve this status and fail closed if a target cannot provide it.
 
 **Implementation scope:** Java currently uses a typed runtime boundary signal,
 not a source-constructed guest Error. LLVM's experimental host scalar codegen
-passes an invocation-owned compiler-hidden `i32*` effect-code slot through
-every checked function. On overflow, the function writes `0x494F0001`
-(`Throw`) and returns; each nested caller propagates the pending failure.
+passes an invocation-owned compiler-hidden `i64*` packed status slot through
+every checked function. Zero denotes success; on overflow the failing
+operation writes `(uint64(operation_tag) << 32) | 0x494F0001` and returns;
+nested callers preserve the first pending failure without evaluating later
+arguments or operands.
 Child-expression and call-argument guards prevent evaluating subsequent
 operands after a pending failure. Only standalone OS `main` converts an
 uncaught effect into the temporary `ORES_I64_OVERFLOW` diagnostic and
 process status 86. No process-global error slot is required.
 
-That slot carries only the checked-effect **code**, not yet a full guest
-`EffectStatus` value, guest Error allocation, or operation metadata.
+That slot carries the checked-effect **code and operation metadata**, but
+is not yet a full guest `EffectStatus` value or source-constructed Error.
+A C host must pass an initialized `uint64_t*` when invoking checked scalar
+guest functions; passing an old `uint32_t*` would be an ABI/size violation.
 It is internal to the experimental host scalar profile, not an independently
 stable foreign-function ABI. No source catch/trap, actor supervision,
 reusable external invocation API, Graal compiled-mode parity, native-image
