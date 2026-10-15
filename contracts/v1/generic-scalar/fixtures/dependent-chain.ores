@@ -1,0 +1,2 @@
+fnc sum<A, B=A, C=B, D=C>(A x, B y): int { return x + y; }
+pub fnc main(): int { return sum<A=int, D=int>(19, 23); }

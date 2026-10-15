@@ -165,6 +165,78 @@
         "llvm": "native scalar generic type requires int"
       },
       "pending_reason": "LLVM native stage 1 accepts only int; the Java backend admits bool generic arguments"
+    },
+    {
+      "id": "generic.scalar.dependent-chain",
+      "source": "fixtures/dependent-chain.ores",
+      "kind": "native_exit",
+      "backends": {
+        "llvm": "required",
+        "graal": "pending"
+      },
+      "expected_exit": 42,
+      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+    },
+    {
+      "id": "generic.scalar.positional-plus-named",
+      "source": "fixtures/positional-plus-named.ores",
+      "kind": "native_exit",
+      "backends": {
+        "llvm": "required",
+        "graal": "pending"
+      },
+      "expected_exit": 42,
+      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+    },
+    {
+      "id": "generic.scalar.inferred-hole-with-other-default",
+      "source": "fixtures/inferred-hole-with-other-default.ores",
+      "kind": "native_exit",
+      "backends": {
+        "llvm": "required",
+        "graal": "pending"
+      },
+      "expected_exit": 42,
+      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+    },
+    {
+      "id": "generic.scalar.dependent-hole-cannot-default",
+      "source": "fixtures/dependent-hole-cannot-default.ores",
+      "kind": "diagnostic",
+      "backends": {
+        "llvm": "required",
+        "graal": "pending"
+      },
+      "diagnostics": {
+        "llvm": "cannot infer generic parameter"
+      },
+      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+    },
+    {
+      "id": "generic.scalar.duplicate-generic-declaration",
+      "source": "fixtures/duplicate-generic-declaration.ores",
+      "kind": "diagnostic",
+      "backends": {
+        "llvm": "required",
+        "graal": "pending"
+      },
+      "diagnostics": {
+        "llvm": "duplicate generic parameter"
+      },
+      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
+    },
+    {
+      "id": "generic.scalar.self-dependent-default",
+      "source": "fixtures/self-dependent-default.ores",
+      "kind": "diagnostic",
+      "backends": {
+        "llvm": "required",
+        "graal": "pending"
+      },
+      "diagnostics": {
+        "llvm": "forward or self-referential generic default"
+      },
+      "pending_reason": "Exact-source Java/GraalVM admission and Native Image guest execution have not yet been tested for this new fixture"
     }
   ]
 }

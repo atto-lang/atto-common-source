@@ -11,3 +11,7 @@ A conformance run must prove full source bytes, actual compilation, and executab
 The suite is validated and executed using `verify.py`. Run `python3 verify.py --validate-only`, or supply `--backend llvm --compiler /path/to/oreslang-llvmc --clang /path/to/clang`. Graal execution support is separately gated until the reference binary's exit-code contract is confirmed.
 
 Extend this corpus in the common-source repository first, then update Java and LLVM harnesses with exact Git hashes. Do not claim parity for method/class/actor/non-scalar generic constructs until both backends admit and execute them.
+
+## Expanded stage-one regression inventory
+
+Six new canonical cases, promoted from the LLVM #401 test matrix, cover long dependent-default chains, positional-plus-named type parameters, explicit inference holes with independent defaults, uninferrable dependent holes, duplicate generic declarations, and self-dependent defaults. Identical cases already present in v1 are deliberately not duplicated. LLVM execution/diagnostics are required; new Java/Graal cases remain pending until independently executed.
