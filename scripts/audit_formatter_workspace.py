@@ -10,8 +10,12 @@ import argparse
 import hashlib
 import json
 import os
+import selectors
+import signal
+import stat
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 REPOSITORIES = (
@@ -35,21 +39,90 @@ def discover(root: Path) -> list[Path]:
     return files
 
 
-def formatter_pass(binary: Path, source: bytes, timeout: float) -> dict:
+def formatter_pass(binary: Path, source: bytes, timeout: float,
+                   max_output_bytes: int = 2097152) -> dict:
+    # Do not use subprocess.run(capture_output=True): untrusted formatter
+    # output could exhaust RAM long before the timeout fires.
     with tempfile.TemporaryDirectory(prefix="oresfmt-audit-") as scratch:
         path = Path(scratch) / "input.ores"
         path.write_bytes(source)
         try:
-            run = subprocess.run([str(binary), "--stdout", str(path)], cwd=scratch,
-                                 capture_output=True, timeout=timeout, check=False)
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            process = subprocess.Popen(
+                [str(binary), "--stdout", str(path)], cwd=scratch,
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, start_new_session=(os.name == "posix"),
+            )
+        except OSError as exc:
             return {"status": "tool_error", "detail": str(exc)[:200]}
+
+        output = bytearray()
+        errors = bytearray()
+        status = "finished"
+        deadline = time.monotonic() + timeout
+        with selectors.DefaultSelector() as selector:
+            try:
+                for name, stream in (("stdout", process.stdout),
+                                     ("stderr", process.stderr)):
+                    os.set_blocking(stream.fileno(), False)
+                    selector.register(stream, selectors.EVENT_READ, name)
+                while selector.get_map():
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        status = "timeout"
+                        break
+                    ready = selector.select(remaining)
+                    if not ready:
+                        status = "timeout"
+                        break
+                    for key, _ in ready:
+                        chunk = os.read(key.fileobj.fileno(), 65536)
+                        if not chunk:
+                            selector.unregister(key.fileobj)
+                            key.fileobj.close()
+                            continue
+                        if key.data == "stdout":
+                            if len(output) + len(chunk) > max_output_bytes:
+                                status = "oversize_output"
+                                break
+                            output.extend(chunk)
+                        elif len(errors) < 200:
+                            errors.extend(chunk[:200 - len(errors)])
+                    if status != "finished":
+                        break
+                if status == "finished":
+                    try:
+                        process.wait(timeout=max(0, deadline - time.monotonic()))
+                    except subprocess.TimeoutExpired:
+                        status = "timeout"
+            except (OSError, ValueError) as exc:
+                status = "tool_error"
+                errors = bytearray(str(exc).encode("utf-8", "replace")[:200])
+            finally:
+                if status != "finished":
+                    try:
+                        if os.name == "posix":
+                            os.killpg(process.pid, signal.SIGKILL)
+                        elif process.poll() is None:
+                            process.kill()
+                    except ProcessLookupError:
+                        pass
+                if process.poll() is None:
+                    process.kill()
+                process.wait()
+                for stream in (process.stdout, process.stderr):
+                    if stream is not None:
+                        stream.close()
+
         if path.read_bytes() != source:
-            return {"status": "unsafe_temp_write", "detail": "formatter changed temporary input"}
-        if run.returncode:
-            return {"status": "rejected", "detail": run.stderr.decode("utf-8", "replace")[:200],
-                    "exit_code": run.returncode}
-        return {"status": "formatted", "output": run.stdout}
+            return {"status": "unsafe_temp_write",
+                    "detail": "formatter changed temporary input"}
+        if status != "finished":
+            return {"status": status, "detail": errors.decode("utf-8", "replace")}
+        if process.returncode != 0:
+            return {"status": "rejected",
+                    "detail": errors.decode("utf-8", "replace"),
+                    "exit_code": process.returncode}
+        return {"status": "formatted", "output": bytes(output)}
 
 
 def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
@@ -69,11 +142,11 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
             if len(original) > max_bytes:
                 item.update(status="oversize", detail="file exceeds audit size limit")
             else:
-                first = formatter_pass(formatter, original, timeout)
+                first = formatter_pass(formatter, original, timeout, max_bytes * 2)
                 item["status"] = first["status"]
                 if first["status"] == "formatted":
                     output = first["output"]
-                    second = formatter_pass(formatter, output, timeout)
+                    second = formatter_pass(formatter, output, timeout, max_bytes * 2)
                     item["would_change"] = output != original
                     item["idempotent"] = (second["status"] == "formatted"
                                            and second["output"] == output)
@@ -90,7 +163,7 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
             results.append(item)
     counts = {kind: sum(item["status"] == kind for item in results) for kind in
               ("formatted", "rejected", "unstable", "tool_error", "unsafe_temp_write",
-               "source_changed", "oversize")}
+               "source_changed", "oversize", "oversize_output", "timeout")}
     return {"repositories": list(REPOSITORIES), "total": len(results), "counts": counts,
             "would_change": sum(bool(x.get("would_change")) for x in results),
             "formatter_sha256": hashlib.sha256(formatter.read_bytes()).hexdigest(),
@@ -124,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     report["formatter_pinned"] = bool(args.formatter_sha256)
     print(json.dumps(report, indent=2))
     unsafe = any(report["counts"][name] for name in
-                 ("unstable", "tool_error", "unsafe_temp_write", "source_changed", "oversize"))
+                 ("unstable", "tool_error", "unsafe_temp_write", "source_changed", "oversize", "oversize_output", "timeout"))
     if args.strict:
         unsafe |= bool(report["counts"]["rejected"] or report["would_change"])
     return int(unsafe)
