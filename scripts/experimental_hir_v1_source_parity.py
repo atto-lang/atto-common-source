@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 # The CLI must work as 'python scripts/...' from a clean checkout.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -81,12 +82,20 @@ def main(argv=None):
         source = args.source.read_bytes()
         if len(source) > 1_048_576:
             raise IRValidationError("source exceeds 1 MiB")
-        # The exact same file path is passed to both real parser entrypoints.
-        java = run_exact([args.java_binary, "-cp", args.java_classpath,
-                          "dev.oreslang.compiler.ExperimentalHirV1Exporter",
-                          str(args.source)], args.timeout)
-        llvm = run_exact([args.llvm_binary, "--experimental-emit-hir-v1",
-                          str(args.source)], args.timeout)
+        # Snapshot the source: a moving file cannot silently feed different
+        # compiler inputs during the comparison.
+        with tempfile.TemporaryDirectory(prefix="ores-hir-v1-parity-") as tmp:
+            snapshot = Path(tmp) / "same-source.ores"
+            snapshot.write_bytes(source)
+            java = run_exact([args.java_binary, "-cp", args.java_classpath,
+                              "dev.oreslang.compiler.ExperimentalHirV1Exporter",
+                              str(snapshot)], args.timeout)
+            if snapshot.read_bytes() != source:
+                raise IRValidationError("source snapshot changed during Java frontend")
+            llvm = run_exact([args.llvm_binary, "--experimental-emit-hir-v1",
+                              str(snapshot)], args.timeout)
+            if snapshot.read_bytes() != source:
+                raise IRValidationError("source snapshot changed during LLVM frontend")
         evidence = compare_hir(java, llvm, entry=args.entry, expected=args.expected_i64)
         evidence["source_sha256"] = sha256(source).hexdigest()
         # Externally supplied binaries are not cryptographically attested here.
