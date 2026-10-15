@@ -8,6 +8,8 @@ on:
       - "contracts/ores-*-v1.experimental.schema.json"
       - "docs/EXPERIMENTAL_HIR_MIR_V1.md"
       - "tests/test_ir_v1*.py"
+      - "tests/test_experimental_hir_source_parity.py"
+      - "scripts/experimental_hir_v1_source_parity.py"
       - ".github/workflows/experimental-hir-mir-v1.yml"
   pull_request:
     paths:
@@ -16,6 +18,8 @@ on:
       - "contracts/ores-*-v1.experimental.schema.json"
       - "docs/EXPERIMENTAL_HIR_MIR_V1.md"
       - "tests/test_ir_v1*.py"
+      - "tests/test_experimental_hir_source_parity.py"
+      - "scripts/experimental_hir_v1_source_parity.py"
       - ".github/workflows/experimental-hir-mir-v1.yml"
 
 permissions:
@@ -40,6 +44,8 @@ jobs:
         run: python -m compileall -q experiments/ir_v1 tests/test_ir_v1.py tests/test_ir_v1_hardening.py tests/test_ir_v1_schema.py
       - name: Test all experimental IR semantics and schema conformance
         run: python -m unittest discover -s tests -p 'test_ir_v1*.py' -v
+      - name: Test fail-closed exact-source frontend comparison harness
+        run: python -m unittest discover -s tests -p 'test_experimental_hir_source_parity.py' -v
       - name: Check JSON schemas parse
         run: |
           python -m json.tool contracts/ores-hir-v1.experimental.schema.json >/dev/null
