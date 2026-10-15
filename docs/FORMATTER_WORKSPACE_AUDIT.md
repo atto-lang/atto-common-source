@@ -47,8 +47,27 @@ the current source trees contain invalid, negative, and backend-unsupported
 compiler fixtures, so rejection and would-change observations must be
 triaged before promoting the entire inventory to a mandatory formatting gate.
 The default inventory exits nonzero for unsafe tool failures, source changes,
-oversized inputs or lack of formatter idempotence; ordinary compiler-negative
-formatter rejections remain separately visible in its JSON report.
+oversized inputs, malformed sources or lack of formatter idempotence; ordinary
+source-syntax formatter rejections remain separately visible in its JSON report.
+Exit code 1 is treated as a formatter source rejection, while crashes, CLI
+usage failures and other nonzero codes are tool errors, not evidence of a
+legitimate negative source fixture.
+
+The audit bounds input snapshots and captured formatter output (at most
+twice the configured input limit), rejects input symlinks and nonregular files
+at open time, and kills timed-out or output-flooding formatter process groups.
+Each candidate's temporary input must remain a regular, unchanged file. If
+an input exceeds the limit its `input_sha256` is `null`, rather than a
+misleading digest of a truncated prefix. The JSON statuses
+`invalid_source`, `oversize_output`, `timeout`, `unsafe_temp_write`
+and `source_changed` are blocking outcomes.
+
+This is not an OS sandbox or an atomic read-only filesystem snapshot: a
+malicious formatter can attempt writes outside its temporary directory, and
+another process can mutate a checked-out source tree while the audit runs.
+Run reviewed formatter binaries in an isolated, read-only CI checkout and
+verify source Git trees before and after the inventory. An audit does not
+prove the underlying compiler source semantics or test execution.
 
 ## Acceptance criteria before enforcing a formatter check
 
