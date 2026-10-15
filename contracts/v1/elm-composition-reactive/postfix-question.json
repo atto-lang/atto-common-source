@@ -1,0 +1,339 @@
+{
+  "version": 1,
+  "status": "model_only_no_guest_source_parity",
+  "title": "postfix ? short-circuit, exception and cleanup admission vectors",
+  "tests": [
+    {
+      "id": "result_value",
+      "operand": "Result",
+      "state": "ok",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "VALUE",
+      "defers": []
+    },
+    {
+      "id": "result_err_return",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "RETURN_ERR",
+      "defers": []
+    },
+    {
+      "id": "result_err_throw",
+      "operand": "Result",
+      "state": "err",
+      "returns": "scalar",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "THROW",
+      "defers": []
+    },
+    {
+      "id": "result_err_return_precedes_throw",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "RETURN_ERR",
+      "defers": []
+    },
+    {
+      "id": "result_err_mismatched_error",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": false,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "result_err_no_typed_throw",
+      "operand": "Result",
+      "state": "err",
+      "returns": "scalar",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "result_err_non_error_throw",
+      "operand": "Result",
+      "state": "err",
+      "returns": "scalar",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": false,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "option_value",
+      "operand": "Option",
+      "state": "some",
+      "returns": "Option",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "VALUE",
+      "defers": []
+    },
+    {
+      "id": "option_none_return",
+      "operand": "Option",
+      "state": "none",
+      "returns": "Option",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "RETURN_NONE",
+      "defers": []
+    },
+    {
+      "id": "option_none_not_throw",
+      "operand": "Option",
+      "state": "none",
+      "returns": "scalar",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "option_none_result_return",
+      "operand": "Option",
+      "state": "none",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "future_not_result",
+      "operand": "Future",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "stream_not_result",
+      "operand": "Stream",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "observable_not_result",
+      "operand": "Observable",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "channel_not_result",
+      "operand": "Channel",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "REJECT",
+      "defers": []
+    },
+    {
+      "id": "raise_bypasses_question",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "RAISE",
+      "expect": "RAISE",
+      "defers": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "id": "panic_bypasses_question",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "PANIC",
+      "expect": "PANIC",
+      "defers": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "id": "cancel_bypasses_question",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "CANCEL",
+      "expect": "CANCEL",
+      "defers": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "id": "fatal_bypasses_question",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "FATAL",
+      "expect": "FATAL",
+      "defers": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "id": "throw_bypasses_question",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": true,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "THROW",
+      "expect": "THROW",
+      "defers": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "id": "cleanup_throw_overrides_early_return",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "THROW",
+      "defers": [
+        "left",
+        "right"
+      ],
+      "cleanup_failure": "THROW"
+    },
+    {
+      "id": "cleanup_raise_overrides_early_return",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "RAISE",
+      "defers": [
+        "left",
+        "right"
+      ],
+      "cleanup_failure": "RAISE"
+    },
+    {
+      "id": "cleanup_panic_overrides_early_return",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "PANIC",
+      "defers": [
+        "left",
+        "right"
+      ],
+      "cleanup_failure": "PANIC"
+    },
+    {
+      "id": "cleanup_cancel_overrides_early_return",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "expect": "CANCEL",
+      "defers": [
+        "left",
+        "right"
+      ],
+      "cleanup_failure": "CANCEL"
+    },
+    {
+      "id": "raise_preserves_priority_over_cleanup_throw",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "RAISE",
+      "expect": "RAISE",
+      "defers": [
+        "left",
+        "right"
+      ],
+      "cleanup_failure": "THROW"
+    },
+    {
+      "id": "panic_preserves_priority_over_cleanup_raise",
+      "operand": "Result",
+      "state": "err",
+      "returns": "Result",
+      "throws": false,
+      "matching_error": true,
+      "error_derived": true,
+      "preexisting": "PANIC",
+      "expect": "PANIC",
+      "defers": [
+        "left",
+        "right"
+      ],
+      "cleanup_failure": "RAISE"
+    }
+  ]
+}
