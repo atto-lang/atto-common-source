@@ -19,7 +19,14 @@ profile. A separate HIR JSON flag without compatible runtime code generation
 is **never** sufficient evidence of checked behavior.
 
 The directive must be at offset 0 (no BOM, indentation or blank line).
-Ordinary units retain their existing wrapping integer behavior.
+A recognizable `// oreslang:checked-i64` directive with an unsupported
+version, CRLF terminator, BOM, leading whitespace, extra trailing text,
+duplicate occurrence or displaced line is a **hard compile/admission error**
+in both Java and LLVM; it must **not** downgrade to wrapping arithmetic.
+The native host compiler and Java guest parser check this before compiling
+source. Comments/strings elsewhere that are not directive lines are not
+opt-ins. Ordinary units without a checked directive retain their existing
+wrapping integer behavior.
 The current opt-in applies to one source unit, not imported modules. It
 does not presently negotiate non-host Wasm, freestanding Cortex-M, actor
 scheduling or native-image AOT semantics.
