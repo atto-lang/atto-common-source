@@ -98,6 +98,39 @@ class WorkspaceAuditTests(unittest.TestCase):
             self.assertEqual(report["counts"]["tool_error"], 7)
             self.assertEqual(report["counts"]["rejected"], 0)
 
+    def test_snapshot_rejects_symlink_and_special_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "case.ores"
+            source.write_bytes(b"safe\n")
+            alias = root / "alias.ores"
+            alias.symlink_to(source)
+            with self.assertRaises(ValueError):
+                module.snapshot_source(alias, 100)
+            self.assertEqual(module.snapshot_source(source, 100), (b"safe\n", False))
+            if hasattr(__import__("os"), "mkfifo"):
+                import os
+                pipe = root / "fifo.ores"
+                os.mkfifo(pipe)
+                # O_NONBLOCK avoids waiting for a FIFO writer while fstat
+                # rejects the nonregular descriptor before source.read().
+                with self.assertRaises(ValueError):
+                    module.snapshot_source(pipe, 100)
+
+    def test_formatter_replacement_of_temporary_input_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "from pathlib import Path\n"
+                "import sys\n"
+                "path=Path(sys.argv[-1])\n"
+                "path.unlink()\n"
+                "path.symlink_to('/etc/passwd')\n"
+                "print('formatted')\n")
+            report = module.audit(roots, binary)
+            self.assertEqual(report["counts"]["unsafe_temp_write"], 7)
+            for root in roots.values():
+                self.assertEqual((root / "test.ores").read_bytes(), b"original\n")
+
     def test_rejects_missing_roots_and_ignores_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
