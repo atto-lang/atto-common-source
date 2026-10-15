@@ -184,3 +184,15 @@ or successfully verified by executable CI.
 - **Numeric stale-work audit:** Java `main` already contains `int/int -> FLOAT` checker rule and `DivisionTypeSoundnessTest` (4 cases, including actual guest output). Filed source evidence on #798, leaving native parity and executed tests open.
 - **P0 confidentiality still active:** GitHub metadata still identifies `zed-pkg-test/java-app` as PUBLIC (repository ID 1323575966); posted verified visibility to platform-conformance #22. Existing GitHub connection cannot change repository visibility. No cross-organization private-source transfer performed.
 - **CI:** Added new zero-step runner evidence and missing job logs to Java #963. No current-head Java tests were actually run.
+
+
+### Connected code hardening on a recovered task
+
+- [conformance #32](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/32):
+  [Java PR #1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034)
+  now rejects empty comma-separated allow/deny scopes, including trailing
+  commas, and stages normalized values before committing a permission grant or
+  denial. Added CLI usage-error regressions and builder transactional tests
+  for malformed paths. Exact Java PR head: f70953cd72f4debf9e39740ae9bf1125777145ce.
+  **No Java/JDK25/Graal/native test pass is claimed**; the recovered issue
+  remains open pending full executable evidence and flags-2-env integration.
