@@ -15,3 +15,7 @@ Extend this corpus in the common-source repository first, then update Java and L
 ## Expanded stage-one regression inventory
 
 Six new canonical cases, promoted from the LLVM #401 test matrix, cover long dependent-default chains, positional-plus-named type parameters, explicit inference holes with independent defaults, uninferrable dependent holes, duplicate generic declarations, and self-dependent defaults. Identical cases already present in v1 are deliberately not duplicated. LLVM execution/diagnostics are required; new Java/Graal cases remain pending until independently executed.
+
+## Type-safety requirement for portable positive fixtures
+
+Positive cross-backend fixtures must be well-typed *before specialization* as well as afterward. In particular, an unconstrained generic type parameter is not known to support `+`: Java rejects arithmetic on `A` and `B`, while the current LLVM scalar-only specialization may accept that usage by monomorphizing to `int`. The default-chain, named-override, and positional/named fixtures therefore use `A`-typed identity returns (`return x`) to prove type binding, defaults, and the executable exit code without making an unproven numeric-trait assumption. Numeric generic arithmetic belongs in a separately constrained contract once a shared bound/trait is specified.
