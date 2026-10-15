@@ -1,0 +1,514 @@
+{
+  "version": 1,
+  "status": "proposed conformance model, not compiler execution",
+  "notes": "Expected results for a deliberately conservative reference checker; pointer allow cases require proof bits no shipping backend currently supplies.",
+  "cases": [
+    {
+      "name": "primitive actor move",
+      "type": {
+        "kind": "primitive"
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "string actor copy",
+      "type": {
+        "kind": "string"
+      },
+      "boundary": "actor_private",
+      "mode": "copy",
+      "allow": true
+    },
+    {
+      "name": "string actor share",
+      "type": {
+        "kind": "string"
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": true
+    },
+    {
+      "name": "global symbol actor share",
+      "type": {
+        "kind": "symbol",
+        "scope": "global"
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": true
+    },
+    {
+      "name": "private symbol actor share denied",
+      "type": {
+        "kind": "symbol",
+        "scope": "module_private"
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": false
+    },
+    {
+      "name": "private symbol same module local move",
+      "type": {
+        "kind": "symbol",
+        "scope": "module_private"
+      },
+      "boundary": "local_channel",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "immutable record send",
+      "type": {
+        "kind": "record",
+        "fields": [
+          {
+            "kind": "string"
+          },
+          {
+            "kind": "primitive"
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "nested function record denial",
+      "type": {
+        "kind": "record",
+        "fields": [
+          {
+            "kind": "string"
+          },
+          {
+            "kind": "function"
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "nested borrowed record denial",
+      "type": {
+        "kind": "record",
+        "fields": [
+          {
+            "kind": "primitive"
+          },
+          {
+            "kind": "borrow",
+            "target": {
+              "kind": "string"
+            }
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "deep copy record allowed",
+      "type": {
+        "kind": "record",
+        "fields": [
+          {
+            "kind": "string"
+          },
+          {
+            "kind": "array",
+            "item": {
+              "kind": "primitive"
+            }
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "copy",
+      "allow": true
+    },
+    {
+      "name": "share mutable array denied",
+      "type": {
+        "kind": "array",
+        "item": {
+          "kind": "string"
+        }
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": false
+    },
+    {
+      "name": "share frozen array",
+      "type": {
+        "kind": "array",
+        "item": {
+          "kind": "string"
+        },
+        "frozen": true
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": true
+    },
+    {
+      "name": "serializable-only class actor denied",
+      "type": {
+        "kind": "class",
+        "serializable": true,
+        "fields": [
+          {
+            "kind": "string"
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "serializable-only class wire admitted",
+      "type": {
+        "kind": "class",
+        "serializable": true,
+        "fields": [
+          {
+            "kind": "string"
+          }
+        ]
+      },
+      "boundary": "wire",
+      "mode": "serialize",
+      "allow": true
+    },
+    {
+      "name": "sendable class with proof actor admitted",
+      "type": {
+        "kind": "class",
+        "sendable_proof": true,
+        "fields": [
+          {
+            "kind": "string"
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "sendable class with unshareable field denied",
+      "type": {
+        "kind": "class",
+        "sendable_proof": true,
+        "fields": [
+          {
+            "kind": "function"
+          }
+        ]
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "mutable class share denied",
+      "type": {
+        "kind": "class",
+        "sendable_proof": true,
+        "shareable_proof": true,
+        "fields": [
+          {
+            "kind": "primitive"
+          }
+        ]
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": false
+    },
+    {
+      "name": "frozen shareable class",
+      "type": {
+        "kind": "class",
+        "sendable_proof": true,
+        "shareable_proof": true,
+        "frozen": true,
+        "fields": [
+          {
+            "kind": "primitive"
+          }
+        ]
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": true
+    },
+    {
+      "name": "local callable moves",
+      "type": {
+        "kind": "function"
+      },
+      "boundary": "local_channel",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "local pointer moves",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "primitive"
+            }
+          ]
+        }
+      },
+      "boundary": "local_channel",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "borrowed local pointer cannot move",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "primitive"
+            }
+          ]
+        },
+        "live_loans": true
+      },
+      "boundary": "local_channel",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "actor pointer denied without lowering",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "primitive"
+            }
+          ]
+        }
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "actor pointer with compiler verified handoff",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "primitive"
+            }
+          ]
+        },
+        "sendable_proof": true,
+        "domain_handoff": true
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "pointer cross actor copy requires real deep copy",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "array",
+              "item": {
+                "kind": "primitive"
+              }
+            }
+          ]
+        }
+      },
+      "boundary": "actor_shared",
+      "mode": "copy",
+      "allow": false
+    },
+    {
+      "name": "pointer actor copy with independent storage",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "array",
+              "item": {
+                "kind": "primitive"
+              }
+            }
+          ]
+        },
+        "copy_proof": true,
+        "independent_copy": true
+      },
+      "boundary": "actor_shared",
+      "mode": "copy",
+      "allow": true
+    },
+    {
+      "name": "pointer actor share forbidden by default",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "string"
+            }
+          ]
+        }
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": false
+    },
+    {
+      "name": "pointer actor share proven immutable",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "string"
+            }
+          ]
+        },
+        "shareable_proof": true,
+        "frozen": true,
+        "shared_lifetime": true
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": true
+    },
+    {
+      "name": "pointer with mutable array not shareable",
+      "type": {
+        "kind": "pointer",
+        "target": {
+          "kind": "record",
+          "fields": [
+            {
+              "kind": "array",
+              "item": {
+                "kind": "string"
+              }
+            }
+          ]
+        },
+        "shareable_proof": true,
+        "frozen": true,
+        "shared_lifetime": true
+      },
+      "boundary": "actor_shared",
+      "mode": "share",
+      "allow": false
+    },
+    {
+      "name": "actor ref within owned runtime",
+      "type": {
+        "kind": "actor_ref",
+        "runtime_affinity": true
+      },
+      "boundary": "actor_shared",
+      "mode": "move",
+      "allow": true
+    },
+    {
+      "name": "actor ref across unrelated runtimes",
+      "type": {
+        "kind": "actor_ref",
+        "runtime_affinity": false
+      },
+      "boundary": "actor_shared",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "channel actor cannot cross",
+      "type": {
+        "kind": "channel"
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "mutex actor cannot cross",
+      "type": {
+        "kind": "mutex"
+      },
+      "boundary": "actor_private",
+      "mode": "move",
+      "allow": false
+    },
+    {
+      "name": "function wire denied",
+      "type": {
+        "kind": "function"
+      },
+      "boundary": "wire",
+      "mode": "serialize",
+      "allow": false
+    },
+    {
+      "name": "global symbol wire requires codec",
+      "type": {
+        "kind": "symbol",
+        "scope": "global"
+      },
+      "boundary": "wire",
+      "mode": "serialize",
+      "allow": true
+    },
+    {
+      "name": "private symbol wire denied",
+      "type": {
+        "kind": "symbol",
+        "scope": "module_private"
+      },
+      "boundary": "wire",
+      "mode": "serialize",
+      "allow": false
+    },
+    {
+      "name": "primitive wire serializable",
+      "type": {
+        "kind": "primitive"
+      },
+      "boundary": "wire",
+      "mode": "serialize",
+      "allow": true
+    }
+  ]
+}
