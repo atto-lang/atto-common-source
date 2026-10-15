@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "policy": "native-async-only",
+  "backends": [
+    "java",
+    "net",
+    "llvm",
+    "forge",
+    "wasm"
+  ],
+  "guestSurfaces": [
+    "fs",
+    "http",
+    "net",
+    "stdio"
+  ],
+  "downgradeAllowed": false,
+  "blockingWorkerFallbackAllowed": false,
+  "unsupported": "reject-before-artifact-publication",
+  "fixtureSha256": "e3b5caa3267683e7a1ec83f04d671333455746ceb87188dba6ec7ec1e75ec042"
+}

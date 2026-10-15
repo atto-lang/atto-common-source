@@ -54,9 +54,13 @@ The [ownership-first memory and performance contract](MEMORY_SAFETY_AND_PERFORMA
 
 The [ownership syntax contract](OWNERSHIP_SYNTAX.md) makes by-value ownership implicit and specifies that `owned` is not a standard keyword. The experimental LLVM `owned int` heap allocator marker must reject in normal compilation, and its test-only opt-in cannot count toward Java/LLVM source parity. Ordinary scalar bindings must not require an allocator or GC just to satisfy ownership semantics.
 
-## Native I/O API naming
+## Mandatory native asynchronous I/O
 
-Source-visible native synchronous I/O operations **must** end in `_blocking`. Async I/O operations may (but need not) end in `_async`; names alone never replace execution/effect validation. See [the normative naming contract](NATIVE_IO_NAMING.md) for scope, existing Java/Graal migration gaps, LLVM support status, negative tests and versioned rollout.
+All five backends and supporting repos require native asynchronous/nonblocking
+guest I/O without opt-in or blocking worker fallback. Unsupported operations
+reject. See [the normative contract](NATIVE_IO_NAMING.md) and the versioned
+`fixtures/mandatory-async-io.json` admission corpus. API names are not proof
+of asynchronous execution, ownership safety or capability authority.
 
 ## Executed guest result comparison
 
