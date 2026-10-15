@@ -1,0 +1,4 @@
+// oreslang:checked-i64-v1
+pub fnc main(): int {
+  return 9223372036854775807 + 1;
+}
