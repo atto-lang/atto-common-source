@@ -162,3 +162,17 @@ executable CI success. Recheck authenticated issue states before closing tasks.
 **Session scope:** recovered, deduplicated, confirmed and instrumented 50
 open issues. No claims that any of the 50 were fixed, merged, security-approved
 or successfully verified by executable CI.
+
+
+### Offline execution receipt (2026-10-15)
+
+- Committed checker Git blob SHA: 3c44ae31618f8486274c4bca1b366f3efa945d73.
+  Committed regression-suite blob SHA: f5b9e8b77edeb3ab6995c0d5636e69a49781d554.
+- Files reconstructed and verified against both exact Git blob hashes were
+  executed locally: **10/10 Python unit tests passed**, covering duplicate
+  and case-aliased GitHub IDs, missing/checked tasks, malformed links, empty
+  documents, missing next actions and invalid headings.
+- An independent read of the committed register yielded five sections of
+  10 open tasks each, **50 unique well-formed issue links**, zero errors.
+- This is offline inventory validation ONLY. Java/LLVM source compilation,
+  native-image, CTest, and GitHub Actions runner execution remain unverified.
