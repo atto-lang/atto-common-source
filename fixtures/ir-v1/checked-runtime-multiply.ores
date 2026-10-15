@@ -1,0 +1,7 @@
+// oreslang:checked-i64-v1
+pub fnc scale(int count): int {
+  return count * 43;
+}
+pub fnc main(): int {
+  return scale(1);
+}
