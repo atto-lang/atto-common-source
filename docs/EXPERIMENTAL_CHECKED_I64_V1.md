@@ -83,10 +83,13 @@ An overflow has fixed cross-backend identity:
   **Implementation status:** Java's internal typed signal carries operation
   tags. LLVM now packs each operation tag into the high 32 bits of its
   invocation-local 64-bit status; the low 32 bits hold `0x494F0001`.
-  The Python reference interpreter still reports diagnostic identity, not a
-  guest Error object. Cross-backend executable parity remains a conformance
-  gate until the new LLVM revision and Java runtime both pass on the same
-  fixtures.
+  The Python reference interpreter now raises a structured `CheckedI64Overflow`
+  (a subtype of `IRRuntimeError`) for MIR `add_i64`, `sub_i64`, and `mul_i64`,
+  retaining the stable code, operation tag, and packed status without exposing
+  operand data. MIR v1 has no native unary-negation opcode; the operation tag 4
+  remains specific to Java/LLVM source evaluation. This Python exception is a
+  reference-oracle signal, **not** a guest Error or proof of backend parity.
+  Cross-backend executable parity remains a conformance gate for exact heads.
 
 This identity is explicitly **not** a stable serialization of source-level
 `Error`, nor does this experiment yet provide cross-backend catch/recover,
