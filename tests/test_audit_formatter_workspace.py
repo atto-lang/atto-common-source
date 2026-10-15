@@ -60,6 +60,25 @@ class WorkspaceAuditTests(unittest.TestCase):
             for root in roots.values():
                 self.assertEqual((root / "test.ores").read_bytes(), b"original\n")
 
+    def test_oversized_formatter_stdout_is_bounded_and_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import sys\\n"
+                "sys.stdout.buffer.write(b'x' * 8192)\\n")
+            report = module.audit(roots, binary, max_bytes=16)
+            self.assertEqual(report["counts"]["oversize_output"], 7)
+            self.assertEqual(report["counts"]["formatted"], 0)
+            for root in roots.values():
+                self.assertEqual((root / "test.ores").read_bytes(), b"original\\n")
+
+    def test_hung_formatter_is_terminated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import time\\n"
+                "time.sleep(2)\\n")
+            report = module.audit(roots, binary, timeout=0.05)
+            self.assertEqual(report["counts"]["timeout"], 7)
+
     def test_rejects_missing_roots_and_ignores_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
