@@ -176,3 +176,11 @@ or successfully verified by executable CI.
   10 open tasks each, **50 unique well-formed issue links**, zero errors.
 - This is offline inventory validation ONLY. Java/LLVM source compilation,
   native-image, CTest, and GitHub Actions runner execution remain unverified.
+
+
+### Follow-up recovery work
+
+- **Java structural-record soundness:** [draft Java #1039](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1039) implements writable-record invariance and readonly structural views, adding 8 test methods / 64 type-pair matrix assertions (head `5721d29fed7e7817379c744818875a5d16c7e02b`). Fast-CI run [38811276315](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38811276315) failed with no executed steps. Reconcile with Java #853 and other structural type usages; do not mark tested.
+- **Numeric stale-work audit:** Java `main` already contains `int/int -> FLOAT` checker rule and `DivisionTypeSoundnessTest` (4 cases, including actual guest output). Filed source evidence on #798, leaving native parity and executed tests open.
+- **P0 confidentiality still active:** GitHub metadata still identifies `zed-pkg-test/java-app` as PUBLIC (repository ID 1323575966); posted verified visibility to platform-conformance #22. Existing GitHub connection cannot change repository visibility. No cross-organization private-source transfer performed.
+- **CI:** Added new zero-step runner evidence and missing job logs to Java #963. No current-head Java tests were actually run.
