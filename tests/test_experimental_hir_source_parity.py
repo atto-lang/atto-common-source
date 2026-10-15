@@ -51,6 +51,28 @@ class ActualFrontendParityHarnessTests(unittest.TestCase):
         with self.assertRaises(IRValidationError):
             run_exact(["/this/compiler/is/not/installed"], timeout=5)
 
+    def test_oversized_frontend_stdout_fails_closed(self):
+        with self.assertRaisesRegex(IRValidationError, "oversized"):
+            run_exact([sys.executable, "-c",
+                       "import sys; sys.stdout.write('x' * 1048577)"], timeout=5)
+
+    def test_stderr_diagnostic_is_bounded_on_frontend_failure(self):
+        with self.assertRaises(IRValidationError) as raised:
+            run_exact([sys.executable, "-c",
+                       "import sys; sys.stderr.write('E' * 120000); sys.exit(2)"],
+                      timeout=5)
+        self.assertIn("frontend command failed (2)", str(raised.exception))
+        self.assertLess(len(str(raised.exception)), 2400)
+
+    def test_frontend_subprocess_timeout_is_not_success(self):
+        with self.assertRaisesRegex(IRValidationError, "timed out"):
+            run_exact([sys.executable, "-c",
+                       "import time; time.sleep(2)"], timeout=0.05)
+
+    def test_empty_executable_is_not_success(self):
+        with self.assertRaises(IRValidationError):
+            run_exact([], timeout=5)
+
     def test_stdout_must_be_nonempty(self):
         with self.assertRaises(IRValidationError):
             run_exact([sys.executable, "-c", "pass"], timeout=5)
