@@ -1,0 +1,8 @@
+// Universal checked-i64 proof: identity(value * 1) cannot overflow,
+// and 40 + 3 is constant within the signed-64-bit range.
+pub fnc identity(int value): int {
+  return value * 1;
+}
+pub fnc main(): int {
+  return identity(40 + 3);
+}
