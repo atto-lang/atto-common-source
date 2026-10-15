@@ -116,8 +116,8 @@ class WorkspaceAuditTests(unittest.TestCase):
     def test_formatter_must_not_erase_real_source(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
-                "import sys\\n"
-                "sys.stdout.buffer.write(b'  \\n')\\n")
+                "import sys\n"
+                "sys.stdout.buffer.write(b'  \\n')\n")
             report = module.audit(roots, binary)
             self.assertEqual(report["counts"]["invalid_output"], 7)
             self.assertEqual(report["counts"]["formatted"], 0)
@@ -126,7 +126,7 @@ class WorkspaceAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
                 "import sys\\n"
-                "sys.stdout.buffer.write(bytes([255]))\\n")
+                "sys.stdout.buffer.write(bytes([255]))\n")
             report = module.audit(roots, binary)
             self.assertEqual(report["counts"]["invalid_utf8"], 7)
 
@@ -134,7 +134,7 @@ class WorkspaceAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
                 "import sys\\n"
-                "sys.stdout.buffer.write(b'never')\\n")
+                "sys.stdout.buffer.write(b'never')\n")
             for root in roots.values():
                 (root / "test.ores").write_bytes(bytes([255]))
             report = module.audit(roots, binary)
@@ -145,7 +145,7 @@ class WorkspaceAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             real = root / "real.ores"
-            real.write_bytes(b"allowed\\n")
+            real.write_bytes(b"allowed\n")
             linked = root / "linked.ores"
             linked.symlink_to(real)
             with self.assertRaises(ValueError):
@@ -159,8 +159,8 @@ class WorkspaceAuditTests(unittest.TestCase):
     def test_formatter_digest_streams_and_formatted_output_is_hashed(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
-                "import pathlib,sys\\n"
-                "sys.stdout.buffer.write(pathlib.Path(sys.argv[-1]).read_bytes())\\n")
+                "import pathlib,sys\n"
+                "sys.stdout.buffer.write(pathlib.Path(sys.argv[-1]).read_bytes())\n")
             report = module.audit(roots, binary)
             self.assertEqual(report["formatter_sha256"],
                              hashlib.sha256(binary.read_bytes()).hexdigest())
