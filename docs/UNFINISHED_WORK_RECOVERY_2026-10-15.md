@@ -86,3 +86,10 @@
 2. Execute existing source tests and record per-head proofs, not checkmark-only CI.
 3. Fix correctness/safety defects, integrate parent PR stacks, and obtain independent reviews.
 4. Close tasks only with compiler/runtime/test evidence, preserving explicit pending backend gaps.
+
+
+## Session execution log — 2026-10-15
+
+- **Formatter hardening:** [oreslang-format#66](https://github.com/ores-truffle-oreslang/oreslang-format/pull/66) now caps fixture input at 8 MiB, adds two rejection tests and documents the bound. Latest commit: 08fe720cfe93f859bbea1d5bbe5a2a072e7839e6. No executed test confirmation.
+- **Static manifest verification:** Audit comments on Java [#831](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/831) and [#825](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/825) confirm 15/15 manifest-to-fixture matches. Full compiler conformance remains unexecuted.
+- **Exact-head CI evidence:** Formatter PR #66 [run 38809570106](https://github.com/ores-truffle-oreslang/oreslang-format/actions/runs/38809570106) shows failed test and msrv jobs with zero executed steps. This recovery PR [run 38809465483](https://github.com/ores-truffle-oreslang/oreslang-common-source/actions/runs/38809465483) also shows zero test steps. These do not prove program/test failure.
