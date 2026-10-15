@@ -77,3 +77,12 @@ for the proposed runtime/performance acceptance criteria.
 
 See [ownership boundary audit](OWNERSHIP_BOUNDARY_AUDIT.md) for suspension,
 critical state loan, runtime operation and effect-contract admission rules.
+
+## Pointer and zero-copy proposal
+
+`Pointer<T>` and `rt ref` / `rt deref` / `rt unref` are a separate
+**draft**, not admitted by every backend. See [the Pointer and zero-copy
+contract](POINTER_AND_ZERO_COPY_CONTRACT.md) for scoped ownership, allocation,
+actor isolation, drop/cleanup gates, and the Java `rt unref` naming conflict.
+A managed `Pointer<T>` must not be confused with the deprecated experimental
+`owned int` spelling or with an unsafe raw numeric address.
