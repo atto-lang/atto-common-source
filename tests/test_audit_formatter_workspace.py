@@ -79,6 +79,15 @@ class WorkspaceAuditTests(unittest.TestCase):
             report = module.audit(roots, binary, timeout=0.05)
             self.assertEqual(report["counts"]["timeout"], 7)
 
+    def test_usage_exit_is_tool_error_even_in_inventory_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import sys\n"
+                "sys.exit(2)\n")
+            report = module.audit(roots, binary)
+            self.assertEqual(report["counts"]["tool_error"], 7)
+            self.assertEqual(report["counts"]["rejected"], 0)
+
     def test_rejects_missing_roots_and_ignores_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
