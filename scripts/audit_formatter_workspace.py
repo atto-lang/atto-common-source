@@ -12,7 +12,6 @@ import json
 import os
 import selectors
 import signal
-import stat
 import subprocess
 import tempfile
 import time
@@ -119,7 +118,10 @@ def formatter_pass(binary: Path, source: bytes, timeout: float,
         if status != "finished":
             return {"status": status, "detail": errors.decode("utf-8", "replace")}
         if process.returncode != 0:
-            return {"status": "rejected",
+            # Only the formatter's documented source-rejection exit (1) is
+            # an unsupported fixture. Usage errors, crashes and other
+            # failures must block even a non-strict inventory run.
+            return {"status": "rejected" if process.returncode == 1 else "tool_error",
                     "detail": errors.decode("utf-8", "replace"),
                     "exit_code": process.returncode}
         return {"status": "formatted", "output": bytes(output)}
