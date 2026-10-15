@@ -60,6 +60,30 @@ intrinsics with naked `nsw` arithmetic: poison is not a safe overflow signal.
 The Java host opt-in evaluator uses the corresponding `Math.*Exact`
 methods. Unmarked source uses pre-existing operations.
 
+## Typed overflow effect identity (experimental v1)
+
+An overflow has fixed cross-backend identity:
+
+- **Guest error type name:** `ArithmeticOverflowError` (to be derived from the
+  Oreslang `Error` class when source-language error allocation is implemented).
+- **Stable code and marker:** `ORES_I64_OVERFLOW`.
+- **Native effect status:** `Throw` with typed payload code `0x494F0001`.
+  This value is distinct from actor-supervision codes and process exit codes.
+- **Operation metadata:** `add`, `subtract`, `multiply`, or `negate`.
+  Neither source operands nor Java host cause objects can enter actor CONTROL
+  notifications.
+
+Failure is observable at the precise overflowing operation, even when the
+enclosing expression could otherwise be folded to a constant. An overflowing
+path produces no arithmetic result. Effect propagation across function calls
+must preserve this status and fail closed if a target cannot provide it.
+
+**Implementation scope:** Java currently uses a typed runtime boundary signal,
+not a source-constructed guest Error. Native LLVM has a typed effect-status
+substrate; executable scalar guests still use the temporary process exit 86
+boundary. No source catch/trap, actor supervision, AOT, or non-host target ABI
+is certified by the scalar host conformance tests.
+
 ## Migration from the conservative HIR exporter
 
 Without the source opt-in, the exporters retain universal interval proofs
