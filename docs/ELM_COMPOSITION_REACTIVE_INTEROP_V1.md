@@ -148,3 +148,8 @@ continuations and actor supervisor escalation → independent LLVM/Forge/.NET
 source lowering and Wasm adapter, gated by identical conformance vectors.
 `?` remains explicitly unsupported where the backend cannot prove
 return target, effect permission and cleanup ordering.
+
+### Current Java first slice (not yet CI-verified)
+
+Java draft #1017 admits only `val T x = local_result?;` and the matching Option variant inside an ordinary synchronous `fnc`, where the local carrier's type and ownership place are proven. It does not yet admit postfix application to a direct call expression or to an awaited result. Copyable carriers can be reused; move-only carriers cannot. Early-return within `try` runs `defer`/`finally` and never enters catch; early-return **from** defer/finally, or from an incorrectly inherited outer lambda context, is rejected. Typed `throws E`, `raise` and `panic` integration is not executable yet. Native backends still reject the source until positive lowering exists.
+
