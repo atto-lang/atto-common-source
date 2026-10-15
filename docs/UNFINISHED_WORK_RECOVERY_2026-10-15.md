@@ -1,6 +1,6 @@
-# Recovery audit: 50 unfinished Oreslang tasks (October 5–15, 2026)
+# Recovery audit: 50 unfinished Oreslang tasks (October 6–15, 2026)
 
-**Method:** open GitHub issues updated on/after October 5, 2026, cross-checked against ongoing Oreslang work. These are unfinished candidates, not 50 independently diagnosed defects or evidence of abandonment. Existing tickets are reused rather than cloned.
+**Method:** open GitHub issues updated within October 6–15, 2026, cross-checked against ongoing Oreslang work. These are unfinished candidates, not 50 independently diagnosed defects or evidence of abandonment. Existing tickets are reused rather than cloned.
 
 **Security:** Never export private source to public or unapproved test organizations. Passing tests is not permission to transfer code; use protected-main, security-reviewed allowlists and confirmed private destinations.
 
@@ -93,3 +93,72 @@
 - **Formatter hardening:** [oreslang-format#66](https://github.com/ores-truffle-oreslang/oreslang-format/pull/66) now caps fixture input at 8 MiB, adds two rejection tests and documents the bound. Latest commit: 08fe720cfe93f859bbea1d5bbe5a2a072e7839e6. No executed test confirmation.
 - **Static manifest verification:** Audit comments on Java [#831](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/831) and [#825](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/825) confirm 15/15 manifest-to-fixture matches. Full compiler conformance remains unexecuted.
 - **Exact-head CI evidence:** Formatter PR #66 [run 38809570106](https://github.com/ores-truffle-oreslang/oreslang-format/actions/runs/38809570106) shows failed test and msrv jobs with zero executed steps. This recovery PR [run 38809465483](https://github.com/ores-truffle-oreslang/oreslang-common-source/actions/runs/38809465483) also shows zero test steps. These do not prove program/test failure.
+
+
+## Fresh issue-state verification — 2026-10-15
+
+Authenticated reads of **all 50 canonical GitHub issue URLs above** returned
+**50 open, 0 closed, 0 fetch errors**. Every one of the 50 had a last-updated
+timestamp from **2026-10-13 through 2026-10-15**. These are active unresolved
+tasks, not 50 independently proven defects. No checkboxes were closed.
+
+Breakdown (all open): provenance/security **10/10**; CI/evidence **10/10**;
+actor/runtime **10/10**; language/native **10/10**; CLI/contracts **10/10**.
+
+Offline integrity gate: run
+- python3 scripts/validate_recovery_register.py
+- python3 -m unittest discover -s tests -p test_validate_recovery_register.py
+
+The gate rejects duplicate IDs, missing/malformed links, checked-off rows,
+missing concrete next actions, incorrect section order/count and an
+out-of-window heading. It **does not** query GitHub, run guest code, or establish
+executable CI success. Recheck authenticated issue states before closing tasks.
+
+### Evidence-first continuation order
+
+1. **P0 private-source containment**: [conformance #22](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/22),
+   [Java #832](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/832),
+   [Java #654](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/654),
+   [Java #994](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/994).
+   Do not mirror private code into public or unapproved repositories; identical
+   Git trees are not a substitute for reviewed publication authorization.
+2. **P0 executable CI**: [Java #963](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/963),
+   [LLVM #159](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/159),
+   [common-source #27](https://github.com/ores-truffle-oreslang/oreslang-common-source/issues/27).
+   Record runner identity, executed test steps, actual output and exact source SHA.
+3. **P1 actor/runtime**: cancellation/unwind
+   [Java #883](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/883),
+   quiescent HTTP shutdown [#973](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/973),
+   CONTROL mailbox isolation [#828](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/828).
+   Preserve stacked dependencies and require executable Java/LLVM proofs.
+4. **P1 language/ABI**: [Java #798](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/798) /
+   [LLVM #302](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/302)
+   division, overload binding
+   [Java #843](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/843),
+   native tagged patterns
+   [LLVM #316](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/316).
+5. **P1 CLI/release**: flags-2-env as the sole flags/permissions parser
+   [oreslang-cli #8](https://github.com/ores-truffle-oreslang/oreslang-cli/issues/8),
+   deny-by-default executable permissions
+   [conformance #32](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/32).
+
+### Nearby active draft implementations (not closure evidence)
+
+- [Java #1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034):
+  privileged host I/O default-deny; executable and flags-2-env integration pending.
+- [Java #1033](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1033):
+  IEEE-754 fixes; high-precision types, matrix math and native parity pending.
+- [Java #1035](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1035):
+  sealed actor-state retirement authority; stacked and unverified.
+- [LLVM #420](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/420):
+  overload signature validation; native guest execution still pending.
+- [serialization #13](https://github.com/ores-truffle-oreslang/oreslang-serialization-and-validation/pull/13):
+  network/actor codec declarations, not runtime integration.
+- [formatter #68](https://github.com/ores-truffle-oreslang/oreslang-format/pull/68):
+  atomic writes; ACL/xattr confinement and Rust CI pending.
+- [formatter #66](https://github.com/ores-truffle-oreslang/oreslang-format/pull/66):
+  bounded parity harness; compiled source parity still pending.
+
+**Session scope:** recovered, deduplicated, confirmed and instrumented 50
+open issues. No claims that any of the 50 were fixed, merged, security-approved
+or successfully verified by executable CI.
