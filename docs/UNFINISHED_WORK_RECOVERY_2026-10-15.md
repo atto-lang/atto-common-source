@@ -291,3 +291,27 @@ or successfully verified by executable CI.
   currently reports `protected: false`. Capacity is **not authorization**.
   No private source transferred, no cross-org branch created and no
   unverified Java test success claimed.
+
+
+### Host-interop hardening and review handoff — October 15
+
+- [Java #1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034):
+  committed additional class-level host-interop confinement for Java desktop,
+  print/audio services and unmanaged Timer threads. Added 9 dangerous-class
+  negative assertions to `ScopedPermissionInteropTest`, with the existing
+  safe `ArrayList` interop positive control retained. Exact commit
+  `15fd3afca1c66964b1d5ce2b46dafd96ced950a4`;
+  8/8 structural checks passed but **no executed JUnit evidence**.
+  [fast-ci 38824341539](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38824341539)
+  and [ci 38824341533](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38824341533)
+  again failed with **zero steps and no runner**. Keep draft.
+- [Rust CLI #9](https://github.com/ores-truffle-oreslang/oreslang-cli/pull/9):
+  requested **ORESoftware** as independent reviewer for the existing
+  `50a5dab187443acd86bb0d24f0d4b605d606e6cb` commit. It remains
+  review-ready with 24 passing executed Rust tests, not merged; no review
+  had been submitted when checked.
+- Private-source CI authorization remains blocked: `main` unprotected,
+  destination allowlist empty, and no permitted cross-organization export.
+  The source-local ephemeral runner workflow [Java #1014](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1014)
+  is review-pending and not yet usable; destination review [Java #1031](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1031)
+  likewise remains unmerged. No private source transfer performed.
