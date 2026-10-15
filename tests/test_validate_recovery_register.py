@@ -37,6 +37,16 @@ class RecoveryRegisterTest(unittest.TestCase):
         text = fixture().replace("repo/issues/1011", "repo/issues/1010")
         self.assertIn("duplicate issue", " ".join(CHECK.verify_register(text)))
 
+    def test_case_aliased_repo_does_not_make_a_unique_issue(self):
+        text = fixture().replace(
+            "github.com/ores-truffle-oreslang/repo/issues/1011",
+            "github.com/ores-truffle-oreslang/REPO/issues/1010",
+        )
+        self.assertIn("duplicate issue", " ".join(CHECK.verify_register(text)))
+
+    def test_empty_document_is_rejected_without_crashing(self):
+        self.assertTrue(CHECK.verify_register(""))
+
     def test_missing_item_is_rejected(self):
         text = fixture().replace(
             next(line for line in fixture().splitlines() if "repo/issues/1034" in line),
