@@ -36,7 +36,7 @@ An opt-in pure actor pattern may later offer `transition(state, msg) -> Transiti
 
 ## Postfix `?`: deterministic short-circuit and typed exceptional effects (draft v1.1)
 
-**Not admitted source syntax in the backends yet.** `?` is a compiler-owned
+**Staged admission:** Java draft #1017 now contains an initial synchronous named-local `Option`/`Result` return implementation and guest tests, **unverified by executed CI**; `throws E` conversion, direct call chains, methods, async/actors, LLVM/Wasm/Forge/.NET remain unadmitted. `?` is a compiler-owned
 postfix operator, not a host exception handler, not optional member access
 (`?.`), not `as?`, and not the existing `condition ? a : b` ternary.
 If the parser cannot disambiguate a source expression without changing the
