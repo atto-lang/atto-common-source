@@ -315,3 +315,35 @@ or successfully verified by executable CI.
   The source-local ephemeral runner workflow [Java #1014](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1014)
   is review-pending and not yet usable; destination review [Java #1031](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1031)
   likewise remains unmerged. No private source transfer performed.
+
+
+### Verified Rust backend-argument enforcement and mirror gate — 2026-10-15
+
+- [Rust CLI PR #9](https://github.com/ores-truffle-oreslang/oreslang-cli/pull/9):
+  denied an alternate permission authority channel through generic `--compiler-arg`.
+  Clap now rejects permission/isolation `--allow*`, `--deny*`, `--ores-*`,
+  `--permission-check*`, `--no-prompt*`, end-of-options and response-file
+  arguments before backend dispatch. Added process-level matrix exercising 9
+  unsafe options and run/check/lsp, plus a benign-argument positive control.
+  Exact commit `a47f60855ee3e7329490bda0c95d79e32527ca7f`:
+  [CI run 38826019046](https://github.com/ores-truffle-oreslang/oreslang-cli/actions/runs/38826019046)
+  **success**, `cargo fmt --all --check`, `cargo test --workspace --locked`
+  (**26/26 passing**), and public CLI smoke tests all executed and passed.
+  This is not proof of Java/Graal/LLVM sandboxing or safety of arbitrary
+  user-chosen `--compiler` executables.
+- [Java CI approval PR #1031](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1031):
+  confirmed proposed private carrier ID `1412142815` is missing from both
+  reviewed exporter pins in [#1018](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1018);
+  the Bash and Python publisher currently pin *only* `chapter-publishing-test/zed-pkg-integration-e2e`
+  ID `1344442382`. Security review blocker recorded on #1031: reconcile
+  immutable destination IDs, reviewed protected-main policy, and tests
+  **before** any transfer. Current main has no active approval and is unprotected.
+- [Java CI hardening PR #1018](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1018):
+  added exact-source-evidence review blocker: the current exporter validates
+  each uploaded blob's bytes but does not prove the destination Git tree is
+  identical to the reviewed source commit/tree (a collected working directory
+  may differ). Require reviewed source commit/tree binding and post-copy
+  subtree comparison before claiming exact-tree validation. No private
+  source transfer performed.
+- Pending: independent review of #9; #1034 Java JDK25 Maven/GraalVM tests
+  still unexecuted because source Actions jobs fail before runner allocation.
