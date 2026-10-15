@@ -347,3 +347,13 @@ or successfully verified by executable CI.
   source transfer performed.
 - Pending: independent review of #9; #1034 Java JDK25 Maven/GraalVM tests
   still unexecuted because source Actions jobs fail before runner allocation.
+
+
+### Java exact-head retry — October 15
+
+- Retried the original Java [fast-ci #38824341539](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38824341539)
+  for immutable PR #1034 head `15fd3afca1c66964b1d5ce2b46dafd96ced950a4`
+  using GitHub's exact-job rerun action. **Attempt 2** was accepted,
+  assigned job ID `116734093682`, and then **failed with zero steps
+  and no runner**. This is an infrastructure scheduling failure, *not*
+  Maven/JDK25/JUnit failure or passing evidence. Keep Java #1034 draft.
