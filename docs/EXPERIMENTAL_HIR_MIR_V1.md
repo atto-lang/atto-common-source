@@ -101,7 +101,7 @@ from the **same immutable source snapshot**:
 
 ```sh
 python3 scripts/experimental_hir_v1_source_parity.py \
-  --source fixtures/http-guest-counter-handler.ores \
+  --source fixtures/ir-v1/checked-safe-counter.ores \
   --java-classpath /absolute/path/to/oreslang-source.java/target/classes \
   --llvm-binary /absolute/path/to/oreslang-llvmc \
   --entry main --expected-i64 43
@@ -148,3 +148,21 @@ stable cross-language canonical wire specification.
    either production backend implements the shared semantics.
 5. Resolve infrastructure blockers for hosted CI, then pin tested interface
    versions and add rejection rules for unsupported target profiles.
+
+
+### Checked i64 admission (audit update)
+
+**Do not equate the experimental checked-i64 IR contract with the production
+integer runtime's wraparound behavior.** The actual Java/GraalVM and LLVM
+backends currently perform ordinary signed 64-bit addition/subtraction/
+multiplication without overflow traps. Both experimental exporters therefore
+run a conservative interval proof over each function's *entire* signed-i64
+parameter domain. A possible overflow, including `count * 43`, is rejected
+before exporting `checked-i64.v1`. Literals and genuinely safe operations
+such as `count * 1` and `40 + 3` remain admissible.
+
+The test fixture `fixtures/ir-v1/checked-safe-counter.ores` is intended for
+source-to-HIR parity. A passing guest result on this fixture is a **smoke test**
+and not evidence that production runtimes trap overflow. Remove this
+restriction only after both backends implement verified checked arithmetic,
+or introduce a separate explicitly negotiated wrapping-i64 IR contract.
