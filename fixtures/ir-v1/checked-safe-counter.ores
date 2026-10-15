@@ -1,0 +1,9 @@
+// Experimental HIR v1 checked-i64-safe source: all parameter domains are safe.
+// The separate original counter-handler stress fixture contains dynamic
+// multiplication and is NOT admissible as checked-i64 on wrapping runtimes.
+pub fnc counter_response(int count): int {
+  return count;
+}
+pub fnc main(): int {
+  return counter_response(43);
+}
