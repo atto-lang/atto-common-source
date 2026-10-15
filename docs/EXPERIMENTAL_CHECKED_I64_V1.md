@@ -23,10 +23,16 @@ A recognizable `// oreslang:checked-i64` directive with an unsupported
 version, CRLF terminator, BOM, leading whitespace, extra trailing text,
 duplicate occurrence or displaced line is a **hard compile/admission error**
 in both Java and LLVM; it must **not** downgrade to wrapping arithmetic.
+Non-canonical spacing **inside** the line-comment token is also rejected:
+`//oreslang:checked-i64-v1`, `//  oreslang:checked-i64-v1` and
+`//\\toreslang:checked-i64-v1` are *not* ordinary unmarked comments.
+Detection is lexical, not merely line-oriented: marker-looking text inside
+quoted strings or nested block comments is not a directive. A genuine
+line-comment marker after source tokens or a closed block comment is
+displaced and rejected.
 The native host compiler and Java guest parser check this before compiling
-source. Comments/strings elsewhere that are not directive lines are not
-opt-ins. Ordinary units without a checked directive retain their existing
-wrapping integer behavior.
+source. Ordinary units with no recognized checked marker retain their
+existing wrapping integer behavior.
 The current opt-in applies to one source unit, not imported modules. It
 does not presently negotiate non-host Wasm, freestanding Cortex-M, actor
 scheduling or native-image AOT semantics.
