@@ -99,10 +99,26 @@ path produces no arithmetic result. Effect propagation across function calls
 must preserve this status and fail closed if a target cannot provide it.
 
 **Implementation scope:** Java currently uses a typed runtime boundary signal,
-not a source-constructed guest Error. Native LLVM has a typed effect-status
-substrate; executable scalar guests still use the temporary process exit 86
-boundary. No source catch/trap, actor supervision, AOT, or non-host target ABI
-is certified by the scalar host conformance tests.
+not a source-constructed guest Error. LLVM's experimental host scalar codegen
+passes an invocation-owned compiler-hidden `i32*` effect-code slot through
+every checked function. On overflow, the function writes `0x494F0001`
+(`Throw`) and returns; each nested caller propagates the pending failure.
+Child-expression and call-argument guards prevent evaluating subsequent
+operands after a pending failure. Only standalone OS `main` converts an
+uncaught effect into the temporary `ORES_I64_OVERFLOW` diagnostic and
+process status 86. No process-global error slot is required.
+
+That slot carries only the checked-effect **code**, not yet a full guest
+`EffectStatus` value, guest Error allocation, or operation metadata.
+It is internal to the experimental host scalar profile, not an independently
+stable foreign-function ABI. No source catch/trap, actor supervision,
+reusable external invocation API, Graal compiled-mode parity, native-image
+AOT, or non-host target ABI is certified by these tests.
+Real LLVM guest execution has been confirmed against PR #385 revision
+`0980ee68d2e1eadaaa52cd68951a0b2cf82e9ac9`; subsequent
+short-circuit hardening commits require fresh exact-revision verification.
+Previous private-carrier execution does not approve further source transfers
+or replace missing source-repository CI checks.
 
 ## Migration from the conservative HIR exporter
 
