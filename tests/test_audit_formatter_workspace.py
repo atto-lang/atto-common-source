@@ -79,6 +79,16 @@ class WorkspaceAuditTests(unittest.TestCase):
             report = module.audit(roots, binary, timeout=0.05)
             self.assertEqual(report["counts"]["timeout"], 7)
 
+    def test_oversized_input_has_no_misleading_partial_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import pathlib,sys\n"
+                "sys.stdout.buffer.write(pathlib.Path(sys.argv[-1]).read_bytes())\n")
+            report = module.audit(roots, binary, max_bytes=3)
+            self.assertEqual(report["counts"]["oversize"], 7)
+            for result in report["results"]:
+                self.assertIsNone(result["input_sha256"])
+
     def test_usage_exit_is_tool_error_even_in_inventory_mode(self):
         with tempfile.TemporaryDirectory() as tmp:
             roots, binary = self.make_workspace(Path(tmp),
