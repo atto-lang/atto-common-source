@@ -70,8 +70,22 @@ An overflow has fixed cross-backend identity:
 - **Native effect status:** `Throw` with typed payload code `0x494F0001`.
   This value is distinct from actor-supervision codes and process exit codes.
 - **Operation metadata:** `add`, `subtract`, `multiply`, or `negate`.
-  Neither source operands nor Java host cause objects can enter actor CONTROL
-  notifications.
+  These map to the stable unsigned 32-bit experimental ABI tags **1, 2, 3,
+  4**, respectively. Invalid tags (including 0 or 5) must not be accepted as
+  a checked arithmetic failure. Neither source operands nor Java host cause
+  objects can enter actor CONTROL notifications.
+- **Normalized experimental outcome:** success is a signed-i64 value and
+  zero effect status; checked arithmetic overflow is a `Throw` with status
+  `0x494F0001` and one of the four operation tags above, with **no** value.
+  Host process code 86 is only an interim uncaught CLI translation of that
+  outcome. Never compare the process code to the native effect code or treat
+  it as a source-visible catchable guest Error object.
+
+This identity is explicitly **not** a stable serialization of source-level
+`Error`, nor does this experiment yet provide cross-backend catch/recover,
+unwind cleanup, actor-heap isolation or supervisor notice delivery. The Java
+runtime's internal host signal, the LLVM invocation-local error status and
+the Python reference interpreter must be distinguished until those gates pass.
 
 Failure is observable at the precise overflowing operation, even when the
 enclosing expression could otherwise be folded to a constant. An overflowing
