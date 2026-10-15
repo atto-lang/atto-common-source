@@ -196,3 +196,26 @@ or successfully verified by executable CI.
   for malformed paths. Exact Java PR head: f70953cd72f4debf9e39740ae9bf1125777145ce.
   **No Java/JDK25/Graal/native test pass is claimed**; the recovered issue
   remains open pending full executable evidence and flags-2-env integration.
+
+
+### Next-phase implementation receipt — 2026-10-15
+
+- The permissions hardening branch [Java #1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034)
+  now combines network endpoint / wildcard port-denial checks from [Java #1027](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1027)
+  with default-deny launcher behavior and transactionally staged permission CSV normalization.
+  A dedicated 14-case network regression suite was copied and extended; existing launcher
+  JUnit tests remain. Current exact head: 92f1b44b30531f3a892da42f74e3884a01949cdd.
+- **CI is still non-executable:** exact-head [fast-ci 38812966393](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38812966393)
+  and [ci 38812966327](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38812966327)
+  report zero executed steps for the checked jobs. This provides no source compilation
+  or JUnit/native-image evidence. PR #1034 remains draft.
+- [Java #994](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/994):
+  protected-main check is false; repository ruleset API returned GitHub 403 indicating
+  the private-repository plan does not permit the requested ruleset feature.
+  Source owners must enable an eligible private branch protection/review mechanism.
+  **Do not make the source repository public to work around billing/protection.**
+- [Java #963](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/963)
+  contains the exact-head zero-step runner evidence. No unapproved source transfer.
+- Next merge gate: independently confirm source confidentiality and reviewer controls,
+  execute targeted and full Java/Graal tests (and LLVM parity where required), then
+  carefully reconcile PRs #938/#1027/#1034. No work-item closure from these static commits.
