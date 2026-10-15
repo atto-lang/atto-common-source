@@ -12,6 +12,7 @@ import json
 import os
 import selectors
 import signal
+import stat
 import subprocess
 import tempfile
 import time
@@ -36,6 +37,30 @@ def discover(root: Path) -> list[Path]:
             if file.suffix == ".ores" and file.is_file() and not file.is_symlink():
                 files.append(file)
     return files
+
+
+
+def snapshot_source(path: Path, max_bytes: int) -> tuple[bytes, bool]:
+    """Read an admitted regular file once, without following a leaf symlink.
+
+    A swapped-in FIFO/device must fail rather than block the audit. This
+    protects the individual open, not an adversarially mutable directory tree.
+    """
+    if max_bytes < 0:
+        raise ValueError("negative input byte bound")
+    if path.is_symlink():
+        raise ValueError("source is a symbolic link")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_NONBLOCK", 0)
+    fd = os.open(path, flags)
+    with os.fdopen(fd, "rb") as source:
+        metadata = os.fstat(source.fileno())
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("source is not a regular file")
+        if metadata.st_size > max_bytes:
+            return b"", True
+        original = source.read(max_bytes + 1)
+        return original, len(original) > max_bytes
 
 
 def formatter_pass(binary: Path, source: bytes, timeout: float,
@@ -112,9 +137,13 @@ def formatter_pass(binary: Path, source: bytes, timeout: float,
                     if stream is not None:
                         stream.close()
 
-        if path.read_bytes() != source:
-            return {"status": "unsafe_temp_write",
-                    "detail": "formatter changed temporary input"}
+        try:
+            after, oversized = snapshot_source(path, len(source))
+            if oversized or after != source:
+                return {"status": "unsafe_temp_write",
+                        "detail": "formatter changed temporary input"}
+        except (OSError, ValueError) as exc:
+            return {"status": "unsafe_temp_write", "detail": str(exc)[:200]}
         if status != "finished":
             return {"status": status, "detail": errors.decode("utf-8", "replace")}
         if process.returncode != 0:
@@ -138,15 +167,17 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
         if not files:
             raise ValueError(f"no .ores source files under {repo}")
         for path in files:
-            # Read at most one byte past the cap; the former read_bytes()
-            # allocated the entire input before it could reject huge files.
-            with path.open("rb") as source:
-                original = source.read(max_bytes + 1)
-            oversized = len(original) > max_bytes
             item = {"repository": repo, "path": path.relative_to(root).as_posix(),
-                    # No truncated-prefix digest masquerading as a source SHA.
-                    "input_sha256": None if oversized
-                    else hashlib.sha256(original).hexdigest()}
+                    "input_sha256": None}
+            try:
+                original, oversized = snapshot_source(path, max_bytes)
+            except (OSError, ValueError) as exc:
+                item.update(status="invalid_source", detail=str(exc)[:200])
+                results.append(item)
+                continue
+            # Never advertise a truncated-prefix digest as the source SHA.
+            if not oversized:
+                item["input_sha256"] = hashlib.sha256(original).hexdigest()
             if oversized:
                 item.update(status="oversize", detail="file exceeds audit size limit")
             else:
@@ -168,13 +199,16 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
             # Source remains outside the formatter's temporary working directory.
             # A bounded post-read also detects a concurrent oversized rewrite.
             if not oversized:
-                with path.open("rb") as source:
-                    if source.read(max_bytes + 1) != original:
+                try:
+                    current, replaced_or_grown = snapshot_source(path, max_bytes)
+                    if replaced_or_grown or current != original:
                         item["status"] = "source_changed"
+                except (OSError, ValueError) as exc:
+                    item.update(status="source_changed", detail=str(exc)[:200])
             results.append(item)
     counts = {kind: sum(item["status"] == kind for item in results) for kind in
               ("formatted", "rejected", "unstable", "tool_error", "unsafe_temp_write",
-               "source_changed", "oversize", "oversize_output", "timeout")}
+               "source_changed", "invalid_source", "oversize", "oversize_output", "timeout")}
     return {"repositories": list(REPOSITORIES), "total": len(results), "counts": counts,
             "would_change": sum(bool(x.get("would_change")) for x in results),
             "formatter_sha256": hashlib.sha256(formatter.read_bytes()).hexdigest(),
@@ -208,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     report["formatter_pinned"] = bool(args.formatter_sha256)
     print(json.dumps(report, indent=2))
     unsafe = any(report["counts"][name] for name in
-                 ("unstable", "tool_error", "unsafe_temp_write", "source_changed", "oversize", "oversize_output", "timeout"))
+                 ("unstable", "tool_error", "unsafe_temp_write", "source_changed", "invalid_source", "oversize", "oversize_output", "timeout"))
     if args.strict:
         unsafe |= bool(report["counts"]["rejected"] or report["would_change"])
     return int(unsafe)
