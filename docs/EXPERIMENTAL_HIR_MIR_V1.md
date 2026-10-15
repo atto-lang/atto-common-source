@@ -89,6 +89,43 @@ The test matrix being *defined* is not evidence that either Python version has
 executed successfully. Keep this work in draft until a green exact-head
 run provides inspectable test logs. Local tests must be reported separately.
 
+## Exact-source Java/LLVM frontend comparison (experimental)
+
+The first **real parser → HIR** adapters are proposed separately:
+
+- [Java/GraalVM PR #956](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/956)
+- [LLVM PR #385](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/385)
+
+After building both compiler trees independently, compare their emissions
+from the **same immutable source snapshot**:
+
+```sh
+python3 scripts/experimental_hir_v1_source_parity.py \
+  --source fixtures/http-guest-counter-handler.ores \
+  --java-classpath /absolute/path/to/oreslang-source.java/target/classes \
+  --llvm-binary /absolute/path/to/oreslang-llvmc \
+  --entry main --expected-i64 43
+```
+
+The comparator invokes the **real** Java and LLVM compiler frontends,
+checks process exit status and output bounds, verifies each HIR
+semantically, checks source snapshots were not modified during execution,
+compares canonical HIR, then interprets verified common MIR. It fails on
+timeout, tool absence, mismatch or malformed output. Its six direct harness
+tests can run without compiler binaries:
+
+```sh
+python3 -m unittest discover -s tests -p 'test_experimental_hir_source_parity.py' -v
+```
+
+The harness output intentionally includes `"executed_backends": false`
+and `"compiler_revision_verified": false`. Even when both frontends
+emit matching HIR, this **does not** prove Java/LLVM machine-code behavior,
+source-to-AOT end-to-end correctness, borrow checker parity, or toolchain
+provenance. Resolve backend `int`/checked-i64 semantics before any
+production compilation may trust the result. Do not convert a missing runner
+into a passing comparison; CI failures must remain failures.
+
 ## Incrementality boundary
 
 The already-merged
