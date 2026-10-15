@@ -46,23 +46,37 @@ def compare_hir(java_raw: bytes, llvm_raw: bytes, *, entry=None, expected=None) 
 
 
 def run_exact(argv: list[str], timeout: int) -> bytes:
+    """Capture untrusted frontend output without buffering it all in RAM.
+
+    Temporary files avoid the unbounded PIPE-memory allocation performed by
+    capture_output=True. The HIR envelope is still limited to 1 MiB before
+    loading or interpreting any emitted JSON. This is not an OS sandbox:
+    disk quotas and process limits belong to the isolated CI runner.
+    """
+    if not argv or not argv[0]:
+        raise IRValidationError("frontend executable path is missing")
     try:
-        process = subprocess.run(
-            argv, stdin=subprocess.DEVNULL, capture_output=True,
-            timeout=timeout, check=False,
-        )
+        with tempfile.TemporaryFile(mode="w+b") as output, \
+                tempfile.TemporaryFile(mode="w+b") as errors:
+            process = subprocess.run(
+                argv, stdin=subprocess.DEVNULL, stdout=output, stderr=errors,
+                timeout=timeout, check=False,
+            )
+            errors.seek(0)
+            diagnostic = errors.read(2048).decode("utf-8", "replace")
+            if process.returncode != 0:
+                raise IRValidationError(
+                    "frontend command failed (" + str(process.returncode) + "): "
+                    + argv[0] + " stderr=" + diagnostic
+                )
+            size = output.tell()
+            if not 0 < size <= 1_048_576:
+                raise IRValidationError("missing/oversized emitted HIR: " + argv[0])
+            output.seek(0)
+            return output.read(1_048_577)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise IRValidationError("frontend binary unavailable or timed out: "
                                 + argv[0]) from exc
-    if process.returncode != 0:
-        raise IRValidationError(
-            "frontend command failed (" + str(process.returncode) + "): "
-            + argv[0] + " stderr=" + process.stderr[:2048].decode("utf-8", "replace")
-        )
-    if not process.stdout or len(process.stdout) > 1_048_576:
-        raise IRValidationError("missing/oversized emitted HIR: " + argv[0])
-    return process.stdout
-
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
