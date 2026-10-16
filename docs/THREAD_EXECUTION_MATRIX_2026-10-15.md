@@ -299,3 +299,26 @@ remains separate; this matrix avoids duplicating its issue inventory.
   placeholders for source head/tree, destination base and independent
   security/code-owner authorization. The public private-source exposure
   incident #22 remains open. NO real private source transfer took place.
+
+
+## Git directory preflight and synthetic runner proof — 2026-10-16
+
+- [Security draft PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43):
+  publisher now prevalidates **all source Git-tree entries**, including
+  directory paths, Git modes and SHAs, and denies case-insensitive
+  collisions before reading the first private blob. Also bans mirror
+  prefixes under `.github` to prevent accidental workflow-targeted copies.
+  Updated offline mocked-GitHub security suite: **46/46 passed**.
+- [Source-free private-runner synthetic test #38948996757](https://github.com/voxletra/voxletra-e2e/actions/runs/38948996757)
+  completed successfully on runner ID `1000002294`, exact test commit
+  `fcc901296d49a96541feef1ac3f693b7f9893e72`.
+  Log proofs: `GIT_SYMLINK_MODE_OBSERVED=yes`,
+  `GIT_CASE_COLLISION_OBSERVED=yes`,
+  `SYNTHETIC_SOURCE_TREE_PREFLIGHT=yes`,
+  `WORKFLOW_TARGET_PREFIX_DENIED=yes`.
+  Independently inspected a real GitHub recursive tree: directory
+  mode is `040000`, matching the publisher's preflight.
+- **Security status unchanged:** private Oreslang compiler source was NOT
+  transported across orgs; public-source incident #22 and protected export
+  policy approval issue #962 remain open. Mock tests and synthetic
+  private-runner tests do not establish Java/LLVM/.NET/Wasm/Forge parity.
