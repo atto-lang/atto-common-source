@@ -64,7 +64,11 @@
       "fixture": "reject-noncallable-stage.ores",
       "expected": "reject",
       "oracle": {
-        "diagnostic": "pipeline stage must be callable"
+        "diagnostic_class": "noncallable-pipeline-stage",
+        "diagnostic_contains": {
+          ".java": "pipeline stage must be a named callable",
+          ".llvm": "native pipeline stage requires a named scalar callable"
+        }
       },
       "candidate_implementations": [
         ".java",
@@ -81,7 +85,10 @@
       "fixture": "reject-maperr-on-option.ores",
       "expected": "reject",
       "oracle": {
-        "diagnostic": "unknown Option member map_err"
+        "diagnostic_class": "invalid-sum-member",
+        "diagnostic_contains": {
+          ".java": "unknown Option member 'map_err'"
+        }
       },
       "candidate_implementations": [
         ".java"
