@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -142,6 +144,63 @@ class WorkspaceAuditTests(unittest.TestCase):
             del roots[module.REPOSITORIES[-1]]
             with self.assertRaisesRegex(ValueError, "missing repository root"):
                 module.audit(roots, binary)
+
+
+    def test_formatter_must_not_erase_real_source(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import sys\n"
+                "sys.stdout.buffer.write(b'  \\n')\n")
+            report = module.audit(roots, binary)
+            self.assertEqual(report["counts"]["invalid_output"], 7)
+            self.assertEqual(report["counts"]["formatted"], 0)
+
+    def test_formatter_must_not_emit_invalid_utf8(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import sys\n"
+                "sys.stdout.buffer.write(bytes([255]))\n")
+            report = module.audit(roots, binary)
+            self.assertEqual(report["counts"]["invalid_utf8"], 7)
+
+    def test_invalid_utf8_source_is_not_submitted_to_formatter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import sys\n"
+                "sys.stdout.buffer.write(b'never')\n")
+            for root in roots.values():
+                (root / "test.ores").write_bytes(bytes([255]))
+            report = module.audit(roots, binary)
+            self.assertEqual(report["counts"]["invalid_source"], 7)
+            self.assertEqual(report["counts"]["formatted"], 0)
+
+    def test_no_follow_reader_rejects_leaf_symlinks_and_fifo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real = root / "real.ores"
+            real.write_bytes(b"allowed\n")
+            linked = root / "linked.ores"
+            linked.symlink_to(real)
+            with self.assertRaises(ValueError):
+                module.snapshot_source(linked, 1024)
+            if hasattr(os, "mkfifo"):
+                fifo = root / "pipe.ores"
+                os.mkfifo(fifo)
+                with self.assertRaisesRegex(ValueError, "regular"):
+                    module.snapshot_source(fifo, 1024)
+
+    def test_formatter_digest_streams_and_formatted_output_is_hashed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roots, binary = self.make_workspace(Path(tmp),
+                "import pathlib,sys\n"
+                "sys.stdout.buffer.write(pathlib.Path(sys.argv[-1]).read_bytes())\n")
+            report = module.audit(roots, binary)
+            self.assertEqual(report["formatter_sha256"],
+                             hashlib.sha256(binary.read_bytes()).hexdigest())
+            self.assertEqual(report["counts"]["formatted"], 7)
+            for item in report["results"]:
+                self.assertEqual(item["output_sha256"], item["input_sha256"])
+
 
 
 if __name__ == "__main__":

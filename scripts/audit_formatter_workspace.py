@@ -63,6 +63,15 @@ def snapshot_source(path: Path, max_bytes: int) -> tuple[bytes, bool]:
         return original, len(original) > max_bytes
 
 
+def sha256_file(path: Path) -> str:
+    """Hash reviewed binaries in bounded chunks instead of loading them into RAM."""
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        while chunk := source.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def formatter_pass(binary: Path, source: bytes, timeout: float,
                    max_output_bytes: int = 2097152) -> dict:
     # Do not use subprocess.run(capture_output=True): untrusted formatter
@@ -153,11 +162,20 @@ def formatter_pass(binary: Path, source: bytes, timeout: float,
             return {"status": "rejected" if process.returncode == 1 else "tool_error",
                     "detail": errors.decode("utf-8", "replace"),
                     "exit_code": process.returncode}
-        return {"status": "formatted", "output": bytes(output)}
+        if source.strip() and not output.strip():
+            return {"status": "invalid_output", "detail": "formatter erased nonblank source"}
+        formatted = bytes(output)
+        try:
+            formatted.decode("utf-8")
+        except UnicodeDecodeError:
+            return {"status": "invalid_utf8", "detail": "formatter returned non-UTF-8 output"}
+        return {"status": "formatted", "output": formatted}
 
 
 def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
           max_bytes: int = 1048576) -> dict:
+    if max_bytes <= 0 or timeout <= 0:
+        raise ValueError("max_bytes and timeout must be positive")
     results = []
     for repo in REPOSITORIES:
         if repo not in roots:
@@ -181,21 +199,27 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
             if oversized:
                 item.update(status="oversize", detail="file exceeds audit size limit")
             else:
-                first = formatter_pass(formatter, original, timeout, max_bytes * 2)
-                item["status"] = first["status"]
-                if first["status"] == "formatted":
-                    output = first["output"]
-                    second = formatter_pass(formatter, output, timeout, max_bytes * 2)
-                    item["would_change"] = output != original
-                    item["idempotent"] = (second["status"] == "formatted"
-                                           and second["output"] == output)
-                    if not item["idempotent"]:
-                        item["status"] = "unstable"
-                        item["detail"] = second.get("detail", "second pass changed output")
+                try:
+                    original.decode("utf-8")
+                except UnicodeDecodeError:
+                    item.update(status="invalid_source", detail="source is not valid UTF-8")
                 else:
-                    item["detail"] = first.get("detail", "")
-                    if "exit_code" in first:
-                        item["exit_code"] = first["exit_code"]
+                    first = formatter_pass(formatter, original, timeout, max_bytes * 2)
+                    item["status"] = first["status"]
+                    if first["status"] == "formatted":
+                        output = first["output"]
+                        item["output_sha256"] = hashlib.sha256(output).hexdigest()
+                        second = formatter_pass(formatter, output, timeout, max_bytes * 2)
+                        item["would_change"] = output != original
+                        item["idempotent"] = (second["status"] == "formatted"
+                                               and second["output"] == output)
+                        if not item["idempotent"]:
+                            item["status"] = "unstable"
+                            item["detail"] = second.get("detail", "second pass changed output")
+                    else:
+                        item["detail"] = first.get("detail", "")
+                        if "exit_code" in first:
+                            item["exit_code"] = first["exit_code"]
             # Source remains outside the formatter's temporary working directory.
             # A bounded post-read also detects a concurrent oversized rewrite.
             if not oversized:
@@ -208,10 +232,11 @@ def audit(roots: dict[str, Path], formatter: Path, timeout: float = 15,
             results.append(item)
     counts = {kind: sum(item["status"] == kind for item in results) for kind in
               ("formatted", "rejected", "unstable", "tool_error", "unsafe_temp_write",
-               "source_changed", "invalid_source", "oversize", "oversize_output", "timeout")}
+               "source_changed", "invalid_source", "oversize", "oversize_output", "timeout",
+               "invalid_output", "invalid_utf8")}
     return {"repositories": list(REPOSITORIES), "total": len(results), "counts": counts,
             "would_change": sum(bool(x.get("would_change")) for x in results),
-            "formatter_sha256": hashlib.sha256(formatter.read_bytes()).hexdigest(),
+            "formatter_sha256": sha256_file(formatter),
             "results": results}
 
 
@@ -231,18 +256,21 @@ def main(argv: list[str] | None = None) -> int:
         binary = args.formatter.resolve(strict=True)
         if not binary.is_file() or not os.access(binary, os.X_OK):
             raise ValueError("formatter must be an executable regular file")
-        digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+        digest = sha256_file(binary)
         if args.formatter_sha256 and digest != args.formatter_sha256.lower():
             raise ValueError("formatter SHA-256 mismatch")
         workspace = args.workspace.resolve(strict=True)
         roots = {name: workspace / name for name in REPOSITORIES}
         report = audit(roots, binary, args.timeout)
+        if report["formatter_sha256"] != digest:
+            raise ValueError("formatter binary changed during audit")
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     report["formatter_pinned"] = bool(args.formatter_sha256)
     print(json.dumps(report, indent=2))
     unsafe = any(report["counts"][name] for name in
-                 ("unstable", "tool_error", "unsafe_temp_write", "source_changed", "invalid_source", "oversize", "oversize_output", "timeout"))
+                 ("unstable", "tool_error", "unsafe_temp_write", "source_changed", "invalid_source", "oversize", "oversize_output", "timeout",
+                  "invalid_output", "invalid_utf8"))
     if args.strict:
         unsafe |= bool(report["counts"]["rejected"] or report["would_change"])
     return int(unsafe)

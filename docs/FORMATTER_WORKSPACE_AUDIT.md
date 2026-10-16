@@ -89,6 +89,17 @@ Java/LLVM compiler-admission harness. LLVM also includes a read-only corpus
 auditor. Java's related staged work is PR #959. This shared workspace
 inventory complements rather than replaces those per-backend tests.
 
+## Defensive input/output behavior
+
+The inventory reads each discovered `.ores` through newly opened regular-file
+handles with strict input bounds. On POSIX, nonblocking and no-follow flags
+prevent swapped FIFO or leaf symlink reads. Sources are rechecked after runs.
+Valid nonblank input must not be erased or replaced with invalid UTF-8.
+The formatter executable is hashed in bounded chunks before and after the
+audit and successful formatted output receives a separate SHA-256 digest.
+These checks do not sandbox executables, lock source checkouts, or prove compiler
+semantic equivalence; only run reviewed binaries in isolated environments.
+
 The audit tool itself is tested with synthetic formatter executables. Those
 offline tests confirm its handling of safe copies, detection of drift,
 idempotence and temporary-input mutation; they do **not** execute the real
