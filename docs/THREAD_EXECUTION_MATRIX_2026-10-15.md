@@ -103,3 +103,27 @@ remains separate; this matrix avoids duplicating its issue inventory.
    physical WCET and schedulability proofs beyond ordinary CI.
 5. Keep unverified or stacked PRs draft; require clean reviews and trustworthy
    workflow execution before merge.
+
+
+## Cross-organization CI carrier audit — October 16, 2026
+
+- The Actions API returned failed **zero-step** source-free capacity probes in
+  [akrion-sim/akrion-sim-e2e run 38927627366](https://github.com/akrion-sim/akrion-sim-e2e/actions/runs/38927627366),
+  [athlet-o/athleto-e2e run 38928471838](https://github.com/athlet-o/athleto-e2e/actions/runs/38928471838),
+  and [scintilla-run/scintilla-run-infra run 38927864632](https://github.com/scintilla-run/scintilla-run-infra/actions/runs/38927864632).
+  A separate canonical-cloud workflow also failed on Windows/macOS/Linux
+  with no recorded steps. These observations do **not** establish that each
+  organization's Actions minutes are exhausted, nor do they prove quota
+  availability; billing/policy/runner assignment require administrator checks.
+- [Conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  requires protected numeric source/destination repository IDs, rejects
+  identity swaps before source reads/writes, and verifies the exact nested
+  source Git tree SHA before publishing a CI branch. The updated privacy and
+  publisher functions passed **32/32** isolated mocked GitHub API tests.
+  GitHub Actions for this draft also failed with zero recorded steps.
+- No cross-organization source copy was performed in this audit. The
+  [public-mirror incident #22](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/22)
+  and [private CI protected-policy issue #962](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/962)
+  remain blockers; repo privacy alone does not constitute transfer approval.
+- A read-only status and remediation update was posted to
+  [CI issue #589](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/589).
