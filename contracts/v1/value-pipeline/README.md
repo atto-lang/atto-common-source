@@ -50,6 +50,15 @@ Current candidate implementation PRs (verified subsets; not five-backend parity)
 
 See `cases.json`; *candidate* means code exists but is not certified.
 
+## Diagnostic identity for rejection cases
+
+The registry's `oracle.diagnostic_class` is the cross-backend contract:
+it identifies the rejected program's failure category, **not** a requirement
+to duplicate one compiler's prose. `oracle.diagnostic_contains` contains
+verified backend-specific fragments for existing implementations. A target
+without a fragment must not be represented as having proven that diagnostic.
+All rejection cases must fail before LLVM IR or native execution is emitted.
+
 ## Verified exact-source CI evidence (2026-10-16)
 
 - [Java + LLVM guest source CI run 38926799818](https://github.com/voxletra/voxletra-e2e/actions/runs/38926799818): source blobs mirrored to a separately authorized **private** organization repository via the GitHub Tree API. Neither hosted job checked out the source organization or required secrets/cross-organization checkout tokens.
