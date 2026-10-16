@@ -67,3 +67,9 @@ See `cases.json`; *candidate* means code exists but is not certified.
 - [Shared contract CI run 38930516050](https://github.com/voxletra/voxletra-e2e/actions/runs/38930516050) independently checked ten exact common-source Git blobs and executed this contract's unittest suite.
 
 The remaining backends and all unverified modes remain `pending` in the case registry, not implicitly passed.
+
+## Wasm compiled scalar pipeline evidence
+
+[Exact LLVM-to-Wasm CI run 38932825727](https://github.com/voxletra/voxletra-e2e/actions/runs/38932825727) compiled the SHA-verified LLVM backend and 11 SHA-verified Wasm host inputs inside a private, authorized CI repository. The exact common scalar source fixture produced a wasm32 core guest with `main: () -> i64`; the host's isolated worker executed the compiled binary and returned **7**. Admission verified **zero host imports**, **zero host capabilities**, and **a maximum of two 64-KiB memory pages**. The shared invalid-stage source failed the native compiler and no Wasm artifact was published.
+
+This authorizes marking `.wasm` as a **candidate scalar** implementation in `cases.json`: Oreslang LLVM supplies the compiler while the Wasm repository supplies the checked core guest host. It does **not** authorize claiming independent Wasm parser support, tagged `Option`/`Result` lowering, actors, network capabilities, or full backend parity. The `.net` and `.forge` bootstrap frontends currently fail closed on `|>` in [NET #39](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/39) and [Forge #33](https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/33); they remain pending functional support.
