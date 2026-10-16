@@ -143,6 +143,23 @@
         ".forge",
         ".wasm"
       ]
+    },
+    {
+      "id": "aot-option-result-composition",
+      "fixture": "aot-option-result-composition.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 11
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
     }
   ]
 }
