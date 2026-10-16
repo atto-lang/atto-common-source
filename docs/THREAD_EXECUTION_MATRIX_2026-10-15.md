@@ -45,7 +45,9 @@ remains separate; this matrix avoids duplicating its issue inventory.
   The hosted job remains blocked, and this is **harness** evidence only.
 - Java import PR #1050: preserved literal whitespace in `ORES_PATHS` entries,
   hardened `forImportedPackage` against malformed `pkg:` inputs, and added
-  three JUnit regressions. **JDK25/Maven execution is not yet verified**.
+  three JUnit regressions (including Windows-style separator normalization).
+  An isolated JDK 21 path parser smoke passed; **full JDK25/Maven execution is
+  not yet verified**.
 - The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
   .NET, Wasm and Forge PR branches are exactly equal as parsed JSON; their
   `scripts/verify_serde_contract.py` content is also identical. This is
