@@ -276,3 +276,26 @@ remains separate; this matrix avoids duplicating its issue inventory.
   patch for that additional protection was blocked and not committed.
   Keep the security exposure incident, source transport approval and
   authentic native compiler evidence as mandatory gates.
+
+
+## Private carrier source-free workflow blob provenance — 2026-10-16
+
+- Draft [conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  now pins the *reviewed workflow Git blob SHA* at the exact successful
+  source-free runner probe commit, in addition to repository IDs, runner
+  evidence, source/destination commits/trees, source prefix and Git subtree
+  equivalence. It rejects truncated, missing, malformed, symlinked or altered
+  workflow entries before the **first private source Git read**.
+- [Private Voxletra runner #38940228917](https://github.com/voxletra/voxletra-e2e/actions/runs/38940228917)
+  used commit `b9d18dced1ed5848a9fcf2441e65a44abc3ef199`; the
+  source-free workflow's exact blob hash was
+  `6969c1b96f8ed40152c7b34235e5cff1d8d215b2`, within Git tree
+  `4fa25a05f0824e01e1b940008a52075019616450`. Source-free
+  runner and synthetic Git/Clang steps have real hosted logs.
+- Security publisher/visibility mocked-GitHub suite passes **44/44**
+  (previously 41/41). This is **not** private Oreslang compiler/runtime CI.
+- Prepared a [review proposal](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/security/pin-private-mirror-repository-ids-20261016/docs/VOXLETRA_PRIVATE_CARRIER_APPROVAL_PROPOSAL_2026-10-16.md)
+  with reviewed candidate identity evidence and explicit **UNAPPROVED**
+  placeholders for source head/tree, destination base and independent
+  security/code-owner authorization. The public private-source exposure
+  incident #22 remains open. NO real private source transfer took place.
