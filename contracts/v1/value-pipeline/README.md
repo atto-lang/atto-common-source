@@ -49,3 +49,12 @@ Current candidate implementation PRs (unverified):
 - WASM: guest-host admission is not itself a compiler implementation; parity depends on the exact native source target and real guest execution.
 
 See `cases.json`; *candidate* means code exists but is not certified.
+
+## Verified exact-source CI evidence (2026-10-16)
+
+- [Java + LLVM guest source CI run 38926799818](https://github.com/voxletra/voxletra-e2e/actions/runs/38926799818): source blobs mirrored to a separately authorized **private** organization repository via the GitHub Tree API. Neither hosted job checked out the source organization or required secrets/cross-organization checkout tokens.
+- GraalVM 25.3 JVM: **93/93 selected JUnit regressions passed** (0 failures/errors/skips), including the real value-pipeline evaluator, Option/Result variants, borrowing, call argument ordering, and parser cases.
+- Native LLVM 18.1.3: the exact shared scalar source fixture was compiled into LLVM IR and host machine code. Executed guest exit code **7** matches the oracle. Noncallable stages and unimplemented native Result operations produced diagnostics and **no IR**.
+- Shared canonical scalar fixture Git blob: `1ce089ef1592b2c263a44bb6a71067f5785c6f58`. Invalid-stage fixture Git blob: `7d0bb7f4984f22eb44d6d2c05c8008128aaed15a`.
+- Current verified intersection: Java/GraalVM source pipeline + Option/Result interpreter behavior and LLVM scalar-only compiled behavior. **Do not infer LLVM tagged Option/Result support, .NET, Forge or WASM support, a complete Maven suite, Native Image/JIT stress, or full five-backend parity from this evidence.**
+
