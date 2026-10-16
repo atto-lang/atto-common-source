@@ -78,15 +78,38 @@ def i64_literal(value):
 
 
 def canonical_bytes(value):
-    """Hash only strict, acyclic JSON; reject Python coercions and key aliases."""
+    """Hash only strict, acyclic JSON; reject Python coercions and key aliases.
+
+    Account for the encoded JSON budget *before* creating the entire output
+    buffer. Nested or escape-heavy inputs cannot force an unbounded temporary
+    canonical serialization merely to be rejected afterward.
+    """
     visiting = set()
+    charged = [0]
+
+    def charge(size):
+        charged[0] += size
+        require(charged[0] <= MAX_BYTES, "IR exceeds the one MiB limit")
 
     def check(v, depth):
         require(depth <= 64, "IR nesting exceeds 64 levels")
-        if v is None or type(v) in (str, bool):
+        if v is None:
+            charge(4)
+            return
+        if type(v) is bool:
+            charge(4 if v else 5)
+            return
+        if type(v) is str:
+            require(len(v) <= MAX_BYTES, "IR string exceeds one MiB")
+            try:
+                # Exact escaped UTF-8 length, including quotation marks.
+                charge(len(json.dumps(v, ensure_ascii=False).encode("utf-8")))
+            except (UnicodeError, ValueError, RecursionError) as exc:
+                raise IRValidationError("invalid canonical JSON string") from exc
             return
         if type(v) is int:
             require(v.bit_length() <= 256, "JSON integer exceeds 256 bits")
+            charge(len(str(v)))
             return
         if type(v) not in (list, dict):
             raise IRValidationError("IR contains a non-canonical JSON value")
@@ -94,13 +117,20 @@ def canonical_bytes(value):
         require(ref not in visiting, "IR contains a cyclic container")
         visiting.add(ref)
         try:
+            charge(2)  # Braces or brackets.
             if type(v) is dict:
                 require(all(type(k) is str for k in v),
                         "IR object keys must be strings")
-                for item in v.values():
+                for i, (key, item) in enumerate(v.items()):
+                    if i:
+                        charge(1)  # Comma.
+                    check(key, depth + 1)
+                    charge(1)  # Colon.
                     check(item, depth + 1)
             else:
-                for item in v:
+                for i, item in enumerate(v):
+                    if i:
+                        charge(1)
                     check(item, depth + 1)
         finally:
             visiting.remove(ref)
@@ -111,9 +141,9 @@ def canonical_bytes(value):
                          separators=(",", ":")).encode("utf-8")
     except (TypeError, ValueError, UnicodeError, RecursionError) as exc:
         raise IRValidationError("invalid canonical JSON value") from exc
+    require(len(raw) == charged[0], "canonical JSON size accounting drift")
     require(len(raw) <= MAX_BYTES, "IR exceeds the one MiB limit")
     return raw
-
 
 def fingerprint(value):
     return sha256(canonical_bytes(value)).hexdigest()
