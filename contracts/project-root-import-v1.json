@@ -9,7 +9,10 @@
     "lib/telemetry.ores",
     "lib/transport.java",
     "src/lib/store.ores",
-    "src/routes/rest/foo/bar/baz/local.ores"
+    "src/routes/rest/foo/bar/baz/local.ores",
+    "src/routes/rest/foo/bar/up.ores",
+    "src/.hidden/helper.ores",
+    "src/..backup/helper.ores"
   ],
   "resolution_cases": [
     {
@@ -182,6 +185,38 @@
         "oreslang-source.llvm#448",
         "oreslang-common-source#51"
       ]
+    }
+  ],
+  "relative_source_cases": [
+    {
+      "id": "explicit-sibling-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": "./local",
+      "namespace": "relative",
+      "expect": "src/routes/rest/foo/bar/baz/local.ores"
+    },
+    {
+      "id": "explicit-parent-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": "../up",
+      "namespace": "relative",
+      "expect": "src/routes/rest/foo/bar/up.ores"
+    },
+    {
+      "id": "dot-prefixed-bare-not-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": ".hidden/helper",
+      "namespace": "bare",
+      "source_root": "src",
+      "expect": "src/.hidden/helper.ores"
+    },
+    {
+      "id": "double-dot-prefixed-bare-not-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": "..backup/helper",
+      "namespace": "bare",
+      "source_root": "src",
+      "expect": "src/..backup/helper.ores"
     }
   ]
 }
