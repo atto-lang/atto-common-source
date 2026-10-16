@@ -42,7 +42,7 @@ The first pipe input is evaluated once. Each function invocation obeys the same 
 
 All five of `.java`, `.llvm`, `.net`, `.forge`, `.wasm` must pass the same source fixture identities and diagnostic categories before full language parity is claimed. Real compiler acceptance, executed results, ownership/negative cases, sanitizer and runtime evidence (where applicable), pinned commits, and working CI runners are required. A JSON manifest or syntax-only parser test **cannot** prove execution.
 
-Current candidate implementation PRs (unverified):
+Current candidate implementation PRs (verified subsets; not five-backend parity):
 - Java/GraalVM: [#1073](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1073): operator and sum-type combinators.
 - LLVM: [#455](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/455): scalar-only pipe lowering; Result/Option deliberately rejected.
 - .NET and Forge: restricted source subsets still lack general named callable expression lowering.
@@ -58,3 +58,12 @@ See `cases.json`; *candidate* means code exists but is not certified.
 - Shared canonical scalar fixture Git blob: `1ce089ef1592b2c263a44bb6a71067f5785c6f58`. Invalid-stage fixture Git blob: `7d0bb7f4984f22eb44d6d2c05c8008128aaed15a`.
 - Current verified intersection: Java/GraalVM source pipeline + Option/Result interpreter behavior and LLVM scalar-only compiled behavior. **Do not infer LLVM tagged Option/Result support, .NET, Forge or WASM support, a complete Maven suite, Native Image/JIT stress, or full five-backend parity from this evidence.**
 
+
+## Additional executed evidence
+
+- [GraalVM Native Image AOT run 38930232234](https://github.com/voxletra/voxletra-e2e/actions/runs/38930232234) built the Java source mirror into `ores-aot` and executed **four** byte-pinned Oreslang source programs: the shared scalar example and `option-map-aot.ores`, `result-chain-aot.ores`, `result-recovery-aot.ores`. Each returned its oracle exit code **7**, including `Option.map`, `Result.map`, `Result.and_then`, `Result.map_err`, and `Result.or_else`. The built native executable uses the Truffle *interpreter-only fallback* runtime; this proves AOT packaging/guest execution, **not** optimizing JIT.
+- [Contextual inline-lambda run 38931101960](https://github.com/voxletra/voxletra-e2e/actions/runs/38931101960) executed **95/95** GraalVM JVM regressions (zero failures/errors/skips) from a newer exact Java source head, including `Option.map(|n| -> ...)` and `Result.map_err(|e| -> ...)` with safe result-type inference.
+- AOT execution and contextual lambda JVM verification are pinned to **different** Java source revisions. Do not conflate them into a single all-modes-certified revision until the newer head runs the AOT gate.
+- [Shared contract CI run 38930516050](https://github.com/voxletra/voxletra-e2e/actions/runs/38930516050) independently checked ten exact common-source Git blobs and executed this contract's unittest suite.
+
+The remaining backends and all unverified modes remain `pending` in the case registry, not implicitly passed.
