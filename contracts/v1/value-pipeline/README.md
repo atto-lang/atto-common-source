@@ -11,7 +11,7 @@ pipeline_stage = IDENT [ "(" [ argument_list ] ")" ]
                | ( "Option" | "Result" ) "." IDENT "(" [ argument_list ] ")" ;
 ```
 
-`|>` is one contiguous token, left associative, binds weaker than a conditional and more strongly than assignment. It is unrelated to bitwise `|`, logical `||`, function-lambda delimiters or actor message-routing operators. Whitespace within `|>` is not allowed.
+`|>` is one contiguous token, left associative, binds weaker than a conditional and more strongly than assignment. It is unrelated to bitwise `|`, logical `||`, function-lambda delimiters or actor message-routing operators. Whitespace within `|>` is not allowed. In v1, at most **128 pipeline stages per expression** are admitted. A 129th stage must produce a compiler diagnostic before lowering or executing any partial program.
 
 For a named function, `x |> f(a,b)` evaluates `x` once before `a` and `b`, and invokes `f(x,a,b)`. `x |> f` invokes `f(x)`. Dynamic, effectful callee expressions are not admitted in v1; do not reorder evaluation to implement a broader syntax. Ordinary qualified stages such as `value |> object.method(arg)` are also rejected until dedicated left-first method receiver evaluation is implemented; they must not be silently rewritten into a conventional method call. A stage's nested arguments follow ordinary expression precedence and left-to-right argument evaluation. Pipelines do **not** imply error propagation, await, actor scheduling, short-circuiting or unwrapping.
 
@@ -32,7 +32,7 @@ For a named function, `x |> f(a,b)` evaluates `x` once before `a` and `b`, and i
 | Result.or_else | Result<T,E> | Result<T,F> | E -> Result<T,F> |
 | Result.ok | Result<T,E> | Option<T> | none |
 
-Callbacks run at most once and only for the applicable variant. `map_err` is **not** an Option method. `and_then` must preserve the original Result error type rather than implicitly erasing it. `transpose` preserves the None-vs-error distinction. Generic output types must be inferred from callback signatures; `Unknown` is only an implementation bootstrap, **not** the final type contract.
+Callbacks run at most once and only for the applicable variant. `map_err` is **not** an Option method. `and_then` must preserve the original Result error type rather than implicitly erasing it. Likewise, `or_else` must preserve the original Result success type. Callback constructors such as `Ok(value)` or `Err(error)` with an unknown opposite type parameter cannot erase those unchanged domains. `transpose` preserves the None-vs-error distinction. Generic output types must be inferred from callback signatures; `Unknown` is only an implementation bootstrap, **not** the final type contract.
 
 ## Ownership, effects, and observability
 
@@ -79,3 +79,9 @@ This authorizes marking `.wasm` as a **candidate scalar** implementation in `cas
 [Exact-source Wasm CI run 38932825727](https://github.com/voxletra/voxletra-e2e/actions/runs/38932825727) built the pinned LLVM compiler and used 11 exact-source Wasm host files. The canonical scalar pipeline compiled into wasm32 core Wasm and executed in the isolated worker with result **7**, **zero host imports**, **zero host capabilities**, and a **two-page linear-memory maximum**. The shared invalid pipeline failed compilation without publishing a Wasm artifact.
 
 The `.wasm` candidate statuses for `scalar-left-associative` and `reject-noncallable-stage` refer to the LLVM-to-Wasm compilation path, **not** to an independent parser or native tagged `Option`/`Result` implementation. The other `.wasm` cases remain pending. Likewise, [.NET #39](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/39) and [Forge #33](https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/33) currently reject `|>` intentionally; those are fail-closed admission gates, not feature parity.
+
+## Later verified parity boundary (2026-10-16)
+
+- [Expanded Java regression run 38933227575](https://github.com/voxletra/voxletra-e2e/actions/runs/38933227575): **379/379 selected GraalVM tests passed** across 35 test classes and 124 exact source/test/resource blobs. This remains a selected suite, not the complete Java repository suite.
+- [Native LLVM scalar depth run 38933844737](https://github.com/voxletra/voxletra-e2e/actions/runs/38933844737): 128-stage pipeline compiled and executed to exit code 129. The 129-stage fixture was rejected with no LLVM IR emitted. LLVM tagged Option/Result remains unsupported.
+- Java PR #1073 now also preserves `Result.and_then`'s error type and `Result.or_else`'s success type across inferred inline `Ok(...)` / `Err(...)` callbacks; precise latest-revision CI evidence is required independently before certifying those edits.
