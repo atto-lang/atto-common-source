@@ -1,0 +1,126 @@
+{
+  "scenario": "deeply nested REST handler and root-local modules",
+  "manifest": ".ores.pkg.toml",
+  "legacy_manifest": ".oreslangc.cfg.toml",
+  "project_root": ".",
+  "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+  "files": [
+    "lib/store.ores",
+    "lib/telemetry.ores",
+    "lib/transport.java",
+    "src/lib/store.ores",
+    "src/routes/rest/foo/bar/baz/local.ores"
+  ],
+  "resolution_cases": [
+    {
+      "id": "root-store",
+      "specifier": "+/lib/store",
+      "expect": "lib/store.ores"
+    },
+    {
+      "id": "root-telemetry",
+      "specifier": "+/lib/telemetry",
+      "expect": "lib/telemetry.ores"
+    },
+    {
+      "id": "source-path-explicit",
+      "specifier": "+/src/lib/store",
+      "expect": "src/lib/store.ores"
+    },
+    {
+      "id": "java-fallback",
+      "specifier": "+/lib/transport",
+      "expect": "lib/transport.java"
+    },
+    {
+      "id": "exact-file",
+      "specifier": "+/lib/store.ores",
+      "expect": "lib/store.ores"
+    },
+    {
+      "id": "local-relative-unchanged",
+      "specifier": "./local",
+      "expect": "src/routes/rest/foo/bar/baz/local.ores"
+    }
+  ],
+  "rejection_cases": [
+    {
+      "id": "missing-module-no-vendor-fallback",
+      "specifier": "+/vendor/missing",
+      "error": "not-found"
+    },
+    {
+      "id": "missing-manifest",
+      "specifier": "+/lib/store",
+      "error": "manifest-required",
+      "without_manifest": true
+    },
+    {
+      "id": "bare-plus",
+      "specifier": "+",
+      "error": "invalid-prefix"
+    },
+    {
+      "id": "no-slash",
+      "specifier": "+lib/store",
+      "error": "invalid-prefix"
+    },
+    {
+      "id": "empty-suffix",
+      "specifier": "+/",
+      "error": "invalid-segment"
+    },
+    {
+      "id": "double-slash",
+      "specifier": "+//lib/store",
+      "error": "invalid-segment"
+    },
+    {
+      "id": "trailing-slash",
+      "specifier": "+/lib/",
+      "error": "invalid-segment"
+    },
+    {
+      "id": "dot-segment",
+      "specifier": "+/./lib/store",
+      "error": "invalid-segment"
+    },
+    {
+      "id": "parent-escape",
+      "specifier": "+/../outside",
+      "error": "invalid-segment"
+    },
+    {
+      "id": "parent-normalized-inside",
+      "specifier": "+/lib/../store",
+      "error": "invalid-segment"
+    },
+    {
+      "id": "backslash-prefix",
+      "specifier": "+\\\\lib\\\\store",
+      "error": "invalid-separator"
+    },
+    {
+      "id": "backslash-within",
+      "specifier": "+/lib\\\\store",
+      "error": "invalid-separator"
+    }
+  ],
+  "additional_required_cases": [
+    "symlink-escape-rejected",
+    "nearest-manifest-selection",
+    "modern-manifest-same-dir-wins",
+    "explicit-root-override",
+    "explicit-override-requires-manifest",
+    "cwd-independent-link-identity",
+    "run-check-aot-equivalence"
+  ],
+  "implementation_status_at_creation": {
+    "java": "draft-pr-pending-CI",
+    "llvm": "unsupported-source-import-linking",
+    "net": "unsupported-source-import-linking",
+    "forge": "unsupported-source-import-linking",
+    "wasm": "delegated-to-real-source-compiler"
+  },
+  "contract_version": "oreslang.project-root-imports.v1"
+}
