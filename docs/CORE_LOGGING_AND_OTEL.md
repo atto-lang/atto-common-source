@@ -28,7 +28,7 @@ Scope: `oreslang-source.java`, `.llvm`, `.net`, `.forge`, `.wasm`, and `oreslang
 | `--core-debug` / `--no-core-debug` | `ORES_CORE_DEBUG` | false | Existing bounded numeric diagnostic recorder, independent of level policy |
 | `--core-perf` / `--no-core-perf` | `ORES_CORE_PERF` | false | Existing bounded numeric duration recorder, independent of level policy |
 
-For options actually implemented, explicit CLI arguments override environment values. Unknown levels and malformed CLI values fail at the CLI boundary with an ordinary usage error; the logging hot path never parses configuration. The first two switches are **reserved targets** until independently implemented and tested in each backend. Existing `--core-debug` and `--core-perf` flags must keep their meaning during migration.
+For options actually implemented, explicit CLI arguments override environment values. Unknown levels and malformed CLI values fail at the CLI boundary with an ordinary usage error; the logging hot path never parses configuration. The first two switches are **implemented in Java PR #1076** and remain reserved targets for the four other backends; the existing Java `--core-debug` and `--core-perf` switches retain their independent behavior. Existing `--core-debug` and `--core-perf` flags must keep their meaning during migration.
 
 The `oreslang-otel` library is imported in userland and chooses its own caller-owned severity threshold and exporter. It does **not** read the above CLI switches by default. No `--core-otel` or automatic OTel exporter is implied.
 
@@ -43,7 +43,7 @@ The `oreslang-otel` library is imported in userland and chooses its own caller-o
 
 | Backend | Audited implementation | Remaining gate |
 | --- | --- | --- |
-| Java/Graal | `CorePerf` / `CoreDebug`: 8192-entry primitive recorders; direct CLI + env switches; stderr export at shutdown. `stdlib/trace.ores` holds bounded trace primitives. | No canonical severity-aware `--core-log-level` yet; benchmark disabled/enabled paths and prove error isolation |
+| Java/Graal | `CorePerf`, `CoreDebug`, `CoreLog`: independent 8192-entry primitive recorders; `--core-log-level` / `--no-core-log` with environment override; stderr on JVM shutdown. Numeric events include async-I/O failures and actor dispatcher initialization failures. | Exact 96-blob production source mirror: JDK 25/Maven 43/43 logging+CLI tests passed; combined guest OTel smoke: 44/44. Full source tree, native-image, allocation/latency benchmarks and all-backend parity remain open |
 | LLVM | Experimental compiler/runtime subset, actor tracing tests exist | No parity claim for user logging, core CLI policy or exporter; implement and prove feature admission |
 | .NET | Single-function arithmetic compiler bootstrap and mailbox prototype | Core logging + OTel import unsupported; implement Native AOT-safe bounded recorder before enabling |
 | Forge | C++ arithmetic compiler bootstrap and mailbox prototype | Core logging + OTel import unsupported; implement native bounded recorder and CLI parsing |
@@ -63,3 +63,28 @@ The `oreslang-otel` library is imported in userland and chooses its own caller-o
 ## Next implementation order
 
 First lock this contract; harden Java's existing recorder and test CLI precedence. Next add isolated native recorders/CLI admission to LLVM, .NET and Forge without implying compiler feature parity. Wasm retains no guest logging until an explicit capability-bearing host ABI is reviewed. Preserve `oreslang-otel` as an opt-in user module throughout.
+
+## Java implementation verification (2026-10-16)
+
+Reference implementation: `ores-truffle-oreslang/oreslang-source.java#1076`.
+The severity logger is host-owned, deliberately separate from `CorePerf`,
+`CoreDebug`, and from user `oreslang-otel`. Default `off` uses one volatile
+state check without event creation, clock reads, formatting or I/O. A bounded
+recorder captures fixed names and numeric values only. Guest logger imports
+are never injected into the core runtime.
+
+Private fallback Actions evidence:
+
+- [Focused exact-five-blob JDK 25 suite: 18/18](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38920090938)
+- [Java production module exact-96-blob integration: 43/43](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38921595174)
+- [Same module + actual `oreslang-otel` guest JSONL smoke: 44/44, 9 JSON records validated](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38921925326)
+
+**Important qualification:** the private test repository contains 96 exact
+blobs from Java's production module, selected tests and required standard
+library files, plus a verification-only OTel guest test. It is not an exact
+mirror of Java's entire 614-blob repository, nor evidence for native-image,
+actor carrier, LLVM, .NET, Forge or Wasm parity. The JDK test workflow
+explicitly disables the native-thread-unix Maven profile because those build
+scripts were not included. No native image or throughput benchmark passed by
+virtue of these runs. The OTel guest output uses the library's proprietary
+`oreslang-otel.v1` JSONL schema, **not OTLP**.
