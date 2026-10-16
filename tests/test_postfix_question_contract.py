@@ -24,8 +24,6 @@ def interpret(case):
     incoming = case.get("preexisting")
     if family == "Result" and ret == "Result" and matched:
         routing = "RETURN_ERR"
-    elif family == "Result" and ret != "Result" and throws and matched and derived:
-        routing = "THROW"
     elif family == "Option" and ret == "Option":
         routing = "RETURN_NONE"
     else:
@@ -84,6 +82,14 @@ class PostfixQuestionReferenceContract(unittest.TestCase):
         case = {"operand": "Result", "state": "err", "returns": "Result",
                 "throws": True, "matching_error": False, "error_derived": True}
         self.assertEqual(interpret(case)[0], "REJECT")
+
+    def test_result_question_never_implicitly_throws(self):
+        # A throws declaration never permits Result-to-exception coercion.
+        # The enclosing callable must return a compatible Result<T,E>.
+        for derived in (True, False):
+            case = {"operand": "Result", "state": "err", "returns": "scalar",
+                    "throws": True, "matching_error": True, "error_derived": derived}
+            self.assertEqual(interpret(case)[0], "REJECT")
 
     def test_returned_err_is_not_a_caught_throw(self):
         case = {"operand": "Result", "state": "err", "returns": "Result",
