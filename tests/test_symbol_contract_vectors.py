@@ -211,7 +211,7 @@ class SymbolContractVectorsTest(unittest.TestCase):
                          {"map", "record", "struct", "class"})
         expected = {"future_accept", "type_error", "duplicate_key_error"}
         self.assertEqual({case["expect"] for case in cases}, expected)
-        self.assertIn("infer struct{foo: 1, [#foo]: 2}",
+        self.assertIn("let r = infer struct{foo: 1, [#foo]: 2}",
                       {case["source"] for case in cases})
         self.assertIn("let r = infer struct{foo: 1}; r[#foo]",
                       {case["source"] for case in cases if case["expect"] == "type_error"})
