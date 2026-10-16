@@ -47,8 +47,27 @@ the current source trees contain invalid, negative, and backend-unsupported
 compiler fixtures, so rejection and would-change observations must be
 triaged before promoting the entire inventory to a mandatory formatting gate.
 The default inventory exits nonzero for unsafe tool failures, source changes,
-oversized inputs or lack of formatter idempotence; ordinary compiler-negative
-formatter rejections remain separately visible in its JSON report.
+oversized inputs, malformed sources or lack of formatter idempotence; ordinary
+source-syntax formatter rejections remain separately visible in its JSON report.
+Exit code 1 is treated as a formatter source rejection, while crashes, CLI
+usage failures and other nonzero codes are tool errors, not evidence of a
+legitimate negative source fixture.
+
+The audit bounds input snapshots and captured formatter output (at most
+twice the configured input limit), rejects input symlinks and nonregular files
+at open time, and kills timed-out or output-flooding formatter process groups.
+Each candidate's temporary input must remain a regular, unchanged file. If
+an input exceeds the limit its `input_sha256` is `null`, rather than a
+misleading digest of a truncated prefix. The JSON statuses
+`invalid_source`, `oversize_output`, `timeout`, `unsafe_temp_write`
+and `source_changed` are blocking outcomes.
+
+This is not an OS sandbox or an atomic read-only filesystem snapshot: a
+malicious formatter can attempt writes outside its temporary directory, and
+another process can mutate a checked-out source tree while the audit runs.
+Run reviewed formatter binaries in an isolated, read-only CI checkout and
+verify source Git trees before and after the inventory. An audit does not
+prove the underlying compiler source semantics or test execution.
 
 ## Acceptance criteria before enforcing a formatter check
 
@@ -72,21 +91,14 @@ inventory complements rather than replaces those per-backend tests.
 
 ## Defensive input/output behavior
 
-The inventory reads each discovered `.ores` through a newly opened,
-regular-file descriptor with a strict input byte limit. On POSIX, nonblocking
-and no-follow flags prevent a swapped-in FIFO or leaf symlink from hanging
-or redirecting the read. It reopens inputs under the same constraints after
-the formatter runs. Suspect or changed inputs block the inventory.
-
-A formatter cannot report success by erasing nonblank source or emitting
-invalid UTF-8. These are distinct blocking statuses, as are non-UTF-8 source
-files. Successful output receives its own SHA-256 alongside the input hash;
-the formatter executable is hashed incrementally before and after audit to
-detect changes without loading it entirely into memory.
-
-These precautions do **not** provide hostile parent-directory confinement,
-a POSIX sandbox, signed binary provenance, or proof of semantic equivalence.
-Do not run untrusted formatter executables with access to secrets.
+The inventory reads each discovered `.ores` through newly opened regular-file
+handles with strict input bounds. On POSIX, nonblocking and no-follow flags
+prevent swapped FIFO or leaf symlink reads. Sources are rechecked after runs.
+Valid nonblank input must not be erased or replaced with invalid UTF-8.
+The formatter executable is hashed in bounded chunks before and after the
+audit and successful formatted output receives a separate SHA-256 digest.
+These checks do not sandbox executables, lock source checkouts, or prove compiler
+semantic equivalence; only run reviewed binaries in isolated environments.
 
 The audit tool itself is tested with synthetic formatter executables. Those
 offline tests confirm its handling of safe copies, detection of drift,
