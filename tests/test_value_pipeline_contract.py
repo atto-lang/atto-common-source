@@ -21,8 +21,18 @@ class ValuePipelineContractTests(unittest.TestCase):
                 self.assertEqual(implemented | pending, TARGETS)
                 self.assertTrue((ROOT / "fixtures" / case["fixture"]).is_file())
                 self.assertIn(case["expected"], {"accept-execute", "reject"})
+                self.assertIn("oracle", case)
                 if case["expected"] == "accept-execute":
-                    self.assertIn("oracle", case)
+                    self.assertIn("exit_code", case["oracle"]) if "exit_code" in case["oracle"] else self.assertIn("result", case["oracle"])
+                else:
+                    oracle = case["oracle"]
+                    self.assertIsInstance(oracle.get("diagnostic_class"), str)
+                    self.assertTrue(oracle["diagnostic_class"].strip())
+                    supplied = oracle.get("diagnostic_contains", {})
+                    self.assertTrue(supplied)
+                    self.assertTrue(set(supplied) <= implemented)
+                    self.assertTrue(all(isinstance(fragment, str) and fragment.strip()
+                                        for fragment in supplied.values()))
                 self.assertNotIn("verified", case)
 
     def test_every_fixture_declared_once(self):
