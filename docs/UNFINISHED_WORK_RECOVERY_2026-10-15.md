@@ -399,3 +399,10 @@ or successfully verified by executable CI.
   `main`; record actual JDK25/native test logs. No runner was
   provisioned, no candidate workflow was dispatched, and no private
   source was copied to another repository in this work.
+
+
+### Exact private CI Git-tree transport proof — 2026-10-15
+
+- Hardened [Java private CI PR #1018](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1018) at source commit `9d5230c345cb938498ea1e2f23d916e7edfce1a3`. Publisher/wrapper now require explicit `--source-commit` and `--source-tree` pins and reject files differing from the exact committed Git snapshot (path, executable mode, blob content, untracked/missing, special entries). It rejects destination subtree SHA mismatch before commit/ref creation. Git metadata exclusion is restricted to the trusted checkout root. Transfer log records source commit/tree and destination commit.
+- Updated offline test module to **46 declared unittest methods** with actual temporary Git checkout/dirty-file and mocked GitHub API negative fixtures; tests are **committed but have not executed on source CI**. Inspected source performed **24/24 structural assertions**; local private-free disposable Git command fixture passed its narrow SHA/manifest comparison (not the complete publisher suite).
+- [Destination policy self-test run 38840638626](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38840638626) failed with **zero executed steps** and no runner. Cross-org private transfer still prohibited: source `main` remains unprotected and the destination allowlist has no authorized entries. Source-repository runner [#1014](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1014) and independent security review remain the validation path. No private source exported during this audit.
