@@ -7,12 +7,13 @@
 ```ebnf
 assignment = pipeline [ "=" assignment ] ;
 pipeline = conditional { "|>" pipeline_stage } ;
-pipeline_stage = qualified_name [ "(" [ argument_list ] ")" ] ;
+pipeline_stage = IDENT [ "(" [ argument_list ] ")" ]
+               | ( "Option" | "Result" ) "." IDENT "(" [ argument_list ] ")" ;
 ```
 
 `|>` is one contiguous token, left associative, binds weaker than a conditional and more strongly than assignment. It is unrelated to bitwise `|`, logical `||`, function-lambda delimiters or actor message-routing operators. Whitespace within `|>` is not allowed.
 
-For a named function, `x |> f(a,b)` evaluates `x` once before `a` and `b`, and invokes `f(x,a,b)`. `x |> f` invokes `f(x)`. Dynamic, effectful callee expressions are not admitted in v1; do not reorder evaluation to implement a broader syntax. A stage's nested arguments follow ordinary expression precedence and left-to-right argument evaluation. Pipelines do **not** imply error propagation, await, actor scheduling, short-circuiting or unwrapping.
+For a named function, `x |> f(a,b)` evaluates `x` once before `a` and `b`, and invokes `f(x,a,b)`. `x |> f` invokes `f(x)`. Dynamic, effectful callee expressions are not admitted in v1; do not reorder evaluation to implement a broader syntax. Ordinary qualified stages such as `value |> object.method(arg)` are also rejected until dedicated left-first method receiver evaluation is implemented; they must not be silently rewritten into a conventional method call. A stage's nested arguments follow ordinary expression precedence and left-to-right argument evaluation. Pipelines do **not** imply error propagation, await, actor scheduling, short-circuiting or unwrapping.
 
 `x |> Option.map(g)`, `x |> Result.map_err(g)` and similar named sum-type operations lower to `x.map(g)` and `x.map_err(g)` **without** evaluating a fictional `Option` or `Result` namespace value. Wrong-variant combinators are checked on the value type and rejected. Instance combinators may also be invoked without `|>`.
 
