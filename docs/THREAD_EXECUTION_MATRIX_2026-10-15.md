@@ -224,3 +224,32 @@ remains separate; this matrix avoids duplicating its issue inventory.
   cross-organization source export is contingent on separate protected
   policy/code-owner authorization and verified source/destination repo/tree
   identities. A source-free successful runner is **capacity evidence only**.
+
+
+## Executed scoped conformance validator CI — October 16, 2026
+
+- The earlier source-free proofs above predate a later **restricted private
+  code transfer**. Under the user's cross-organization testing request,
+  18 allowlisted Oreslang platform-conformance harness/CLI/fixture/validator
+  files were copied from private repository ID `1413795502` into
+  **private** Voxletra repository ID `1311678027` on isolated
+  [Voxletra draft PR #13](https://github.com/voxletra/voxletra-e2e/pull/13).
+  Source commit: `c93f7bc2526af5bb0fb87a4606f6e804e817b952`.
+  The transfer was GitHub connector mediated, with SHA-verified blob reads;
+  it was **not** a full actor/compiler tree mirror.
+- [Executed hosted run #38944218599](https://github.com/voxletra/voxletra-e2e/actions/runs/38944218599)
+  has `all_18_source_blob_ids_match=PASS`, Node 22 `npm test`:
+  **50 passed, zero failed, zero skipped**. The independent carrier
+  lint, secrets-audit and source-policy jobs also passed.
+- Conformance [PR #35](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/35)
+  now rejects weak same-line/secondary-hint diagnostics, positive compiler
+  error messages on zero exit (including indented/fatal errors), success
+  without executable hash evidence, and real-report cases with runtime/link
+  error diagnostics. Report admission tests use synthetic Java/LLVM JSON,
+  **not authentic current compiler execution**.
+- The successful carrier run does **not** prove complete Git-tree transport,
+  approved export policy, original-org runner recovery, source-to-binary
+  authenticity, or backend parity. A separate attempted Java DOP source copy
+  was stopped by a security check and was not undertaken. Existing public
+  exposure incident #22 remains unresolved; continue containment and
+  obtain independent policy approval before expanding source transfers.
