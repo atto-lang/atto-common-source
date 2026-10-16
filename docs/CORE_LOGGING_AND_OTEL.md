@@ -92,14 +92,15 @@ selected Java production/test/stdlib files against the Java logging branch
 selected-source build, **not** the original repository's full Git root tree.
 
 - [Native AOT compilation and actual native CLI flag smoke passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38929690187) on the GraalVM 25.3 distribution with JDK 25/Truffle 25.3 dependencies; the first attempt using mismatched 25.0.4 tools failed, then pinning the correct distribution resolved the failure
+- [Native hybrid compilation and actual hybrid executable CLI smoke passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38946273871); 98 exact blobs checked and `--build-info` confirmed hybrid execution mode
 - [59/59 JDK tests passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38945844351), adding real async native-I/O admission/failure/permission/network tests and CLI output-failure tests
 - [60/60 JDK tests passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38946580025), adding a preallocated enabled-recorder regression that verifies there is no **per-event heap-allocation growth** within JDK thread-allocation-counter precision during 100,000 numeric events. The separate disabled path covers 300,000 calls
 - Both tests and userland `oreslang-otel` continue to execute; nine JSONL records are parsed and validated with an independent JSON parser
 - A new async-I/O regression ensures fixed-ID core diagnostics preserve the caller's errors and cannot serialize exception messages or user operation names
 
-Native AOT validation **does not automatically prove** the hybrid Native
-Image profile, native pthread carriers, the full Maven suite, or any non-Java
-backend. Throughput/latency budgets remain unmeasured; a per-thread allocation
+AOT and hybrid Native Image CLI smoke tests **do not prove** native
+pthread carriers, the full Maven suite, the original complete Git root tree,
+or any non-Java backend. Throughput/latency budgets remain unmeasured; a per-thread allocation
 probe is not a substitute for microbenchmarking.
 
 ## Next implementation order
