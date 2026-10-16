@@ -84,6 +84,25 @@ An attempted full 614-blob Git-tree mirror was not completed because the
 connector blocked a batch of source test files. No complete-tree SHA claim,
 native-image result or other-backend parity is made.
 
+## Extended Java logging boundary verification (2026-10-16)
+
+The private fallback repository has verified the exact Git blob identity of 98
+selected Java production/test/stdlib files against the Java logging branch
+(in addition to the independent `oreslang-otel` test module). This is a
+selected-source build, **not** the original repository's full Git root tree.
+
+- [Native AOT compilation and actual native CLI flag smoke passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38929690187) on the GraalVM 25.3 distribution with JDK 25/Truffle 25.3 dependencies; the first attempt using mismatched 25.0.4 tools failed, then pinning the correct distribution resolved the failure
+- [Native hybrid compilation and actual hybrid executable CLI smoke passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38946273871); 98 exact blobs checked and `--build-info` confirmed hybrid execution mode
+- [59/59 JDK tests passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38945844351), adding real async native-I/O admission/failure/permission/network tests and CLI output-failure tests
+- [60/60 JDK tests passed](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38946580025), adding a preallocated enabled-recorder regression that verifies there is no **per-event heap-allocation growth** within JDK thread-allocation-counter precision during 100,000 numeric events. The separate disabled path covers 300,000 calls
+- Both tests and userland `oreslang-otel` continue to execute; nine JSONL records are parsed and validated with an independent JSON parser
+- A new async-I/O regression ensures fixed-ID core diagnostics preserve the caller's errors and cannot serialize exception messages or user operation names
+
+AOT and hybrid Native Image CLI smoke tests **do not prove** native
+pthread carriers, the full Maven suite, the original complete Git root tree,
+or any non-Java backend. Throughput/latency budgets remain unmeasured; a per-thread allocation
+probe is not a substitute for microbenchmarking.
+
 ## Next implementation order
 
 First lock this contract; harden Java's existing recorder and test CLI precedence. Next add isolated native recorders/CLI admission to LLVM, .NET and Forge without implying compiler feature parity. Wasm retains no guest logging until an explicit capability-bearing host ABI is reviewed. Preserve `oreslang-otel` as an opt-in user module throughout.
