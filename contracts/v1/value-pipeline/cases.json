@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "targets": [
+    ".java",
+    ".llvm",
+    ".net",
+    ".forge",
+    ".wasm"
+  ],
+  "cases": [
+    {
+      "id": "scalar-left-associative",
+      "fixture": "scalar-left-associative.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java",
+        ".llvm"
+      ],
+      "pending": [
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "result-map-error",
+      "fixture": "result-map-error.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "result": "Err(\"bad!\")"
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "option-transpose",
+      "fixture": "option-transpose.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "result": "Ok(Some(42))"
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "reject-noncallable-stage",
+      "fixture": "reject-noncallable-stage.ores",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic": "pipeline stage must be callable"
+      },
+      "candidate_implementations": [
+        ".java",
+        ".llvm"
+      ],
+      "pending": [
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "reject-maperr-on-option",
+      "fixture": "reject-maperr-on-option.ores",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic": "unknown Option member map_err"
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    }
+  ]
+}
