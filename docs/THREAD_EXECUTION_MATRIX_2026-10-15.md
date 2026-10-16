@@ -322,3 +322,39 @@ remains separate; this matrix avoids duplicating its issue inventory.
   transported across orgs; public-source incident #22 and protected export
   policy approval issue #962 remain open. Mock tests and synthetic
   private-runner tests do not establish Java/LLVM/.NET/Wasm/Forge parity.
+
+
+## Real synthetic-only private cross-org Git publication — 2026-10-16
+
+- Ran actual connector-backed GitHub Git APIs against private test origin
+  `akrion-sim/akrion-sim-e2e` and private destination
+  `voxletra/voxletra-e2e` (two separate GitHub organizations).
+  Both repository IDs/visibility/write permissions were checked. All data
+  consisted of **two generated synthetic files**, with no Oreslang source.
+- Source synthetic Git tree
+  `040a8e7f8fc3af210c5dd9f030b41257c2c4bd18`
+  was constructed and retrieved in the origin repo. Cross-org destination
+  blob creation preserved both exact blob SHAs and file modes `100644`
+  and `100755`. Destination root tree
+  `7d534f0cc3b484c1ca23e530ac41d5e105886769` contained this
+  source tree at `snapshots/synthetic-only` with **exact nested subtree
+  identity** confirmed via real GitHub recursive-tree GET.
+- Negative tamper check: extra synthetic file changed destination nested
+  subtree to `52628655b9fcb0bc9468d4e331098b27ed254086`,
+  and no Git commit/ref was published for the tampered tree.
+- A separate synthetic baseline and snapshot commit were created,
+  and the isolated private destination
+  [branch `ci/private-synthetic-mirror-e2e-20261016-040a8e7f`](https://github.com/voxletra/voxletra-e2e/tree/ci/private-synthetic-mirror-e2e-20261016-040a8e7f)
+  was published at commit
+  `5c60b9b50a00e5414643758d4f77df42e83beb38`;
+  read-after-write confirmed branch ref, commit, nested tree and complete
+  three-file inventory. The synthetic commit triggered no Actions runs.
+- [Full synthetic Git API proof and cleanup note](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/security/pin-private-mirror-repository-ids-20261016/docs/SYNTHETIC_CROSS_ORG_GIT_PUBLISH_2026-10-16.md).
+  Test branch **remains** until manually deleted by an authorized repository
+  maintainer; ref deletion was unavailable via the connected GitHub tools.
+- **Crucial scope distinction:** this tested the real Git object APIs via
+  connector calls, *not* an execution of the production
+  `bin/private-mirror-publish.mjs` entrypoint. Its last offline mocked
+  GitHub regression suite remains 46/46 passing. Source export approval
+  (#962), public-source exposure incident (#22), and full compiler CI
+  (#589) are still unresolved. **No actual Oreslang private source export.**
