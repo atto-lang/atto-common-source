@@ -30,7 +30,23 @@ remains separate; this matrix avoids duplicating its issue inventory.
   subprocess exit status, then committed a fail-closed check and regression
   tests. Local focused test run: **6/6 pass**, including three persistent
   regression tests. This is harness validation, **not** compiler parity.
-- DOP Java PR #1066: compiled the host-side `DopRegionSchedule` source\n  in an isolated JDK 21 workspace and passed **400,000 seeded cell-oracle\n  checks** plus **2,000 randomized 12-task dependency-graph trials**. Added\n  JUnit regression tests to PR #1066; its Maven/Actions execution remains\n  unverified due to runner failures. This does not prove native/GPU parity.\n- Embedded Cortex-M PR #15: reproduced the PR branch's linker orphan-log\n  validator and unit test source in an isolated local Python workspace;\n  **12/12 tests passed**. This does NOT validate Zephyr/CMake, QEMU,\n  firmware ELF layout, hardware timing or GitHub CI.\n- The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
+- DOP Java PR #1066: compiled host-side `DopRegionSchedule` in an isolated
+  JDK 21 workspace and passed **400,000 seeded cell-oracle checks** plus
+  **2,000 randomized 12-task dependency-graph trials**. Added JUnit tests;
+  Maven/Actions execution remains unverified. This is not native/GPU parity.
+- Embedded Cortex-M PR #15: reproduced the linker orphan-log validator and its
+  test source in an isolated local Python workspace; **12/12 passed**.
+  This is not Zephyr, QEMU, final ELF layout or hardware proof.
+- Conformance PR #35: hardened negative-fixture matching to require a
+  case-sensitive literal identifier on the same explicit unresolved-name error
+  line. New regression coverage rejects unrelated errors, source echoes,
+  warning-only messages, substring matches and regex-like tokens.
+  Isolated Node 22 run of five new regression tests: **5/5 passed**.
+  The hosted job remains blocked, and this is **harness** evidence only.
+- Java import PR #1050: preserved literal whitespace in `ORES_PATHS` entries,
+  hardened `forImportedPackage` against malformed `pkg:` inputs, and added
+  three JUnit regressions. **JDK25/Maven execution is not yet verified**.
+- The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
   .NET, Wasm and Forge PR branches are exactly equal as parsed JSON; their
   `scripts/verify_serde_contract.py` content is also identical. This is
   **static contract parity, not executed transport parity**.
