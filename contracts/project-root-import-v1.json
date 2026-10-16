@@ -1,5 +1,4 @@
 {
-  "$schema": "oreslang.project-root-imports.v1",
   "scenario": "deeply nested REST handler and root-local modules",
   "manifest": ".ores.pkg.toml",
   "legacy_manifest": ".oreslangc.cfg.toml",
@@ -122,5 +121,6 @@
     "net": "unsupported-source-import-linking",
     "forge": "unsupported-source-import-linking",
     "wasm": "delegated-to-real-source-compiler"
-  }
+  },
+  "contract_version": "oreslang.project-root-imports.v1"
 }
