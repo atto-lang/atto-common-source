@@ -36,7 +36,7 @@ An opt-in pure actor pattern may later offer `transition(state, msg) -> Transiti
 
 ## Postfix `?`: deterministic short-circuit and typed exceptional effects (draft v1.1)
 
-**Staged admission:** Java draft #1017 now contains an initial synchronous named-local `Option`/`Result` return implementation and guest tests, **unverified by executed CI**; `throws E` conversion, direct call chains, methods, async/actors, LLVM/Wasm/Forge/.NET remain unadmitted. `?` is a compiler-owned
+**Staged admission:** Java draft #1020 contains a bounded `Option`/`Result` return prototype with direct call chains and a restricted async direct-binding-initializer path, **unverified by executed CI**. General callbacks, actors, arbitrary async expressions, typed exception conversion, and LLVM/Wasm/Forge/.NET positive lowering remain unadmitted. `?` is a compiler-owned
 postfix operator, not a host exception handler, not optional member access
 (`?.`), not `as?`, and not the existing `condition ? a : b` ternary.
 If the parser cannot disambiguate a source expression without changing the
@@ -49,18 +49,20 @@ actionable diagnostic. Parsing a question mark is not execution support.
 | --- | --- | --- | --- |
 | `Result<T,E>` | `Result<U,E>` return | extract owned `T` | early **return `Err(e)`**, never `throw` |
 | `Option<T>` | `Option<U>` return | extract owned `T` | early **return `None`**, never `throw` |
-| `Result<T,E>` | non-Result return and **explicit `throws E`** | extract `T` | **`throw e`**, catchable by matching `try/catch` |
-| `Result<T,E>` | simultaneously matches a Result-return route and `throws E` | extract `T` | **return `Err(e)`** (return route takes precedence) |
-| `Option<T>` | `throws E` only | no implicit error construction | **compile error**; use explicit `ok_or(error)` / `Result` adapter |
+| `Result<T,E>` | non-Result return, even with `throws E` | N/A | **compile error**; `?` never synthesizes `throw` |
+| `Result<T,E>` | matching Result-return route and `throws E` | extract owned `T` | **return `Err(e)`**, unaffected by `throws E` |
+| `Option<T>` | non-Option return, including `throws E` | N/A | **compile error**; use explicit `ok_or(error)` / `Result` adapter |
 | Any other type | Any | N/A | **compile error**; no user-defined propagation typeclasses in v1 |
 
-A `throws E` route is allowed **only** once compiler-verified callable
-effect declarations, error type restrictions, and ordinary guest-throw
-lowering actually exist; reserving the `throws` token is insufficient.
-Implicit `throw` never occurs based on the mere presence of `try/catch`,
-a call's name, or an inferred dynamic `Any`/unknown error. If the enclosing
-callable does not admit either route, reject at compile time. No implicit
-`E` to `F` conversion, exception boxing or loss of error identity.
+There is **no implicit `throws E` route** for postfix `?`, even after typed
+exception effects are implemented. A `throws` declaration, enclosing
+`try/catch`, a call name, or inferred dynamic `Any`/unknown error must never
+turn `Err(e)?` into a guest exception. A compatible `Result`-returning callable
+is mandatory for `Result?`; a compatible `Option`-returning callable is
+mandatory for `Option?`. To change from a value-level error to a throw,
+use a separate, explicitly typed and checked operator (proposed `or_throw()`)
+or an explicit `throw`. No implicit `E` to `F` conversion, exception boxing,
+or loss of error identity.
 
 ### Explicit boundary examples (proposed syntax; not current executable source)
 
@@ -73,10 +75,10 @@ fnc parse_and_validate(string raw): Result<int, ParseError> {
 // Err from either step: return Err(error), NOT catchable here.
 
 fnc load_port(string raw): int throws ParseError {
-  val int n = parse_port(raw)?;
-  return n;
+  return parse_port(raw).or_throw();
 }
-// Err: throw ParseError at the ? site, observable by surrounding try/catch.
+// Proposed explicit adapter, NOT an implemented operator and NOT postfix ?.
+// Its throw behavior needs separate effect/ownership/cleanup verification.
 
 fnc optional_port(string raw): Option<int> {
   val int n = find_port(raw)?;
@@ -91,8 +93,8 @@ a typed adapter or an explicit `throw`. E.g., `to_result(...)` preserves
 **`trap` catches ordinary `throw` and yields `Option` at its own
 boundary, but never captures an `Err` returned by `?`.** A `Result`
 returned early from a `try` block skips the `catch`, still running
-`finally` and `defer`. A `Result` converted to a real typed throw via
-the explicit `throws` route is catchable.
+`finally` and `defer`. An ordinary `throw` or separately checked explicit `or_throw()` conversion
+is catchable; postfix `?` does not produce either.
 
 ### Control-flow, cleanup and priority
 
@@ -109,7 +111,7 @@ the explicit `throws` route is catchable.
   `defer` and `finally` exactly once. Cleanup may itself fail, in which
   case the existing exceptional-failure lattice controls the final outcome;
   no default return value is fabricated.
-- Real `throw` produced by the declared `throws E` route follows ordinary
+- Real `throw` produced by an explicit `throw` or checked conversion follows ordinary
   `try/catch` / trap / `defer/recover` policy. `raise` bypasses
   `catch`/trap but can be consumed only by eligible direct deferred
   `recover()` in the *same logical invocation*. `panic` cannot be locally
@@ -142,8 +144,8 @@ Call-site syntax round-trips exactly through oreslang-format before enabling
 runtime semantics.
 
 **Staged rollout:** normative tests and IR route verifier → Java sync
-`Result` and `Option` `?` exact-source execution → optional typed
-`throws E` route when the effect checker/lowering is certified → async
+`Result` and `Option` `?` exact-source execution → separate explicit typed
+`or_throw()`/`throw E` conversion when effects are certified → async
 continuations and actor supervisor escalation → independent LLVM/Forge/.NET
 source lowering and Wasm adapter, gated by identical conformance vectors.
 `?` remains explicitly unsupported where the backend cannot prove
@@ -151,5 +153,5 @@ return target, effect permission and cleanup ordering.
 
 ### Current Java first slice (not yet CI-verified)
 
-Java draft #1017 admits only `val T x = local_result?;` and the matching Option variant inside an ordinary synchronous `fnc`, where the local carrier's type and ownership place are proven. It does not yet admit postfix application to a direct call expression or to an awaited result. Copyable carriers can be reused; move-only carriers cannot. Early-return within `try` runs `defer`/`finally` and never enters catch; early-return **from** defer/finally, or from an incorrectly inherited outer lambda context, is rejected. Typed `throws E`, `raise` and `panic` integration is not executable yet. Native backends still reject the source until positive lowering exists.
+Java draft #1020 (stacked on #1019) admits a bounded scalar `Result`/`Option` `?` path in proven synchronous callables and selected direct async binding initializers such as `val T x = (await future)?;`. It type-checks the nearest callable's compatible sum return and rejects affine/borrowed carriers and unproven callback/actor continuations. Early-return within `try` runs `defer`/`finally` and never enters catch; early-return **from** cleanup and detached callbacks is rejected. Exact JDK 25 and Native Image tests have not been verified. Typed `throws E`, `raise`, `panic`, and explicit `or_throw()` integration remain separate. Native backends still reject unimplemented source until positive lowering exists.
 
