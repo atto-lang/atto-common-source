@@ -97,3 +97,31 @@ provenance identifiers**. No private Oreslang compiler source, serialized
 runtime bytes, source manifests, credentials or Git object contents are
 exported. The separate public-source exposure incident and protected
 cross-org export authorization remain open.
+
+
+## Independently rechecked byte-identical source contracts
+
+Read-only GitHub `contents` SHA checks independently fetched the same
+two contract files from the **exact PR heads** below (not merely from a CI
+carrier or assumed branch name):
+
+| Source repo | PR | Exact inspected head |
+| --- | --- | --- |
+| `oreslang-source.java` | [#1060](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1060) | `b25a5b7921b1fafb9574d29ffc62574f2a80e791` |
+| `oreslang-source.llvm` | [#440](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/440) | `9c70766dbf0a79d0aa38a11ae4354e4c2b00be8d` |
+| `oreslang-source.net` | [#21](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/21) | `e6e80b04d15072294b5223628670cc42012a69d0` |
+| `oreslang-source.wasm` | [#20](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/20) | `375fea0cda84ad459be46e7704df413f94d99350` |
+| `oreslang-source.forge` | [#13](https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/13) | `6798993aa4ee64c54b3dec1ec9be935316b5e84d` |
+
+- `contracts/v1/sendable-serializable-parity.v1.json`:
+  **5/5 identical** Git blob SHA
+  `45dfb0425142e023fa7b1b772a0b363faae2d366`.
+- `contracts/v1/SENDABLE_SERIALIZABLE_PARITY_V1.md`:
+  **5/5 identical** Git blob SHA
+  `fc0f385ed06fa7a8e5933b71b1cbdadebe22badc`.
+
+Thus intended policy text is byte-aligned, **but only 11 of the 65
+backend/case execution claims had passing evidence in the examined run**.
+The remaining 54 were `unsupported`, not automatically failures or
+passing implementations. Do not use 5/5 blob equality to certify
+compiler/language/runtime parity.
