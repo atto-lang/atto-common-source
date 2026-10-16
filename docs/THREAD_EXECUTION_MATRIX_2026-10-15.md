@@ -62,6 +62,34 @@ remains separate; this matrix avoids duplicating its issue inventory.
 - No compiler/backend production PR is declared merge-ready based on static
   contracts, local harness tests, or a zero-step GitHub Actions run.
 
+## October 16 runner and conformance continuation
+
+- Source-free hosted-runner capacity probes were created in three confirmed
+  **private** repositories: [Akrion #27](https://github.com/akrion-sim/akrion-sim-e2e/pull/27),
+  [Scintilla #16](https://github.com/scintilla-run/scintilla-run-infra/pull/16),
+  and [AthletO #37](https://github.com/athlet-o/athleto-e2e/pull/37).
+  Their sampled current-head Actions jobs all completed as failures with
+  **no recorded executed steps**; these were runner probes, not compiler builds.
+  Repo visibility/permissions do not prove spending allowance, runner
+  eligibility or cross-org source-export authorization.
+- **No private Oreslang source tree/blob was copied** in any of those probes.
+  The previously documented public-carrier leak remains a P0 incident
+  requiring administrator containment before source mirrors resume.
+- Conformance PR #35 now rejects unconfigured suites with `ok: false`
+  even in discovery mode. Negative-fixture evidence must identify the
+  **case-sensitive literal symbol as the subject** of the unresolved-name
+  diagnostic; its appearance only in a filename, source echo, or error
+  concerning another identifier does not count.
+- Added tests for unconfigured status (all five backends), diagnostic
+  subjects and a deterministic **10,000-case** filename/context spoof
+  corpus. An isolated Node 22 matcher smoke executed 18 explicit
+  positive/negative cases and 10,000 spoof rejections plus 10,000
+  positive controls successfully. The exact source-branch CI still
+  reports zero-step failures; compiler parity remains **unverified**.
+- Actions billing balances, policy violations and runner quota allocation
+  are **not visible through the connected GitHub operations**; the
+  zero-step symptoms alone do not identify the precise root cause.
+
 ## Unified acceptance policy
 
 1. Bind each candidate PR to its exact source commit SHA and dependency base.
