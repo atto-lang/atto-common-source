@@ -194,3 +194,33 @@ remains separate; this matrix avoids duplicating its issue inventory.
   spending limits, runner policies and the workflow-run failure banner.
   No authorized private carrier with executed success has been established;
   no private compiler source was exported or production PR merged.
+
+
+## Working private CI capacity and synthetic Git-tree proof — October 16, 2026
+
+- **New verified private carrier:** `voxletra/voxletra-e2e` (GitHub repo ID
+  `1311678027`, visibility private) successfully executed an independently
+  source-free runner [probe #38940228917](https://github.com/voxletra/voxletra-e2e/actions/runs/38940228917)
+  at exact commit `b9d18dced1ed5848a9fcf2441e65a44abc3ef199`
+  on runner `1000002089`. The probe had no private source checkout, secrets,
+  artifacts or destination-source transfer.
+- A second real private Actions job, [run #38940949779](https://github.com/voxletra/voxletra-e2e/actions/runs/38940949779),
+  successfully checked **synthetic nested Git-tree equality, executable modes,
+  tamper detection**, and a Clang 18 native binary returning 42. Full job logs
+  include `EXACT_TREE_MATCH=yes`, `EXECUTABLE_MODE_MATCH=yes`,
+  `TAMPERING_DETECTED=yes`, `REAL_NATIVE_CLANG_EXECUTION=yes`.
+  Node 22.23.3 and Clang 18.1.3 were observed, but real Java25/GraalVM and
+  Oreslang compiler suites **remain unverified**.
+- [Conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  now requires the **exact source-free three-step runner job sequence**
+  observed from the real Actions API, rejecting extra executable/checkout
+  steps. Its isolated mocked GitHub publisher/visibility suite passes
+  **41/41**. The improved code does not independently attest a trusted
+  source-export policy.
+- Previously checked carriers still had zero-step failures; this one
+  **does** have proven runner allocation. However the private-code exposure
+  incident #22, source policy/approval issue #962 and full source CI blocker
+  #589 are open. **No private Oreslang source was mirrored**. Actual
+  cross-organization source export is contingent on separate protected
+  policy/code-owner authorization and verified source/destination repo/tree
+  identities. A source-free successful runner is **capacity evidence only**.
