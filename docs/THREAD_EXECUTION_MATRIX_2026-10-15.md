@@ -386,3 +386,38 @@ remains separate; this matrix avoids duplicating its issue inventory.
 - **No execution of the actual private-mirror publisher or private
   cross-org Oreslang source transfer** occurred in this update.
   The P0 exposure incident and protected policy authorization remain open.
+
+
+## Two-phase blob admission / synthetic private-runner proof — 2026-10-16
+
+- [Conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  now checks that new `ci/private-*` destination refs do not preexist
+  before source reads and before final ref publication (404 only means
+  absent). Source Git blobs are also validated in **two phases**:
+  retrieve/validate every pinned blob first, then recheck destination
+  privacy and write the entire set. This prevents a malformed *later*
+  source blob from leaving already-copied confidential Git objects in
+  the carrier.
+- The exact two-phase publisher/test blobs
+  `8bfaee1a7d9cde0438dee4660739a0834d331343` and
+  `b742487ad814aced15dd8c4d3f25a621de510070` passed
+  **53/53 isolated mocked-API source/visibility tests**. Subsequent
+  cryptographic source-blob checks were added to the PR;
+  53/53 is not a claimed native-CI result for all subsequent commits.
+- [Private Voxletra synthetic hosted Actions #38953397978](https://github.com/voxletra/voxletra-e2e/actions/runs/38953397978)
+  succeeded on runner `1000002328`; logs prove occupied-ref
+  rejection, atomic new-ref creation, second-create race rejection and
+  fail-closed status handling.
+- For two-phase validation, the first
+  [private source-free run #38954025321](https://github.com/voxletra/voxletra-e2e/actions/runs/38954025321)
+  failed because its **synthetic validator** omitted metadata-size
+  comparison. The corrected
+  [run #38954097648](https://github.com/voxletra/voxletra-e2e/actions/runs/38954097648)
+  passed on runner `1000002333` and logged
+  `LATE_SOURCE_FAILURE_NO_DESTINATION_WRITES=yes`,
+  `TWO_PHASE_SYNTHETIC_COPY_SUCCESS=yes`,
+  `MALFORMED_SECOND_BLOB_CASES=3`.
+- The synthetic hosted tests do **not** execute the private publisher
+  itself or test current Oreslang Java/LLVM/.NET/Wasm/Forge compilers.
+  No real source was mirrored. Incident #22 and independent reviewed
+  export policy #962 remain unresolved.
