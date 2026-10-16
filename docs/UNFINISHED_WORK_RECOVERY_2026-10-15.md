@@ -357,3 +357,45 @@ or successfully verified by executable CI.
   assigned job ID `116734093682`, and then **failed with zero steps
   and no runner**. This is an infrastructure scheduling failure, *not*
   Maven/JDK25/JUnit failure or passing evidence. Keep Java #1034 draft.
+
+### Source-local pre-merge exact-candidate runner — 2026-10-15
+
+- [Java PR #1014](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1014)
+  now includes `.github/workflows/private-exact-candidate-validation.yml`,
+  explicitly separating the reviewed main workflow code from a single
+  administrator-approved **unmerged candidate**. No untrusted PR event runs
+  its own workflow. The immutable repository ID is pinned to `1400792274`;
+  admission requires private source identity, `main` workflow SHA, exact
+  candidate SHA/tree, and repository-scoped single-use runner flag. The
+  pinned same-repository checkout verifies Git commit/tree and a clean
+  checkout **before** GraalVM or guest execution. No cross-org source
+  transfer or shared-runner fallback is permitted.
+- Extended `PrivateExactMainValidationWorkflowSecurityTest` with negative
+  candidate admission and provenance tests, full expected `if`/deny
+  conditions and mutation guard; added CODEOWNERS review and runbook.
+  Candidate workflow commit at audit:
+  `0ba8406eebbfcab2144f9bc06944a41373b7d68e`;
+  tree `1ec48705a54a2c2ca7aba74114461f7e4f04ce98`.
+  Earlier 21/21 source structural checks passed (these are **not**
+  executed JUnit tests). Java branch
+  [fast-ci #38838764684](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38838764684)
+  failed with **zero test steps and no runner**.
+- Intended exact Java permissions candidate:
+  [#1034](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1034)
+  `c7583a1d8488661096a3c2d43bb70c5a56b31cee`, Git tree
+  `afa3d6a4a1a760c240e7e2a2df87a78af9daac2b`.
+  Candidate contains `DenoCliDefaultPermissionsTest` (11 methods),
+  `RuntimePermissionsNetworkAuditTest` (20 methods), and
+  `ScopedPermissionInteropTest` (8 methods): 39 targeted JUnit
+  methods **present, not run**. Its
+  [fast-ci #38837903429](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/38837903429)
+  likewise failed before any executed step. Do not substitute static
+  assertions for Maven/GraalVM proof.
+- Remaining indispensable gates: independent security-owner review of #1014;
+  protect source main with code-owner enforcement; merge the reviewed
+  workflow; provision isolated single-use repository runner; pin main
+  workflow commit and explicitly reviewed candidate/tree through
+  administrator-set repository variables; dispatch the workflow on
+  `main`; record actual JDK25/native test logs. No runner was
+  provisioned, no candidate workflow was dispatched, and no private
+  source was copied to another repository in this work.
