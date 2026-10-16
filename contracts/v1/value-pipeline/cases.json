@@ -17,12 +17,12 @@
       },
       "candidate_implementations": [
         ".java",
-        ".llvm"
+        ".llvm",
+        ".wasm"
       ],
       "pending": [
         ".net",
-        ".forge",
-        ".wasm"
+        ".forge"
       ]
     },
     {
@@ -68,12 +68,12 @@
       },
       "candidate_implementations": [
         ".java",
-        ".llvm"
+        ".llvm",
+        ".wasm"
       ],
       "pending": [
         ".net",
-        ".forge",
-        ".wasm"
+        ".forge"
       ]
     },
     {
