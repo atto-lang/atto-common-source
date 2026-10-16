@@ -106,6 +106,33 @@ class IRV1HardeningTests(unittest.TestCase):
         self.assertEqual(canonical_bytes({"z": {"x": 1, "y": [2, 3]}, "a": None}),
                          canonical_bytes({"a": None, "z": {"y": [2, 3], "x": 1}}))
 
+    def test_canonical_preflight_enforces_exact_utf8_budget(self):
+        limit = 1_048_576
+        # Exact JSON punctuation: {"x":"<payload>"} has eight bytes of
+        # overhead. The maximum accepted document is not rounded down.
+        within = {"x": "a" * (limit - 8)}
+        self.assertEqual(len(canonical_bytes(within)), limit)
+        with self.assertRaises(IRValidationError):
+            canonical_bytes({"x": "a" * (limit - 7)})
+        with self.assertRaises(IRValidationError):
+            canonical_bytes({"x": "\\n" * limit})
+        with self.assertRaises(IRValidationError):
+            canonical_bytes([False] * (limit // 5 + 1))
+
+    def test_canonical_size_accounts_for_escaped_keys_and_unicode(self):
+        samples = [
+            {"new\\nline": "\\t\\u0000", "slash\\\\": "\\u03c0"},
+            ["\\u2603", {"quote\\\"": True, "negative": -42}],
+            {"null": None, "empty": {}, "list": [0, False, "ok"]},
+        ]
+        for value in samples:
+            with self.subTest(value=value):
+                encoded = canonical_bytes(value)
+                self.assertEqual(len(encoded), len(
+                    __import__("json").dumps(value, sort_keys=True,
+                        ensure_ascii=False, allow_nan=False,
+                        separators=(",", ":")).encode("utf-8")))
+
     def test_unknown_nested_hir_fields_are_rejected(self):
         hir = copy.deepcopy(self.hir)
         body = next(f for f in hir["functions"] if f["name"] == "double")["body"]
