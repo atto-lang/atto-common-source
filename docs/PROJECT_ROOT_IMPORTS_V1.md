@@ -80,6 +80,23 @@ containing the nearest `.ores.pkg.toml`. Treat this as an open semantic
 decision. Do not mark the five backends at resolver parity or silently
 normalize the difference until one authority is agreed and tested.
 
+## Importer-relative and dot-prefixed bare names
+
+Explicit `./local` and `../up` resolve from the **importing source
+file's directory**, independently of process CWD or `[source].roots`.
+A bare name starting with a dot, such as `.hidden/helper` or
+`..backup/helper`, is **not** an explicit relative import; it follows
+ordinary bare-source lookup precedence. Do not implement this using a
+generic `startsWith(".")` test.
+
+The `relative_source_cases` in
+`contracts/project-root-import-v1.json` pin these identities. Current
+.NET/Forge experimental host resolvers can establish a restricted
+within-root mapping but still lack guest import binding; Wasm's scalar
+bridge must continue to reject unresolved `./` and `../` imports before
+any artifact publication. Do not confuse host-only source resolution with
+linked module execution or completed five-backend parity.
+
 ## Backend parity and admission gates
 
 The v1 contract applies to .java, .llvm, .net, .wasm and .forge, but
