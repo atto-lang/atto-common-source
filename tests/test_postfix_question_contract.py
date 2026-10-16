@@ -91,6 +91,26 @@ class PostfixQuestionReferenceContract(unittest.TestCase):
                     "throws": True, "matching_error": True, "error_derived": derived}
             self.assertEqual(interpret(case)[0], "REJECT")
 
+    def test_throws_annotation_cannot_change_question_return_kind(self):
+        # The same Result<T,E>? must return Err in a Result callable,
+        # irrespective of the callable's separate throws annotation.
+        for declares_throw in (False, True):
+            base = {"operand": "Result", "state": "err",
+                    "matching_error": True, "error_derived": True,
+                    "throws": declares_throw}
+            self.assertEqual(interpret({**base, "returns": "Result"})[0],
+                             "RETURN_ERR")
+            self.assertEqual(interpret({**base, "returns": "scalar"})[0],
+                             "REJECT")
+
+    def test_shared_docs_have_no_implicit_result_to_throw_route(self):
+        doc = (CASES.parents[3] / "docs" /
+               "ELM_COMPOSITION_REACTIVE_INTEROP_V1.md").read_text(
+                   encoding="utf-8")
+        self.assertIn("no implicit `throws E` route", doc)
+        self.assertNotIn("non-Result return and **explicit `throws E`**", doc)
+        self.assertIn("postfix `?`", doc)
+
     def test_returned_err_is_not_a_caught_throw(self):
         case = {"operand": "Result", "state": "err", "returns": "Result",
                 "throws": True, "matching_error": True, "error_derived": True,
