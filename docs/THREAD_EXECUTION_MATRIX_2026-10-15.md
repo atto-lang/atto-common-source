@@ -30,7 +30,7 @@ remains separate; this matrix avoids duplicating its issue inventory.
   subprocess exit status, then committed a fail-closed check and regression
   tests. Local focused test run: **6/6 pass**, including three persistent
   regression tests. This is harness validation, **not** compiler parity.
-- Embedded Cortex-M PR #15: reproduced the PR branch's linker orphan-log\n  validator and unit test source in an isolated local Python workspace;\n  **12/12 tests passed**. This does NOT validate Zephyr/CMake, QEMU,\n  firmware ELF layout, hardware timing or GitHub CI.\n- The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
+- DOP Java PR #1066: compiled the host-side `DopRegionSchedule` source\n  in an isolated JDK 21 workspace and passed **400,000 seeded cell-oracle\n  checks** plus **2,000 randomized 12-task dependency-graph trials**. Added\n  JUnit regression tests to PR #1066; its Maven/Actions execution remains\n  unverified due to runner failures. This does not prove native/GPU parity.\n- Embedded Cortex-M PR #15: reproduced the PR branch's linker orphan-log\n  validator and unit test source in an isolated local Python workspace;\n  **12/12 tests passed**. This does NOT validate Zephyr/CMake, QEMU,\n  firmware ELF layout, hardware timing or GitHub CI.\n- The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
   .NET, Wasm and Forge PR branches are exactly equal as parsed JSON; their
   `scripts/verify_serde_contract.py` content is also identical. This is
   **static contract parity, not executed transport parity**.
