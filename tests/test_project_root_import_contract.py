@@ -4,6 +4,7 @@ This is a fixture consistency gate, NOT a compiler, linked-module, or CI
 parity result. Backend promotion requires independently executed evidence.
 """
 import json
+import posixpath
 import unittest
 from pathlib import Path, PurePosixPath
 
@@ -68,6 +69,22 @@ class ProjectRootImportContractTest(unittest.TestCase):
         self.assertIn("never imply", gates["safe_admission"])
         self.assertIn("execute", gates["execution"])
         self.assertIn("real wasm32", gates["wasm"])
+
+    def test_relative_source_namespace_is_not_ambiguous(self):
+        cases = self.contract["relative_source_cases"]
+        self.assertEqual(len(cases), 4)
+        self.assertEqual(len({case["id"] for case in cases}), len(cases))
+        files = set(self.contract["files"])
+        for case in cases:
+            with self.subTest(case=case["id"]):
+                spec = case["specifier"]
+                is_relative = spec.startswith("./") or spec.startswith("../")
+                self.assertEqual(is_relative, case["namespace"] == "relative")
+                origin = (posixpath.dirname(case["importer"]) if is_relative
+                          else case["source_root"])
+                resolved = posixpath.normpath(posixpath.join(origin, spec)) + ".ores"
+                self.assertEqual(case["expect"], resolved)
+                self.assertIn(resolved, files)
 
     def test_unresolved_root_authority_is_explicit(self):
         decisions = self.contract["open_decisions"]
