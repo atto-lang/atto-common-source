@@ -41,7 +41,7 @@ remains separate; this matrix avoids duplicating its issue inventory.
   case-sensitive literal identifier on the same explicit unresolved-name error
   line. New regression coverage rejects unrelated errors, source echoes,
   warning-only messages, substring matches and regex-like tokens.
-  Isolated Node 22 run of the five new tests and three earlier exit-status regressions: **8/8 passed** after updating the older mock to emit an explicit unresolved-name diagnostic.
+  Isolated Node 22 workspace assembled from the reviewed harness, fixture and test sources: **23/23 tests passed** (15 original harness tests, five new diagnostic-integrity tests and three exit-status tests). An older positive mock was updated to emit an explicit unresolved-name diagnostic. This is not the unavailable hosted CI run or real compiler parity.
   The hosted job remains blocked, and this is **harness** evidence only.
 - Java import PR #1050: preserved literal whitespace in `ORES_PATHS` entries,
   hardened `forImportedPackage` against malformed `pkg:` inputs, and added
