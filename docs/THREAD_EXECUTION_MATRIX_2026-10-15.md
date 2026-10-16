@@ -30,7 +30,7 @@ remains separate; this matrix avoids duplicating its issue inventory.
   subprocess exit status, then committed a fail-closed check and regression
   tests. Local focused test run: **6/6 pass**, including three persistent
   regression tests. This is harness validation, **not** compiler parity.
-- The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
+- Embedded Cortex-M PR #15: reproduced the PR branch's linker orphan-log\n  validator and unit test source in an isolated local Python workspace;\n  **12/12 tests passed**. This does NOT validate Zephyr/CMake, QEMU,\n  firmware ELF layout, hardware timing or GitHub CI.\n- The five `contracts/v1/serde_boundary_v1.json` files in Java, LLVM,
   .NET, Wasm and Forge PR branches are exactly equal as parsed JSON; their
   `scripts/verify_serde_contract.py` content is also identical. This is
   **static contract parity, not executed transport parity**.
