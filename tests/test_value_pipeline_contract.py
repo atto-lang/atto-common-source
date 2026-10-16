@@ -10,6 +10,26 @@ TARGETS = {".java", ".llvm", ".net", ".forge", ".wasm"}
 CASE_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 DIAGNOSTIC = re.compile(r"[a-z][a-z0-9-]*\Z")
 
+# Frozen v1 baseline: additions are allowed, silent substitution is not.
+REQUIRED_V1_CASES = {
+    "scalar-left-associative", "result-map-error", "option-transpose",
+    "reject-noncallable-stage", "reject-maperr-on-option",
+    "option-map-aot", "result-chain-aot", "result-recovery-aot",
+    "aot-option-result-composition",
+}
+
+
+def load_unique_json(source):
+    """Reject ambiguous duplicate keys at every depth before validating the registry."""
+    def object_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate registry JSON key: {key}")
+            result[key] = value
+        return result
+    return json.loads(source, object_pairs_hook=object_pairs)
+
 
 class ValuePipelineContractTests(unittest.TestCase):
     def check_registry(self, doc, root=ROOT):
@@ -68,16 +88,18 @@ class ValuePipelineContractTests(unittest.TestCase):
                 self.assertTrue(all(isinstance(f, str) and f.strip()
                                     for f in fragments.values()))
             self.assertNotIn("verified", case)
+        self.assertTrue(REQUIRED_V1_CASES <= seen_ids,
+                        "all nine original v1 cases must remain registered")
         fixture_files = {p.name for p in (root / "fixtures").glob("*.ores") if p.is_file()}
         self.assertEqual(seen_fixtures, fixture_files,
                          "registry and fixture directory must have identical membership")
 
     def test_registry_has_complete_nonoverlapping_backend_statuses(self):
-        doc = json.loads((ROOT / "cases.json").read_text(encoding="utf-8"))
+        doc = load_unique_json((ROOT / "cases.json").read_text(encoding="utf-8"))
         self.check_registry(doc)
 
     def test_malformed_registry_is_rejected(self):
-        original = json.loads((ROOT / "cases.json").read_text(encoding="utf-8"))
+        original = load_unique_json((ROOT / "cases.json").read_text(encoding="utf-8"))
         mutations = {}
         def add(label, mutate):
             doc = copy.deepcopy(original)
@@ -103,8 +125,19 @@ class ValuePipelineContractTests(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     self.check_registry(doc)
 
+    def test_duplicate_json_keys_fail_closed(self):
+        text = (ROOT / "cases.json").read_text(encoding="utf-8")
+        self.assertIn('"version": 1,', text)
+        with self.assertRaisesRegex(ValueError, "duplicate registry JSON key"):
+            load_unique_json(text.replace('"version": 1,',
+                                          '"version": 1, "version": 1,', 1))
+        self.assertIn('"exit_code": 7', text)
+        with self.assertRaisesRegex(ValueError, "duplicate registry JSON key"):
+            load_unique_json(text.replace('"exit_code": 7',
+                                          '"exit_code": 7, "exit_code": 8', 1))
+
     def test_every_fixture_declared_once(self):
-        doc = json.loads((ROOT / "cases.json").read_text(encoding="utf-8"))
+        doc = load_unique_json((ROOT / "cases.json").read_text(encoding="utf-8"))
         fixtures = [case["fixture"] for case in doc["cases"]]
         self.assertEqual(len(fixtures), len(set(fixtures)))
         self.assertEqual(set(fixtures), {
