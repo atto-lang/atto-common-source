@@ -175,3 +175,22 @@ remains separate; this matrix avoids duplicating its issue inventory.
   CI issue #589 remain open. No real cross-organization mirror was created;
   independent security review and administrator runner/billing diagnosis
   remain release gates.
+
+
+## Runner gate API compatibility fix — 2026-10-16
+
+- [Conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  was audited against an actual successful GitHub Actions job response. The
+  original check `steps.length === 1` would reject legitimate jobs containing
+  GitHub-generated `Set up job` and `Complete job` steps. It now requires
+  exactly one successful **named** source-free capacity command while
+  allowing platform-managed steps, and validates positive `runner_id` and
+  exact `job.run_id` identity. Updated offline mock tests: **39/39 passing**.
+- The latest [exact-head source-free run #38933598023](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/38933598023)
+  still failed with **zero recorded job steps**. Check-run metadata reports
+  annotations, but annotation details were not retrievable through the
+  connected GitHub API. The exact root cause remains **unknown**.
+- Recovery remains dependent on GitHub administrator review of billing,
+  spending limits, runner policies and the workflow-run failure banner.
+  No authorized private carrier with executed success has been established;
+  no private compiler source was exported or production PR merged.
