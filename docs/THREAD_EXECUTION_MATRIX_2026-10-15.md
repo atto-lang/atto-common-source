@@ -358,3 +358,31 @@ remains separate; this matrix avoids duplicating its issue inventory.
   GitHub regression suite remains 46/46 passing. Source export approval
   (#962), public-source exposure incident (#22), and full compiler CI
   (#589) are still unresolved. **No actual Oreslang private source export.**
+
+
+## Source-free branch-occupation and atomic ref race proof — 2026-10-16
+
+- [Conformance publisher draft PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  now probes the new isolated destination branch through GitHub's GET-ref API
+  **before reading any private source Git objects** and once again before
+  ref publication. Only HTTP 404 counts as absent; existing branches, auth,
+  billing/rate-limit/transport and unexpected status cases deny. Atomic
+  create-ref remains the last guard against races.
+- **51/51** latest offline mocked publisher/visibility regressions passed,
+  including pre-existing ref, future race and unverified status cases.
+- Read-only actual GitHub API inspection of `voxletra/voxletra-e2e` returned
+  an occupied synthetic branch successfully and HTTP 404 for an absent
+  synthetic branch. No source bytes moved in these reads.
+- New fully synthetic source-free
+  [Voxletra private Actions #38953397978](https://github.com/voxletra/voxletra-e2e/actions/runs/38953397978)
+  passed on hosted runner ID `1000002328` at exact commit
+  `ea182f6a7a51779c38ae86879d076579f3ff09c9`.
+  Logs contain `EXISTING_REF_DETECTED=yes`,
+  `ATOMIC_OCCUPIED_REF_REJECTED=yes`, `ATOMIC_NEW_REF_CREATED=yes`,
+  `RACING_SECOND_CREATE_REJECTED=yes` and
+  `FAIL_CLOSED_REF_STATUS_MATRIX=yes`.
+  Test relied only on locally created Git objects and Node without
+  checkout, other-org code, credentials or artifacts.
+- **No execution of the actual private-mirror publisher or private
+  cross-org Oreslang source transfer** occurred in this update.
+  The P0 exposure incident and protected policy authorization remain open.
