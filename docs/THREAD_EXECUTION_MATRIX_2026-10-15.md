@@ -127,3 +127,23 @@ remains separate; this matrix avoids duplicating its issue inventory.
   remain blockers; repo privacy alone does not constitute transfer approval.
 - A read-only status and remediation update was posted to
   [CI issue #589](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/589).
+
+
+## Source-free runner-capacity reproduction — 2026-10-16
+
+- The private source organization's [source-free probe workflow](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/security/pin-private-mirror-repository-ids-20261016/.github/workflows/runner-capacity-probe.yml)
+  does no checkout, invokes no external actions, uses no secrets/tokens and has
+  a single shell step. Both [PR run #38930087848](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/38930087848)
+  and [push run #38930078131](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/38930078131)
+  ended `failure` with **zero recorded steps**, which isolates runner startup
+  from compiler/test logic but not from possible billing or Actions policy causes.
+- [Draft conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  now pins the source commit SHA and source Git-tree SHA independently of the
+  requested transfer, as well as reviewed source/destination numeric repo IDs,
+  and checks the complete materialized subtree SHA. **34/34** source-level
+  mocked-GitHub security tests passed in isolation; no actual private source
+  transfer or GitHub-hosted tests passed.
+- GitHub API repository rulesets returned a plan-related 403 and branch
+  protection checks returned integration-access 403; no protected-policy
+  assurance has been established. Public-source exposure incident #22 remains
+  unresolved. See the [runner recovery runbook](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/security/pin-private-mirror-repository-ids-20261016/docs/CI_RUNNER_RECOVERY_2026-10-16.md).
