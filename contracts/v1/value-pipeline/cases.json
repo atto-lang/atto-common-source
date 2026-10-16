@@ -92,6 +92,57 @@
         ".forge",
         ".wasm"
       ]
+    },
+    {
+      "id": "option-map-aot",
+      "fixture": "option-map-aot.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "result-chain-aot",
+      "fixture": "result-chain-aot.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "result-recovery-aot",
+      "fixture": "result-recovery-aot.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
     }
   ]
 }
