@@ -34,7 +34,7 @@ The `oreslang-otel` library is imported in userland and chooses its own caller-o
 
 ## Export and interoperability
 
-- Retain stable versioned schemas (`ores-core-perf.v1`, `ores-core-debug.v1` today). A future severity-aware core event schema must be versioned and documented separately. Preserve fixed event IDs; map IDs to text only in cold-path export.
+- Retain stable versioned schemas (`ores-core-perf.v1`, `ores-core-debug.v1`, and Java's `ores-core-log.v1`). Preserve fixed event IDs; map IDs to text only in cold-path export. Other backends must independently implement and verify `ores-core-log.v1` before claiming parity.
 - Use numeric timestamps/durations without rounding through a floating-point representation. Enforce numeric and string encoding limits; no user-controlled dynamic payloads in core events.
 - Core events are **not** OpenTelemetry/OTLP. An explicit, out-of-process adapter may translate exported core records; never make OTel an unconditional dependency of the runtime.
 - Current `oreslang-otel` exports synchronous JSON Lines to stdout and is not OTLP. Callers must guard `should_log` **before** constructing expensive bodies; logging must not execute in scheduler/mailbox/GC critical sections.
@@ -59,6 +59,30 @@ The `oreslang-otel` library is imported in userland and chooses its own caller-o
 5. **Backend admission:** unsupported guest stdlib/OTel imports fail closed without host fallback, especially no-import Wasm.
 6. **Userland OTel:** the import is optional, logging thresholds are caller-controlled, message construction is guarded, IDs stay actor-owned, and JSON/UTF-8/int64 constraints survive tests.
 7. **Performance:** publish microbenchmarks of disabled per-call overhead and enabled single/multithread throughput plus whole-program regressions, with the exact backend tree SHA and CI run attached. Do not declare five-backend parity until all five pass applicable gates.
+
+## Logging-disable lifecycle and Java verification hardening (2026-10-16)
+
+The Java severity recorder now treats `--no-core-log` and `off` as
+**export revocation**, not merely a gate on future events: disabling drops the
+bounded current buffer and prevents JVM shutdown output from that session.
+Re-enabling creates a fresh empty recorder. Numeric fixed-ID data never
+crosses into userland `oreslang-otel`.
+
+The verified test sequence is:
+
+- [46/46 Java integration tests after lifecycle hardening](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38925225748)
+- [47/47 Java integration tests, including disabled-path thread-allocation regression](https://github.com/ores-dummy-org-oreslang-stack/ores-dummy-org-oreslang-stack-web-server.ores/actions/runs/38926892754)
+
+The allocation regression runs 300,000 disabled record/gate calls with
+`ThreadMXBean` instrumentation, calibrating the fixed bookkeeping overhead
+of allocation-counter reads. This verifies no **per-event allocation scaling**
+on the tested JDK25 HotSpot runner, not a cross-backend microbenchmark.
+
+The mirror verifies 96 exact production/test/stdlib blob SHAs against the
+Java PR head, and executes the original 9-line `oreslang-otel` guest smoke.
+An attempted full 614-blob Git-tree mirror was not completed because the
+connector blocked a batch of source test files. No complete-tree SHA claim,
+native-image result or other-backend parity is made.
 
 ## Next implementation order
 
