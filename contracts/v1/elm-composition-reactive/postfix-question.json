@@ -33,7 +33,7 @@
       "throws": true,
       "matching_error": true,
       "error_derived": true,
-      "expect": "THROW",
+      "expect": "REJECT",
       "defers": []
     },
     {
