@@ -147,3 +147,31 @@ remains separate; this matrix avoids duplicating its issue inventory.
   protection checks returned integration-access 403; no protected-policy
   assurance has been established. Public-source exposure incident #22 remains
   unresolved. See the [runner recovery runbook](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/security/pin-private-mirror-repository-ids-20261016/docs/CI_RUNNER_RECOVERY_2026-10-16.md).
+
+
+## 2026-10-16 additional private-runner/source-read gates
+
+- [Conformance security PR #43](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/43)
+  now requires reviewed **source and destination repository IDs; exact source
+  commit/tree; exact destination base commit/tree; empty snapshot prefix; and
+  a recent, successful destination-owned source-free runner probe** before
+  requesting the first confidential source Git object. The capacity evidence
+  must bind numeric repo ID, approved commit and workflow path, trusted
+  `push`/`workflow_dispatch` event and one successful executed shell step.
+  A zero-step or stale probe fails closed. Separate Git-object/tree SHA
+  integrity checks precede publication of any isolated CI ref.
+- Updated mocked-GitHub publisher and privacy tests: **39/39 passed offline**.
+  This is not hosted Actions or compiler parity. The latest source-free
+  [run #38932360801](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/38932360801)
+  and [harness run #38932360838](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/38932360838)
+  both failed with **zero recorded job steps**. A confirmed private runner
+  with usable capacity is **not** yet available.
+- Additional private carrier probes checked under `3FA-app`,
+  `messaging-intel` and `gha-indie-worker` also reported zero-step failures.
+  `zed-pkg-test/java-app` has a prior successful run but is **public** and
+  must not receive private source. Neither a GitHub connector's write access
+  nor Git-object equality is sufficient authorization.
+- The public-source incident #22, protected-source policy issue #962, and
+  CI issue #589 remain open. No real cross-organization mirror was created;
+  independent security review and administrator runner/billing diagnosis
+  remain release gates.
