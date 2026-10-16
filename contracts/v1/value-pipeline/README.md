@@ -94,3 +94,14 @@ The `.wasm` candidate statuses for `scalar-left-associative` and `reject-noncall
 - [Expanded Java regression run 38933227575](https://github.com/voxletra/voxletra-e2e/actions/runs/38933227575): **379/379 selected GraalVM tests passed** across 35 test classes and 124 exact source/test/resource blobs. This remains a selected suite, not the complete Java repository suite.
 - [Native LLVM scalar depth run 38933844737](https://github.com/voxletra/voxletra-e2e/actions/runs/38933844737): 128-stage pipeline compiled and executed to exit code 129. The 129-stage fixture was rejected with no LLVM IR emitted. LLVM tagged Option/Result remains unsupported.
 - Java PR #1073 now also preserves `Result.and_then`'s error type and `Result.or_else`'s success type across inferred inline `Ok(...)` / `Err(...)` callbacks; precise latest-revision CI evidence is required independently before certifying those edits.
+
+## Named-stage forwarding extension — open parity gap (2026-10-16)
+
+Two additional canonical fixtures are registered with exact Git blob identities shared with native LLVM value-pipeline PR #455:
+
+- `scalar-named-first-argument.ores` — Git blob `2aac69303d39203c0dc07edcb655caefd07304ad`. The value `3` is forwarded into formal parameter zero of `combine(int n, int x, int y)`; explicit named arguments `y: 1, x: 4` must bind by name while retaining lexical evaluation order. A following `plus(delta: 1)` produces exit code **40**.
+- `reject-duplicate-forwarded-binding.ores` — Git blob `a793b3781b86d7b9d988595941181e5f815ef2b6`. A pipeline must reject a stage which explicitly binds formal `n` after implicitly forwarding the value into that same slot. Native LLVM candidate reports `duplicate binding of parameter 'n'` during semantic checking and must emit **no IR**.
+
+**Candidate is not verification.** Native LLVM has candidate code and registered tests, but exact-head GitHub Actions currently fail with zero runner steps, so executable verification of these *new* cases is pending. Java/GraalVM's current `Ast.CallExpr` stores positional `List<Expr>` rather than named value-argument metadata; Java, .NET, Forge and WASM are therefore **pending**, not passing. This v1 extension records the parity gap; it does not silently broaden Java's accepted syntax or claim guest execution.
+
+The release gate requires real Java and LLVM compiled guest results and correct compiler-level rejection, followed by separately verified .NET/Forge/WASM execution or explicit capability limits. Existing scalar and tagged algebra fixtures remain unchanged.
