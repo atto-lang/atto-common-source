@@ -253,3 +253,26 @@ remains separate; this matrix avoids duplicating its issue inventory.
   was stopped by a security check and was not undertaken. Existing public
   exposure incident #22 remains unresolved; continue containment and
   obtain independent policy approval before expanding source transfers.
+
+
+## Conformance manifest coverage and source-file integrity — October 16, 2026
+
+- Conformance [PR #35](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/35)
+  now requires **at least one accepting and one rejecting test per claimed
+  compiler backend**; rejects duplicate, malformed or oversized manifest
+  metadata; and requires manifest/fixture files to be regular, non-symlink
+  sources. This prevents a positive-only manifest from producing a green
+  compiler-support claim.
+- [Private Voxletra carrier run #38945270220](https://github.com/voxletra/voxletra-e2e/actions/runs/38945270220)
+  verified **19/19 Git blob IDs** against source commit
+  `5030e49566a872a50524a605f527544e059589dd` and executed
+  **54/54 Node tests successfully**, zero failures or skips. Companion
+  source-policy, secrets-audit and ores-lint all passed.
+- **Limitations:** these are mock-compiler/harness and synthetic
+  real-report validation tests. No full Java/LLVM source tree, native
+  compiler build, actor runtime, source-binary chain or backend parity
+  is established. The runtime executable can still change between fixture
+  invocations without an independent post-execution hash check; an attempted
+  patch for that additional protection was blocked and not committed.
+  Keep the security exposure incident, source transport approval and
+  authentic native compiler evidence as mandatory gates.
