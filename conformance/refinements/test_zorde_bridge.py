@@ -62,6 +62,19 @@ class ZordeBridgeTests(unittest.TestCase):
         self.assertEqual(d["requires"], "signed_int64_exact_validator")
         self.assertEqual((d["min"], d["max"]), (1, 65535))
 
+    def test_redundant_exclusions_do_not_require_runtime_holes(self):
+        plain = to_zorde_descriptor(parse(
+            "type Port = int with value gte 1 and value lte 65535;"
+        ))
+        redundant = to_zorde_descriptor(parse(
+            "type Port = int with value gte 1 and value lte 65535 and value ne 0;"
+        ))
+        self.assertEqual(plain, redundant)
+        with self.assertRaises(ConstraintSyntaxError):
+            to_zorde_descriptor(parse(
+                "type Port = int with value gte 1 and value lte 65535 and value ne 42;"
+            ))
+
     def test_unimplemented_exclusion_fails_closed(self):
         refined = parse("type NotTen = int with value ne 10;")
         with self.assertRaises(ConstraintSyntaxError):
