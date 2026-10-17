@@ -123,7 +123,10 @@
     "malformed-manifest-marker-fail-closed-before-fallback",
     "nearest-vs-ancestor-manifest-precedence",
     "nested-package-boundary-for-bare-and-relative-imports",
-    "physical-source-root-symlink-escape-denial"
+    "physical-source-root-symlink-escape-denial",
+    "modern-configured-root-physical-containment",
+    "strict-manifest-known-field-types",
+    "dangling-nested-manifest-marker-rejection"
   ],
   "implementation_status_at_creation": {
     "java": "draft-pr-pending-CI",
@@ -346,6 +349,60 @@
       "specifier": "secret",
       "symlink_alias_to": "../outside/secret.ores",
       "error": "physical-project-root-escape",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "modern-project-root-absolute-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "/other/location",
+      "error": "invalid-modern-root",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-traversal-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "../sibling",
+      "error": "invalid-modern-root",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-noncanonical-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "app/./lib",
+      "error": "invalid-modern-root",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-nested-legacy-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "app/child",
+      "nested_manifest": "app/child/.oreslangc.cfg.toml",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-outside-symlink-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "app-link",
+      "symlink_alias_to": "../external-project",
+      "error": "physical-package-root-escape",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-wrong-toml-type-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": 17,
+      "error": "manifest-known-field-type",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "nested-legacy-dangling-marker-denied",
+      "specifier": "./child/secret",
+      "importer": "src/routes/main.ores",
+      "nested_manifest": "src/routes/child/.oreslangc.cfg.toml",
+      "marker_kind": "dangling-symlink",
+      "file": "src/routes/child/secret.ores",
+      "error": "nested-package-boundary",
       "goal": "deny-before-link"
     }
   ],
