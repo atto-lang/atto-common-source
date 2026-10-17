@@ -82,6 +82,76 @@ permitted by the language contract even on targets whose machine arithmetic
 wraps; an explicit target-specific unchecked intrinsic, if ever added, must be
 separately named and remain outside safe `Pointer<T>`.
 
+### Casts, comparisons, nulls and address spaces
+
+* `p.cast<U>()` is an explicit unsafe typed reinterpretation. It preserves
+  provenance, generation, address space and read/write authority; it never
+  upgrades a read-only raw capability to mutable. The target address must meet
+  `alignof(U)`. For bounded provenance the byte offset and byte extent must be
+  representable in the new element type; otherwise the cast is rejected.
+* `p.byte_offset(n)` is the canonical way to perform byte arithmetic. Typed
+  `p + n` remains element arithmetic.
+* Capability equality compares address space, address and provenance/generation.
+  A separate unsafe address-equality operation may compare machine addresses,
+  but equal numeric addresses do not prove equal ownership because storage can
+  be retired and reused. Relational ordering and subtraction require common
+  provenance.
+* Safe `Pointer<T>` and safe-derived `RawPointer<T>` are non-null.
+  Nullable C/FFI pointers should surface as `Option<RawPointer<T>>` rather than
+  weakening every raw dereference. The default hosted address space treats
+  integer zero as null. An embedded target MAY declare bit-pattern/address zero
+  valid in an explicit non-default physical/address-space capability; that is a
+  target-profile exception and must not inherit hosted `nonnull` assumptions.
+* Data pointers and function pointers are distinct. Function addresses use a
+  separate typed `RawFnPointer<Signature>`; no pointer arithmetic is permitted
+  on function pointers and data/function reinterpretation is target-specific.
+* Pointer-to-integer-to-pointer round trips lose safe provenance. Recreating a
+  raw pointer from the integer yields integer-fabricated unsafe authority, not a
+  descendant safe loan, unless the backend carries an unforgeable side-table
+  provenance token through the round trip.
+
+### LLVM/native optimizer contract
+
+Raw-pointer lowering must be conservative about optimizer facts. A compiler bug
+here can turn a runtime check into undefined behavior before the check executes.
+
+* Emit LLVM `getelementptr inbounds` only when the compiler has proved the
+  operation stays within the live provenance object under LLVM's rules.
+  Integer-fabricated addresses and target MMIO pointers must not receive
+  `inbounds` merely because Oreslang performed checked integer arithmetic.
+* Never infer LLVM `noalias` solely from `RawPointer<T>` or mutable access.
+  `noalias` requires a surviving exclusive safe-owner/borrow proof that also
+  excludes foreign/device aliases for the relevant lifetime.
+* Add `nonnull`, `dereferenceable(N)`, alignment, range, or alias-scope
+  metadata only from a proof that remains valid for the complete optimization
+  scope. Do not attach those attributes to arbitrary `from_addr`, MMIO, DMA,
+  stale-generation, or target-address-space pointers.
+* Reinterpret casts must not manufacture TBAA/type-based alias guarantees.
+  Conservative aliasing is required after raw byte/type punning unless a
+  stronger language proof exists.
+* Volatile is explicit and is not an atomicity guarantee. Atomics require a
+  separately typed operation with width/alignment support and an explicit
+  memory ordering. MMIO register access commonly needs volatile; inter-core
+  synchronization commonly needs atomics; DMA may additionally need
+  target-specific fences/cache maintenance. Do not conflate these.
+* A pointer derived from an actor arena may be tagged `dereferenceable` or
+  `noalias` only while the compiler can prove the arena generation is live,
+  pinned/non-moving as required, and no await/cancellation/reload boundary can
+  invalidate the proof.
+* Raw loads/stores through integer-fabricated addresses are never speculatable
+  across permission, lifetime, or target-device checks. The backend must avoid
+  optimizer attributes that authorize such motion.
+
+### Pinning, FFI and DMA
+
+A raw lease does not itself pin memory. Crossing an FFI call, asynchronous
+device operation, DMA submission, callback, or suspension point requires an
+explicit stable-region/pinning capability whose cleanup participates in
+unwind/cancellation and actor teardown. A pinned region blocks arena
+retirement/reallocation until all external operations and raw descendants have
+released it. Java/Graal FFM segments and LLVM native allocations must expose
+the same semantic lifetime even though their host mechanisms differ.
+
 ### Actor, ownership and lifetime rules
 
 * `RawPointer<T>` is never `Send`, `Share`, `Serializable` or an actor
