@@ -21,7 +21,23 @@
 
 Per subscription/iterator cursor, admit `OPEN -> COMPLETE | ERROR(E) | CANCELLED` exactly once. `NEXT(T)` is an event **only while OPEN**, never terminal and never an implicit `Some`/sentinel for completed. A value-level `Option<T>.None` and `Result<T,E>.Err` must remain data when `T` is a sum type. Ordinary `throw` and a failed `Future` are not `Result.Err` unless the caller **explicitly** chooses an authorized typed conversion. `raise`, `panic`, host fatal and cancellation must never be caught and reified as normal data by a generic adapter.
 
-Iterator's `IteratorResult<T>{done,value}` is a **lossy projection** of the four-way event model: `done=true, value=None` denotes natural exhaustion **only when next succeeds**; a rejected/failed/cancelled pull remains in the Future/exception/control category. Legacy `Subscription.next(): Option<T>` collapses cancellation with exhaustion; any lossless bridge must use `next_event()` plus a typed error channel, not `None`.
+Iterator's `IteratorResult<T>{done,value}` is a **lossy projection** of the four-way event model: `done=true, value=None` denotes natural exhaustion **only when next succeeds**; a rejected/failed/cancelled pull remains in the Future/exception/control category. Legacy `Subscription.next(): Option<T>` and string-tagged `StreamEvent<T>` are compatibility projections. The canonical lossless consumer signal is `Result<Option<T>, Option<E>>`: `Ok(Some(T))` NEXT, `Ok(None)` COMPLETE, `Err(None)` CANCELLED, and `Err(Some(E))` ERROR. This preserves `T=Option<U>` and `T=Result<A,B>` as ordinary data.
+
+### Canonical signal and producer frame
+
+Use two deliberately different closed sum shapes:
+
+- **Consumer signal:** `Result<Option<T>, Option<E>>`
+  - `Ok(Some(value))` = NEXT(value)
+  - `Ok(None)` = COMPLETE
+  - `Err(None)` = CANCELLED
+  - `Err(Some(error))` = ERROR(error)
+- **Producer frame:** `Result<Option<T>, E>`
+  - `Ok(Some(value))` = NEXT(value)
+  - `Ok(None)` = COMPLETE
+  - `Err(error)` = explicit terminal ERROR(error)
+
+Cancellation is subscription-local control and is not serialized into a producer's data channel unless a protocol explicitly owns such a wire-level cancellation frame. This separation lets a consumer cancel a borrowed Future/channel adapter without revoking or rewriting producer ownership.
 
 State and obligations:
 1. A consumer owns exactly **one outstanding pull** per cursor. An immediate second pull is rejected or explicitly serialized; **never** drive the same activation twice in parallel. `close()` is idempotent and wakes/detaches any pending pull where runtime cancellation supports that path.
@@ -56,7 +72,9 @@ State and obligations:
 
 Do not invent an implicit `Future<Stream<T>>` for `nb cpu { return stream; }`: the Future models asynchronous **region completion**, while stream/channel ownership and cross-domain portability require separately checked source and lifetime semantics. A `cpu` block's explicit `return` remains mandatory. Proposed region-aware `Stream<T>` and channel outputs may be accepted only with a scoped owner and backpressure contract; async generator activation cannot be moved across region/actor boundaries by accident.
 
-## Audit findings (verified source snapshots, not evidence of dynamic exploit)
+## Audit findings (pre-hardening source snapshots, not evidence of dynamic exploit)
+
+The findings below describe the audited snapshots that motivated the current draft stack. Draft remediation status follows; do not read these historical findings as claims about the latest unmerged heads.
 
 - **High:** Java `docs/LANGUAGE.md` describes Iterator/AsyncIterator accurately but there is no unified lossless channel/Observable adapter contract. The independent `Stream` label risks accidental equivalence with the authenticated single-flow `ActorStream` candidate (#1145).
 - **High:** Channel Rx main `src/rx.ores` uses public `StreamEvent<T>` with free-form `String kind` and `Option<T>`; it can encode illegal event shapes and has no typed ERROR variant. Its `next(): Option<T>` collapses cancelled and complete.
@@ -65,6 +83,17 @@ Do not invent an implicit `Future<Stream<T>>` for `nb cpu { return stream; }`: t
 - **Medium:** Both pull Rx variants' subscription ordinary-failure paths use `Err(err).expect(...)` in a catch, so ordinary error fidelity is not proven. Do not present this as typed ERROR propagation or claim that panic is recoverable.
 - **Medium:** Callback Rx `subscribe(Fnc<T,bool>)` is synchronous push, with cooperative early stop; it has no credit-based asynchronous backpressure, scheduler-shift, or arbitrary Future interop. Its semantics must remain independently benchmarked, not silently redefined.
 - **High:** Cross-family close, producer ownership, yielded borrow lifetime, concurrent pull/single-flight and exact transfer at `cpu`/`nb cpu` need backend-executed tests across Java/LLVM/.NET/WASM/Forge; a prose contract is not enough.
+
+## Draft remediation status (October 17, unmerged / unexecuted exact heads)
+
+- Rx #17 rejects duplicate subscribers for raw hot-channel and merge adapters rather than pretending one channel reader is multicast.
+- Rx #19 serializes subscription terminal claims, separates FAILED from COMPLETE/CANCELLED, adds recoverable `next_result()`, and exposes the canonical `next_signal(): Result<Option<T>, Option<Object>>`.
+- Rx #19's Future adapter selects a private stop channel against `SelectCase.future(shared)`; Java #1193 provides the current-main waiter-detachment primitive while preserving borrowed producer ownership.
+- Rx #19 adds `send_blocking()/complete_blocking()`, holding one delivery credit through actual Future settlement. The legacy Future-returning sender remains caller-disciplined.
+- Rx #20 is now a clean stack on #19. `CreditPipe<T,E>` uses the same canonical consumer signal, explicit one-event demand credits, serialized state probes, and a three-way producer frame `Result<Option<T>,E>`.
+- Java #1193 tightens ordinary `Channel<T>` to recursively data-only payloads, rejecting nested callable/runtime/synchronization/cursor/select capabilities as well as borrows.
+
+These are **implementation claims from source review only** until exact-head Java and guest Oreslang jobs execute. Source-org zero-step runner failures are not runtime evidence.
 
 ## Concurrency hazards and mandatory remediation (October 17 audit)
 
@@ -88,11 +117,13 @@ The candidate host model's `settle_pull() -> None` is an abstract **not-ready** 
 It is not an alias for the older Observable, channel `FramedPipe`, generic
 `Stream<T>`, or authenticated actor `ActorStream<T>`.
 
-Its proposed typed consumer surface is
-`Option<Result<Option<T>,E>>`: `Some(Ok(Some(T)))` means NEXT,
-`Some(Ok(None))` COMPLETE, `Some(Err(E))` typed terminal ERROR,
-and outer `None` subscriber CANCELLED. This layering preserves
-`T=Option<U>` and `T=Result<U,E2>` *as data* without a string tag.
+Its typed consumer surface is the canonical
+`Result<Option<T>, Option<E>>`: `Ok(Some(T))` means NEXT,
+`Ok(None)` COMPLETE, `Err(Some(E))` typed terminal ERROR,
+and `Err(None)` subscriber CANCELLED. The private producer frame remains
+`Result<Option<T>,E>`, because consumer cancellation is local control rather
+than producer wire data. This preserves `T=Option<U>` and
+`T=Result<U,E2>` *as data* without a string tag.
 The publisher explicitly issues `send`, `complete`, or `fail`, each
 returning a `Future<Option<SelectResult>>` for an asynchronously registered
 write; ordinary guest `throw`/Future failure is never silently mapped to `Err`.
@@ -108,17 +139,14 @@ the event, then await the write Future. Caller-owned producers are not stopped
 by consumer cancellation. A nested `Result<Option<T>,E>` is the direct
 `Channel` payload; no class wrapper is necessary.
 
-**Security/progress qualification:** the current source prototype inherits the
-non-atomic `credit_marked` read/restore latch from the existing Rx pattern;
-it is **not** yet evidence of a linearizable producer-vs-cancellation claim.
-Before promoting #20, replace these checks with a runtime atomic state
-primitive or prove a single owner-serialized admission critical section across
-all suspension and preemption boundaries. Validate owned `T/E` transfer and recursive generic `Channel<Result<Option<T>,E>>` admission.
-**Compatibility drift:** Java main now explicitly allows local Channel
-callables, while the Rx pinned compiler and its existing negative fixtures
-still require data-only channel payloads. Harmonize that policy before
-claiming callable/capability negative parity; preserve stricter actor mailbox
-boundaries independently. The current `Channel` and
+**Security/progress qualification:** rebased #20 serializes every
+`credit_marked` read/restore probe under a short private `state_busy` gate;
+source audit finds 15/15 probes inside 9 gated windows and no gate spanning
+`await` or `nb select`. Java #1193 also reconciles local Channel policy by
+recursively rejecting callable and runtime-capability payloads. These are still
+source-level claims: validate owned `T/E` transfer, cancellation races and
+`Channel<Result<Option<T>,E>>` admission on the exact compiler/runtime head
+before promotion. The current `Channel` and
 `Future` compiler profiles may still refuse parts of the prototype; that
 must remain a **failing or draft test**, not a documentation-only success.
 
