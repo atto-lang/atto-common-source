@@ -81,6 +81,44 @@ The candidate host model's `settle_pull() -> None` is an abstract **not-ready** 
 
 **Safe promotion order:** ship a typed terminal frame and single-writer credit gate; replace the non-atomic marker probes with an owner-serialized/atomic protocol; implement cancellation-aware Future and channel waiters; then add cross-actor transfer rejection and exact-head native/guest conformance tests. Preserve legacy APIs only as explicitly **lossy compatibility adapters** with no multicast/error-fidelity guarantee.
 
+## Credit-gated typed stream candidate (2026-10-17)
+
+`rx-oreslang-channels#20` is a **stacked draft** implementing
+`CreditPipe<T,E>` in a separate `src/credit_stream.ores` source unit.
+It is not an alias for the older Observable, channel `FramedPipe`, generic
+`Stream<T>`, or authenticated actor `ActorStream<T>`.
+
+Its proposed typed consumer surface is
+`Option<Result<Option<T>,E>>`: `Some(Ok(Some(T)))` means NEXT,
+`Some(Ok(None))` COMPLETE, `Some(Err(E))` typed terminal ERROR,
+and outer `None` subscriber CANCELLED. This layering preserves
+`T=Option<U>` and `T=Result<U,E2>` *as data* without a string tag.
+The publisher explicitly issues `send`, `complete`, or `fail`;
+ordinary guest `throw`/Future failure is never silently mapped to `Err`.
+
+A unique subscriber first `request()`s one credit, then `next_event()`.
+The producer consumes that credit before publishing one event (even terminal).
+Both demand and publication wait via `nb select first`, with a cancellation
+control channel ahead of the data arm. One producer event and one reader pull
+are outstanding. Capacity zero stays true rendezvous. Caller-owned producers
+are not stopped by consumer cancellation.
+
+**Security/progress qualification:** the current source prototype inherits the
+non-atomic `credit_marked` read/restore latch from the existing Rx pattern;
+it is **not** yet evidence of a linearizable producer-vs-cancellation claim.
+Before promoting #20, replace these checks with a runtime atomic state
+primitive or prove a single owner-serialized admission critical section across
+all suspension and preemption boundaries. Validate owned `T/E` transfer and
+`CreditFrame<T,E>` data-only admission. The current `Channel` and
+`Future` compiler profiles may still refuse parts of the prototype; that
+must remain a **failing or draft test**, not a documentation-only success.
+
+The exact Git blob of `tests/test_credit_stream_reference_model.py` in #20,
+`e45134fbc2defa7d95b5117009da32baab3a70eb`, passed six local Python
+host-reference tests, including 50,421 five-step histories over capacities
+0, 1 and 2. **This is model evidence only**, not executed Oreslang or CI.
+The source-org Actions runs on #20 currently fail without executing job steps.
+
 ## Promotion gates
 
 This change includes **host-only** model tests for bounded slots, single-flight pulls, terminal arbitration and adapter distinctions. They are **contract tests**, not executable Oreslang proof.
