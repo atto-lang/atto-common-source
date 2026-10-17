@@ -31,7 +31,7 @@ class ZordeBridgeTests(unittest.TestCase):
 
     def test_equal_bounds_keep_stricter_exclusivity(self):
         descriptor = to_zorde_descriptor(
-            parse("type Strict = int with value gt 5 and value ge 5 and value lt 10 and value le 10;")
+            parse("type Strict = int with value gt 5 and value gte 5 and value lt 10 and value lte 10;")
         )
         self.assertEqual(descriptor["min"], 5)
         self.assertTrue(descriptor["min_exclusive"])
@@ -40,7 +40,7 @@ class ZordeBridgeTests(unittest.TestCase):
 
     def test_nominal_identity_is_preserved(self):
         descriptor = to_zorde_descriptor(
-            parse("define newtype Name(string) with length ge 1;")
+            parse("define newtype Name(string) with length gte 1;")
         )
         self.assertTrue(descriptor["nominal"])
 
