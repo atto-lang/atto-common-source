@@ -40,7 +40,17 @@ type Percentage = int with value gte 0 and value lte 100;
 type SmallMap = Map[string, int] with size lte 100;
 ```
 
-The supported comparison tokens are `eq`/`==`, `ne`/`!=`, `gt`/`>`, `gte`/`>=`, `lt`/`<`, `lte`/`<=`. No other textual aliases are implicit.
+The supported comparison tokens are `eq`/`==`, `ne`/`!=`, `gt`/`>`, `gte`/`>=`, `lt`/`<`, `lte`/`<=`. `ge` and `le` are not accepted aliases. No other textual aliases are implicit.
+
+Both canonical forms are valid, for example:
+
+```ores
+type Port = int with value gte 1 and value lte 65535;
+type Percentage = int with value gte 0 and value lte 100;
+
+type PortSymbols = int with value >= 1 and value <= 65535;
+type PercentageSymbols = int with value >= 0 and value <= 100;
+```
 
 `with` contains **only** recognized built-in properties and pure comparisons against compile-time constants, joined with `and`. No `or`, function call, indexing, mutation, arbitrary field projection, or free variables inside `with`. `length` measures logical string code points / sequence elements; `size` measures map entries; `value` refers to the constrained numeric value. A property not supported by the base type is a type error. Invalid comparisons (e.g. an integer length against a string) are type errors.
 
@@ -153,7 +163,8 @@ For the initial release, use either `with` or `where` per declaration; annotatio
 | Case | Expected |
 | --- | --- |
 | `@Size(min=10,max=10)`, `with length eq 10`, `where it.length == 10` | equivalent valid/invalid string outcomes |
-| `eq 10`, `== 10`, `gte 1`, `>= 1` | operators normalize identically |
+| `eq 10`/`== 10`, `gte 1`/`>= 1`, `lte 10`/`<= 10` | keyword/symbol pairs normalize identically |
+| `ge 1`, `le 10` | syntax error; use `gte`/`lte` |
 | empty string for NonEmpty | compile error if literal; `Err` for dynamic `try_from` |
 | length 10 value to length > 0 alias | allowed when alias/underlying type rules permit |
 | plain dynamic string to NonEmpty | static type error without `try_from` |
