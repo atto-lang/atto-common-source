@@ -9,13 +9,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
+MIN_I64 = -(1 << 63)
+MAX_I64 = (1 << 63) - 1
+
 OPS = {"eq": "==", "ne": "!=", "gt": ">", "gte": ">=", "lt": "<", "lte": "<=",
        "==": "==", "!=": "!=", ">": ">", ">=": ">=", "<": "<", "<=": "<="}
-CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?\d+)\s*\Z")
-DECL = re.compile(r"\s*type\s+(\w+)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
-NEW = re.compile(r"\s*define\s+newtype\s+(\w+)\s*\(\s*(string|int)\s*\)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
+CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?[0-9]+(?:_[0-9]+)*)\s*\Z")
+DECL = re.compile(r"\s*type\s+([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
+NEW = re.compile(r"\s*define\s+newtype\s+([A-Za-z_][A-Za-z_0-9]*)\s*\(\s*(string|int)\s*\)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
 ANN = re.compile(r"@(?P<name>Size|Length)\s*\((?P<args>[^()]*)\)\s*|@NotEmpty\s*")
-ARG = re.compile(r"\s*(min|max|eq)\s*=\s*(\d+)\s*\Z")
+ARG = re.compile(r"\s*(min|max|eq)\s*=\s*([0-9]+(?:_[0-9]+)*)\s*\Z")
 
 
 class ConstraintSyntaxError(ValueError):
@@ -55,13 +58,17 @@ class Refined:
             # Python str can contain these even though valid Oreslang strings cannot.
             if any(0xD800 <= ord(ch) <= 0xDFFF for ch in value):
                 return False
-        elif type(value) is not int:
+        elif type(value) is not int or not MIN_I64 <= value <= MAX_I64:
             return False
         return all(p.holds(value) for p in self.predicates)
 
     def entails(self, other: "Refined") -> bool:
-        if self.base != other.base or self.nominal or other.nominal:
+        if self.base != other.base:
             return False
+        # A nominal type cannot be silently erased or converted to another ID.
+        if self.nominal or other.nominal:
+            if not (self.nominal and other.nominal and self.name == other.name):
+                return False
         lo, hi, excluded = _bounds(self.predicates)
         other_lo, other_hi, other_excluded = _bounds(other.predicates)
         if lo < other_lo or hi > other_hi:
@@ -70,8 +77,8 @@ class Refined:
 
 
 def _bounds(predicates: tuple[Predicate, ...]) -> tuple[float, float, frozenset[int]]:
-    lo = 0 if predicates and predicates[0].property == "length" else float("-inf")
-    hi = float("inf")
+    lo = 0 if predicates and predicates[0].property == "length" else MIN_I64
+    hi = MAX_I64
     excluded = set()
     for p in predicates:
         n = p.bound
@@ -89,6 +96,12 @@ def _bounds(predicates: tuple[Predicate, ...]) -> tuple[float, float, frozenset[
             hi = min(hi, n)
     if lo > hi or (lo == hi and lo in excluded):
         raise ConstraintSyntaxError("unsatisfiable refinement")
+    # A finite excluded set can exhaust only a domain with at most that
+    # many members. Avoid iterating huge ranges or allocating giant lists.
+    if hi - lo + 1 <= len(excluded) and all(
+        value in excluded for value in range(lo, hi + 1)
+    ):
+        raise ConstraintSyntaxError("unsatisfiable excluded interval")
     return lo, hi, frozenset(excluded)
 
 
@@ -113,7 +126,7 @@ def parse(source: str) -> Refined:
             a = ARG.fullmatch(item)
             if not a or a.group(1) in seen:
                 raise ConstraintSyntaxError("invalid or repeated annotation argument")
-            key, bound = a.group(1), int(a.group(2))
+            key, bound = a.group(1), int(a.group(2).replace("_", ""))
             seen.add(key)
             annotations.append(Predicate("length", {"min": ">=", "max": "<=", "eq": "=="}[key], bound))
         if name == "Size" and "eq" in seen:
@@ -133,11 +146,13 @@ def parse(source: str) -> Refined:
             if c is None:
                 raise ConstraintSyntaxError("unsupported with expression")
             prop, op, bound = c.groups()
-            predicates.append(Predicate(prop, OPS[op], int(bound)))
+            predicates.append(Predicate(prop, OPS[op], int(bound.replace("_", ""))))
     if not predicates:
         raise ConstraintSyntaxError("missing refinement")
     expected = "length" if base == "string" else "value"
     if any(p.property != expected for p in predicates):
         raise ConstraintSyntaxError("property incompatible with base type")
+    if any(not MIN_I64 <= p.bound <= MAX_I64 for p in predicates):
+        raise ConstraintSyntaxError("refinement bound outside signed int64")
     _bounds(tuple(predicates))
     return Refined(name, base, nominal, tuple(predicates))
