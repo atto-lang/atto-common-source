@@ -50,7 +50,7 @@ class ContractTests(unittest.TestCase):
             self.assertNotIn(x["id"], x["dependsOn"])
             if x["id"] != "host-adapter":
                 self.assertIs(x["osRequired"], False)
-                self.assertIs(x["heapRequired"], False)
+            self.assertIs(x["heapRequired"], x["id"] == "alloc")
         seen, active = set(), set()
         def visit(node):
             if node in active:
@@ -64,7 +64,7 @@ class ContractTests(unittest.TestCase):
             seen.add(node)
         for layer in graph:
             visit(layer)
-        self.assertNotIn("alloc", seen if not graph["core"] else graph["core"])
+        self.assertNotIn("alloc", graph["core"])
 
     def test_no_host_effects_and_bounded_actor_api(self):
         d = self.data

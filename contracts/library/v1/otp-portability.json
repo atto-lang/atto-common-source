@@ -17,7 +17,7 @@
         "core"
       ],
       "osRequired": false,
-      "heapRequired": false,
+      "heapRequired": true,
       "requiredProviders": [
         "explicit-memory-provider"
       ]

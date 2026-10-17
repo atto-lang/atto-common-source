@@ -1,6 +1,6 @@
 # Freestanding core and optional OTP standard library — contract v1
 
-**Status: normative layout and admission requirements only.** This document does **not** claim six Oreslang OTP modules have been implemented, compiled or executed. See [OTP behaviours proposal](OTP_BEHAVIOURS_V1.md) in open RFC #65 for callback and runtime details (until merged).
+**Status: normative layout and admission requirements only.** This document does **not** claim six Oreslang OTP modules have been implemented, compiled or executed. See [OTP behaviours proposal](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/65) in open RFC #65 for callback and runtime details (until merged).
 
 ## Decision
 
