@@ -15,6 +15,8 @@ MANIFEST = json.loads(
 LAYERS = {item["id"]: item for item in MANIFEST["layers"]}
 MODULES = {item["module"]: item for item in MANIFEST["modules"]}
 ACTOR_PROVIDERS = frozenset(LAYERS["actor"]["requiredProviders"])
+PORTABLE_LAYERS = frozenset({"core", "alloc", "actor", "otp"})
+FORBIDDEN_HOST_EFFECTS = frozenset(MANIFEST["forbiddenHostEffects"])
 
 
 class AdmissionError(ValueError):
@@ -51,7 +53,10 @@ def audit_closure(units, roots, *, allowed_layers, providers=(),
             raise AdmissionError("missing layer provider: " + name)
         if not set(unit.get("requires", [])) <= features:
             raise AdmissionError("missing feature: " + name)
-        if not set(unit.get("effects", [])) <= allowed_effects:
+        effects = set(unit.get("effects", []))
+        if layer in PORTABLE_LAYERS and effects & FORBIDDEN_HOST_EFFECTS:
+            raise AdmissionError("portable host effect: " + name)
+        if not effects <= allowed_effects:
             raise AdmissionError("forbidden effect: " + name)
         visiting.add(name)
         permitted = (set(LAYERS[layer]["dependsOn"]) |
@@ -78,7 +83,7 @@ def synthetic_units():
         "actor/mail": {"layer": "actor", "imports": ["core/scalars"]},
     }
     for name, module in MODULES.items():
-        units["std/otp/" + name] = {
+        units[MANIFEST["canonicalImportPrefix"] + name] = {
             "layer": module["layer"],
             "imports": ["actor/mail"],
             "requires": list(module["requires"]),
@@ -109,7 +114,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
         mandatory_features = {
             feature for module in MODULES.values() for feature in module["requires"]
         }
-        roots = ["std/otp/" + name for name in MODULES]
+        roots = [MANIFEST["canonicalImportPrefix"] + name for name in MODULES]
         closure = audit_closure(
             units, roots, allowed_layers={"core", "actor", "otp"},
             providers=ACTOR_PROVIDERS, features=mandatory_features,
@@ -121,7 +126,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
     def test_missing_mandatory_otp_feature_rejects(self):
         units = synthetic_units()
         with self.assertRaisesRegex(AdmissionError, "missing feature"):
-            audit_closure(units, ["std/otp/gen_server"],
+            audit_closure(units, ["otp/gen_server"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS, features={"actor.serial"})
 
@@ -131,9 +136,9 @@ class ImportClosureReferenceTests(unittest.TestCase):
             "layer": "host-adapter", "effects": ["network"],
             "imports": ["core/scalars"],
         }
-        units["std/otp/registry"]["imports"].append("std/net")
+        units["otp/registry"]["imports"].append("std/net")
         with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
-            audit_closure(units, ["std/otp/registry"],
+            audit_closure(units, ["otp/registry"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS,
                           features=MODULES["registry"]["requires"])
@@ -180,13 +185,13 @@ class ImportClosureReferenceTests(unittest.TestCase):
 
     def test_timed_feature_needs_explicit_monotonic_clock(self):
         units = synthetic_units()
-        units["std/otp/supervisor"]["requires"].append("clock.monotonic")
+        units["otp/supervisor"]["requires"].append("clock.monotonic")
         with self.assertRaisesRegex(AdmissionError, "missing feature"):
-            audit_closure(units, ["std/otp/supervisor"],
+            audit_closure(units, ["otp/supervisor"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS,
                           features=MODULES["supervisor"]["requires"])
-        audit_closure(units, ["std/otp/supervisor"],
+        audit_closure(units, ["otp/supervisor"],
                       allowed_layers={"core", "actor", "otp"},
                       providers=ACTOR_PROVIDERS,
                       features=[*MODULES["supervisor"]["requires"],
@@ -194,14 +199,14 @@ class ImportClosureReferenceTests(unittest.TestCase):
 
     def test_dynamic_allocation_is_not_implicit(self):
         units = synthetic_units()
-        units["std/otp/event_manager"]["imports"].append("alloc/arena")
+        units["otp/event_manager"]["imports"].append("alloc/arena")
         units["alloc/arena"] = {"layer": "alloc", "imports": ["core/scalars"]}
         with self.assertRaisesRegex(AdmissionError, "forbidden or unknown layer"):
-            audit_closure(units, ["std/otp/event_manager"],
+            audit_closure(units, ["otp/event_manager"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS,
                           features=MODULES["event_manager"]["requires"])
-        audit_closure(units, ["std/otp/event_manager"],
+        audit_closure(units, ["otp/event_manager"],
                       allowed_layers={"core", "actor", "otp", "alloc"},
                       providers=[*ACTOR_PROVIDERS, "explicit-memory-provider"],
                       features=MODULES["event_manager"]["requires"])
@@ -213,6 +218,24 @@ class ImportClosureReferenceTests(unittest.TestCase):
             self.assertNotIn("host-adapter", layer["optionalDependsOn"])
         self.assertEqual(LAYERS["otp"]["optionalDependsOn"], ["alloc"])
         self.assertEqual(LAYERS["actor"]["optionalDependsOn"], ["alloc"])
+
+    def test_actor_cannot_import_otp_even_when_otp_is_available(self):
+        units = synthetic_units()
+        units["actor/mail"]["imports"].append("otp/gen_server")
+        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
+            audit_closure(units, ["actor/mail"],
+                          allowed_layers={"core", "actor", "otp"},
+                          providers=ACTOR_PROVIDERS,
+                          features=MODULES["gen_server"]["requires"])
+
+    def test_portable_host_effect_not_waived_by_hosted_app_grant(self):
+        units = synthetic_units()
+        units["core/scalars"]["effects"] = ["network"]
+        with self.assertRaisesRegex(AdmissionError, "portable host effect"):
+            audit_closure(units, ["core/scalars"],
+                          allowed_layers={"core", "host-adapter"},
+                          providers={"explicit-host-capabilities"},
+                          allowed_effects={"network"})
 
     def test_this_model_never_advertises_source_implementation(self):
         self.assertIs(MANIFEST["sourceImplementationAvailable"], False)
