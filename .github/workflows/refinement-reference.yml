@@ -1,0 +1,22 @@
+name: Refinement reference contract
+on:
+  push:
+    paths:
+      - 'experiments/refinement-v0/**'
+      - '.github/workflows/refinement-reference.yml'
+  pull_request:
+    paths:
+      - 'experiments/refinement-v0/**'
+      - '.github/workflows/refinement-reference.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  refinement-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run zero-dependency reference-model tests
+        run: node experiments/refinement-v0/refinement.test.mjs
