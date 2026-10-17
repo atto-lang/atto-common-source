@@ -12,7 +12,7 @@ assert.equal(tryFrom(nonempty, "").ok, false);
 assert.equal(tryFrom(nonempty, "😀").ok, true);
 assert.equal(tryFrom(nonempty, "\\uD800").ok, true); // literal backslash sequence, not surrogate
 assert.equal(tryFrom(nonempty, String.fromCharCode(0xD800)).ok, false);
-assert.equal(codePoints("e\\u0301"), 6); // escaped source text
+assert.equal(codePoints(String.fromCodePoint(0x65,0x301)), 2); // decomposed e + combining acute
 assert.equal(codePoints("😀"), 1);
 const nominal=spec("define newtype N(string) with length gt 0;");
 assert.equal(entails(nominal, nonempty), false);
