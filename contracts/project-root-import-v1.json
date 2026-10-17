@@ -113,7 +113,13 @@
     "explicit-root-override",
     "explicit-override-requires-manifest",
     "cwd-independent-link-identity",
-    "run-check-aot-equivalence"
+    "run-check-aot-equivalence",
+    "configured-project-root-subdirectory",
+    "explicit-relative-versus-dot-bare",
+    "source-roots-explicit-empty",
+    "ores-paths-search-precedence",
+    "nested-modern-and-legacy-package-boundary",
+    "nested-package-symlink-alias-denied"
   ],
   "implementation_status_at_creation": {
     "java": "draft-pr-pending-CI",
@@ -122,5 +128,146 @@
     "forge": "unsupported-source-import-linking",
     "wasm": "delegated-to-real-source-compiler"
   },
-  "contract_version": "oreslang.project-root-imports.v1"
+  "contract_version": "oreslang.project-root-imports.v1",
+  "namespace_parity_cases": [
+    {
+      "id": "project-root-field-subdir",
+      "manifest_project_root": "app",
+      "specifier": "+/src/helper",
+      "file": "app/src/helper.ores",
+      "expect": "app/src/helper.ores",
+      "goal": "resolve-link-execute"
+    },
+    {
+      "id": "project-root-field-manifest-sibling-denied",
+      "manifest_project_root": "app",
+      "specifier": "+/outside",
+      "file": "outside.ores",
+      "error": "not-found",
+      "goal": "reject-before-link"
+    },
+    {
+      "id": "importer-relative-dot-slash",
+      "specifier": "./local",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "file": "src/routes/rest/foo/bar/baz/local.ores",
+      "expect": "src/routes/rest/foo/bar/baz/local.ores"
+    },
+    {
+      "id": "importer-relative-parent",
+      "specifier": "../up",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "file": "src/routes/rest/foo/bar/up.ores",
+      "expect": "src/routes/rest/foo/bar/up.ores"
+    },
+    {
+      "id": "dot-prefixed-bare-search",
+      "specifier": ".hidden/helper",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "source_roots": [
+        "src"
+      ],
+      "file": "src/.hidden/helper.ores",
+      "expect": "src/.hidden/helper.ores"
+    },
+    {
+      "id": "environment-precedence",
+      "specifier": "priority",
+      "source_roots": [
+        "src"
+      ],
+      "source_import_paths": [
+        "vendor"
+      ],
+      "ores_paths": [
+        "env"
+      ],
+      "oreslang_path": [
+        "legacy"
+      ],
+      "files": [
+        "src/priority.ores",
+        "vendor/priority.ores",
+        "env/priority.ores",
+        "legacy/priority.ores"
+      ],
+      "expect_order": [
+        "src/priority.ores",
+        "vendor/priority.ores",
+        "env/priority.ores",
+        "legacy/priority.ores"
+      ]
+    },
+    {
+      "id": "explicit-empty-roots",
+      "specifier": "only-here",
+      "source_roots": [],
+      "source_import_paths": [],
+      "file": "only-here.ores",
+      "error": "not-found",
+      "goal": "deny-implicit-root"
+    },
+    {
+      "id": "empty-ores-paths-component",
+      "specifier": "only-here",
+      "ores_paths": [
+        "",
+        "env",
+        ""
+      ],
+      "error": "empty-component-must-not-grant-cwd"
+    },
+    {
+      "id": "nested-modern-package",
+      "specifier": "+/child/secret",
+      "nested_manifest": "child/.ores.pkg.toml",
+      "file": "child/secret.ores",
+      "error": "nested-package-boundary"
+    },
+    {
+      "id": "nested-legacy-package",
+      "specifier": "+/child/secret",
+      "nested_manifest": "child/.oreslangc.cfg.toml",
+      "file": "child/secret.ores",
+      "error": "nested-package-boundary"
+    },
+    {
+      "id": "nested-package-symlink-alias",
+      "specifier": "+/alias",
+      "symlink_alias_to": "child/secret.ores",
+      "nested_manifest": "child/.ores.pkg.toml",
+      "error": "nested-package-boundary"
+    },
+    {
+      "id": "source-physical-identity",
+      "specifier": "+/alias",
+      "symlink_alias_to": "lib/helper.ores",
+      "file": "lib/helper.ores",
+      "expect": "canonical-physical-identity"
+    }
+  ],
+  "parity_evidence_requirements": {
+    "status_values": [
+      "unsupported",
+      "admission-only",
+      "resolver-only",
+      "linked",
+      "executed"
+    ],
+    "native_execution_requires": [
+      "exact-candidate-git-tree",
+      "native-compiler-build",
+      "verified-resolved-source-graph",
+      "actual-linked-invocation",
+      "asserted-process-result"
+    ],
+    "wasm_imports_policy": "Reject before artifact publication until every transitive source identity is pinned and wasm32 linked. Source imports are not Wasm guest host imports.",
+    "capability_limitations": {
+      "java": "full canonical-root resolver and linked runtime must be executed",
+      "llvm": "host-only scalar source graph is not module/actor/wasm32 parity",
+      "net": "host resolver is not CIL/Native AOT binding",
+      "forge": "host resolver is not Forge IR module linking",
+      "wasm": "fail-closed rejection is not linked module parity"
+    }
+  }
 }
