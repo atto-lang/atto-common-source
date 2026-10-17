@@ -51,6 +51,10 @@ class Refined:
         if self.base == "string":
             if not isinstance(value, str):
                 return False
+            # A Unicode scalar sequence never contains an unpaired surrogate.
+            # Python str can contain these even though valid Oreslang strings cannot.
+            if any(0xD800 <= ord(ch) <= 0xDFFF for ch in value):
+                return False
         elif type(value) is not int:
             return False
         return all(p.holds(value) for p in self.predicates)
