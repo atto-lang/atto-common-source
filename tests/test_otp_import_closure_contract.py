@@ -180,7 +180,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
     def test_ambient_host_effect_rejected_even_in_core_unit(self):
         units = synthetic_units()
         units["core/scalars"]["effects"] = ["clock.ambient"]
-        with self.assertRaisesRegex(AdmissionError, "forbidden effect"):
+        with self.assertRaisesRegex(AdmissionError, "portable host effect"):
             audit_closure(units, ["core/scalars"], allowed_layers={"core"})
 
     def test_timed_feature_needs_explicit_monotonic_clock(self):
