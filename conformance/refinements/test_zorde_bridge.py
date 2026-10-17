@@ -44,6 +44,24 @@ class ZordeBridgeTests(unittest.TestCase):
         )
         self.assertTrue(descriptor["nominal"])
 
+
+    def test_nominal_descriptor_ids_do_not_collapse(self):
+        a = to_zorde_descriptor(parse("define newtype Username(string) with length gte 1;"))
+        b = to_zorde_descriptor(parse("define newtype UserId(string) with length >= 1;"))
+        alias = to_zorde_descriptor(parse("type Alias = string with length >= 1;"))
+        self.assertEqual(a["nominal_id"], "Username")
+        self.assertEqual(b["nominal_id"], "UserId")
+        self.assertNotEqual(a, b)
+        self.assertIsNone(alias["nominal_id"])
+
+    def test_numeric_descriptor_does_not_claim_runtime_parity(self):
+        d = to_zorde_descriptor(
+            parse("type Port = int with value gte 1 and value lte 65535;")
+        )
+        self.assertFalse(d["runtime_supported"])
+        self.assertEqual(d["requires"], "signed_int64_exact_validator")
+        self.assertEqual((d["min"], d["max"]), (1, 65535))
+
     def test_unimplemented_exclusion_fails_closed(self):
         refined = parse("type NotTen = int with value ne 10;")
         with self.assertRaises(ConstraintSyntaxError):
