@@ -57,6 +57,11 @@ Raw pointer formation, arithmetic, address conversion and dereference require
 2. an explicit `unsafe.memory` effect/capability in the callable's transitive
    effect summary.
 
+`unsafe.memory` is necessary but not sufficient for mutation. Forming
+`rt raw mut` additionally requires an exclusive owner/loan proof covering the
+entire raw lease. A caller cannot upgrade read-only raw authority merely by
+being in an `unsafe.memory` function.
+
 Backends MAY additionally require a target/profile flag such as an embedded or
 native-FFI build profile. Merely running in a trusted actor is not enough to
 silently acquire raw memory authority.
@@ -72,7 +77,7 @@ The canonical semantic operations are:
 | `RawPointer<T>.from_addr(uintptr)` | Trusted embedded/FFI escape hatch for an externally supplied machine address. Null, width truncation and target address-space mismatches are rejected where representable. |
 | `p + n` / `p - n` | Element-wise offset by signed element count, scaled by `sizeof(T)`, with address-overflow checks. For bounded provenance, out-of-bounds results are rejected before dereference; one-past-end may exist only for comparison/difference, never load/store. |
 | `p.byte_offset(n)` | Byte-wise offset returning byte/raw storage authority; typed dereference requires an explicit aligned cast back to `RawPointer<U>`. |
-| `p - q` | Element distance only when both pointers have compatible element type/address space and the same provenance object; unrelated-address subtraction is rejected/undefined at the unsafe boundary rather than fabricated into a safe integer. |
+| `p - q` | Element distance only when both pointers have compatible element type/address space and the same bounded compiler provenance object. Integer-fabricated pointers have no such provenance, so subtraction is rejected even when two numeric addresses happen to be equal or derived from the same integer. |
 | `rt deref p` | Raw read. For bounded provenance, validate live generation, bounds and alignment before access. For integer-fabricated pointers this is explicitly unsafe and target-defined. |
 | `rt deref mut p` | Raw write through exclusive authority; same liveness/bounds/alignment checks when provenance exists. |
 | `p.addr()` | Expose `uintptr` only in `unsafe.memory` code. Integer address values are not pointers and do not retain provenance/lifetime. |
@@ -108,7 +113,14 @@ separately named and remain outside safe `Pointer<T>`.
 * Pointer-to-integer-to-pointer round trips lose safe provenance. Recreating a
   raw pointer from the integer yields integer-fabricated unsafe authority, not a
   descendant safe loan, unless the backend carries an unforgeable side-table
-  provenance token through the round trip.
+  provenance token through the round trip. Numeric equality is never accepted
+  as a substitute for provenance because allocator/address reuse would create
+  ABA-style false identity.
+* `unsafe.memory` is observationally/effectfully unsafe and is incompatible
+  with a `pure` callable unless a future effect system proves a strictly
+  non-observing operation that does not expose addresses or touch memory. The
+  default rule is fail closed: any raw formation, address exposure, arithmetic,
+  cast, read, write, volatile access, or atomic access is not `pure`.
 
 ### LLVM/native optimizer contract
 
