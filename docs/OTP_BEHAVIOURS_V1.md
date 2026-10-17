@@ -1,6 +1,6 @@
 # OTP-style behaviours for Oreslang — proposed v1 contract
 
-**Status: design proposal only.** The required six source files and their `core / alloc / actor / otp / std` freestanding boundary are specified in [OTP_PORTABLE_LIBRARY_BOUNDARY_V1.md](OTP_PORTABLE_LIBRARY_BOUNDARY_V1.md) and `contracts/otp-library-layout.v1.json`; none is claimed executable yet. No language, Java/Truffle, native LLVM, or runtime functionality is asserted implemented by this document. Compiler and runtime tests are required before claiming availability.
+**Status: design proposal only.** The separate [freestanding core / alloc / actor / OTP portability contract (PR #66)](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/66) is the single authority for the six required `stdlib/otp/*.ores` source paths, portable import closure, and current **not-implemented** status. This RFC covers the behaviour semantics, and does not claim any source-level OTP execution.
 
 ## Objective
 
