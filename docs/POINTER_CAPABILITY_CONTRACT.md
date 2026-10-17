@@ -45,8 +45,10 @@ pointer created from a managed/arena owner keeps an explicit lease/provenance
 edge to that owner. Native provenance identifies at least the owning region,
 its non-recycled generation/epoch, and the specific allocation/object within
 that region; an arena generation alone is not an allocation identity. A pointer
-created from an integer address is an explicitly unbounded trusted operation
-and receives no safety claim beyond the selected target's machine/ABI contract.
+created from an integer address must be resolved through a supervisor/platform
+memory grant. The integer carries no authority by itself; the resulting raw
+view is bounded by the grant and receives no allocation-provenance claim beyond
+that grant's target/ABI contract.
 
 ### Admission gate
 
@@ -76,7 +78,7 @@ The canonical semantic operations are:
 | --- | --- |
 | `rt raw pointer` | Create a read-capable `RawPointer<T>` view from a stable, live `Pointer<T>`/arena place without consuming the owner. The owner/region cannot retire or move while the raw lease exists. |
 | `rt raw mut pointer` | Create exclusive mutable raw authority; requires no competing shared/mutable loans and blocks owner move/reallocation/retirement. |
-| `RawPointer<T>.from_addr(uintptr)` | Trusted embedded/FFI escape hatch for an externally supplied machine address. Null, width truncation and target address-space mismatches are rejected where representable. |
+| `RawPointer<T>.from_addr(grant, uintptr)` | Trusted embedded/FFI/MMIO escape hatch for an externally supplied machine address. `grant` is a supervisor/platform-minted capability binding actor/runtime identity, address space, permitted byte range, generation/epoch and read/write rights. A naked integer is never sufficient. Null/zero policy, width truncation, range, alignment and target address-space mismatches are rejected according to the selected target profile. |
 | `p + n` / `p - n` | Element-wise offset by signed element count, scaled by `sizeof(T)`, with address-overflow checks. For bounded provenance, out-of-bounds results are rejected before dereference; one-past-end may exist only for comparison/difference, never load/store. |
 | `p.byte_offset(n)` | Byte-wise offset returning byte/raw storage authority; typed dereference requires an explicit aligned cast back to `RawPointer<U>`. |
 | `p - q` | Element distance only when both pointers have compatible element type/address space and the same bounded compiler provenance object. Integer-fabricated pointers have no such provenance, so subtraction is rejected even when two numeric addresses happen to be equal or derived from the same integer. |
@@ -155,6 +157,26 @@ here can turn a runtime check into undefined behavior before the check executes.
 * Raw loads/stores through integer-fabricated addresses are never speculatable
   across permission, lifetime, or target-device checks. The backend must avoid
   optimizer attributes that authorize such motion.
+
+### Native/physical memory grants
+
+`unsafe.memory` does not mean unrestricted process or physical address-space
+access. Numeric-address construction requires a compiler/runtime capability
+whose immutable grant includes at least:
+
+* runtime/actor identity and trust domain;
+* target address space / physical-vs-virtual mapping policy;
+* allowed base + byte extent with overflow-checked bounds;
+* read vs write permission and MMIO/ordinary-memory class;
+* non-recycled grant generation/epoch;
+* platform policy for address zero, alignment, access widths and barriers.
+
+The compiler must reject a raw address helper hidden behind generics, aliases,
+callbacks, FFI wrappers or reflection when the caller lacks the same grant.
+Grant narrowing is allowed; widening, changing address spaces, or upgrading
+read-only to write authority is not. A board profile may mint a static grant
+for a documented device range so firmware can still use fixed physical
+register addresses without a runtime allocator.
 
 ### Pinning, FFI and DMA
 
