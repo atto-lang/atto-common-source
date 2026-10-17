@@ -120,7 +120,10 @@
     "ores-paths-search-precedence",
     "nested-modern-and-legacy-package-boundary",
     "nested-package-symlink-alias-denied",
-    "malformed-manifest-marker-fail-closed-before-fallback"
+    "malformed-manifest-marker-fail-closed-before-fallback",
+    "nearest-vs-ancestor-manifest-precedence",
+    "nested-package-boundary-for-bare-and-relative-imports",
+    "physical-source-root-symlink-escape-denial"
   ],
   "implementation_status_at_creation": {
     "java": "draft-pr-pending-CI",
@@ -280,6 +283,70 @@
       "modern_manifest_absent": true,
       "error": "invalid-legacy-marker",
       "goal": "reject-before-manifestless-fallback"
+    },
+    {
+      "id": "nearest-legacy-before-ancestor-modern",
+      "importer": "app/child/src/main.ores",
+      "manifests": [
+        "app/.ores.pkg.toml",
+        "app/child/.oreslangc.cfg.toml"
+      ],
+      "expect_manifest": "app/child/.oreslangc.cfg.toml",
+      "goal": "nearest-package-owns-imports"
+    },
+    {
+      "id": "modern-priority-only-at-same-directory",
+      "importer": "app/child/src/main.ores",
+      "manifests": [
+        "app/.ores.pkg.toml",
+        "app/child/.ores.pkg.toml",
+        "app/child/.oreslangc.cfg.toml"
+      ],
+      "expect_manifest": "app/child/.ores.pkg.toml",
+      "goal": "same-directory-modern-priority"
+    },
+    {
+      "id": "nearer-invalid-legacy-denies-ancestor-modern",
+      "importer": "app/child/src/main.ores",
+      "manifests": [
+        "app/.ores.pkg.toml"
+      ],
+      "invalid_marker": "app/child/.oreslangc.cfg.toml",
+      "marker_kind": "directory",
+      "error": "invalid-nearest-manifest",
+      "goal": "deny-fallback"
+    },
+    {
+      "id": "bare-import-denied-into-nested-modern-package",
+      "importer": "src/routes/main.ores",
+      "source_roots": [
+        "src"
+      ],
+      "specifier": "child/secret",
+      "nested_manifest": "src/child/.ores.pkg.toml",
+      "file": "src/child/secret.ores",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "relative-import-denied-into-nested-legacy-package",
+      "importer": "src/routes/main.ores",
+      "specifier": "./child/secret",
+      "nested_manifest": "src/routes/child/.oreslangc.cfg.toml",
+      "file": "src/routes/child/secret.ores",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "bare-import-symlink-escape-denied",
+      "importer": "src/main.ores",
+      "source_roots": [
+        "src"
+      ],
+      "specifier": "secret",
+      "symlink_alias_to": "../outside/secret.ores",
+      "error": "physical-project-root-escape",
+      "goal": "deny-before-link"
     }
   ],
   "parity_evidence_requirements": {
