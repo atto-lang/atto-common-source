@@ -81,6 +81,29 @@ must execute parser, guest runtime, Native Image and cross-backend gates
 before the feature is considered certified; this text is a proposed contract,
 not verification evidence.
 
+## Conditional joins and capability-safe top normalization
+
+A conditional whose branches have distinct, fully known types produces their
+explicit union/sum type rather than the compiler-internal incomplete-inference
+sentinel. For example, `flag ? 7 : "seven"` has type `int | string`.
+An actually unresolved compiler type remains unresolved and must not be
+manufactured into a union proof.
+
+Union normalization to `any` or source `unknown` is permitted only when
+**every** alternative can independently widen to that top type without losing
+ownership/effect/capability evidence. Thus `any | int` may normalize to
+`any`, while `any | borrow int` and `any | Channel<int>` must remain
+explicit unions until a future reified top-value representation preserves the
+relevant authority.
+
+Writable structural record members are invariant. A writable
+`{value: int}` must not become writable `{value: any}`, because the latter
+would allow a non-int write through an alias. Readonly structural views retain
+safe width/covariant reads.
+
+These rules apply equally to ordinary and inherited-fallback ternaries and are
+part of the capability-safety contract, not backend-specific Java behavior.
+
 ## Runtime type guards and narrowing
 
 Recognize built-in `Integer.is_int(v)` as a trusted narrowing intrinsic (or an explicitly compiler-verified predicate annotation), not by ordinary function-name matching or arbitrary user method spoofing. The true successor flow environment refines stable `v` to `int`. The false successor refines `v` to an appropriate complement only where representable; otherwise retains the prior type. Apply it to `if`, `&&`, `||`, `!`, and `? :` consistently.
