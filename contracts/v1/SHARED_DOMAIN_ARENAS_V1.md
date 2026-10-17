@@ -6,7 +6,7 @@ Status: **source-free contract only**. Applies to Java/GraalVM, LLVM, .NET, Wasm
 
 An explicitly shared arena is owned by a domain, not by an actor and not by an `ActorRef`. Domain CONTROL authority is a distinct opaque capability. Possessing an arena reference, domain ID, actor ID, or `ActorRef` is insufficient to add members, revoke members, or retire the domain.
 
-Membership grants bind the domain, actor identity, actor incarnation, rights, and generation. Read rights permit only `critical-read`; write rights imply read and permit `critical-write`. Stale, foreign, revoked, wrong-incarnation, exhausted, or fabricated grants fail closed. Capability coordinates are not serializable guest values.
+Membership grants bind the domain, actor identity, actor incarnation, rights, and generation. CONTROL authority must also bind a globally non-recycling domain identity so a stale token cannot regain authority if a later arena reuses the same object address. Read rights permit only `critical-read`; write rights imply read and permit `critical-write`. Stale, foreign, revoked, wrong-incarnation, exhausted, or fabricated grants fail closed. Capability coordinates are not serializable guest values.
 
 ## `critical-read` / `critical-write`
 
