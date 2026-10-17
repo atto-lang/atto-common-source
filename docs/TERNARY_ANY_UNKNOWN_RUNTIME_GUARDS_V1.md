@@ -1,6 +1,6 @@
 # Conditional expressions, opaque types, and narrowing — language contract v1
 
-Status: proposed cross-backend specification; **not an implementation or passing-test claim**.
+Status: proposed cross-backend specification; **not a passing-test or backend-parity claim**. Java draft [#1176](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1176) has a first parser/checker/runtime slice, but its GitHub Actions jobs failed before executing any steps. The spec remains broader than that implementation.
 
 ## Surface
 
@@ -10,7 +10,7 @@ pub fnc foo(any v): int {
 }
 ```
 
-Reserve `any` and `unknown` as lowercase type-only keywords. During migration, map legacy source `Any` and `Unknown` to the same distinct types, while not conflating either with the compiler's internal inference-hole sentinel. Preserve `AnyCallable <: any`, but opaque callable values must not become invocable without a known signature. Reserve names in type, import, alias, class, and generic declaration positions.
+Reserve `any` and `unknown` as lowercase type-only keywords. During migration, map legacy source `Any` and `Unknown` to the same distinct types, while not conflating either with the compiler's internal inference-hole sentinel. Preserve `AnyCallable <: any` as a future *type relation*, but reject implicit callable-to-`any` boxing in the initial backend slice until ownership, captured capabilities and effect witnesses are reified; a hidden callable must never gain invocation permission by erasure. Reserve names in type, import, alias, class, and generic declaration positions.
 
 `any` holds a validated Oreslang value with hidden static type; `unknown` is untrusted/opaque input and may not silently flow into `any` or a concrete type. No unchecked property access, call, arithmetic, indexed access, or transport on either. Admission from unknown must be explicitly validated and respect capability, ownership, actor, borrow, generic reification and transport rules.
 
