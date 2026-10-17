@@ -46,4 +46,7 @@ The physical layout is `stdlib/otp/<module>.ores`, but the **proposed canonical 
 - G4: execute constrained OTP on actual freestanding actor hardware/RTOS with fixed-capacity profiles; examine RAM/stack, restart exhaustion, power failure and stale incarnation tokens.
 
 CI must distinguish: `contract-pass`, `source-compilation-pass`, `runtime-executed-pass`, and `embedded-hardware-pass`. **Only the latter evidence proves corresponding implementation claims.** Pin compiler/backend commits and never export private source trees to unrelated orgs without approval.
-\n## Additional G0 security reference checks\n\n`tests/test_otp_import_closure_contract.py` exercises a parsed-unit **reference model** of closure admission, including hosted-mode core-to-host escapes, missing imports, cycles, transitive OTP-to-OS imports, missing actor providers, absent OTP feature primitives, explicit clock requirements and optional allocation. These tests do not parse or execute any `.ores` source. An actual compiler must derive imports, effects and generated-code edges itself and must prove the same cases with real positive and negative guest fixtures.\n
+
+## Additional G0 security reference checks
+
+`tests/test_otp_import_closure_contract.py` exercises a parsed-unit **reference model** of closure admission, including hosted-mode core-to-host escapes, missing imports, cycles, transitive OTP-to-OS imports, missing actor providers, absent OTP feature primitives, explicit clock requirements and optional allocation. These tests do not parse or execute any `.ores` source. An actual compiler must derive imports, effects and generated-code edges itself and must prove the same cases with real positive and negative guest fixtures.
