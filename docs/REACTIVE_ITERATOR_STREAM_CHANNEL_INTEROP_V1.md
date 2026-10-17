@@ -91,7 +91,8 @@ The findings below describe the audited snapshots that motivated the current dra
 - Rx #19's Future adapter selects a private stop channel against `SelectCase.future(shared)`; Java #1193 provides the current-main waiter-detachment primitive while preserving borrowed producer ownership.
 - Rx #19 adds `send_blocking()/complete_blocking()`, holding one delivery credit through actual Future settlement. The legacy Future-returning sender remains caller-disciplined.
 - Rx #20 is now a clean stack on #19. `CreditPipe<T,E>` uses the same canonical consumer signal, explicit one-event demand credits, serialized state probes, and a three-way producer frame `Result<Option<T>,E>`.
-- Java #1193 tightens ordinary `Channel<T>` to recursively data-only payloads, rejecting nested callable/runtime/synchronization/cursor/select capabilities as well as borrows.
+- Java #1193 tightens concrete ordinary `Channel<T>` payloads to recursively data-only values, rejecting nested callable/runtime/synchronization/cursor/select capabilities, opaque `Object`, and borrows.
+- Java #1200 tracks the remaining generic constraint: reusable `Channel<T>` needs a compiler-level recursively data-only bound so unsafe concrete substitutions cannot hide behind unresolved `T/E`.
 
 These are **implementation claims from source review only** until exact-head Java and guest Oreslang jobs execute. Source-org zero-step runner failures are not runtime evidence.
 
