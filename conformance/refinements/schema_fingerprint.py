@@ -28,8 +28,8 @@ class ScalarSchema:
 
 
 def descriptor(refined: Refined, qualified_identity: str | None = None) -> ScalarSchema:
-    if not refined.predicates:
-        raise ConstraintSyntaxError("scalar schema requires explicit built-in refinement")
+    if not refined.predicates and not refined.nominal:
+        raise ConstraintSyntaxError("scalar schema requires a refinement or nominal identity")
     if refined.base not in ("int", "string"):
         raise ConstraintSyntaxError("unsupported base type")
     identity = ""
@@ -38,7 +38,7 @@ def descriptor(refined: Refined, qualified_identity: str | None = None) -> Scala
             raise ConstraintSyntaxError("nominal schema requires a qualified identifier")
         identity = qualified_identity
 
-    lo, hi, excluded = _bounds(refined.predicates)
+    lo, hi, excluded = _bounds(refined.predicates, refined.base)
     sorted_excluded = tuple(sorted(excluded))
     property_name = "value" if refined.base == "int" else "length"
     # Java List<Long>.toString() is a bracketed, comma-space joined list.
