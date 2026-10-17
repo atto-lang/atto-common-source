@@ -47,6 +47,16 @@ flow refinements, suspension, lowering, formatting or AOT compilation.
 Do not represent a missing false arm as runtime `null`, `None`, `void`
 or compiler Unknown. A malformed/incomplete AST must fail closed.
 
+A trusted scalar predicate can refine only a stable, plain source `any` or
+`unknown` binding, or preserve an already-matching plain scalar binding,
+in this first-stage implementation. A `borrow any`, generic `T`,
+pointer, ownership wrapper, union, callable or actor capability must not
+be silently converted into a bare scalar type by removing its declared
+ownership/effect metadata. More general refinements require a separately
+proven representation- and capability-preserving narrowing rule. Type-only
+imports, value imports and renamed imports all reserve their exposed
+names, and none may be mistaken for compiler-trusted scalar predicates.
+
 The fallback must be type-checked independently in **every execution
 environment where it may run**. E.g. `a ? (b ? x) : y` checks `y` both when
 `a` is false and when `a` is true but `b` false. It must not inherit a
