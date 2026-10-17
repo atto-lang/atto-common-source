@@ -67,6 +67,19 @@ class RefinementReferenceTests(unittest.TestCase):
                     parse(source)
 
 
+    def test_bare_nominal_newtype_is_not_an_invalid_empty_alias(self):
+        bare_string = parse("define newtype Name(string);")
+        bare_int = parse("define newtype Number(int);")
+        self.assertTrue(bare_string.nominal)
+        self.assertTrue(bare_int.nominal)
+        self.assertTrue(bare_string.accepts(""))
+        self.assertTrue(bare_string.accepts("😀"))
+        self.assertFalse(bare_string.accepts(chr(0xD800)))
+        self.assertTrue(bare_int.accepts(-(1 << 63)))
+        self.assertFalse(bare_int.accepts(1 << 63))
+        with self.assertRaises(ConstraintSyntaxError):
+            parse("type Missing = string;")
+
     def test_stdlib_annotation_normalization(self):
         cases = (
             ("@MinLength(3) @MaxLength(32) type Username = string;",
