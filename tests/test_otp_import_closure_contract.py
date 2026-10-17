@@ -54,7 +54,14 @@ def audit_closure(units, roots, *, allowed_layers, providers=(),
         if not set(unit.get("effects", [])) <= allowed_effects:
             raise AdmissionError("forbidden effect: " + name)
         visiting.add(name)
+        permitted = (set(LAYERS[layer]["dependsOn"]) |
+                     set(LAYERS[layer].get("optionalDependsOn", [])) |
+                     {layer})
         for dep in unit.get("imports", []):
+            if dep not in units:
+                raise AdmissionError("unknown import: " + dep)
+            if units[dep].get("layer") not in permitted:
+                raise AdmissionError("forbidden layer edge: " + name + " -> " + dep)
             visit(dep)
         visiting.remove(name)
         visited.add(name)
@@ -125,18 +132,32 @@ class ImportClosureReferenceTests(unittest.TestCase):
             "imports": ["core/scalars"],
         }
         units["std/otp/registry"]["imports"].append("std/net")
-        with self.assertRaisesRegex(AdmissionError, "forbidden or unknown layer"):
+        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
             audit_closure(units, ["std/otp/registry"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS,
                           features=MODULES["registry"]["requires"])
+
+    def test_hosted_profile_never_licenses_core_to_import_os(self):
+        units = synthetic_units()
+        units["std/net"] = {
+            "layer": "host-adapter", "effects": ["network"],
+        }
+        units["core/scalars"]["imports"] = ["std/net"]
+        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
+            audit_closure(
+                units, ["core/scalars"],
+                allowed_layers={"core", "actor", "otp", "alloc", "host-adapter"},
+                providers=[*ACTOR_PROVIDERS, "explicit-host-capabilities"],
+                allowed_effects={"network"},
+            )
 
     def test_core_cannot_import_actor_directly_or_transitively(self):
         units = synthetic_units()
         units["core/leaky"] = {
             "layer": "core", "imports": ["actor/mail"],
         }
-        with self.assertRaisesRegex(AdmissionError, "forbidden or unknown layer"):
+        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
             audit_closure(units, ["core/leaky"], allowed_layers={"core"})
 
     def test_unknown_import_rejected_and_no_host_fallback(self):
@@ -175,7 +196,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
         units = synthetic_units()
         units["std/otp/event_manager"]["imports"].append("alloc/arena")
         units["alloc/arena"] = {"layer": "alloc", "imports": ["core/scalars"]}
-        with self.assertRaisesRegex(AdmissionError, "forbidden or unknown layer"):
+        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
             audit_closure(units, ["std/otp/event_manager"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS,
@@ -184,6 +205,14 @@ class ImportClosureReferenceTests(unittest.TestCase):
                       allowed_layers={"core", "actor", "otp", "alloc"},
                       providers=[*ACTOR_PROVIDERS, "explicit-memory-provider"],
                       features=MODULES["event_manager"]["requires"])
+
+    def test_optional_alloc_edges_are_explicit_and_nothing_reaches_host(self):
+        self.assertEqual(LAYERS["core"]["optionalDependsOn"], [])
+        for layer in LAYERS.values():
+            self.assertNotIn("host-adapter", layer["dependsOn"])
+            self.assertNotIn("host-adapter", layer["optionalDependsOn"])
+        self.assertEqual(LAYERS["otp"]["optionalDependsOn"], ["alloc"])
+        self.assertEqual(LAYERS["actor"]["optionalDependsOn"], ["alloc"])
 
     def test_this_model_never_advertises_source_implementation(self):
         self.assertIs(MANIFEST["sourceImplementationAvailable"], False)
