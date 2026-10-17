@@ -6,11 +6,11 @@
 
 `core` is freestanding: compiling or linking it must not need Linux, POSIX, libc, JVM, an OS allocator, a scheduler, a filesystem, a clock, threads, sockets or runtime initialization. Scalar values, fixed layouts, `Option`/`Result`, ownership/effects and panic/abort contracts belong here. No heap is required.
 
-`alloc` is optional, explicit allocation: callers furnish the provider/arena; no implicit ambient allocator. `actor` is optional and OS-independent: it needs a **provided** scheduler/executor and bounded mailbox storage. Actor-only deployments MAY use fixed slots/arenas and never import `alloc`. The CONTROL lane is runtime-owned, distinct from USER/DATA; library code does not create privileged CONTROL messages.
+`alloc` is optional, explicit allocation: callers furnish the provider/arena; no implicit ambient allocator. `actor` is optional and OS-independent: it needs a **provided** scheduler/executor and bounded mailbox storage. Actor-only deployments MAY use fixed slots/arenas and never import `alloc`. Dynamic actor and OTP variants may import `alloc` only through a declared optional dependency and an explicit allocator provider; that opt-in does not weaken the freestanding `core` closure. The CONTROL lane is runtime-owned, distinct from USER/DATA; library code does not create privileged CONTROL messages.
 
 `stdlib/otp` is an **optional library behaviour tier above `actor`**, not a built-in part of `core` and not an OS dependency. Consumers can choose a static fixed-capacity variant or pass an explicit allocator as necessary. A hosted OS adapter can provide clock/threads/IO, but OTP behaviour code itself must never call the host directly. Even a target that does not support actors must still compile `core`.
 
-`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the six OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated.
+`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the six OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated. The canonical six distribution paths are `stdlib/otp/*.ores`; the proposed logical import namespace is `std/otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to host/classpath resolution.
 
 ## Exact public module inventory
 
@@ -27,7 +27,7 @@
 
 ## Freestanding build and capability discipline
 
-1. **Source/import closure:** compiler resolves every direct/transitive import, effect and target requirement before emitting code. `core` cannot import `alloc`, `actor`, `stdlib`, Java interop or an OS/host intrinsic, including through generated code.
+1. **Source/import closure:** compiler resolves every direct/transitive import, effect and target requirement before emitting code. Import-layer edges must be legal **regardless of host target**: `core` cannot import `alloc`, `actor`, `stdlib`, Java interop or an OS/host intrinsic, including through generated code. `actor` and `otp` may import `alloc` only via an explicitly declared optional edge and provided allocator. A hosted compilation flag does not retroactively make `core -> host-adapter` legal.
 2. **Explicit providers:** `actor` requires a scheduler/executor, mailbox storage and trusted lifecycle CONTROL capability supplied by the embedding runtime. Calls requiring time (restart intensity windows, deadlines, state timers) require a monotonic clock provider; without one they must reject or disable the particular timed feature, never silently consult a wall clock.
 3. **Bounded execution:** fixed slots, bounded mailboxes, bounded event-handler sets, finite restart budgets and eventual cancellation/teardown; no unbounded busy restart loops, hidden threads or invisible retries. Backend may require `alloc` for a chosen dynamic policy, but not by default for `core`.
 4. **Ownership and trust:** actor-owned state is sealed; refs and response capabilities are generation-fenced; no raw pointer/object/OS handle, live reply token or forged CONTROL passes via ordinary sendable payload. A `cast` receipt means *admission*, not processing or delivery.
@@ -44,3 +44,4 @@
 - G4: execute constrained OTP on actual freestanding actor hardware/RTOS with fixed-capacity profiles; examine RAM/stack, restart exhaustion, power failure and stale incarnation tokens.
 
 CI must distinguish: `contract-pass`, `source-compilation-pass`, `runtime-executed-pass`, and `embedded-hardware-pass`. **Only the latter evidence proves corresponding implementation claims.** Pin compiler/backend commits and never export private source trees to unrelated orgs without approval.
+\n## Additional G0 security reference checks\n\n`tests/test_otp_import_closure_contract.py` exercises a parsed-unit **reference model** of closure admission, including hosted-mode core-to-host escapes, missing imports, cycles, transitive OTP-to-OS imports, missing actor providers, absent OTP feature primitives, explicit clock requirements and optional allocation. These tests do not parse or execute any `.ores` source. An actual compiler must derive imports, effects and generated-code edges itself and must prove the same cases with real positive and negative guest fixtures.\n
