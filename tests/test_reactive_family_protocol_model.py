@@ -24,6 +24,7 @@ class AdapterModel:
         self.queue = deque()
         self.pending_write = None
         self.claim = None
+        self.terminal_error = None
         self.delivered_terminal = False
         self.cancelled = False
         self.pull_active = False
@@ -51,12 +52,15 @@ class AdapterModel:
         self.max_buffered = max(self.max_buffered, len(self.queue))
         assert len(self.queue) <= self.capacity
 
-    def terminate(self, kind):
+    def terminate(self, kind, error=None):
         if kind not in self.TERMINALS:
             raise ProtocolError("invalid terminal variant")
+        if kind != "error" and error is not None:
+            raise ProtocolError("only ERROR carries a terminal error payload")
         if self.claim or self.cancelled:
             raise ProtocolError("duplicate terminal claim")
         self.claim = kind
+        self.terminal_error = error
 
     def begin_pull(self):
         if self.delivered_terminal:
@@ -86,7 +90,8 @@ class AdapterModel:
                 self.pending_write = None
             elif self.claim and not self.delivered_terminal:
                 self.delivered_terminal = True
-                event = (self.claim, None)
+                event = (self.claim, self.terminal_error
+                         if self.claim == "error" else None)
             else:
                 # A blocked pull remains registered: an unrelated caller
                 # cannot start a second pull while this one is outstanding.
@@ -299,7 +304,8 @@ class ReactiveProtocolModelTests(unittest.TestCase):
                 m = AdapterModel(cap)
                 for step in steps:
                     before = (tuple(m.queue), m.pending_write, m.claim,
-                              m.delivered_terminal, m.cancelled, m.pull_active,
+                              m.terminal_error, m.delivered_terminal,
+                              m.cancelled, m.pull_active,
                               m.disposals, tuple(m.delivered))
                     try:
                         if step == "send":
@@ -317,8 +323,8 @@ class ReactiveProtocolModelTests(unittest.TestCase):
                         # Rejected operations MUST be side-effect free.
                         self.assertEqual(before,
                                          (tuple(m.queue), m.pending_write, m.claim,
-                                          m.delivered_terminal, m.cancelled,
-                                          m.pull_active, m.disposals,
+                                          m.terminal_error, m.delivered_terminal,
+                                          m.cancelled, m.pull_active, m.disposals,
                                           tuple(m.delivered)))
                     self.assertLessEqual(len(m.queue), cap)
                     self.assertFalse(m.pending_write is not None and len(m.queue) < cap
@@ -438,6 +444,24 @@ class ReactiveProtocolModelTests(unittest.TestCase):
         self.assertEqual(f.subscribers[observer]["events"],
                          [("cancelled", None)])
         self.assertFalse(f.cancel(observer))
+
+    def test_typed_terminal_error_is_distinct_from_err_data(self):
+        m = AdapterModel(0)
+        m.send(("Err", "ordinary-data"))
+        m.terminate("error", "network-broken")
+        self.assertEqual(m.next_event(), ("next", ("Err", "ordinary-data")))
+        self.assertEqual(m.next_event(), ("error", "network-broken"))
+        self.assertIsNone(m.next_event())
+
+    def test_non_error_terminal_cannot_carry_failure_payload(self):
+        for kind in ("complete", "cancelled"):
+            with self.subTest(kind=kind):
+                m = AdapterModel(0)
+                with self.assertRaises(ProtocolError):
+                    m.terminate(kind, "failure")
+                self.assertIsNone(m.claim)
+                m.terminate(kind)
+                self.assertEqual(m.next_event(), (kind, None))
 
     def test_projection_does_not_confuse_blocked_with_end(self):
         m = AdapterModel(0)
