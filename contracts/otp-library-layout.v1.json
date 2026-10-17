@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "status": "proposal-only",
+  "authority": "docs/OTP_PORTABLE_LIBRARY_BOUNDARY_V1.md",
+  "physicalRoot": "stdlib",
+  "canonicalImportPrefix": "otp/",
+  "dependencyLayers": {
+    "core": {
+      "imports": [],
+      "osRequired": false,
+      "heapRequired": false
+    },
+    "alloc": {
+      "imports": [
+        "core"
+      ],
+      "osRequired": false,
+      "heapRequired": false
+    },
+    "actor": {
+      "imports": [
+        "core"
+      ],
+      "optionalImports": [
+        "alloc"
+      ],
+      "osRequired": false,
+      "heapRequired": false
+    },
+    "otp": {
+      "imports": [
+        "core",
+        "actor"
+      ],
+      "optionalImports": [
+        "alloc"
+      ],
+      "osRequired": false,
+      "heapRequired": false
+    },
+    "std": {
+      "imports": [
+        "core",
+        "alloc",
+        "actor",
+        "otp"
+      ],
+      "osRequired": false,
+      "hostCapabilitiesOptIn": true
+    }
+  },
+  "behaviours": [
+    {
+      "name": "gen_server",
+      "source": "stdlib/otp/gen_server.ores",
+      "import": "otp/gen_server",
+      "requires": [
+        "actor.typed_mail",
+        "actor.reply_once",
+        "actor.lifecycle",
+        "actor.mailbox_bounded"
+      ],
+      "optional": [
+        "actor.clock"
+      ],
+      "implemented": false
+    },
+    {
+      "name": "supervisor",
+      "source": "stdlib/otp/supervisor.ores",
+      "import": "otp/supervisor",
+      "requires": [
+        "actor.supervisor_control",
+        "actor.incarnation",
+        "actor.lifecycle",
+        "actor.mailbox_bounded"
+      ],
+      "optional": [
+        "actor.clock"
+      ],
+      "implemented": false
+    },
+    {
+      "name": "gen_statem",
+      "source": "stdlib/otp/gen_statem.ores",
+      "import": "otp/gen_statem",
+      "requires": [
+        "actor.typed_mail",
+        "actor.lifecycle",
+        "actor.mailbox_bounded"
+      ],
+      "optional": [
+        "actor.clock"
+      ],
+      "implemented": false
+    },
+    {
+      "name": "application",
+      "source": "stdlib/otp/application.ores",
+      "import": "otp/application",
+      "requires": [
+        "actor.supervisor_control",
+        "actor.lifecycle"
+      ],
+      "optional": [
+        "alloc"
+      ],
+      "implemented": false
+    },
+    {
+      "name": "event_manager",
+      "source": "stdlib/otp/event_manager.ores",
+      "import": "otp/event_manager",
+      "requires": [
+        "actor.typed_mail",
+        "actor.mailbox_bounded",
+        "actor.lifecycle"
+      ],
+      "optional": [
+        "alloc"
+      ],
+      "implemented": false
+    },
+    {
+      "name": "registry",
+      "source": "stdlib/otp/registry.ores",
+      "import": "otp/registry",
+      "requires": [
+        "actor.incarnation",
+        "actor.lifecycle"
+      ],
+      "optional": [
+        "alloc"
+      ],
+      "implemented": false
+    }
+  ],
+  "profiles": {
+    "freestanding-core": [
+      "core"
+    ],
+    "freestanding-alloc": [
+      "core",
+      "alloc"
+    ],
+    "freestanding-actor": [
+      "core",
+      "actor"
+    ],
+    "freestanding-otp": [
+      "core",
+      "actor",
+      "otp"
+    ],
+    "hosted": [
+      "core",
+      "alloc",
+      "actor",
+      "otp",
+      "std"
+    ]
+  },
+  "hostedExtensions": [
+    "otp/release",
+    "otp/shared_table",
+    "std/otp/distributed_registry",
+    "std/otp/distributed_store"
+  ],
+  "notes": [
+    "The six module paths are deliverables, not installed or usable library files.",
+    "Portable OTP requires an explicit actor executor and fixed capacities.",
+    "The Java std/* resolver does not yet implement otp/* imports.",
+    "A target profile is not evidence of compiler, runtime, AOT or freestanding capability."
+  ]
+}
