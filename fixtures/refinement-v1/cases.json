@@ -133,6 +133,82 @@
       "kind": "reject",
       "reference_supported": true,
       "diagnostic": "with const-only"
+    },
+    {
+      "id": "port_keyword_gte_lte",
+      "source": "type Port = int with value gte 1 and value lte 65535;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        1,
+        443,
+        65535
+      ],
+      "invalid": [
+        0,
+        -1,
+        65536
+      ]
+    },
+    {
+      "id": "port_symbol_gte_lte",
+      "source": "type Port = int with value >= 1 and value <= 65535;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        1,
+        443,
+        65535
+      ],
+      "invalid": [
+        0,
+        -1,
+        65536
+      ]
+    },
+    {
+      "id": "percentage_keyword_gte_lte",
+      "source": "type Percentage = int with value gte 0 and value lte 100;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        0,
+        50,
+        100
+      ],
+      "invalid": [
+        -1,
+        101
+      ]
+    },
+    {
+      "id": "percentage_symbol_gte_lte",
+      "source": "type Percentage = int with value >= 0 and value <= 100;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        0,
+        50,
+        100
+      ],
+      "invalid": [
+        -1,
+        101
+      ]
+    },
+    {
+      "id": "legacy_ge_rejected",
+      "source": "type Legacy = int with value ge 1;",
+      "kind": "reject",
+      "reference_supported": true,
+      "diagnostic": "unknown comparison"
+    },
+    {
+      "id": "legacy_le_rejected",
+      "source": "type Legacy = int with value le 10;",
+      "kind": "reject",
+      "reference_supported": true,
+      "diagnostic": "unknown comparison"
     }
   ]
 }
