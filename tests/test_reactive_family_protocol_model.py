@@ -100,7 +100,9 @@ class AdapterModel:
         return self.settle_pull()
 
     def cancel(self):
-        if self.cancelled or self.delivered_terminal:
+        # The first terminal claimant wins; do not rewrite a committed
+        # COMPLETE/ERROR as CANCELLED after observing it in another turn.
+        if self.cancelled or self.delivered_terminal or self.claim:
             return False
         self.cancelled = True
         self.claim = self.claim or "cancelled"
@@ -197,6 +199,14 @@ class ReactiveProtocolModelTests(unittest.TestCase):
         self.assertEqual(m.max_buffered, 1)
         with self.assertRaises(ProtocolError):
             m.send(6)
+
+    def test_cancel_after_terminal_claim_does_not_rewrite_result(self):
+        m = AdapterModel(1)
+        m.send(3)
+        m.terminate("complete")
+        self.assertFalse(m.cancel())
+        self.assertEqual(m.next_event(), ("next", 3))
+        self.assertEqual(m.next_event(), ("complete", None))
 
     def test_cancel_after_complete_is_noop(self):
         m = AdapterModel(1)
