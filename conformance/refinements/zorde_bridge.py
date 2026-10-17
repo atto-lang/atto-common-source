@@ -41,6 +41,7 @@ def to_zorde_descriptor(refined: Refined) -> dict:
             "schema": "zorde.refinement/v1",
             "base": "string",
             "nominal": refined.nominal,
+            "nominal_id": refined.name if refined.nominal else None,
             "min_length": lo,
             "max_length": hi,
             "length_semantics": "unicode_scalar_values",
@@ -91,6 +92,9 @@ def to_zorde_descriptor(refined: Refined) -> dict:
             "schema": "zorde.refinement/v1",
             "base": "int",
             "nominal": refined.nominal,
+            "nominal_id": refined.name if refined.nominal else None,
+            "runtime_supported": False,  # generic Zorde number checks use float
+            "requires": "signed_int64_exact_validator",
             "min": lower,
             "min_exclusive": lower_exclusive,
             "max": upper,
