@@ -24,6 +24,53 @@ Conditional expressions are right associative; precedence lower than `||` and hi
 
 Evaluate condition once, then exactly one branch, retaining source order, effects, exceptions, defer/finally, borrow lifetimes, and ownership moves. Infer a safe common result type under contextual expected type; never silently widen to internal Unknown sentinel. Both branch types must be compatible with return target. Reject conditions that are not statically bool.
 
+## Optional nested false-arm inheritance — proposed v1 subfeature
+
+Nested, parenthesized *true-branch* ternaries may omit their own `:`
+false arm only when an enclosing conditional supplies one:
+
+```ores
+a ? (b ? x) : y      // a ? (b ? x : y) : y
+a ? (b ? (c ? x)) : y // a ? (b ? (c ? x : y) : y) : y
+```
+
+The inheritance is lexical and limited to a direct nested conditional
+expression along the true-arm chain, including redundant parentheses.
+The immediate enclosing complete conditional's false expression supplies the
+missing arm. Each condition executes at most once and **only the selected
+leaf expression evaluates**; shared fallback syntax must not cause repeated
+evaluation on a single path. A bare `a ? x`, an omission in an enclosing
+false arm, or an omission buried inside arithmetic, assignments or call
+arguments is a syntax error. The parser must fully desugar the shorthand
+into ordinary three-arm AST nodes before checking ownership, effects,
+flow refinements, suspension, lowering, formatting or AOT compilation.
+Do not represent a missing false arm as runtime `null`, `None`, `void`
+or compiler Unknown. A malformed/incomplete AST must fail closed.
+
+The fallback must be type-checked independently in **every execution
+environment where it may run**. E.g. `a ? (b ? x) : y` checks `y` both when
+`a` is false and when `a` is true but `b` false. It must not inherit a
+negative type refinement from the outer false branch when executed inside
+the true branch. Ownership borrows/moves and cleanup must obey the same
+branch-local rules as an explicitly written full conditional.
+
+`Double.is_double(v)` is a trusted runtime guard for Oreslang 64-bit
+floating-point values, with a true-branch refinement to the current
+`float` static type (eventually `f64` if represented distinctly).
+Its provenance rules match `Integer.is_int`: no user namespace, import,
+class, callable or local shadow may forge a trusted refinement.
+The Java interpreter recognizes a Java Double value, not a string or
+integral value; native/AOT targets require exact runtime type tags.
+Returning a float/double from a declared `: int` callable remains a type
+error: no implicit narrowing, truncation or floating-point-to-integer
+conversion is introduced by this shorthand.
+
+The Java stacked implementation on
+[oreslang-source.java nested ternary draft](https://github.com/ores-truffle-oreslang/oreslang-source.java/tree/feat/nested-ternary-inherited-else-20261017)
+must execute parser, guest runtime, Native Image and cross-backend gates
+before the feature is considered certified; this text is a proposed contract,
+not verification evidence.
+
 ## Runtime type guards and narrowing
 
 Recognize built-in `Integer.is_int(v)` as a trusted narrowing intrinsic (or an explicitly compiler-verified predicate annotation), not by ordinary function-name matching or arbitrary user method spoofing. The true successor flow environment refines stable `v` to `int`. The false successor refines `v` to an appropriate complement only where representable; otherwise retains the prior type. Apply it to `if`, `&&`, `||`, `!`, and `? :` consistently.
