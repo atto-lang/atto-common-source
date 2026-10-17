@@ -59,6 +59,8 @@ class AdapterModel:
         self.claim = kind
 
     def begin_pull(self):
+        if self.delivered_terminal:
+            raise ProtocolError("pull after terminal event")
         if self.pull_active:
             raise ProtocolError("concurrent pull on one activation")
         self.pull_active = True
@@ -66,36 +68,41 @@ class AdapterModel:
     def settle_pull(self):
         if not self.pull_active:
             raise ProtocolError("pull was not registered")
+        resolved = False
         try:
             if self.cancelled:
                 if self.delivered_terminal:
-                    return None
+                    raise ProtocolError("terminal already delivered")
                 self.delivered_terminal = True
                 event = ("cancelled", None)
-                self.delivered.append(event)
-                return event
-            if self.queue:
+            elif self.queue:
                 event = self.queue.popleft()
                 if self.pending_write is not None:
                     self.queue.append(self.pending_write)
                     self.pending_write = None
             elif self.pending_write is not None:
-                # capacity=0 rendezvous, or a prior pending write
+                # Capacity-zero rendezvous, or the oldest pending write.
                 event = self.pending_write
                 self.pending_write = None
             elif self.claim and not self.delivered_terminal:
                 self.delivered_terminal = True
                 event = (self.claim, None)
             else:
-                return None  # blocked/absent, NOT a complete event
+                # A blocked pull remains registered: an unrelated caller
+                # cannot start a second pull while this one is outstanding.
+                return None
+            resolved = True
             if self.delivered_terminal and event[0] == "next":
                 raise AssertionError("NEXT after a delivered terminal")
             self.delivered.append(event)
             return event
         finally:
-            self.pull_active = False
+            if resolved:
+                self.pull_active = False
 
     def next_event(self):
+        if self.delivered_terminal:
+            return None  # idempotent observed terminal, no new registration
         self.begin_pull()
         return self.settle_pull()
 
@@ -121,7 +128,7 @@ class ReactiveProtocolModelTests(unittest.TestCase):
         self.assertEqual(m.next_event(), ("next", None))
         self.assertIsNone(m.next_event())
         m.terminate("complete")
-        self.assertEqual(m.next_event(), ("complete", None))
+        self.assertEqual(m.settle_pull(), ("complete", None))
         self.assertIsNone(m.next_event())
 
     def test_result_error_is_not_a_terminal(self):
@@ -186,8 +193,9 @@ class ReactiveProtocolModelTests(unittest.TestCase):
         with self.assertRaises(ProtocolError):
             m.begin_pull()
         self.assertIsNone(m.settle_pull())
+        self.assertTrue(m.pull_active)
         m.send(5)
-        self.assertEqual(m.next_event(), ("next", 5))
+        self.assertEqual(m.settle_pull(), ("next", 5))
 
     def test_cancel_disposes_once_and_rejects_write(self):
         m = AdapterModel(1)
@@ -227,22 +235,33 @@ class ReactiveProtocolModelTests(unittest.TestCase):
     def test_all_small_single_writer_traces_preserve_invariants(self):
         # Model-check all bounded action strings: no hidden buffer/pending
         # credit expansion and no NEXT after any observed terminal.
-        for steps in itertools.product(("send", "next", "complete", "cancel"),
+        for steps in itertools.product(("send", "next", "settle", "complete", "cancel"),
                                        repeat=6):
             for cap in (0, 1, 2):
                 m = AdapterModel(cap)
                 for step in steps:
+                    before = (tuple(m.queue), m.pending_write, m.claim,
+                              m.delivered_terminal, m.cancelled, m.pull_active,
+                              m.disposals, tuple(m.delivered))
                     try:
                         if step == "send":
                             m.send(len(m.delivered))
                         elif step == "next":
                             m.next_event()
+                        elif step == "settle":
+                            if m.pull_active:
+                                m.settle_pull()
                         elif step == "complete":
                             m.terminate("complete")
                         else:
                             m.cancel()
                     except ProtocolError:
-                        pass  # a rejected operation cannot mutate the model
+                        # Rejected operations MUST be side-effect free.
+                        self.assertEqual(before,
+                                         (tuple(m.queue), m.pending_write, m.claim,
+                                          m.delivered_terminal, m.cancelled,
+                                          m.pull_active, m.disposals,
+                                          tuple(m.delivered)))
                     self.assertLessEqual(len(m.queue), cap)
                     self.assertFalse(m.pending_write is not None and len(m.queue) < cap
                                      and not m.cancelled)
@@ -252,11 +271,55 @@ class ReactiveProtocolModelTests(unittest.TestCase):
                         self.assertFalse(any(x[0] == "next" for x in
                                              m.delivered[m.delivered.index(terminals[0]) + 1:]))
 
+    def test_blocked_rendezvous_pull_cannot_be_reentered(self):
+        m = AdapterModel(0)
+        m.begin_pull()
+        self.assertIsNone(m.settle_pull())
+        self.assertTrue(m.pull_active)
+        with self.assertRaises(ProtocolError):
+            m.begin_pull()
+        m.send(("Some", None))
+        self.assertEqual(m.settle_pull(), ("next", ("Some", None)))
+        self.assertFalse(m.pull_active)
+        m.terminate("complete")
+        self.assertEqual(m.next_event(), ("complete", None))
+
+    def test_cancel_wakes_existing_pull_and_cleans_once(self):
+        m = AdapterModel(0)
+        m.begin_pull()
+        self.assertIsNone(m.settle_pull())
+        self.assertTrue(m.cancel())
+        self.assertFalse(m.cancel())
+        self.assertEqual(m.settle_pull(), ("cancelled", None))
+        self.assertEqual(m.disposals, 1)
+        self.assertFalse(m.pull_active)
+        self.assertIsNone(m.next_event())
+
+    def test_terminal_claim_wakes_pending_pull_without_fabricated_next(self):
+        for kind in ("complete", "error", "cancelled"):
+            with self.subTest(kind=kind):
+                m = AdapterModel(0)
+                m.begin_pull()
+                self.assertIsNone(m.settle_pull())
+                m.terminate(kind)
+                self.assertEqual(m.settle_pull(), (kind, None))
+                self.assertIsNone(m.next_event())
+
+    def test_pending_data_precedes_terminal_after_waiter_resolves(self):
+        m = AdapterModel(0)
+        m.begin_pull()
+        self.assertIsNone(m.settle_pull())
+        m.send(("Err", "data-error"))
+        m.terminate("error")
+        self.assertEqual(m.settle_pull(), ("next", ("Err", "data-error")))
+        self.assertEqual(m.next_event(), ("error", None))
+
     def test_projection_does_not_confuse_blocked_with_end(self):
         m = AdapterModel(0)
         self.assertIsNone(m.next_event())  # pending, NOT IteratorResult.done
+        self.assertTrue(m.pull_active)
         m.terminate("complete")
-        self.assertEqual(m.next_event(), ("complete", None))
+        self.assertEqual(m.settle_pull(), ("complete", None))
 
 
 if __name__ == "__main__":
