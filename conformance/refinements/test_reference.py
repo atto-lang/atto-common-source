@@ -14,6 +14,8 @@ class RefinementReferenceTests(unittest.TestCase):
         r = parse("type Emoji = string with length eq 1;")
         self.assertTrue(r.accepts("😀"))
         self.assertFalse(r.accepts("e\u0301"))
+        self.assertFalse(r.accepts(chr(0xD800)))
+        self.assertFalse(r.accepts(chr(0xDC00)))
 
     def test_operator_aliases(self):
         pairs = [
