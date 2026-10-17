@@ -126,7 +126,8 @@
     "physical-source-root-symlink-escape-denial",
     "modern-configured-root-physical-containment",
     "strict-manifest-known-field-types",
-    "dangling-nested-manifest-marker-rejection"
+    "dangling-nested-manifest-marker-rejection",
+    "strict-crlf-or-lf-modern-manifest-lines"
   ],
   "implementation_status_at_creation": {
     "java": "draft-pr-pending-CI",
@@ -404,6 +405,31 @@
       "file": "src/routes/child/secret.ores",
       "error": "nested-package-boundary",
       "goal": "deny-before-link"
+    },
+    {
+      "id": "modern-manifest-bare-cr-hidden-root-denied",
+      "manifest": ".ores.pkg.toml",
+      "manifest_contents": "schema_version = \"1\" # visible comment\r[project]\rroot = \"../outside\"\n",
+      "marker_kind": "regular-file",
+      "error": "invalid-modern-manifest-line-ending",
+      "goal": "reject-before-source-resolution"
+    },
+    {
+      "id": "modern-manifest-bare-cr-at-eof-denied",
+      "manifest": ".ores.pkg.toml",
+      "manifest_contents": "schema_version = \"1\"\r",
+      "error": "invalid-modern-manifest-line-ending",
+      "goal": "reject-before-source-resolution"
+    },
+    {
+      "id": "modern-manifest-crlf-project-root-accepted",
+      "manifest": ".ores.pkg.toml",
+      "manifest_contents": "schema_version = \"1\"\r\n[project]\r\nroot = \"app\"\r\n",
+      "manifest_project_root": "app",
+      "specifier": "+/src/helper",
+      "file": "app/src/helper.ores",
+      "expect": "app/src/helper.ores",
+      "goal": "resolve-only-until-linked-proven"
     }
   ],
   "parity_evidence_requirements": {
