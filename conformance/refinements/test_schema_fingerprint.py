@@ -42,6 +42,21 @@ class SchemaFingerprintTests(unittest.TestCase):
         self.assertEqual(bare_string.excluded, ())
         self.assertEqual(bare_string.nominal_identity, "app.Bare")
 
+    def test_out_of_domain_exclusions_do_not_change_abi(self):
+        ordinary = descriptor(parse(
+            "type Port = int with value gte 1 and value lte 65535;"
+        ))
+        redundant = descriptor(parse(
+            "type Port = int with value gte 1 and value lte 65535 "
+            "and value ne 0 and value ne 65536;"
+        ))
+        self.assertEqual(ordinary, redundant)
+        length = descriptor(parse("type NonEmpty = string with length gt 0;"))
+        no_zero = descriptor(parse(
+            "type NonEmpty = string with length gt 0 and length ne 0;"
+        ))
+        self.assertEqual(length, no_zero)
+
     def test_exclusion_normalization_is_order_independent(self):
         first = descriptor(parse(
             "type X = int with value gte 0 and value lte 100 and value ne 3 and value ne 7;"
