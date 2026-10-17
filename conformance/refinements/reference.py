@@ -9,9 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
-OPS = {"eq": "==", "ne": "!=", "gt": ">", "gte": ">=", "lt": "<", "lte": "<=",
+OPS = {"eq": "==", "ne": "!=", "gt": ">", "gte": ">=", "ge": ">=", "lt": "<", "lte": "<=", "le": "<=",
        "==": "==", "!=": "!=", ">": ">", ">=": ">=", "<": "<", "<=": "<="}
-CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?\d+)\s*\Z")
+CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gte|lte|ge|le|gt|lt|==|!=|>=|<=|>|<)\s*(-?\d+)\s*\Z")
 DECL = re.compile(r"\s*type\s+(\w+)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
 NEW = re.compile(r"\s*define\s+newtype\s+(\w+)\s*\(\s*(string|int)\s*\)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
 ANN = re.compile(r"@(?P<name>Size|Length)\s*\((?P<args>[^()]*)\)\s*|@NotEmpty\s*")
