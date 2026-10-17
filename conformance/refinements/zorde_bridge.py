@@ -51,31 +51,38 @@ def to_zorde_descriptor(refined: Refined) -> dict:
         lower_exclusive = False
         upper = None
         upper_exclusive = False
+
+        def tighten_lower(bound: int, exclusive: bool) -> None:
+            nonlocal lower, lower_exclusive
+            if lower is None or bound > lower:
+                lower = bound
+                lower_exclusive = exclusive
+            elif bound == lower:
+                lower_exclusive = lower_exclusive or exclusive
+
+        def tighten_upper(bound: int, exclusive: bool) -> None:
+            nonlocal upper, upper_exclusive
+            if upper is None or bound < upper:
+                upper = bound
+                upper_exclusive = exclusive
+            elif bound == upper:
+                upper_exclusive = upper_exclusive or exclusive
+
         for predicate in refined.predicates:
             if predicate.property != "value":
                 raise ConstraintSyntaxError("unsupported Zorde numeric property")
             n = predicate.bound
             if predicate.op == "==":
-                lower = n
-                upper = n
-                lower_exclusive = False
-                upper_exclusive = False
+                tighten_lower(n, False)
+                tighten_upper(n, False)
             elif predicate.op == ">":
-                if lower is None or n >= lower:
-                    lower = n
-                    lower_exclusive = True
+                tighten_lower(n, True)
             elif predicate.op == ">=":
-                if lower is None or n > lower or (n == lower and lower_exclusive):
-                    lower = n
-                    lower_exclusive = False
+                tighten_lower(n, False)
             elif predicate.op == "<":
-                if upper is None or n <= upper:
-                    upper = n
-                    upper_exclusive = True
+                tighten_upper(n, True)
             elif predicate.op == "<=":
-                if upper is None or n < upper or (n == upper and upper_exclusive):
-                    upper = n
-                    upper_exclusive = False
+                tighten_upper(n, False)
             elif predicate.op == "!=":
                 raise ConstraintSyntaxError("Zorde runtime exclusion rules are not implemented")
             else:
