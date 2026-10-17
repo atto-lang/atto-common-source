@@ -37,6 +37,25 @@ The explicit override selects a **manifest directory**; it does not rewrite
 the `[project].root` field inside that manifest. Source-file names in the
 manifest remain root-relative, consistent with the existing Java manifest.
 
+## Manifest-marker shadowing and failure rules
+
+A discovered `.ores.pkg.toml` marker has precedence over a same-directory
+legacy `.oreslangc.cfg.toml` marker **by existence, not parse success**.
+If the modern path exists but is a directory, symlink (including dangling
+or same-directory aliases), unreadable file, or invalid manifest, discovery
+must fail closed. It must not silently fall back to legacy config, an
+ancestor manifest, bare-package import resolution, or a manifestless project.
+
+Likewise, an existing invalid legacy marker must never be silently ignored
+as though no manifest exists. Actual file open/parse should use a trusted
+source snapshot or equivalent descriptor-backed strategy when the filesystem
+can be modified concurrently; path checks alone do not eliminate TOCTOU.
+
+The `namespace_parity_cases` matrix includes directory, dangling-symlink,
+same-directory symlink and invalid-legacy negative fixtures. A backend
+which has no package-root resolver should reject the entire source import
+before reading or publishing artifacts.
+
 ## Import-resolution invariants
 
 * `+/segment/path` resolves ONLY under the selected project root.
