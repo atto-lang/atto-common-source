@@ -222,3 +222,30 @@ backend may claim Zorde parity. Unsupported constraints fail closed.
 A future zorde.schema<T>() surface is compiler-generated metadata, not runtime
 reflection. Its schema fingerprint participates in public ABI and hot-reload
 compatibility.
+
+## Standard-library Zorde and canonical constraint annotations
+
+Zorde is the built-in Oreslang validation/schema facade under `std/zorde`, not
+an unrelated optional validation package. Compiler refinements normalize to
+core-owned constraints, and runtime Zorde schemas/typed codec admission must
+consume the same generated descriptors without reflection or float coercion.
+
+Canonical annotation mappings (string length counts Unicode scalar values):
+
+| Annotation | Base | Equivalent `with` predicate |
+| --- | --- | --- |
+| `@MinLength(3)` | string | `length gte 3` |
+| `@MaxLength(32)` | string | `length lte 32` |
+| `@Length(min=3,max=32)` | string | `length gte 3 and length lte 32` |
+| `@Size(min=3,max=32)` | string | same interval |
+| `@NotEmpty` | string | `length gt 0` |
+| `@Min(1)` | int | `value gte 1` |
+| `@Max(65535)` | int | `value lte 65535` |
+| `@Range(min=1,max=65535)` | int | `value gte 1 and value lte 65535` |
+
+Numeric bounds are compile-time signed-int64 literals and comparisons are
+exact. Negative length bounds, incompatible bases, duplicate/contradictory
+constraints and unimplemented annotation destinations fail closed. Before full
+compiler enforcement, alias/newtype parsing is not runtime refinement support;
+field, parameter, return, actor and codec validation must not be claimed
+merely because annotation metadata exists.
