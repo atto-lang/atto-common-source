@@ -119,7 +119,8 @@
     "source-roots-explicit-empty",
     "ores-paths-search-precedence",
     "nested-modern-and-legacy-package-boundary",
-    "nested-package-symlink-alias-denied"
+    "nested-package-symlink-alias-denied",
+    "malformed-manifest-marker-fail-closed-before-fallback"
   ],
   "implementation_status_at_creation": {
     "java": "draft-pr-pending-CI",
@@ -244,6 +245,41 @@
       "symlink_alias_to": "lib/helper.ores",
       "file": "lib/helper.ores",
       "expect": "canonical-physical-identity"
+    },
+    {
+      "id": "modern-directory-marker-shadows-valid-legacy",
+      "manifest": ".ores.pkg.toml",
+      "marker_kind": "directory",
+      "legacy_manifest": ".oreslangc.cfg.toml",
+      "legacy_valid": true,
+      "error": "invalid-modern-marker",
+      "goal": "reject-before-authority-selection"
+    },
+    {
+      "id": "modern-dangling-symlink-shadows-valid-legacy",
+      "manifest": ".ores.pkg.toml",
+      "marker_kind": "dangling-symlink",
+      "legacy_manifest": ".oreslangc.cfg.toml",
+      "legacy_valid": true,
+      "error": "invalid-modern-marker",
+      "goal": "reject-before-authority-selection"
+    },
+    {
+      "id": "modern-inside-root-symlink-shadows-valid-legacy",
+      "manifest": ".ores.pkg.toml",
+      "marker_kind": "symlink-to-in-root-legacy",
+      "legacy_manifest": ".oreslangc.cfg.toml",
+      "legacy_valid": true,
+      "error": "invalid-modern-marker",
+      "goal": "reject-before-authority-selection"
+    },
+    {
+      "id": "malformed-legacy-marker-not-manifestless",
+      "manifest": ".oreslangc.cfg.toml",
+      "marker_kind": "directory",
+      "modern_manifest_absent": true,
+      "error": "invalid-legacy-marker",
+      "goal": "reject-before-manifestless-fallback"
     }
   ],
   "parity_evidence_requirements": {
