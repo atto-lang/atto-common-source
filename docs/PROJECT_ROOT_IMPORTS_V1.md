@@ -37,6 +37,28 @@ The explicit override selects a **manifest directory**; it does not rewrite
 the `[project].root` field inside that manifest. Source-file names in the
 manifest remain root-relative, consistent with the existing Java manifest.
 
+## Nearest manifest and alternate source namespace isolation
+
+**Choose the closest directory containing either manifest marker first.**
+Within that one directory, `.ores.pkg.toml` overrides the legacy marker.
+An ancestor modern manifest **cannot** override a nearer legacy package.
+Malformed nearest-directory markers fail closed; do not search higher
+ancestors to change package ownership.
+
+This physical/lexical package boundary applies to all filesystem import
+namespaces, not only `+/`. `./`, `../`, and bare source-root imports
+must reject a source inside a nested package owned by another manifest.
+If a source is spelled through the owning project's root, a symlink to an
+outside file cannot turn it into a legitimate bare import. An unrelated
+explicit ambient search root may have its own ownership and is not silently
+granted this project's authority.
+
+The shared matrix includes positive nearest-legacy and same-level-modern
+priority, negative nearest-invalid fallback, bare/relative nested-package
+denials and a bare-source symlink escape. Mark unsupported backends
+`admission-only` or `resolver-only`; do not treat Wasm's refusal to publish
+an unresolved graph as an executed imported function.
+
 ## Manifest-marker shadowing and failure rules
 
 A discovered `.ores.pkg.toml` marker has precedence over a same-directory
