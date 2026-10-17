@@ -5,7 +5,7 @@ export const { spec, validate, tryFrom, entails, codePoints, ContractError } = (
   const MAX_SOURCE=32768;
   class ContractError extends Error { constructor(code,message){ super(message); this.name="ContractError"; this.code=code; } }
   const fail=(code,message)=>{throw new ContractError(code,message)};
-  const OPS=new Map([["eq","eq"],["==","eq"],["ne","ne"],["!=","ne"],["gt","gt"],[">","gt"],["ge","ge"],["gte","ge"],[">=","ge"],["lt","lt"],["<","lt"],["le","le"],["lte","le"],["<=","le"]]);
+  const OPS=new Map([["eq","eq"],["==","eq"],["ne","ne"],["!=","ne"],["gt","gt"],[">","gt"],["gte","gte"],[">=","gte"],["lt","lt"],["<","lt"],["lte","lte"],["<=","lte"]]);
   function tokens(input) {
     if(typeof input!=="string" || input.length>MAX_SOURCE) fail("R001","invalid/oversized declaration");
     const out=[]; let i=0;
@@ -55,7 +55,7 @@ export const { spec, validate, tryFrom, entails, codePoints, ContractError } = (
       const token=take(),op=OPS.get(token);
       if(!op)fail("R008",`unknown comparison '${token}'`);
       const n=integer();
-      if(prop==="length" && n<0 && (op==="eq"||op==="ge"||op==="gt"))
+      if(prop==="length" && n<0 && (op==="eq"||op==="gte"||op==="gt"))
         fail("R009","negative string length is impossible");
       return {property:prop,op,n};
     };
@@ -94,12 +94,12 @@ export const { spec, validate, tryFrom, entails, codePoints, ContractError } = (
       if(ann==="Size"){
         if(kind!=="string")fail("R007","@Size on unsupported type");
         const keys=Object.keys(args);if(!keys.length||keys.some(x=>x!=="min"&&x!=="max"))fail("R010","@Size supports min,max");
-        return keys.map(key=>({property:expectedProperty,op:key==="min"?"ge":"le",n:args[key]}));
+        return keys.map(key=>({property:expectedProperty,op:key==="min"?"gte":"lte",n:args[key]}));
       }
       if(ann==="Length"){
         if(kind!=="string")fail("R007","@Length requires string");
         const keys=Object.keys(args);if(!keys.length||keys.some(x=>!["eq","min","max"].includes(x)))fail("R010","@Length supports eq,min,max");
-        return keys.map(key=>({property:"length",op:key==="eq"?"eq":key==="min"?"ge":"le",n:args[key]}));
+        return keys.map(key=>({property:"length",op:key==="eq"?"eq":key==="min"?"gte":"lte",n:args[key]}));
       }
       fail("R010",`unknown constraint annotation @${ann}`);
     }).flat();
@@ -111,9 +111,9 @@ export const { spec, validate, tryFrom, entails, codePoints, ContractError } = (
       const n=c.n;
       switch(c.op){
         case "eq": min=Math.max(min,n);max=Math.min(max,n);break;
-        case "ge": min=Math.max(min,n);break;
+        case "gte": min=Math.max(min,n);break;
         case "gt": min=Math.max(min,n+1);break;
-        case "le": max=Math.min(max,n);break;
+        case "lte": max=Math.min(max,n);break;
         case "lt": max=Math.min(max,n-1);break;
         case "ne": excluded.push(n);break;
       }
@@ -133,7 +133,7 @@ export const { spec, validate, tryFrom, entails, codePoints, ContractError } = (
     for(const ch of value){const x=ch.charCodeAt(0);if(x>=0xD800&&x<=0xDFFF&&ch.length===1)fail("R014","invalid Unicode scalar");count++;}
     return count;
   }
-  const testOp=(x,{op,n})=>({eq:x===n,ne:x!==n,gt:x>n,ge:x>=n,lt:x<n,le:x<=n})[op];
+  const testOp=(x,{op,n})=>({eq:x===n,ne:x!==n,gt:x>n,gte:x>=n,lt:x<n,lte:x<=n})[op];
   function checkWhere(value,tree){if(!tree)return true;if(tree.and)return tree.and.every(x=>checkWhere(value,x));if(tree.or)return tree.or.some(x=>checkWhere(value,x));return testOp(value,tree);}
   function validate(contract,value){
     const v=contract.base==="string"?codePoints(value):(Number.isSafeInteger(value)?value:fail("R013","expected safe int"));
