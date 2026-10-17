@@ -216,6 +216,10 @@ class ReactiveProtocolModelTests(unittest.TestCase):
         self.assertEqual(canonical_signal("cancelled"), ("Err", None))
         self.assertEqual(canonical_signal("error", "boom"),
                          ("Err", ("Some", "boom")))
+        self.assertEqual(canonical_signal("error", None),
+                         ("Err", ("Some", None)))
+        self.assertNotEqual(canonical_signal("error", None),
+                            canonical_signal("cancelled"))
 
     def test_producer_frame_has_no_consumer_cancel_variant(self):
         self.assertEqual(producer_frame("next", None),
