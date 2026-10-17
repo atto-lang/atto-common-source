@@ -74,7 +74,7 @@ def synthetic_units():
         units["std/otp/" + name] = {
             "layer": module["layer"],
             "imports": ["actor/mail"],
-            "requires": module["requires"],
+            "requires": list(module["requires"]),
         }
     return units
 
