@@ -177,3 +177,37 @@ For the initial release, use either `with` or `where` per declaration; annotatio
 5. Differential acceptance, rejection and runtime-failure tests (Unicode, mutation, alias/newtype distinctions, deserialization, cross-generation ABI) with linked evidence artifacts.
 
 **No part of this document means the current Java/LLVM/.NET/Forge/Wasm backend implements refinements.** Track each implementation separately, and distinguish parser recognition, type-checker enforcement, executable runtime enforcement, and cross-backend parity.
+
+
+## Zorde runtime validation bridge
+
+The canonical runtime validation library for these constraints is **Zorde**,
+implemented in oreslang-serialization-and-validation. Compiler refinements and
+Zorde schemas must share one normalized predicate contract rather than drift
+into separate static and runtime rule systems.
+
+The compiler should emit a static, reflection-free validator descriptor for
+every exported refinement/newtype that requires runtime construction. Zorde
+uses that descriptor at explicit trust boundaries (decode, FFI, actor DATA,
+HTTP/RPC, database/config input, hot-reload migration). Compile-time constants
+and proven refinement-to-refinement assignments do not need runtime checks.
+
+The first mechanical mappings are:
+
+| Refinement IR | Zorde rule |
+| --- | --- |
+| string length eq N | min_length=N, max_length=N |
+| string length gt N | min_length=N+1 |
+| string length ge N | min_length=N |
+| string length lt N | max_length=N-1 |
+| string length le N | max_length=N |
+| numeric lower/upper interval | inclusive/exclusive numeric range |
+| sequence length bounds | min_items/max_items |
+
+Excluded-value ne predicates, map-size predicates, arbitrary where predicates,
+and cross-field predicates must have explicit runtime representations before a
+backend may claim Zorde parity. Unsupported constraints fail closed.
+
+A future zorde.schema<T>() surface is compiler-generated metadata, not runtime
+reflection. Its schema fingerprint participates in public ABI and hot-reload
+compatibility.
