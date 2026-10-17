@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "purpose": "Shared future differential conformance inputs; current Java+LLVM executable compilers must still reject all valid refined types",
+  "length_unit": "Unicode scalar values",
+  "cases": [
+    {
+      "id": "length_eq_annotation",
+      "source": "@Length(eq=10) type Exact10 = string;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        "abcdefghij",
+        "😀😀😀😀😀😀😀😀😀😀"
+      ],
+      "invalid": [
+        "",
+        "abc",
+        "abcdefghijk"
+      ]
+    },
+    {
+      "id": "length_eq_with",
+      "source": "type Exact10 = string with length eq 10;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        "abcdefghij"
+      ],
+      "invalid": [
+        "",
+        "abc"
+      ]
+    },
+    {
+      "id": "length_eq_symbolic",
+      "source": "type Exact10 = string with length == 10;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        "abcdefghij"
+      ],
+      "invalid": [
+        ""
+      ]
+    },
+    {
+      "id": "size_annotation",
+      "source": "@Size(min=1,max=32) type Username = string;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        "x",
+        "😀"
+      ],
+      "invalid": [
+        "",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ]
+    },
+    {
+      "id": "not_empty_annotation",
+      "source": "@NotEmpty type NonEmpty = string;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        "x",
+        " "
+      ],
+      "invalid": [
+        ""
+      ]
+    },
+    {
+      "id": "newtype_with",
+      "source": "define newtype Username(string) with length gt 0;",
+      "kind": "nominal_newtype",
+      "reference_supported": true,
+      "valid": [
+        "x"
+      ],
+      "invalid": [
+        ""
+      ]
+    },
+    {
+      "id": "newtype_annotated",
+      "source": "@NotEmpty define newtype UserId(string);",
+      "kind": "nominal_newtype",
+      "reference_supported": true,
+      "valid": [
+        "foo"
+      ],
+      "invalid": [
+        ""
+      ]
+    },
+    {
+      "id": "where_bounds",
+      "source": "type NonEmpty = string where it.length > 0;",
+      "kind": "refined_alias",
+      "reference_supported": true,
+      "valid": [
+        "x"
+      ],
+      "invalid": [
+        ""
+      ]
+    },
+    {
+      "id": "where_method",
+      "source": "type NonBlank = string where it.trim().length > 0;",
+      "kind": "refined_alias",
+      "reference_supported": false,
+      "validation": "requires purity analysis + bounded runtime lowering"
+    },
+    {
+      "id": "unsatisfiable",
+      "source": "type Impossible = string with length gt 10 and length lt 5;",
+      "kind": "reject",
+      "reference_supported": true,
+      "diagnostic": "unsatisfiable"
+    },
+    {
+      "id": "unsupported_with_or",
+      "source": "type Bad = string with length gt 0 or length eq 5;",
+      "kind": "reject",
+      "reference_supported": true,
+      "diagnostic": "with conjunctive only"
+    },
+    {
+      "id": "unsafe_with_call",
+      "source": "type Bad = string with length gt read_file();",
+      "kind": "reject",
+      "reference_supported": true,
+      "diagnostic": "with const-only"
+    }
+  ]
+}
