@@ -25,3 +25,8 @@ for (const v of [0,1,443,65535,65536]) assert.equal(validate(portKeyword,v),vali
 const pctKeyword=spec("type Percentage = int with value gte 0 and value lte 100;");
 const pctSymbols=spec("type Percentage = int with value >= 0 and value <= 100;");
 for (const v of [-1,0,50,100,101]) assert.equal(validate(pctKeyword,v),validate(pctSymbols,v));
+
+// Structural equality, not merely matching a few validation outcomes.
+assert.deepEqual(portKeyword.bounds,portSymbols.bounds);
+assert.deepEqual(pctKeyword.bounds,pctSymbols.bounds);
+for (const source of ["type Bad = int with value ge 1;","type Bad = int with value le 100;"]) assert.throws(() => spec(source),/./);
