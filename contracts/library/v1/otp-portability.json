@@ -181,5 +181,7 @@
     "memory.ambient"
   ],
   "validation": "metadata-only; does not invoke an Oreslang compiler or runtime",
-  "canonicalImportPrefix": "otp/"
+  "canonicalImportPrefix": "otp/",
+  "transitionalJavaDraftImportPrefix": "std/otp/",
+  "transitionalJavaDraftImportStatus": "draft-source-slices-only; canonical otp/* import resolver not implemented"
 }

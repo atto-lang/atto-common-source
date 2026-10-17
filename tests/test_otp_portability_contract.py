@@ -27,6 +27,22 @@ class ContractTests(unittest.TestCase):
         self.assertIs(d["sourceImplementationAvailable"], False)
         self.assertIn("does not invoke", d["validation"])
 
+    def test_future_canonical_import_is_distinct_from_java_draft(self):
+        d = self.data
+        self.assertEqual(d["canonicalImportPrefix"], "otp/")
+        self.assertEqual(d["transitionalJavaDraftImportPrefix"], "std/otp/")
+        self.assertNotEqual(d["canonicalImportPrefix"],
+                            d["transitionalJavaDraftImportPrefix"])
+        self.assertIn("not implemented", d["transitionalJavaDraftImportStatus"])
+        text = (ROOT / "docs/CORE_ALLOC_ACTOR_OTP_BOUNDARY_V1.md").read_text(
+            encoding="utf-8")
+        self.assertIn("future portable canonical import", text)
+        self.assertIn("transitional Java resolver spelling", text)
+        for module in d["modules"]:
+            self.assertEqual(
+                module["canonicalImport"],
+                d["canonicalImportPrefix"] + module["module"])
+
     def test_exact_six_unique_modules_and_locations(self):
         modules = self.data["modules"]
         self.assertEqual(len(modules), len(EXPECTED))

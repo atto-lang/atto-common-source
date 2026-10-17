@@ -12,11 +12,28 @@
 
 The physical layout is `stdlib/otp/<module>.ores`, but the **proposed canonical import** is `otp/<module>` (for example `otp/gen_server`), *not* `std/otp/<module>`. The existing Java packaged resolver currently only accepts `std/*`, so this requires a new closed, compiler-owned `otp/*` resolver plus AOT resource registration. An optional hosted `std/otp/*` facade must not become a dependency of freestanding OTP. These canonical paths are a **proposal**, not currently accepted import syntax or an implementation claim. Consumers can choose a static fixed-capacity variant or pass an explicit allocator as necessary. A hosted OS adapter can provide clock/threads/IO, but OTP behaviour code itself must never call the host directly. Even a target that does not support actors must still compile `core`.
 
-`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the six OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated. The canonical six distribution paths are `stdlib/otp/*.ores`; the proposed logical import namespace is `std/otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to host/classpath resolution.
+`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the six OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated. The canonical six distribution paths are `stdlib/otp/*.ores`; the proposed logical import namespace is `otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to host/classpath resolution.
+
+## Import namespace staging audit (2026-10-17)
+
+The future portable canonical import is **`otp/<module>`**. Java/Graal draft
+PR [#1216](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1216)
+currently admits **`std/otp/<module>`** for six pure source protocol/policy
+slices. This is a transitional Java resolver spelling, **not** proof that
+`otp/*` works or that any GenServer/supervisor actor behaviour is complete.
+LLVM draft [#560](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/560)
+rejects OTP imports fail-closed until source module linking is implemented.
+
+Migration gate: implement a closed compiler-owned `otp/*` resolver with exact
+six-module resource mapping and stable unit identities, then run import,
+typecheck and actual guest-source execution tests. Alias compatibility with
+`std/otp/*` is a separate explicit decision; never allow duplicate module
+instances, shadowed classpath sources, implicit hosted fallback or different
+module identities for two spellings.
 
 ## Exact public module inventory
 
-| Future import path | Behaviour | Mandatory provider surface (conceptual) |
+| Physical source path | Behaviour | Mandatory provider surface (conceptual) |
 | --- | --- | --- |
 | `stdlib/otp/gen_server.ores` | `GenServer<State,Call,Reply,Cast>` | typed serial actor, bounded USER inbox, one-shot correlation-safe reply |
 | `stdlib/otp/supervisor.ores` | `Supervisor<Spec>` | lifecycle authority, authenticated CONTROL failures, restart accounting |
