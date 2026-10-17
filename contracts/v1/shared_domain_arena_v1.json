@@ -67,6 +67,10 @@
       "expect": "deny"
     },
     {
+      "id": "stale-control-same-address-reuse-denied",
+      "expect": "deny-stale"
+    },
+    {
       "id": "actor-ref-not-domain-capability",
       "expect": "deny"
     },
