@@ -67,6 +67,46 @@ class RefinementReferenceTests(unittest.TestCase):
                     parse(source)
 
 
+    def test_stdlib_annotation_normalization(self):
+        cases = (
+            ("@MinLength(3) @MaxLength(32) type Username = string;",
+             "type Username = string with length gte 3 and length lte 32;",
+             ("", "ab", "abc", "😀😀😀", "x" * 32, "x" * 33)),
+            ("@Min(1) @Max(65535) type Port = int;",
+             "type Port = int with value >= 1 and value <= 65535;",
+             (0, 1, 443, 65535, 65536)),
+            ("@Range(min=0,max=100) type Percentage = int;",
+             "type Percentage = int with value gte 0 and value lte 100;",
+             (-1, 0, 50, 100, 101)),
+            ("@Range(min=-10,max=10) type Signed = int;",
+             "type Signed = int with value >= -10 and value <= 10;",
+             (-11, -10, 0, 10, 11)),
+        )
+        for annotations, source, values in cases:
+            with self.subTest(annotations=annotations):
+                first, second = parse(annotations), parse(source)
+                self.assertEqual(first.predicates, second.predicates)
+                for value in values:
+                    self.assertEqual(first.accepts(value), second.accepts(value))
+
+    def test_bad_stdlib_annotations_reject(self):
+        for source in (
+            "@MinLength(1) type Wrong = int;",
+            "@Min(1) type Wrong = string;",
+            "@Range(min=1,max=2) type Wrong = string;",
+            "@Range(min=1,min=2) type Wrong = int;",
+            "@Range(eq=10) type Wrong = int;",
+            "@MinLength(-1) type Wrong = string;",
+            "@Size(min=-1) type Wrong = string;",
+            "@MaxLength(1,2) type Wrong = string;",
+            "@Min(foo) type Wrong = int;",
+            "@Range() type Wrong = int;",
+            "@Min(11) @Max(10) type Wrong = int;",
+        ):
+            with self.subTest(source=source):
+                with self.assertRaises(ConstraintSyntaxError):
+                    parse(source)
+
     def test_signed_i64_limits(self):
         minimum = parse("type Min = int with value eq -9223372036854775808;")
         self.assertTrue(minimum.accepts(-(1 << 63)))
