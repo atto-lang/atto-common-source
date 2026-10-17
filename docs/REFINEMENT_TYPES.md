@@ -153,7 +153,7 @@ with_clause     = "with" property_cmp ("and" property_cmp)* ;
 property_cmp    = BUILTIN_PROPERTY COMPARATOR compile_time_constant ;
 where_clause    = "where" pure_boolean_expr ;
 COMPARATOR      = "eq" | "ne" | "gt" | "gte" | "lt" | "lte"
-                | "==" | "!=" | ">" | ">=" | "<" | "<=" ;
+                | "gte" | "lte" | "==" | "!=" | ">" | ">=" | "<" | "<=" ;
 ```
 
 For the initial release, use either `with` or `where` per declaration; annotations can be stacked and compose conjunctively. Parentheses and `or` belong to `where`, not `with`. Refinements must bind more tightly than a surrounding union/intersection unless the user explicitly parenthesizes. Definition grammar, formatter and reserved-keyword changes require parser and conformance tests before shipping.
