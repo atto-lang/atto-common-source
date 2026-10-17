@@ -58,6 +58,39 @@ manifest remain root-relative, consistent with the existing Java manifest.
   semantics. `+/` is not an implicit permission to read arbitrary files:
   compiler source-admission policy still applies.
 
+## Relative, bare, environment and package-boundary parity
+
+The existing source namespaces must not be changed by a `+/` implementation:
+
+- Only `./file` and `../file` are importer-relative. Dot-prefixed bare
+  modules such as `.hidden/helper` and `..backup/helper` search ordinary
+  configured paths; never treat a leading dot alone as relative authority.
+- For bare imports, search `[source].roots`, then
+  `[source].import_paths`, then colon-separated `ORES_PATHS`, then
+  host-native-delimited `ORESLANG_PATH`. Duplicate roots keep the first
+  occurrence. Empty ambient path components never grant implicit cwd.
+- Omitted `[source].roots` defaults to `["."]`; explicitly written
+  `roots = []` disables that implicit search root. The distinction must
+  survive discovery, linking, native builds and validation.
+- A parent package's `+/` cannot enter a child package containing
+  `.ores.pkg.toml` **or** `.oreslangc.cfg.toml`. Test both spelled and
+  canonical physical paths: a symlink alias into a child must not launder
+  access across the namespace boundary. In-root noncrossing symlink aliases
+  must retain a single canonical source identity.
+- The `[project].root` directory can be a subdirectory of its manifest
+  directory: `[project] root = "app"` means `+/src/helper` resolves to
+  `app/src/helper.ores`, not to the manifest directory's `src/helper.ores`.
+  A backend that does not support that value must reject it explicitly;
+  silently ignoring it violates the contract.
+
+The `namespace_parity_cases` array in the shared JSON is a normative
+**scenario description**. Backends may implement audited adapters, and must
+report `unsupported`, `admission-only`, `resolver-only`, `linked` or
+`executed` separately. An accepted import preamble, a passing parser test,
+a source-free CI run, or a zero-step GitHub Actions job cannot demonstrate
+an executed imported function or real wasm32 source graph. Runtime release
+evidence must be tied to a verified exact candidate tree and source graph.
+
 ## Backend parity and admission gates
 
 The v1 contract applies to .java, .llvm, .net, .wasm and .forge, but
