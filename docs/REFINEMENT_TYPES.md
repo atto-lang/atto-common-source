@@ -249,3 +249,18 @@ constraints and unimplemented annotation destinations fail closed. Before full
 compiler enforcement, alias/newtype parsing is not runtime refinement support;
 field, parameter, return, actor and codec validation must not be claimed
 merely because annotation metadata exists.
+
+## Versioned Zorde schema ABI reference
+
+`conformance/refinements/schema_fingerprint.py` independently calculates the
+same version-1 SHA-256 scalar-schema fingerprint as the Java compiler's
+`RefinementRules.descriptor`. It normalizes inclusive integer/Unicode scalar
+intervals, sorts effective exclusions, removes exclusions outside the valid
+interval, and includes compiler-qualified nominal identity. For example,
+`@Range(min=1,max=65535)` and `with value >= 1 and value <= 65535` emit
+the same fingerprint. Bare newtypes remain nominal even without bound clauses.
+
+This is a **source-free schema ABI proof**; it is not a claim that guest
+`zorde.schema<T>()`, `T.try_from()` or actor/FFI/codec admission is implemented.
+Native runtime validation must consume generated descriptors rather than
+recalculating constraints from syntax or narrowing signed integers to floats.
