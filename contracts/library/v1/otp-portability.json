@@ -9,7 +9,8 @@
       "dependsOn": [],
       "osRequired": false,
       "heapRequired": false,
-      "requiredProviders": []
+      "requiredProviders": [],
+      "optionalDependsOn": []
     },
     {
       "id": "alloc",
@@ -20,7 +21,8 @@
       "heapRequired": true,
       "requiredProviders": [
         "explicit-memory-provider"
-      ]
+      ],
+      "optionalDependsOn": []
     },
     {
       "id": "actor",
@@ -33,6 +35,9 @@
         "scheduler-executor",
         "bounded-mailbox-storage",
         "trusted-control-lane"
+      ],
+      "optionalDependsOn": [
+        "alloc"
       ]
     },
     {
@@ -43,7 +48,10 @@
       ],
       "osRequired": false,
       "heapRequired": false,
-      "requiredProviders": []
+      "requiredProviders": [],
+      "optionalDependsOn": [
+        "alloc"
+      ]
     },
     {
       "id": "host-adapter",
@@ -54,7 +62,8 @@
       "heapRequired": false,
       "requiredProviders": [
         "explicit-host-capabilities"
-      ]
+      ],
+      "optionalDependsOn": []
     }
   ],
   "modules": [
