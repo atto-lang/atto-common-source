@@ -68,7 +68,12 @@ class AdapterModel:
             raise ProtocolError("pull was not registered")
         try:
             if self.cancelled:
-                return ("cancelled", None)
+                if self.delivered_terminal:
+                    return None
+                self.delivered_terminal = True
+                event = ("cancelled", None)
+                self.delivered.append(event)
+                return event
             if self.queue:
                 event = self.queue.popleft()
                 if self.pending_write is not None:
