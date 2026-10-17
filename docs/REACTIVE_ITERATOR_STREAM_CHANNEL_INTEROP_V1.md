@@ -88,11 +88,11 @@ The findings below describe the audited snapshots that motivated the current dra
 
 - Rx #17 rejects duplicate subscribers for raw hot-channel and merge adapters rather than pretending one channel reader is multicast.
 - Rx #19 serializes subscription terminal claims, separates FAILED from COMPLETE/CANCELLED, adds recoverable `next_result()`, and exposes the canonical `next_signal(): Result<Option<T>, Option<Object>>`.
-- Rx #19's Future adapter selects a private stop channel against `SelectCase.future(shared)`; Java #1193 provides the current-main waiter-detachment primitive while preserving borrowed producer ownership.
+- Rx #19's Future adapter selects a private stop channel against `SelectCase.future(shared)`; Java #1193 provides the current-main waiter-detachment primitive and concrete data-only Channel policy, while stacked Java #1218 enforces inferred generic data-only obligations after substitution.
 - Rx #19 adds `send_blocking()/complete_blocking()`, holding one delivery credit through actual Future settlement. The legacy Future-returning sender remains caller-disciplined.
 - Rx #20 is now a clean stack on #19. `CreditPipe<T,E>` uses the same canonical consumer signal, explicit one-event demand credits, serialized state probes, and a three-way producer frame `Result<Option<T>,E>`.
 - Java #1193 tightens concrete ordinary `Channel<T>` payloads to recursively data-only values, rejecting nested callable/runtime/synchronization/cursor/select capabilities, opaque `Object`, and borrows.
-- Java #1200 tracks the remaining generic constraint: reusable `Channel<T>` needs a compiler-level recursively data-only bound so unsafe concrete substitutions cannot hide behind unresolved `T/E`.
+- Java issue #1200's soundness-first requirement is implemented by draft #1218: generic Channel payload obligations are inferred from source usage, propagated to a fixed point, scoped by callable arity, and enforced after concrete substitution. Explicit `T: data`-style surface syntax remains future ergonomics/conformance work.
 
 These are **implementation claims from source review only** until exact-head Java and guest Oreslang jobs execute. Source-org zero-step runner failures are not runtime evidence.
 
@@ -143,7 +143,7 @@ by consumer cancellation. A nested `Result<Option<T>,E>` is the direct
 **Security/progress qualification:** rebased #20 serializes every
 `credit_marked` read/restore probe under a short private `state_busy` gate;
 source audit finds 15/15 probes inside 9 gated windows and no gate spanning
-`await` or `nb select`. Java #1193 also reconciles local Channel policy by
+`await` or `nb select`. Java #1193 + stacked #1218 reconcile local Channel policy by
 recursively rejecting callable and runtime-capability payloads. These are still
 source-level claims: validate owned `T/E` transfer, cancellation races and
 `Channel<Result<Option<T>,E>>` admission on the exact compiler/runtime head
