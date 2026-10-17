@@ -31,6 +31,17 @@ class SchemaFingerprintTests(unittest.TestCase):
                 with self.assertRaises(ConstraintSyntaxError):
                     descriptor(name, identity)
 
+    def test_bare_nominal_has_explicit_full_domain(self):
+        bare_string = descriptor(parse("define newtype Bare(string);"), "app.Bare")
+        bare_int = descriptor(parse("define newtype Bare(int);"), "app.Bare")
+        self.assertEqual(bare_string.minimum, 0)
+        self.assertEqual(bare_string.maximum, (1 << 63) - 1)
+        self.assertEqual(bare_int.minimum, -(1 << 63))
+        self.assertEqual(bare_int.maximum, (1 << 63) - 1)
+        self.assertNotEqual(bare_string.fingerprint, bare_int.fingerprint)
+        self.assertEqual(bare_string.excluded, ())
+        self.assertEqual(bare_string.nominal_identity, "app.Bare")
+
     def test_exclusion_normalization_is_order_independent(self):
         first = descriptor(parse(
             "type X = int with value gte 0 and value lte 100 and value ne 3 and value ne 7;"
