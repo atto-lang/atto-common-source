@@ -93,23 +93,32 @@ Its proposed typed consumer surface is
 `Some(Ok(None))` COMPLETE, `Some(Err(E))` typed terminal ERROR,
 and outer `None` subscriber CANCELLED. This layering preserves
 `T=Option<U>` and `T=Result<U,E2>` *as data* without a string tag.
-The publisher explicitly issues `send`, `complete`, or `fail`;
-ordinary guest `throw`/Future failure is never silently mapped to `Err`.
+The publisher explicitly issues `send`, `complete`, or `fail`, each
+returning a `Future<Option<SelectResult>>` for an asynchronously registered
+write; ordinary guest `throw`/Future failure is never silently mapped to `Err`.
 
 A unique subscriber first `request()`s one credit, then `next_event()`.
-The producer consumes that credit before publishing one event (even terminal).
-Both demand and publication wait via `nb select first`, with a cancellation
-control channel ahead of the data arm. One producer event and one reader pull
-are outstanding. Capacity zero stays true rendezvous. Caller-owned producers
-are not stopped by consumer cancellation.
+The producer **must consume an already issued credit** before publishing one
+event (including terminal); absent credit fails immediately rather than
+registering an unbounded producer waiter. The resulting pending write uses
+`nb select first` with a cancellation control channel ahead of the data arm.
+Only one write and one reader pull are outstanding. Capacity zero stays true
+rendezvous on a single caller task: register the write Future first, consume
+the event, then await the write Future. Caller-owned producers are not stopped
+by consumer cancellation. A nested `Result<Option<T>,E>` is the direct
+`Channel` payload; no class wrapper is necessary.
 
 **Security/progress qualification:** the current source prototype inherits the
 non-atomic `credit_marked` read/restore latch from the existing Rx pattern;
 it is **not** yet evidence of a linearizable producer-vs-cancellation claim.
 Before promoting #20, replace these checks with a runtime atomic state
 primitive or prove a single owner-serialized admission critical section across
-all suspension and preemption boundaries. Validate owned `T/E` transfer and
-`CreditFrame<T,E>` data-only admission. The current `Channel` and
+all suspension and preemption boundaries. Validate owned `T/E` transfer and recursive generic `Channel<Result<Option<T>,E>>` admission.
+**Compatibility drift:** Java main now explicitly allows local Channel
+callables, while the Rx pinned compiler and its existing negative fixtures
+still require data-only channel payloads. Harmonize that policy before
+claiming callable/capability negative parity; preserve stricter actor mailbox
+boundaries independently. The current `Channel` and
 `Future` compiler profiles may still refuse parts of the prototype; that
 must remain a **failing or draft test**, not a documentation-only success.
 
