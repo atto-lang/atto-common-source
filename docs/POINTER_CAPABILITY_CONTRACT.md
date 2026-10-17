@@ -29,6 +29,81 @@ A pointer is dropped exactly once at scope exit if not unwrapped, including exce
 
 The `rt deref mut` spelling requires parser/type/borrow-checker support before admission. The first release can support read-only `deref` and reject `deref mut` explicitly; it MUST NOT silently treat mutable access as permitted. Nested `rt ref` of a pointer and `rt ref` of an existing loan are initially rejected.
 
+## Trusted native raw-pointer escape hatch
+
+Safe `Pointer<T>` deliberately does **not** grow pointer arithmetic. Native and
+embedded targets instead expose a distinct compiler-owned `RawPointer<T>`
+capability for code that has been admitted to an unsafe native memory effect.
+This separation keeps ordinary affine ownership/borrowing sound while still
+allowing device drivers, allocators, intrusive data structures, FFI shims and
+memory-mapped I/O to express operations that require machine addresses.
+
+`RawPointer<T>` is non-owning address authority, not a lifetime extension. It
+MUST NOT be implicitly constructed from an integer, `Pointer<T>`, borrow,
+serialized value, actor message, reflection value or foreign callback. A raw
+pointer created from a managed/arena owner keeps an explicit lease/provenance
+edge to that owner; a pointer created from an integer address is an explicitly
+unbounded trusted operation and receives no safety claim beyond the selected
+target's machine/ABI contract.
+
+### Admission gate
+
+Raw pointer formation, arithmetic, address conversion and dereference require
+**both**:
+
+1. a trusted execution domain (ordinary/private/shared native actor or trusted
+   top-level native code; never `UNTRUSTED`, sandboxed guest, or portable Wasm
+   source), and
+2. an explicit `unsafe.memory` effect/capability in the callable's transitive
+   effect summary.
+
+Backends MAY additionally require a target/profile flag such as an embedded or
+native-FFI build profile. Merely running in a trusted actor is not enough to
+silently acquire raw memory authority.
+
+### Raw operations
+
+The canonical semantic operations are:
+
+| Operation | Contract |
+| --- | --- |
+| `rt raw pointer` | Create a read-capable `RawPointer<T>` view from a stable, live `Pointer<T>`/arena place without consuming the owner. The owner/region cannot retire or move while the raw lease exists. |
+| `rt raw mut pointer` | Create exclusive mutable raw authority; requires no competing shared/mutable loans and blocks owner move/reallocation/retirement. |
+| `RawPointer<T>.from_addr(uintptr)` | Trusted embedded/FFI escape hatch for an externally supplied machine address. Null, width truncation and target address-space mismatches are rejected where representable. |
+| `p + n` / `p - n` | Element-wise offset by signed element count, scaled by `sizeof(T)`, with address-overflow checks. For bounded provenance, out-of-bounds results are rejected before dereference; one-past-end may exist only for comparison/difference, never load/store. |
+| `p.byte_offset(n)` | Byte-wise offset returning byte/raw storage authority; typed dereference requires an explicit aligned cast back to `RawPointer<U>`. |
+| `p - q` | Element distance only when both pointers have compatible element type/address space and the same provenance object; unrelated-address subtraction is rejected/undefined at the unsafe boundary rather than fabricated into a safe integer. |
+| `rt deref p` | Raw read. For bounded provenance, validate live generation, bounds and alignment before access. For integer-fabricated pointers this is explicitly unsafe and target-defined. |
+| `rt deref mut p` | Raw write through exclusive authority; same liveness/bounds/alignment checks when provenance exists. |
+| `p.addr()` | Expose `uintptr` only in `unsafe.memory` code. Integer address values are not pointers and do not retain provenance/lifetime. |
+
+Typed arithmetic uses element counts, not bytes. No implicit wraparound is
+permitted by the language contract even on targets whose machine arithmetic
+wraps; an explicit target-specific unchecked intrinsic, if ever added, must be
+separately named and remain outside safe `Pointer<T>`.
+
+### Actor, ownership and lifetime rules
+
+* `RawPointer<T>` is never `Send`, `Share`, `Serializable` or an actor
+  mailbox payload by default. Copying a raw handle inside the same admitted
+  native scope copies address authority but does not clone/own the pointee.
+* Converting a safe pointer/borrow to raw does not erase the original loan. The
+  compiler tracks the raw lease as a descendant of the same owner/provenance.
+  `rt unref`, owner move/drop, arena retirement, reallocating mutations and
+  hot reload are blocked until all descendant raw leases end.
+* Raw pointers may not cross `await`, `select`, `*_blocking`, callback,
+  generator, actor-turn, thread/isolate or reload boundaries without an
+  explicit pin/stable-region proof plus cancellation/drop cleanup.
+* Untrusted actors must fail at compile/admission time before executable code is
+  emitted, even if the address originated in a trusted caller.
+* FFI/MMIO accesses may require `volatile`, atomic ordering, address-space and
+  alignment qualifiers. Ordinary raw load/store MUST NOT be silently treated as
+  volatile or atomic.
+* Java/Graal may implement this escape hatch only through a reviewed native/FFM
+  bridge with stable-lifetime proof; a Java object reference or moving-GC object
+  address is never a valid `RawPointer<T>` merely because host code can inspect
+  it. LLVM/native backends are the first intended implementation target.
+
 ## Loan provenance and aliasing
 
 Borrow checker tracks a **place identity**, source pointer identity, loan mode, lexical region, concrete projection, generation and drop state through HIR/MIR, including returns, calls, closures, casts, Option/Result, collections and destructuring. Do not infer a fresh owner merely because a Java object is reachable.
