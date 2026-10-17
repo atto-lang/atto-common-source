@@ -188,3 +188,20 @@ than silently interpreting `+/` as a package import.
 Companion work: Java `oreslang-source.java#1082`. Existing private-repo CI
 mirror safeguards still apply; never copy private trees into a public carrier
 to obtain CI minutes.
+
+## Modern-manifest newline integrity
+
+The modern package manifest follows TOML's LF and CRLF line endings. A lone
+CR is not a line separator and must **fail closed** before choosing the
+`[project].root` authority. In particular, a parser which splits only on
+LF but greedily ignores the rest of a `#` comment might otherwise miss a
+second `[project]` table or a conflicting root after a hidden CR.
+
+The shared `namespace_parity_cases` now includes an invalid bare-CR
+comment with a hidden root, an invalid bare-CR at EOF, and a positive CRLF
+configured-root case. Java must use its full TOML parser or an equivalent
+strict validator; .NET, Forge and native LLVM must reject unsupported
+manifest encodings rather than silently defaulting to the manifest parent.
+Wasm must continue to deny an unresolved source graph prior to artifact
+publication. Passing resolver checks remains `resolver-only`, **not**
+linked/native/AOT import parity.
