@@ -9,9 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
-OPS = {"eq": "==", "ne": "!=", "gt": ">", "ge": ">=", "lt": "<", "le": "<=",
+OPS = {"eq": "==", "ne": "!=", "gt": ">", "gte": ">=", "lt": "<", "lte": "<=",
        "==": "==", "!=": "!=", ">": ">", ">=": ">=", "<": "<", "<=": "<="}
-CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gt|ge|lt|le|==|!=|>=|<=|>|<)\s*(-?\d+)\s*\Z")
+CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?\d+)\s*\Z")
 DECL = re.compile(r"\s*type\s+(\w+)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
 NEW = re.compile(r"\s*define\s+newtype\s+(\w+)\s*\(\s*(string|int)\s*\)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
 ANN = re.compile(r"@(?P<name>Size|Length)\s*\((?P<args>[^()]*)\)\s*|@NotEmpty\s*")
@@ -58,7 +58,6 @@ class Refined:
     def entails(self, other: "Refined") -> bool:
         if self.base != other.base or self.nominal or other.nominal:
             return False
-        # Integer interval/equality entailment, including excluded points.
         lo, hi, excluded = _bounds(self.predicates)
         other_lo, other_hi, other_excluded = _bounds(other.predicates)
         if lo < other_lo or hi > other_hi:
