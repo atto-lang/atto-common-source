@@ -6,7 +6,7 @@ from conformance.refinements.reference import parse, ConstraintSyntaxError
 class RefinementReferenceTests(unittest.TestCase):
     def test_equivalent_annotation_and_with(self):
         a = parse("@Size(min=1, max=32) type A = string;")
-        b = parse("type B = string with length ge 1 and length le 32;")
+        b = parse("type B = string with length gte 1 and length lte 32;")
         for value in ("", "a", "😀", "x" * 32, "x" * 33):
             self.assertEqual(a.accepts(value), b.accepts(value))
 
@@ -16,8 +16,20 @@ class RefinementReferenceTests(unittest.TestCase):
         self.assertFalse(r.accepts("e\u0301"))
 
     def test_operator_aliases(self):
-        self.assertEqual(parse("type A = string with length eq 10;").predicates[0].op,
-                         parse("type B = string with length == 10;").predicates[0].op)
+        pairs = [
+            ("eq", "==", "=="),
+            ("ne", "!=", "!="),
+            ("gt", ">", ">"),
+            ("gte", ">=", ">="),
+            ("lt", "<", "<"),
+            ("lte", "<=", "<="),
+        ]
+        for keyword, symbol, normalized in pairs:
+            with self.subTest(keyword=keyword, symbol=symbol):
+                a = parse(f"type A = int with value {keyword} 10;")
+                b = parse(f"type B = int with value {symbol} 10;")
+                self.assertEqual(a.predicates[0].op, normalized)
+                self.assertEqual(b.predicates[0].op, normalized)
 
     def test_implication(self):
         exact = parse("type A = string with length eq 10;")
@@ -44,6 +56,8 @@ class RefinementReferenceTests(unittest.TestCase):
             "@Unknown type A = string;",
             "type A = string with length eq 3.5;",
             "type A = string;",
+            "type A = int with value ge 1;",
+            "type A = int with value le 10;",
         ]
         for source in invalid:
             with self.subTest(source=source):
@@ -51,11 +65,14 @@ class RefinementReferenceTests(unittest.TestCase):
                     parse(source)
 
     def test_numeric_values(self):
-        r = parse("type Percentage = int with value ge 0 and value le 100;")
-        self.assertTrue(r.accepts(0))
-        self.assertTrue(r.accepts(100))
-        self.assertFalse(r.accepts(101))
-        self.assertFalse(r.accepts(True))
+        keyword = parse("type Percentage = int with value gte 0 and value lte 100;")
+        symbols = parse("type Percentage = int with value >= 0 and value <= 100;")
+        for value in (-1, 0, 50, 100, 101):
+            self.assertEqual(keyword.accepts(value), symbols.accepts(value))
+        self.assertTrue(keyword.accepts(0))
+        self.assertTrue(keyword.accepts(100))
+        self.assertFalse(keyword.accepts(101))
+        self.assertFalse(keyword.accepts(True))
 
 
 if __name__ == "__main__":
