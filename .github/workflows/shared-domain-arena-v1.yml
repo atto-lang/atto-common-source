@@ -35,11 +35,11 @@ jobs:
           test "$(git rev-parse --verify HEAD)" = "$EXPECTED_HEAD"
           test -n "$(git rev-parse 'HEAD^{tree}')"
           test -z "$(git status --porcelain --untracked-files=all)"
-          test "$(git hash-object contracts/v1/SHARED_DOMAIN_ARENAS_V1.md)" = "fa301fffc0d3ca7de9b8d776c48696f5b8a60874"
-          test "$(git hash-object contracts/v1/shared_domain_arena_v1.json)" = "74c46cc8ab14b1da635955ea848dd72982e0cd50"
-          test "$(git hash-object scripts/verify_shared_domain_arena_v1.py)" = "c4c046d5a26eebad09f803a9c9b64fa851cb226d"
-          test "$(git hash-object scripts/test_shared_domain_arena_v1.py)" = "f61d3193554cab78680fee7344f712edf38fbcd2"
-      - name: Execute 48 adversarial shared-domain checks in three rounds
+          test "$(git hash-object contracts/v1/SHARED_DOMAIN_ARENAS_V1.md)" = "faed3d896ca66b1293b0e23b24b20b5038676a6c"
+          test "$(git hash-object contracts/v1/shared_domain_arena_v1.json)" = "84594bc0e3e905b0950ac8728997138d66c44b50"
+          test "$(git hash-object scripts/verify_shared_domain_arena_v1.py)" = "ca3f190d1ed89c0800371e226bcf909ce56621bd"
+          test "$(git hash-object scripts/test_shared_domain_arena_v1.py)" = "2f7152411d7ee3da51da76b7cd703ba90ab96fe8"
+      - name: Execute 49 adversarial shared-domain checks in three rounds
         shell: bash
         run: |
           set -euo pipefail
@@ -56,14 +56,14 @@ jobs:
           counts = []
           for round_id in (1, 2, 3):
               suite = unittest.defaultTestLoader.loadTestsFromTestCase(SharedDomainArenaV1Test)
-              if suite.countTestCases() != 48:
+              if suite.countTestCases() != 49:
                   raise SystemExit("shared-domain test inventory differs from pinned 48")
               result = unittest.TextTestRunner(verbosity=1).run(suite)
-              if (result.testsRun != 48 or not result.wasSuccessful()
+              if (result.testsRun != 49 or not result.wasSuccessful()
                       or result.skipped or result.expectedFailures or result.unexpectedSuccesses):
                   raise SystemExit("shared-domain source-free tests failed or skipped")
               counts.append(result.testsRun)
-              print(f"SHARED_DOMAIN_SOURCEFREE_ROUND_{round_id}_PASS=48", flush=True)
+              print(f"SHARED_DOMAIN_SOURCEFREE_ROUND_{round_id}_PASS=49", flush=True)
           Path(os.environ["RUNNER_TEMP"], "shared-domain-rounds.json").write_text(
               json.dumps({"round_counts": counts, "executed_total": sum(counts)}, sort_keys=True))
           PY
@@ -91,7 +91,7 @@ jobs:
                                "shared-domain-rounds.json").read_text())
           if git("rev-parse", "HEAD") != os.environ["EXPECTED_HEAD"]:
               raise SystemExit("receipt HEAD mismatch")
-          if counts != {"round_counts": [48, 48, 48], "executed_total": 144}:
+          if counts != {"round_counts": [49, 49, 49], "executed_total": 147}:
               raise SystemExit("receipt test inventory mismatch")
           receipt = {
               "schema": "oreslang.shared_domain_arena_sourcefree_v1",
@@ -103,7 +103,7 @@ jobs:
               "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
               "git_blobs": blobs,
               "round_counts": counts["round_counts"],
-              "executed_total": 144,
+              "executed_total": 147,
               "source_free_only": True,
               "native_backend_certified": False,
               "guest_runtime_certified": False,
