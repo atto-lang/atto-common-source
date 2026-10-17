@@ -42,9 +42,11 @@ memory-mapped I/O to express operations that require machine addresses.
 MUST NOT be implicitly constructed from an integer, `Pointer<T>`, borrow,
 serialized value, actor message, reflection value or foreign callback. A raw
 pointer created from a managed/arena owner keeps an explicit lease/provenance
-edge to that owner; a pointer created from an integer address is an explicitly
-unbounded trusted operation and receives no safety claim beyond the selected
-target's machine/ABI contract.
+edge to that owner. Native provenance identifies at least the owning region,
+its non-recycled generation/epoch, and the specific allocation/object within
+that region; an arena generation alone is not an allocation identity. A pointer
+created from an integer address is an explicitly unbounded trusted operation
+and receives no safety claim beyond the selected target's machine/ABI contract.
 
 ### Admission gate
 
@@ -196,7 +198,12 @@ Borrow checker tracks a **place identity**, source pointer identity, loan mode, 
 * Calls reserve all argument loans until the whole invocation completes, evaluated left-to-right. A later argument cannot move or unwrap a pointer already borrowed in an earlier argument.
 * No ordinary live pointer-derived borrow over `await`, `select` suspension, `*_blocking` suspend point, `rt cooperate`, generator yield, deferred callbacks or hot reload. A pinned stable owner plus resumable-frame outlives and cancellation proof is required before relaxing this prohibition.
 * No pointer escape to another actor, thread, isolate, channel, stream, Observable, Future, closure, FFI callback or serialization payload by default. Actor-local owner-domain fences and verified Send/freeze/shared-region designs are prerequisites.
-* Runtime generation counters reject stale handles/ABA and cross-region/cross-actor access. Stale or null pointers are not valid safe source states; if encountered at a dynamic trust boundary, trap deterministically as a safety failure, not as an untyped address read.
+* Runtime region + generation + allocation identities reject stale handles,
+  ABA, sibling allocations in the same actor arena, and cross-region/cross-actor
+  access. Generation/allocation counters must fail closed before wrap/reuse can
+  make an old capability equal to a new allocation. Stale or null pointers are
+  not valid safe source states; if encountered at a dynamic trust boundary,
+  trap deterministically as a safety failure, not as an untyped address read.
 
 `rt unref` is *not* a reference-count decrement, a borrow-release primitive, or a spelling of dereference. Lexical loans end automatically by proven scope/last use. A future explicit `rt end_borrow` must consume the loan token and all derived aliases, with no use afterward; do not overload `unref` for that purpose.
 
