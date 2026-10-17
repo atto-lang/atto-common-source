@@ -70,15 +70,15 @@ class Refined:
         if self.nominal or other.nominal:
             if not (self.nominal and other.nominal and self.name == other.name):
                 return False
-        lo, hi, excluded = _bounds(self.predicates)
-        other_lo, other_hi, other_excluded = _bounds(other.predicates)
+        lo, hi, excluded = _bounds(self.predicates, self.base)
+        other_lo, other_hi, other_excluded = _bounds(other.predicates, other.base)
         if lo < other_lo or hi > other_hi:
             return False
         return all(not (lo <= n <= hi and n not in excluded) for n in other_excluded)
 
 
-def _bounds(predicates: tuple[Predicate, ...]) -> tuple[float, float, frozenset[int]]:
-    lo = 0 if predicates and predicates[0].property == "length" else MIN_I64
+def _bounds(predicates: tuple[Predicate, ...], base: str | None = None) -> tuple[int, int, frozenset[int]]:
+    lo = 0 if base == "string" or (base is None and predicates and predicates[0].property == "length") else MIN_I64
     hi = MAX_I64
     excluded = set()
     for p in predicates:
@@ -166,12 +166,12 @@ def parse(source: str) -> Refined:
                 raise ConstraintSyntaxError("unsupported with expression")
             prop, op, bound = c.groups()
             predicates.append(Predicate(prop, OPS[op], int(bound.replace("_", ""))))
-    if not predicates:
+    if not predicates and not nominal:
         raise ConstraintSyntaxError("missing refinement")
     expected = "length" if base == "string" else "value"
     if any(p.property != expected for p in predicates):
         raise ConstraintSyntaxError("property incompatible with base type")
     if any(not MIN_I64 <= p.bound <= MAX_I64 for p in predicates):
         raise ConstraintSyntaxError("refinement bound outside signed int64")
-    _bounds(tuple(predicates))
+    _bounds(tuple(predicates), base)
     return Refined(name, base, nominal, tuple(predicates))
