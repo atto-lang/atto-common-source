@@ -65,14 +65,23 @@ class RefinementReferenceTests(unittest.TestCase):
                     parse(source)
 
     def test_numeric_values(self):
-        keyword = parse("type Percentage = int with value gte 0 and value lte 100;")
-        symbols = parse("type Percentage = int with value >= 0 and value <= 100;")
+        percentage_keyword = parse("type Percentage = int with value gte 0 and value lte 100;")
+        percentage_symbols = parse("type Percentage = int with value >= 0 and value <= 100;")
         for value in (-1, 0, 50, 100, 101):
-            self.assertEqual(keyword.accepts(value), symbols.accepts(value))
-        self.assertTrue(keyword.accepts(0))
-        self.assertTrue(keyword.accepts(100))
-        self.assertFalse(keyword.accepts(101))
-        self.assertFalse(keyword.accepts(True))
+            self.assertEqual(percentage_keyword.accepts(value), percentage_symbols.accepts(value))
+        self.assertTrue(percentage_keyword.accepts(0))
+        self.assertTrue(percentage_keyword.accepts(100))
+        self.assertFalse(percentage_keyword.accepts(101))
+        self.assertFalse(percentage_keyword.accepts(True))
+
+        port_keyword = parse("type Port = int with value gte 1 and value lte 65535;")
+        port_symbols = parse("type Port = int with value >= 1 and value <= 65535;")
+        for value in (0, 1, 443, 65535, 65536):
+            self.assertEqual(port_keyword.accepts(value), port_symbols.accepts(value))
+        self.assertTrue(port_keyword.accepts(1))
+        self.assertTrue(port_keyword.accepts(65535))
+        self.assertFalse(port_keyword.accepts(0))
+        self.assertFalse(port_keyword.accepts(65536))
 
 
 if __name__ == "__main__":
