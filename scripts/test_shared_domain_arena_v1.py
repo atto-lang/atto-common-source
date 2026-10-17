@@ -19,8 +19,8 @@ class SharedDomainArenaV1Test(unittest.TestCase):
             "source_semantics", "backend_support", "cases"
         })
 
-    def test_case_inventory_is_36(self):
-        self.assertEqual(len(CANONICAL["cases"]), 36)
+    def test_case_inventory_is_37(self):
+        self.assertEqual(len(CANONICAL["cases"]), 37)
 
     def test_case_ids_are_unique(self):
         ids = [case["id"] for case in CANONICAL["cases"]]
@@ -98,9 +98,9 @@ for _case_id, _expected in verify.EXPECTED_CASES.items():
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(SharedDomainArenaV1Test)
     result = unittest.TextTestRunner(verbosity=2).run(suite)
-    if result.testsRun != 48:
-        raise SystemExit(f"expected 48 tests, ran {result.testsRun}")
+    if result.testsRun != 49:
+        raise SystemExit(f"expected 49 tests, ran {result.testsRun}")
     if (not result.wasSuccessful() or result.skipped or result.expectedFailures
             or result.unexpectedSuccesses):
         raise SystemExit(1)
-    print("SHARED_DOMAIN_TESTS=48")
+    print("SHARED_DOMAIN_TESTS=49")
