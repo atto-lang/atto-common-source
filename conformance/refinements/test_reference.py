@@ -21,8 +21,10 @@ class RefinementReferenceTests(unittest.TestCase):
             ("ne", "!=", "!="),
             ("gt", ">", ">"),
             ("gte", ">=", ">="),
+            ("ge", ">=", ">="),
             ("lt", "<", "<"),
             ("lte", "<=", "<="),
+            ("le", "<=", "<="),
         ]
         for keyword, symbol, normalized in pairs:
             with self.subTest(keyword=keyword, symbol=symbol):
@@ -56,8 +58,6 @@ class RefinementReferenceTests(unittest.TestCase):
             "@Unknown type A = string;",
             "type A = string with length eq 3.5;",
             "type A = string;",
-            "type A = int with value ge 1;",
-            "type A = int with value le 10;",
         ]
         for source in invalid:
             with self.subTest(source=source):
