@@ -119,6 +119,64 @@ class AdapterModel:
         return True
 
 
+class FutureAdapterModel:
+    """One shared Future producer and independent subscription lifetimes.
+
+    A call to settle() queues notifications; only drain() simulates delivery
+    on the consumer execution lane. This is a host-model admission check,
+    NOT an implementation of the actor scheduler.
+    """
+
+    def __init__(self):
+        self.settlement = None
+        self.subscribers = []
+        self.pending_notifications = []
+        self.producer_cancellations = 0
+
+    def subscribe(self):
+        index = len(self.subscribers)
+        self.subscribers.append({"state": "open", "events": [], "disposals": 0})
+        if self.settlement is not None:
+            self.pending_notifications.append(index)
+        return index
+
+    def cancel(self, index):
+        sub = self.subscribers[index]
+        if sub["state"] != "open":
+            return False
+        sub["state"] = "cancelled"
+        sub["events"].append(("cancelled", None))
+        sub["disposals"] += 1
+        return True  # The Future producer is BORROWED, never cancelled.
+
+    def settle(self, kind, value=None):
+        if kind not in ("success", "error", "cancelled"):
+            raise ProtocolError("invalid Future settlement")
+        if self.settlement is not None:
+            raise ProtocolError("Future settled twice")
+        self.settlement = (kind, value)
+        self.pending_notifications.extend(
+            i for i, sub in enumerate(self.subscribers)
+            if sub["state"] == "open"
+        )
+
+    def drain(self):
+        """No inline callback or resurrection of a cancelled observer."""
+        notifications = self.pending_notifications
+        self.pending_notifications = []
+        for index in notifications:
+            sub = self.subscribers[index]
+            if sub["state"] != "open":
+                continue
+            kind, value = self.settlement
+            if kind == "success":
+                sub["events"].extend((("next", value), ("complete", None)))
+            else:
+                sub["events"].append((kind, value if kind == "error" else None))
+            sub["state"] = "closed"
+            sub["disposals"] += 1
+
+
 class ReactiveProtocolModelTests(unittest.TestCase):
     def test_rendezvous_never_buffers(self):
         m = AdapterModel(0)
@@ -313,6 +371,73 @@ class ReactiveProtocolModelTests(unittest.TestCase):
         m.terminate("error")
         self.assertEqual(m.settle_pull(), ("next", ("Err", "data-error")))
         self.assertEqual(m.next_event(), ("error", None))
+
+    def test_shared_future_is_not_restarted_for_each_subscriber(self):
+        f = FutureAdapterModel()
+        first = f.subscribe()
+        second = f.subscribe()
+        f.settle("success", ("Err", "ordinary-payload"))
+        self.assertEqual(f.subscribers[first]["events"], [])  # no Zalgo
+        f.drain()
+        expected = [("next", ("Err", "ordinary-payload")), ("complete", None)]
+        self.assertEqual(f.subscribers[first]["events"], expected)
+        self.assertEqual(f.subscribers[second]["events"], expected)
+        late = f.subscribe()
+        self.assertEqual(f.subscribers[late]["events"], [])
+        f.drain()
+        self.assertEqual(f.subscribers[late]["events"], expected)
+        self.assertEqual(f.producer_cancellations, 0)
+
+    def test_cancelled_future_observer_detaches_but_producer_survives(self):
+        f = FutureAdapterModel()
+        cancelled = f.subscribe()
+        live = f.subscribe()
+        self.assertTrue(f.cancel(cancelled))
+        self.assertFalse(f.cancel(cancelled))
+        f.settle("success", None)
+        f.drain()
+        self.assertEqual(f.subscribers[cancelled]["events"],
+                         [("cancelled", None)])
+        self.assertEqual(f.subscribers[live]["events"],
+                         [("next", None), ("complete", None)])
+        self.assertEqual([s["disposals"] for s in f.subscribers], [1, 1])
+        self.assertEqual(f.producer_cancellations, 0)
+
+    def test_late_future_callback_cannot_resurrect_cancelled_subscription(self):
+        f = FutureAdapterModel()
+        observer = f.subscribe()
+        f.settle("success", 99)
+        self.assertTrue(f.cancel(observer))
+        f.drain()  # scheduled callback races after owned cancellation
+        self.assertEqual(f.subscribers[observer]["events"],
+                         [("cancelled", None)])
+        self.assertEqual(f.subscribers[observer]["disposals"], 1)
+
+    def test_failed_future_is_terminal_not_result_data(self):
+        f = FutureAdapterModel()
+        observer = f.subscribe()
+        f.settle("error", "upstream")
+        f.drain()
+        self.assertEqual(f.subscribers[observer]["events"],
+                         [("error", "upstream")])
+        with self.assertRaises(ProtocolError):
+            f.settle("success", "second settlement")
+        late = f.subscribe()
+        f.drain()
+        self.assertEqual(f.subscribers[late]["events"],
+                         [("error", "upstream")])
+
+    def test_cancelled_future_and_invalid_settlement(self):
+        f = FutureAdapterModel()
+        observer = f.subscribe()
+        for bad in ("complete", "next", "Err", None):
+            with self.subTest(kind=bad), self.assertRaises(ProtocolError):
+                f.settle(bad)
+        f.settle("cancelled")
+        f.drain()
+        self.assertEqual(f.subscribers[observer]["events"],
+                         [("cancelled", None)])
+        self.assertFalse(f.cancel(observer))
 
     def test_projection_does_not_confuse_blocked_with_end(self):
         m = AdapterModel(0)
