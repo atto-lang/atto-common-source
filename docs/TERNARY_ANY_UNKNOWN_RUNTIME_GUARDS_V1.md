@@ -106,7 +106,7 @@ part of the capability-safety contract, not backend-specific Java behavior.
 
 ## Runtime type guards and narrowing
 
-Recognize built-in `Integer.is_int(v)` as a trusted narrowing intrinsic (or an explicitly compiler-verified predicate annotation), not by ordinary function-name matching or arbitrary user method spoofing. The true successor flow environment refines stable `v` to `int`. The false successor refines `v` to an appropriate complement only where representable; otherwise retains the prior type. Apply it to `if`, `&&`, `||`, `!`, and `? :` consistently.
+Recognize built-in `Integer.is_int(v)` as a trusted narrowing intrinsic (or an explicitly compiler-verified predicate annotation), not by ordinary function-name matching or arbitrary user method spoofing. The proven **true** successor flow environment may refine stable `v` to `int`; the equivalent rule applies to trusted `Double.is_double(v)` and `float`. Stage 1 deliberately narrows only edges that are logically proven: a direct positive guard and the right-hand side / true result of an `&&` chain. The false edge, an `||` true edge, and a negated guard do **not** inherit the positive refinement. Complement/negative refinement may be added later only when the compiler can represent and prove it without uncertainty.
 
 Do not narrow mutable/reassigned or aliased locations across potentially mutating calls, suspension, actor boundaries, callbacks, or parallel effects. For an unstable expression evaluate once to a compiler temporary before testing and subsequently reading it. Preserve definite assignment and nonescaping ownership requirements. Do not treat general user-defined Boolean functions as guards without a separately verified predicate contract.
 
