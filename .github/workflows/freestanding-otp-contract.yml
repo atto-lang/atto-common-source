@@ -4,14 +4,14 @@ on:
     paths:
       - 'contracts/library/v1/otp-portability.json'
       - 'docs/CORE_ALLOC_ACTOR_OTP_BOUNDARY_V1.md'
-      - 'tests/test_otp_portability_contract.py'
+      - 'tests/test_otp_*contract.py'
       - '.github/workflows/freestanding-otp-contract.yml'
   push:
     branches: [main]
     paths:
       - 'contracts/library/v1/otp-portability.json'
       - 'docs/CORE_ALLOC_ACTOR_OTP_BOUNDARY_V1.md'
-      - 'tests/test_otp_portability_contract.py'
+      - 'tests/test_otp_*contract.py'
       - '.github/workflows/freestanding-otp-contract.yml'
 permissions:
   contents: read
@@ -22,4 +22,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate manifest and portability boundaries (metadata only)
-        run: python3 -m unittest discover -s tests -p test_otp_portability_contract.py -v
+        run: python3 -m unittest discover -s tests -p 'test_otp_*contract.py' -v
