@@ -19,7 +19,9 @@ class CreditStreamContractInventory(unittest.TestCase):
         self.assertEqual(manifest["evidence"]["native"], "none")
         for backend, status in manifest["backends"].items():
             with self.subTest(backend=backend):
-                self.assertIn("pending", status.lower() + " pending")
+                self.assertTrue(status.startswith("pending") or
+                                "must fail closed" in status,
+                                f"backend {backend} improperly marked supported: {status}")
 
     def test_typed_four_state_protocol_and_unique_vectors(self):
         manifest = json.loads(MANIFEST.read_text(encoding="utf8"))
