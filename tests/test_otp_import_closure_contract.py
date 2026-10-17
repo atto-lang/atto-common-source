@@ -196,7 +196,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
         units = synthetic_units()
         units["std/otp/event_manager"]["imports"].append("alloc/arena")
         units["alloc/arena"] = {"layer": "alloc", "imports": ["core/scalars"]}
-        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
+        with self.assertRaisesRegex(AdmissionError, "forbidden or unknown layer"):
             audit_closure(units, ["std/otp/event_manager"],
                           allowed_layers={"core", "actor", "otp"},
                           providers=ACTOR_PROVIDERS,
