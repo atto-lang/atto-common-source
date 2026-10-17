@@ -264,3 +264,52 @@ This is a **source-free schema ABI proof**; it is not a claim that guest
 `zorde.schema<T>()`, `T.try_from()` or actor/FFI/codec admission is implemented.
 Native runtime validation must consume generated descriptors rather than
 recalculating constraints from syntax or narrowing signed integers to floats.
+
+## Schema-first validation and inferred Oreslang types (Zod-style direction)
+
+**Decision:** Prefer a *static schema-first* public API as the ergonomic primary
+authoring form. Compile-time annotations, `with` constraints and statically
+known Zorde schema builders are **three source surfaces over ONE canonical
+ConstraintIR**; no second type validator is permitted.
+
+Proposed Oreslang source:
+
+```ores
+namespace app;
+const PortSchema = Zorde.int().min(1).max(65535);
+type Port = Zorde.infer<PortSchema>;
+
+const UsernameSchema = Zorde.string().minLength(3).maxLength(32);
+type Username = Zorde.infer<UsernameSchema>;
+```
+
+`@Range(min=1,max=65535) type Port=int;` and
+`type Port=int with value >= 1 and value <= 65535;` compile to an equivalent
+refinement interval and runtime descriptor. They must have the same acceptance
+results for every int64 value and the same versioned descriptor fingerprint.
+The independent `conformance/refinements/schema_first.py` oracle now checks
+that restricted schema chains lower through the existing reference normalizer;
+it is not an Oreslang execution engine.
+
+**Critical distinction from arbitrary Zod userland callbacks:** Types can be
+derived only from compiler-recognized static `const` schema expressions using
+whitelisted, pure, bounded operators. A schema returned from a normal runtime
+function, closure, network response or mutable variable can validate dynamic
+input, but cannot synthesize a compiler type declaration. Callback refinements
+and `where` require an effect-checked pure predicate compiler before they can
+carry static guarantees.
+
+The full language will distinguish `Schema<Input, Output>` so coercions and
+transformations can change output type without misrepresenting input validity;
+the initial implementation supports no transform/coercion. Inferred structural
+types do not become nominal automatically. Explicit `newtype` or a
+compiler-authorized brand must preserve qualified identity across every
+boundary.
+
+On the Java prototype, `ZordeSchemaGenerator.planSource` already recognizes
+source AST const builder chains and `Zorde.infer<StaticSchema>` aliases,
+produces a deterministic `InferredScalarType`, and rejects runtime methods or
+mutable/shadowed bindings. This remains an **analysis-only** path:
+`OresCompiler.parseAndTypeCheck` intentionally does not admit guest
+`Zorde.infer`/refinement construction until checked runtime and ownership
+lowering exist. LLVM and other backends must fail closed until conformance.
