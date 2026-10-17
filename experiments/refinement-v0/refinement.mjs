@@ -5,7 +5,7 @@ export const { spec, validate, tryFrom, entails, codePoints, ContractError } = (
   const MAX_SOURCE=32768;
   class ContractError extends Error { constructor(code,message){ super(message); this.name="ContractError"; this.code=code; } }
   const fail=(code,message)=>{throw new ContractError(code,message)};
-  const OPS=new Map([["eq","eq"],["==","eq"],["ne","ne"],["!=","ne"],["gt","gt"],[">","gt"],["ge","ge"],[">=","ge"],["lt","lt"],["<","lt"],["le","le"],["<=","le"]]);
+  const OPS=new Map([["eq","eq"],["==","eq"],["ne","ne"],["!=","ne"],["gt","gt"],[">","gt"],["gte","ge"],[">=","ge"],["lt","lt"],["<","lt"],["lte","le"],["<=","le"]]);
   function tokens(input) {
     if(typeof input!=="string" || input.length>MAX_SOURCE) fail("R001","invalid/oversized declaration");
     const out=[]; let i=0;
