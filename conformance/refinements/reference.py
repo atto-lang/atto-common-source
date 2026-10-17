@@ -95,7 +95,10 @@ def _bounds(predicates: tuple[Predicate, ...], base: str | None = None) -> tuple
             hi = min(hi, n - 1)
         elif p.op == "<=":
             hi = min(hi, n)
-    if lo > hi or (lo == hi and lo in excluded):
+    if lo > hi:
+        raise ConstraintSyntaxError("unsatisfiable refinement")
+    excluded = {n for n in excluded if lo <= n <= hi}
+    if lo == hi and lo in excluded:
         raise ConstraintSyntaxError("unsatisfiable refinement")
     # A finite excluded set can exhaust only a domain with at most that
     # many members. Avoid iterating huge ranges or allocating giant lists.
