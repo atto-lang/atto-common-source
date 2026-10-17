@@ -81,7 +81,8 @@
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
-      "executableTestsPassed": false
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/gen_server"
     },
     {
       "module": "supervisor",
@@ -97,7 +98,8 @@
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
-      "executableTestsPassed": false
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/supervisor"
     },
     {
       "module": "gen_statem",
@@ -113,7 +115,8 @@
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
-      "executableTestsPassed": false
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/gen_statem"
     },
     {
       "module": "application",
@@ -128,7 +131,8 @@
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
-      "executableTestsPassed": false
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/application"
     },
     {
       "module": "event_manager",
@@ -143,7 +147,8 @@
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
-      "executableTestsPassed": false
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/event_manager"
     },
     {
       "module": "registry",
@@ -158,7 +163,8 @@
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
-      "executableTestsPassed": false
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/registry"
     }
   ],
   "forbiddenHostEffects": [
@@ -174,5 +180,6 @@
     "clock.ambient",
     "memory.ambient"
   ],
-  "validation": "metadata-only; does not invoke an Oreslang compiler or runtime"
+  "validation": "metadata-only; does not invoke an Oreslang compiler or runtime",
+  "canonicalImportPrefix": "otp/"
 }
