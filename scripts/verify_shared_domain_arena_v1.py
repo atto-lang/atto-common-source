@@ -26,6 +26,7 @@ EXPECTED_CASES = {
     "domain-control-opaque": "deny-fabrication",
     "control-one-shot": "required",
     "foreign-control-denied": "deny",
+    "stale-control-same-address-reuse-denied": "deny-stale",
     "actor-ref-not-domain-capability": "deny",
     "grant-binds-domain": "required",
     "grant-binds-actor": "required",
