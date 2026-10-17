@@ -1,0 +1,29 @@
+name: OTP portable library contract
+
+on:
+  pull_request:
+    paths:
+      - "contracts/otp-library-layout.v1.json"
+      - "docs/OTP_BEHAVIOURS_V1.md"
+      - "docs/OTP_PORTABLE_LIBRARY_BOUNDARY_V1.md"
+      - "tests/test_otp_library_layout_contract.py"
+      - ".github/workflows/otp-library-layout-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/otp-library-layout.v1.json"
+      - "docs/OTP_PORTABLE_LIBRARY_BOUNDARY_V1.md"
+      - "tests/test_otp_library_layout_contract.py"
+      - ".github/workflows/otp-library-layout-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  layout-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python stdlib-only contract tests (not OTP runtime tests)
+        run: python3 -m unittest discover -s tests -p test_otp_library_layout_contract.py -v
