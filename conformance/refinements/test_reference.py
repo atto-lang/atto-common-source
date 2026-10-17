@@ -66,6 +66,50 @@ class RefinementReferenceTests(unittest.TestCase):
                 with self.assertRaises(ConstraintSyntaxError):
                     parse(source)
 
+
+    def test_signed_i64_limits(self):
+        minimum = parse("type Min = int with value eq -9223372036854775808;")
+        self.assertTrue(minimum.accepts(-(1 << 63)))
+        self.assertFalse(minimum.accepts(-(1 << 63) - 1))
+        maximum = parse("type Max = int with value eq 9223372036854775807;")
+        self.assertTrue(maximum.accepts((1 << 63) - 1))
+        self.assertFalse(maximum.accepts(1 << 63))
+        for source in (
+            "type Bad = int with value eq -9223372036854775809;",
+            "type Bad = int with value eq 9223372036854775808;",
+            "type Bad = string with length eq 9223372036854775808;",
+            "type Bad = int with value lt -9223372036854775808;",
+        ):
+            with self.subTest(source=source):
+                with self.assertRaises(ConstraintSyntaxError):
+                    parse(source)
+
+    def test_exclusions_cannot_exhaust_integer_domain(self):
+        for source in (
+            "type Empty = int with value gte 1 and value lte 2 and value ne 1 and value ne 2;",
+            "type Empty = int with value gte -9223372036854775808 and value lte -9223372036854775807 and value ne -9223372036854775808 and value ne -9223372036854775807;",
+        ):
+            with self.subTest(source=source):
+                with self.assertRaises(ConstraintSyntaxError):
+                    parse(source)
+
+    def test_nominal_identity_is_not_erased(self):
+        narrow = parse("define newtype Name(string) with length eq 10;")
+        weak = parse("define newtype Name(string) with length gt 0;")
+        other = parse("define newtype Other(string) with length gt 0;")
+        alias = parse("type Alias = string with length gt 0;")
+        self.assertTrue(narrow.entails(weak))
+        self.assertFalse(weak.entails(narrow))
+        self.assertFalse(narrow.entails(other))
+        self.assertFalse(narrow.entails(alias))
+        self.assertFalse(alias.entails(narrow))
+
+    def test_signed_bounds_and_underscores(self):
+        a = parse("type A = int with value gte -9_223_372_036_854_775_808;")
+        self.assertTrue(a.accepts(-(1 << 63)))
+        with self.assertRaises(ConstraintSyntaxError):
+            parse("type Bad = int with value gte 1__0;")
+
     def test_numeric_values(self):
         percentage_keyword = parse("type Percentage = int with value gte 0 and value lte 100;")
         percentage_symbols = parse("type Percentage = int with value >= 0 and value <= 100;")
