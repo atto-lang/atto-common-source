@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "kind": "oreslang.library.otp-portability",
+  "status": "contract-only",
+  "sourceImplementationAvailable": false,
+  "layers": [
+    {
+      "id": "core",
+      "dependsOn": [],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": []
+    },
+    {
+      "id": "alloc",
+      "dependsOn": [
+        "core"
+      ],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": [
+        "explicit-memory-provider"
+      ]
+    },
+    {
+      "id": "actor",
+      "dependsOn": [
+        "core"
+      ],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": [
+        "scheduler-executor",
+        "bounded-mailbox-storage",
+        "trusted-control-lane"
+      ]
+    },
+    {
+      "id": "otp",
+      "dependsOn": [
+        "core",
+        "actor"
+      ],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": []
+    },
+    {
+      "id": "host-adapter",
+      "dependsOn": [
+        "core"
+      ],
+      "osRequired": true,
+      "heapRequired": false,
+      "requiredProviders": [
+        "explicit-host-capabilities"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "module": "gen_server",
+      "path": "stdlib/otp/gen_server.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.serial",
+        "mailbox.bounded",
+        "reply.oneshot"
+      ],
+      "conditional": [
+        "clock.monotonic",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false
+    },
+    {
+      "module": "supervisor",
+      "path": "stdlib/otp/supervisor.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.lifecycle-authority",
+        "control.authenticated",
+        "restart.bounded"
+      ],
+      "conditional": [
+        "clock.monotonic",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false
+    },
+    {
+      "module": "gen_statem",
+      "path": "stdlib/otp/gen_statem.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.serial",
+        "mailbox.bounded",
+        "transition.typed"
+      ],
+      "conditional": [
+        "clock.monotonic",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false
+    },
+    {
+      "module": "application",
+      "path": "stdlib/otp/application.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.lifecycle-authority",
+        "startup.dependency-order",
+        "startup.rollback"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false
+    },
+    {
+      "module": "event_manager",
+      "path": "stdlib/otp/event_manager.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.serial",
+        "mailbox.bounded",
+        "subscriptions.bounded"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false
+    },
+    {
+      "module": "registry",
+      "path": "stdlib/otp/registry.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.identity",
+        "registry.incarnation-fenced",
+        "registry.bounded"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false
+    }
+  ],
+  "forbiddenHostEffects": [
+    "os",
+    "posix",
+    "linux",
+    "libc",
+    "filesystem",
+    "network",
+    "process",
+    "threads",
+    "java-interop",
+    "clock.ambient",
+    "memory.ambient"
+  ],
+  "validation": "metadata-only; does not invoke an Oreslang compiler or runtime"
+}
