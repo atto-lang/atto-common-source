@@ -3,10 +3,12 @@ on:
   push:
     paths:
       - 'experiments/refinement-v0/**'
+      - 'fixtures/refinement-v1/**'
       - '.github/workflows/refinement-reference.yml'
   pull_request:
     paths:
       - 'experiments/refinement-v0/**'
+      - 'fixtures/refinement-v1/**'
       - '.github/workflows/refinement-reference.yml'
 
 permissions:
@@ -19,4 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run zero-dependency reference-model tests
-        run: node experiments/refinement-v0/refinement.test.mjs
+        run: |
+          node experiments/refinement-v0/refinement.test.mjs
+          node experiments/refinement-v0/contract-fixture.test.mjs
