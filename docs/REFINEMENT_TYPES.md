@@ -35,12 +35,12 @@ At declaration sites, `@Size`, `@Length` and `@NotEmpty` may also constrain type
 ```ores
 type Foo = string with length eq 10;
 type Bar = string with length gt 0;
-type Username = string with length ge 1 and length le 32;
-type Percentage = int with value ge 0 and value le 100;
-type SmallMap = Map[string, int] with size le 100;
+type Username = string with length gte 1 and length lte 32;
+type Percentage = int with value gte 0 and value lte 100;
+type SmallMap = Map[string, int] with size lte 100;
 ```
 
-The supported comparison tokens are `eq`/`==`, `ne`/`!=`, `gt`/`>`, `ge`/`>=`, `lt`/`<`, `le`/`<=`. No other textual aliases are implicit.
+The supported comparison tokens are `eq`/`==`, `ne`/`!=`, `gt`/`>`, `gte`/`>=`, `lt`/`<`, `lte`/`<=`. No other textual aliases are implicit.
 
 `with` contains **only** recognized built-in properties and pure comparisons against compile-time constants, joined with `and`. No `or`, function call, indexing, mutation, arbitrary field projection, or free variables inside `with`. `length` measures logical string code points / sequence elements; `size` measures map entries; `value` refers to the constrained numeric value. A property not supported by the base type is a type error. Invalid comparisons (e.g. an integer length against a string) are type errors.
 
@@ -67,7 +67,7 @@ No general implication solver is promised for arbitrary `where` predicates. A co
 
 ```ores
 define newtype Username(string)
-    with length ge 1 and length le 32;
+    with length gte 1 and length lte 32;
 
 define newtype NonBlank(string)
     where it.trim().length > 0;
@@ -142,7 +142,7 @@ newtype_decl    = annotations? "define" "newtype" IDENT "(" type_expr ")" (with_
 with_clause     = "with" property_cmp ("and" property_cmp)* ;
 property_cmp    = BUILTIN_PROPERTY COMPARATOR compile_time_constant ;
 where_clause    = "where" pure_boolean_expr ;
-COMPARATOR      = "eq" | "ne" | "gt" | "ge" | "lt" | "le"
+COMPARATOR      = "eq" | "ne" | "gt" | "gte" | "lt" | "lte"
                 | "==" | "!=" | ">" | ">=" | "<" | "<=" ;
 ```
 
@@ -153,7 +153,7 @@ For the initial release, use either `with` or `where` per declaration; annotatio
 | Case | Expected |
 | --- | --- |
 | `@Size(min=10,max=10)`, `with length eq 10`, `where it.length == 10` | equivalent valid/invalid string outcomes |
-| `eq 10`, `== 10`, `ge 1`, `>= 1` | operators normalize identically |
+| `eq 10`, `== 10`, `gte 1`, `>= 1` | operators normalize identically |
 | empty string for NonEmpty | compile error if literal; `Err` for dynamic `try_from` |
 | length 10 value to length > 0 alias | allowed when alias/underlying type rules permit |
 | plain dynamic string to NonEmpty | static type error without `try_from` |
@@ -198,9 +198,9 @@ The first mechanical mappings are:
 | --- | --- |
 | string length eq N | min_length=N, max_length=N |
 | string length gt N | min_length=N+1 |
-| string length ge N | min_length=N |
+| string length gte N | min_length=N |
 | string length lt N | max_length=N-1 |
-| string length le N | max_length=N |
+| string length lte N | max_length=N |
 | numeric lower/upper interval | inclusive/exclusive numeric range |
 | sequence length bounds | min_items/max_items |
 
