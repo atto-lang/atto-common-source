@@ -12,6 +12,30 @@ class ProtocolError(ValueError):
     pass
 
 
+def canonical_signal(kind, value=None):
+    """Closed consumer ABI: Result<Option<T>, Option<E>>."""
+    if kind == "next":
+        return ("Ok", ("Some", value))
+    if kind == "complete":
+        return ("Ok", None)
+    if kind == "cancelled":
+        return ("Err", None)
+    if kind == "error":
+        return ("Err", ("Some", value))
+    raise ProtocolError("invalid signal kind")
+
+
+def producer_frame(kind, value=None):
+    """Producer wire frame: Result<Option<T>, E>; no CANCELLED variant."""
+    if kind == "next":
+        return ("Ok", ("Some", value))
+    if kind == "complete":
+        return ("Ok", None)
+    if kind == "error":
+        return ("Err", value)
+    raise ProtocolError("producer frame cannot encode cancellation")
+
+
 class AdapterModel:
     """Bounded, one-writer framed bridge with one unicast subscriber."""
 
@@ -183,6 +207,24 @@ class FutureAdapterModel:
 
 
 class ReactiveProtocolModelTests(unittest.TestCase):
+    def test_canonical_signal_is_four_way_and_sum_safe(self):
+        self.assertEqual(canonical_signal("next", None),
+                         ("Ok", ("Some", None)))
+        self.assertEqual(canonical_signal("next", ("Err", "ordinary-data")),
+                         ("Ok", ("Some", ("Err", "ordinary-data"))))
+        self.assertEqual(canonical_signal("complete"), ("Ok", None))
+        self.assertEqual(canonical_signal("cancelled"), ("Err", None))
+        self.assertEqual(canonical_signal("error", "boom"),
+                         ("Err", ("Some", "boom")))
+
+    def test_producer_frame_has_no_consumer_cancel_variant(self):
+        self.assertEqual(producer_frame("next", None),
+                         ("Ok", ("Some", None)))
+        self.assertEqual(producer_frame("complete"), ("Ok", None))
+        self.assertEqual(producer_frame("error", "boom"), ("Err", "boom"))
+        with self.assertRaises(ProtocolError):
+            producer_frame("cancelled")
+
     def test_rendezvous_never_buffers(self):
         m = AdapterModel(0)
         m.subscribe()
