@@ -17,8 +17,9 @@ OPS = {"eq": "==", "ne": "!=", "gt": ">", "gte": ">=", "lt": "<", "lte": "<=",
 CMP = re.compile(r"\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?[0-9]+(?:_[0-9]+)*)\s*\Z")
 DECL = re.compile(r"\s*type\s+([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
 NEW = re.compile(r"\s*define\s+newtype\s+([A-Za-z_][A-Za-z_0-9]*)\s*\(\s*(string|int)\s*\)\s*(?:with\s+(.+))?\s*;\s*\Z", re.S)
-ANN = re.compile(r"@(?P<name>Size|Length)\s*\((?P<args>[^()]*)\)\s*|@NotEmpty\s*")
-ARG = re.compile(r"\s*(min|max|eq)\s*=\s*([0-9]+(?:_[0-9]+)*)\s*\Z")
+ANN = re.compile(r"@(?P<name>Size|Length|MinLength|MaxLength|Min|Max|Range)\s*\((?P<args>[^()]*)\)\s*|@NotEmpty\s*")
+ARG = re.compile(r"\s*(min|max|eq)\s*=\s*(-?[0-9]+(?:_[0-9]+)*)\s*\Z")
+POSITIONAL = re.compile(r"\s*(-?[0-9]+(?:_[0-9]+)*)\s*\Z")
 
 
 class ConstraintSyntaxError(ValueError):
@@ -121,16 +122,34 @@ def parse(source: str) -> Refined:
         args = match.group("args")
         if not args.strip():
             raise ConstraintSyntaxError("empty constraint annotation")
+        if name in ("MinLength", "MaxLength", "Min", "Max"):
+            scalar = POSITIONAL.fullmatch(args)
+            if not scalar:
+                raise ConstraintSyntaxError("expected exactly one positional integer bound")
+            bound = int(scalar.group(1).replace("_", ""))
+            is_length = name in ("MinLength", "MaxLength")
+            if is_length and bound < 0:
+                raise ConstraintSyntaxError("negative annotation length")
+            annotations.append(Predicate(
+                "length" if is_length else "value",
+                ">=" if name in ("MinLength", "Min") else "<=", bound,
+            ))
+            continue
         seen: set[str] = set()
         for item in args.split(","):
             a = ARG.fullmatch(item)
             if not a or a.group(1) in seen:
                 raise ConstraintSyntaxError("invalid or repeated annotation argument")
             key, bound = a.group(1), int(a.group(2).replace("_", ""))
+            if (name in ("Size", "Length") and bound < 0):
+                raise ConstraintSyntaxError("negative annotation length")
+            if name in ("Size", "Range") and key == "eq":
+                raise ConstraintSyntaxError("annotation only supports min and max")
             seen.add(key)
-            annotations.append(Predicate("length", {"min": ">=", "max": "<=", "eq": "=="}[key], bound))
-        if name == "Size" and "eq" in seen:
-            raise ConstraintSyntaxError("@Size only supports min and max")
+            annotations.append(Predicate(
+                "value" if name == "Range" else "length",
+                {"min": ">=", "max": "<=", "eq": "=="}[key], bound,
+            ))
     nominal = False
     m = DECL.fullmatch(source)
     if m is None:
