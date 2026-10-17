@@ -37,6 +37,24 @@ The explicit override selects a **manifest directory**; it does not rewrite
 the `[project].root` field inside that manifest. Source-file names in the
 manifest remain root-relative, consistent with the existing Java manifest.
 
+## Modern manifest configured-root admission
+
+When a modern `.ores.pkg.toml` selects `[project].root`, the value is
+`.` or a canonical nonempty, forward-slash-only relative path within the
+manifest's directory. Reject absolute paths, parent traversal, redundant
+dot/empty components, backslashes, colon/control characters, missing roots,
+and physical symlink escapes. Nested modern or legacy package manifests
+along either the spelled or physically resolved selected-root path must
+not inherit parent authority. A modern manifest with an incorrectly typed
+known field is invalid, not an instruction to apply default values.
+
+Legacy-manifest migration semantics may remain a separately tracked
+compatibility profile; they must not silently weaken modern package
+isolation. Hosts which lack safe physical-path verification should reject
+unsupported roots before loading source. The new cases in the shared
+`namespace_parity_cases` corpus capture these decisions, including
+dangling nested legacy markers.
+
 ## Nearest manifest and alternate source namespace isolation
 
 **Choose the closest directory containing either manifest marker first.**
