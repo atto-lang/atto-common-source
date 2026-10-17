@@ -5,10 +5,15 @@ raise instead of silently dropping predicates.
 """
 from __future__ import annotations
 
-from conformance.refinements.reference import Refined, ConstraintSyntaxError
+from conformance.refinements.reference import Refined, ConstraintSyntaxError, _bounds
 
 
 def to_zorde_descriptor(refined: Refined) -> dict:
+    # A forbidden value outside the normalized admissible interval has
+    # no runtime effect. Never reject an equivalent schema for inert metadata.
+    _, _, effective_exclusions = _bounds(refined.predicates, refined.base)
+    if effective_exclusions:
+        raise ConstraintSyntaxError("Zorde runtime exclusion rules are not implemented")
     if refined.base == "string":
         lo = 0
         hi = None
@@ -33,8 +38,6 @@ def to_zorde_descriptor(refined: Refined) -> dict:
                 excluded.append(n)
             else:
                 raise ConstraintSyntaxError("unsupported Zorde comparator")
-        if excluded:
-            raise ConstraintSyntaxError("Zorde runtime exclusion rules are not implemented")
         if hi is not None and lo > hi:
             raise ConstraintSyntaxError("unsatisfiable Zorde descriptor")
         return {
@@ -85,7 +88,7 @@ def to_zorde_descriptor(refined: Refined) -> dict:
             elif predicate.op == "<=":
                 tighten_upper(n, False)
             elif predicate.op == "!=":
-                raise ConstraintSyntaxError("Zorde runtime exclusion rules are not implemented")
+                pass  # normalized away if excluded value is out of range
             else:
                 raise ConstraintSyntaxError("unsupported Zorde comparator")
         return {
