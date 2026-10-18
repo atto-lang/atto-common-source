@@ -12,12 +12,13 @@ REQUIRED = {
     "http-inflight-eleventh", "http-start-rate-eleventh", "http-cancel-release",
     "tcp-connection-eleventh", "tcp-connect-failure", "tcp-connection-churn",
     "http-redirect-and-multiplex", "network-permission-and-restart",
+    "late-cancel-no-burst-credit", "revoked-before-dispatch", "allocation-before-quota-charge",
 }
 EXPECTATIONS = {
     "burst-capacity": "rate-limited",
     "sustained-refill": "bounded-refill",
     "atomic-hierarchy": "reject-without-partial-charge",
-    "failed-enqueue": "refund-all-scopes",
+    "failed-enqueue": "rollback-unpublished-only",
     "bytes-and-credits": "reject-without-allocation",
     "clock-rollback": "no-refill",
     "restart-fanout": "stable-lineage-quota",
@@ -34,6 +35,9 @@ EXPECTATIONS = {
     "tcp-connection-churn": "bounded-starts",
     "http-redirect-and-multiplex": "same-egress-gate",
     "network-permission-and-restart": "fail-closed",
+    "late-cancel-no-burst-credit": "no-refund-of-published-start-token",
+    "revoked-before-dispatch": "deny-new-commit-and-release-slot",
+    "allocation-before-quota-charge": "no-leaked-capacity",
 }
 BACKENDS = {"java-graalvm", "llvm", "wasm", "forge", ".net"}
 
@@ -55,6 +59,10 @@ def validate(doc):
     assert policy["default_http_request_starts_per_second"] == 10
     assert policy["default_http_burst"] == 2
     assert policy["default_tcp_max_open_connections"] == 10
+    assert policy["connection_starts_per_second"] == 10
+    assert policy["default_tcp_burst"] == 2
+    assert policy["published_cancel_refunds_start_tokens"] is False
+    assert policy["unpublished_internal_rollback_refunds_start_tokens"] is True
     assert policy["network_capability"] == "explicitly-mediated-only-default-untrusted-denied"
     assert doc["schema_version"] == "untrusted-supervisor-outbound-quota.v1-proposal"
     assert doc["status"] == "contract-only-no-runtime-enforcement-claim"
