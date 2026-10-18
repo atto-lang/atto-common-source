@@ -33,13 +33,13 @@ jobs:
           for round in 1 2 3; do
             python3 -I contracts/v1/actor-hot-reload/verify.py \
               > "$RUNNER_TEMP/hot-reload-round-$round.log" 2>&1
-            grep -q '^Ran 14 tests in' "$RUNNER_TEMP/hot-reload-round-$round.log"
+            grep -q '^Ran 15 tests in' "$RUNNER_TEMP/hot-reload-round-$round.log"
             grep -qx 'OK' "$RUNNER_TEMP/hot-reload-round-$round.log"
             if grep -Eq 'FAILED|skipped|expected failure|unexpected success' "$RUNNER_TEMP/hot-reload-round-$round.log"; then
               cat "$RUNNER_TEMP/hot-reload-round-$round.log"
               exit 1
             fi
-            echo "HOT_RELOAD_SOURCEFREE_ROUND_${round}_PASS=14"
+            echo "HOT_RELOAD_SOURCEFREE_ROUND_${round}_PASS=15"
           done
       - name: Emit source-free-only exact-head receipt
         env:
@@ -68,7 +68,7 @@ jobs:
           for i in (1, 2, 3):
               path = Path(os.environ["RUNNER_TEMP"]) / f"hot-reload-round-{i}.log"
               data = path.read_bytes()
-              if b"Ran 14 tests in" not in data or b"\nOK\n" not in data:
+              if b"Ran 15 tests in" not in data or b"\nOK\n" not in data:
                   raise SystemExit("missing executed unittest result")
               logs.append(hashlib.sha256(data).hexdigest())
           record = {
@@ -80,7 +80,7 @@ jobs:
               "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
               "git_blobs": blobs,
               "round_log_sha256": logs,
-              "tests_executed": 42,
+              "tests_executed": 45,
               "source_free_only": True,
               "actual_oreslang_compiler_executed": False,
               "actual_oreslang_runtime_executed": False,
