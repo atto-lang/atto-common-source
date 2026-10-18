@@ -1,0 +1,73 @@
+{
+  "schema_version": "untrusted-supervisor-outbound-quota.v1-proposal",
+  "status": "contract-only-no-runtime-enforcement-claim",
+  "pending_backends": [
+    "java-graalvm",
+    "llvm",
+    "wasm",
+    "forge",
+    ".net"
+  ],
+  "cases": [
+    {
+      "id": "burst-capacity",
+      "scenario": "initial bucket capacity five accepts five at t=0 then rejects the sixth",
+      "expect": "rate-limited"
+    },
+    {
+      "id": "sustained-refill",
+      "scenario": "after one second with rate 20/sec, refill capped by burst and never exceeds capacity",
+      "expect": "bounded-refill"
+    },
+    {
+      "id": "atomic-hierarchy",
+      "scenario": "actor allows but supervisor or tenant denies: all scopes unchanged by rejected reservation",
+      "expect": "reject-without-partial-charge"
+    },
+    {
+      "id": "failed-enqueue",
+      "scenario": "reservation succeeds but message copy or mailbox enqueue fails",
+      "expect": "refund-all-scopes"
+    },
+    {
+      "id": "bytes-and-credits",
+      "scenario": "payload or outstanding credit would exceed configured capacity",
+      "expect": "reject-without-allocation"
+    },
+    {
+      "id": "clock-rollback",
+      "scenario": "trusted monotonic sample lower than last observed",
+      "expect": "no-refill"
+    },
+    {
+      "id": "restart-fanout",
+      "scenario": "child restarts or spawns descendants without privileged policy update",
+      "expect": "stable-lineage-quota"
+    },
+    {
+      "id": "forged-source",
+      "scenario": "guest-provided sender id, route or quota object conflicts with trusted actor execution context",
+      "expect": "capability-denied"
+    },
+    {
+      "id": "alternate-transport",
+      "scenario": "guest uses respond/output/FFI IPC to target same supervisor instead of send",
+      "expect": "same-quota-gate"
+    },
+    {
+      "id": "runtime-panic",
+      "scenario": "genuine runtime panic under exhausted user budget",
+      "expect": "bounded-control-delivery"
+    },
+    {
+      "id": "forged-panic",
+      "scenario": "guest tries to craft a runtime panic/exit envelope",
+      "expect": "capability-denied"
+    },
+    {
+      "id": "retire-race",
+      "scenario": "send races parent close and outstanding reservation release",
+      "expect": "fail-closed-and-once-only-settlement"
+    }
+  ]
+}
