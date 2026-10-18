@@ -159,6 +159,35 @@ files = ["src/billing/billing.ores"]
 7. **Build integrity:** refuse unrecognized schema version 2 until implemented; no silent fallback to schema 1. A manifest grouping must be pinned with the dependency graph; imported source content is not allowed to spoof a group's manifest authority.
 8. **Core/no-std:** package accessibility is a compile/link rule requiring no OS or allocator in the runtime, preserving freestanding core builds.
 
+## Reference tests, filesystem hardening and CI evidence
+
+Source-free test commands:
+
+```sh
+python3 scripts/verify_package_visibility_contract.py
+python3 scripts/test_package_membership_reference.py
+```
+
+The second command uses a temporary synthetic source tree and checks path
+traversal, duplicate/overlapping membership, same-name distinct dependency
+instances, singleton defaults, symlinks (both internal and out-of-root),
+hardlinks, nested modern/legacy manifests, dangling markers, Unicode NFC,
+control characters, missing paths, and invalid schema/table types.
+It is a *reference model*, **not** the production parser, typechecker, linker,
+or runtime, and **must never be used as the production filesystem sandbox**.
+A production implementation needs descriptor-relative traversal plus
+TOCTOU-resistant admission and immutable source snapshots. A passing local
+reference suite does not establish LLVM/JVM compiler or actor/ABI parity.
+
+Private-source CI transfers must follow the protected source repository's
+independently reviewed destination allowlist and private/private preflight.
+An arbitrary test organization's available GitHub Actions minutes,
+`GITHUB_TOKEN` and a temporary mirrored Git-tree branch do **not** waive
+those controls. Source-local zero-step runner failures are not compiler test
+failures or successful test evidence. This RFC's proposed schema v2 remains
+unsupported until an actual compiler admits it and executed tests prove
+the binding across syntax, manifest ownership and imports.
+
 ## Implementation sequence and conformance gates
 
 - **Contract:** this specification and `contracts/package-visibility-multifile-v1.json` define admission cases and unresolved implementation status.
