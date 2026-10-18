@@ -4,6 +4,8 @@
 is byte-identical to the source fixture reviewed in `oreslang-source.wasm`
 (`contracts/v1/numeric-parity/source-i64-cases.json`, blob
 `bbc319c19ecd007109d33592e210091eb267e5a2`).
+The fixture's 999 exact bytes are also pinned independently with SHA-256
+`39bddbe558ad1c336271f91e6403c4555f2f16a7ed33a3355ee897721b6ab02a`. Both digests must match.
 
 These seven source expressions exercise operator precedence, grouping, checked
 signed arithmetic and signed limits. All intermediate values must be within
