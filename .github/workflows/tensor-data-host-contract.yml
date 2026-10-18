@@ -1,0 +1,29 @@
+name: Proposed tensor/data/ML actor pipeline protocol (host-only)
+on:
+  pull_request:
+    paths:
+      - "contracts/v1/tensor-data/**"
+      - "docs/TENSOR_DATA_ML_ACTOR_PIPELINES_V1.md"
+      - "tests/tensor-data-delivery-contract.test.mjs"
+      - ".github/workflows/tensor-data-host-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run deterministic bounded ledger/checkpoint state machine
+        run: node --test tests/tensor-data-delivery-contract.test.mjs
+      - name: Validate JSON Schema structural syntax
+        run: python3 -m json.tool contracts/v1/tensor-data/tensor-data-envelope.schema.json > /dev/null
+      - name: Clearly identify missing equivalence and guest execution gates
+        run: |
+          echo "HOST_ONLY; guestExecution=NOT_EXECUTED"
+          echo "TypeSpec_vs_JSON_Schema=UNVERIFIED; WIT_mapping=UNVERIFIED"
+          echo "RW_actor_runtime=NOT_EXECUTED; durable_sink=NOT_EXECUTED"
