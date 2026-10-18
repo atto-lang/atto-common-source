@@ -1,0 +1,91 @@
+// Cross-backend executable guest fixtures. This file MUST be run by the
+// actual Oreslang Java and LLVM compilers before it is counted as parity.
+import module ipc_receipts from "../experiments/ipc_receipts.ores";
+
+pub routine main(): void {
+  val key = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 7, 10,
+    "sessionA", 1, 1, 2, "sha-a"
+  );
+  val admitted = ipc_receipts.initially_admitted(key);
+  stdio.println(admitted.is_ok());
+
+  val first = admitted.unwrap();
+  stdio.println(first.stage == ipc_receipts.local_admitted());
+
+  // Authenticated remote receipt is NOT completion of the handler turn.
+  val remote = ipc_receipts.advance(first, key, ipc_receipts.remote_accepted(), true);
+  stdio.println(remote.is_ok());
+  stdio.println(remote.unwrap().stage != ipc_receipts.handler_committed());
+
+  val completed = ipc_receipts.advance(
+    remote.unwrap(), key, ipc_receipts.handler_committed(), true
+  );
+  stdio.println(completed.is_ok());
+  stdio.println(ipc_receipts.advance(
+    completed.unwrap(), key, ipc_receipts.handler_committed(), true
+  ).is_err());
+
+  // False remote-admission failure after authenticated acceptance is denied.
+  stdio.println(ipc_receipts.advance(
+    remote.unwrap(), key, ipc_receipts.rejected_before_remote(), true
+  ).is_err());
+  stdio.println(ipc_receipts.advance(
+    first, key, ipc_receipts.handler_failed(), true
+  ).is_err());
+
+  // Before remote acceptance, definitive no-admission is legal.
+  stdio.println(ipc_receipts.advance(
+    first, key, ipc_receipts.rejected_before_remote(), true
+  ).is_ok());
+
+  // Unknown is terminal and never authorizes replay.
+  val unknown = ipc_receipts.advance(
+    remote.unwrap(), key, ipc_receipts.outcome_unknown(), true
+  );
+  stdio.println(unknown.is_ok());
+  stdio.println(ipc_receipts.advance(
+    unknown.unwrap(), key, ipc_receipts.remote_accepted(), true
+  ).is_err());
+
+  // Caller cannot assert that an unauthenticated reply is trusted.
+  stdio.println(ipc_receipts.advance(
+    first, key, ipc_receipts.remote_accepted(), false
+  ).is_err());
+
+  val wrong = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 8, 10,
+    "sessionA", 1, 1, 2, "sha-a"
+  );
+  stdio.println(ipc_receipts.advance(
+    first, wrong, ipc_receipts.remote_accepted(), true
+  ).is_err());
+
+  // Hot code/route changes preserve logical order in one actor incarnation.
+  val newer = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 7, 11,
+    "sessionB", 2, 1, 3, "sha-b"
+  );
+  stdio.println(ipc_receipts.may_admit_after(key, newer));
+
+  val rollback_route = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 7, 9,
+    "sessionB", 2, 1, 3, "sha-b"
+  );
+  stdio.println(!ipc_receipts.may_admit_after(key, rollback_route));
+
+  val rollback_capability = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 7, 11,
+    "sessionB", 2, 1, 1, "sha-b"
+  );
+  stdio.println(!ipc_receipts.may_admit_after(key, rollback_capability));
+
+  // Reject invalid identity and stale sequence; never silently coerce.
+  val invalid = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 7, 10,
+    "sessionA", 0, 1, 2, "sha-a"
+  );
+  stdio.println(ipc_receipts.initially_admitted(invalid).is_err());
+  stdio.println(!ipc_receipts.may_admit_after(key, key));
+  return;
+}
