@@ -123,6 +123,14 @@ class MemoryProfileEvidenceTest(unittest.TestCase):
         with self.assertRaisesRegex(gate.MemoryEvidenceError, "duplicate JSON field"):
             gate.parse_json('{"metrics":{"tracing_gc_invocations":0,"tracing_gc_invocations":1}}')
 
+    def test_unregistered_evidence_fields_rejected(self):
+        self.reject("llvm-native", lambda r: r["proofs"].update(extra_proof=True))
+        self.reject("wasm32-core", lambda r: r["metrics"].update(extra_metric=0))
+        self.reject("graal-native-image", lambda r: r.update(extra_field=True))
+        self.reject("graal-jvm", lambda r: r["metrics"].pop("jvm_gc_invocations"))
+        for name in MANIFEST["profiles"]:
+            self.assertEqual(name, gate.check_record(MANIFEST, synthetic_record(name)))
+
     def test_extra_manifest_proof_not_silently_ignored(self):
         manifest = copy.deepcopy(MANIFEST)
         manifest["shared_proofs"].append("new_mandatory_borrow_boundary")
