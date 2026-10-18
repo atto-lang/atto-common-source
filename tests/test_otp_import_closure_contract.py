@@ -64,9 +64,21 @@ def audit_closure(units, roots, *, allowed_layers, providers=(),
             raise AdmissionError("forbidden or unknown layer: " + str(layer))
         if not set(LAYERS[layer]["requiredProviders"]) <= providers:
             raise AdmissionError("missing layer provider: " + name)
-        if not set(unit.get("requires", [])) <= features:
+        # This remains a reference model, but malformed metadata must never
+        # be treated as an empty/iterable string list or raise an uncontrolled
+        # TypeError. A real compiler must additionally authenticate provenance.
+        def bounded_names(key):
+            raw = unit.get(key, [])
+            if not isinstance(raw, (list, tuple)) or len(raw) > 256:
+                raise AdmissionError("invalid source " + key + ": " + name)
+            if any(not isinstance(x, str) or not x or len(x) > 512 for x in raw):
+                raise AdmissionError("invalid source " + key + ": " + name)
+            if len(set(raw)) != len(raw):
+                raise AdmissionError("duplicate source " + key + ": " + name)
+            return set(raw)
+        if not bounded_names("requires") <= features:
             raise AdmissionError("missing feature: " + name)
-        effects = set(unit.get("effects", []))
+        effects = bounded_names("effects")
         if layer in PORTABLE_LAYERS and effects & FORBIDDEN_HOST_EFFECTS:
             raise AdmissionError("portable host effect: " + name)
         if not effects <= allowed_effects:
@@ -183,6 +195,22 @@ class ImportClosureReferenceTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
             audit_closure(units, ["core/leaky"], allowed_layers={"core"})
+
+    def test_malformed_effect_and_feature_metadata_fail_closed(self):
+        for field, malformed in (
+                ("effects", "network"), ("effects", [123]),
+                ("effects", [["network"]]), ("effects", ["os", "os"]),
+                ("requires", "actor.serial"),
+                ("requires", ["actor.serial", "actor.serial"]),
+                ("requires", ["x"] * 257)):
+            units = synthetic_units()
+            units["core/scalars"][field] = malformed
+            with self.subTest(field=field, malformed=str(malformed)[:60]):
+                with self.assertRaisesRegex(AdmissionError, "invalid|duplicate"):
+                    audit_closure(units, ["core/scalars"],
+                                  allowed_layers={"core"},
+                                  features={"actor.serial"},
+                                  allowed_effects={"network"})
 
     def test_unknown_import_rejected_and_no_host_fallback(self):
         units = synthetic_units()
