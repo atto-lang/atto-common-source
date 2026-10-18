@@ -191,3 +191,27 @@ native full-CTest and sanitizer execution; real `.ores` source-to-AOT actor
 ownership/deterministic-drop parity; Wasm worker execution; real Cortex-M QEMU
 and firmware binary closure; measured GraalVM JVM and Native Image resource
 allocation and GC pause-tail evidence.
+
+
+### Cross-layout native heap handle identities and exhaustion (October 17 evening)
+
+LLVM actor graph [PR #596](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/596)
+now mints graph heap IDs from a shared non-template monotonic atomic source.
+This fixes collisions between different `ActorOwnedGraphHeap<N, B, L>`
+specializations that otherwise start counters at the same value.
+The maximum `uint64_t` heap ID is issued at most once, followed by a
+permanent zero sentinel; further minting throws, not wraps to a reused ID.
+No source `.ores` or cross-process capability security is implied by the
+numeric ID alone.
+
+The C++ native CTest adds 128 cross-layout forged-handle negative checks,
+4096 racing cross-layout heap constructions and near-overflow unit cases.
+Standalone harnesses using *exact blob SHA*
+`dd23f57ec8c16fff1f35276ebdbeeceb0651e8ae` passed GCC TSan
+(4096 constructor races), Clang ASan/UBSan (uint64 boundary and 10002
+sequential cross-layout IDs), and Clang ASan/UBSan (150000 graph model
+operations). The last recorded LLVM exact-head GitHub Actions run
+`39097728303` still executed **zero steps**. Do not promote these
+local-header test results into compiled-language, executable-binary or
+production no-GC evidence. Multi-DSO runtimes need a host-assigned,
+stable runtime-instance identity as an additional namespace.
