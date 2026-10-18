@@ -17,7 +17,8 @@
     "state_version",
     "inbox_cursor",
     "state",
-    "pending_operations"
+    "pending_operations",
+    "snapshot_digest"
   ],
   "properties": {
     "format_version": {
@@ -25,19 +26,23 @@
     },
     "tenant_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "workflow_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "run_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "node_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "state_schema_version": {
       "type": "integer",
@@ -45,7 +50,8 @@
     },
     "code_generation": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "activation_epoch": {
       "type": "integer",
@@ -76,15 +82,18 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "\\S"
           },
           "kind": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "\\S"
           },
           "idempotency_key": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "pattern": "\\S"
           },
           "status": {
             "enum": [
@@ -95,14 +104,16 @@
             ]
           },
           "receipt_ref": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           }
         }
       }
     },
     "snapshot_digest": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 of RFC 8785 JSON Canonicalization Scheme (JCS) serialization of the complete snapshot envelope with snapshot_digest omitted."
     }
   }
 }
