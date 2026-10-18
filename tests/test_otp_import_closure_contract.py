@@ -36,16 +36,29 @@ def audit_closure(units, roots, *, allowed_layers, providers=(),
     providers = set(providers)
     features = set(features)
     allowed_effects = set(allowed_effects)
-    visited, visiting = set(), set()
+    # The source language may have legal cyclic import graphs. Rejecting every
+    # graph cycle here would incorrectly conflate import closure with the
+    # separate compiler decision about cyclic static initialization.
+    #
+    # Bound work before dependency expansion and use an explicit stack rather
+    # than Python recursion, including on adversarial generated-source graphs.
+    visited = set()
+    pending = list(roots)
+    edges = 0
+    if len(pending) > 4096:
+        raise AdmissionError("too many import roots")
 
-    def visit(name):
-        if name in visiting:
-            raise AdmissionError("dependency cycle: " + name)
+    while pending:
+        name = pending.pop()
         if name in visited:
-            return
+            continue
         if name not in units:
-            raise AdmissionError("unknown import: " + name)
+            raise AdmissionError("unknown import: " + str(name))
+        if len(visited) >= 4096:
+            raise AdmissionError("import closure exceeds 4096 units")
         unit = units[name]
+        if not isinstance(unit, dict):
+            raise AdmissionError("invalid source unit: " + str(name))
         layer = unit.get("layer")
         if layer not in LAYERS or layer not in allowed_layers:
             raise AdmissionError("forbidden or unknown layer: " + str(layer))
@@ -58,21 +71,27 @@ def audit_closure(units, roots, *, allowed_layers, providers=(),
             raise AdmissionError("portable host effect: " + name)
         if not effects <= allowed_effects:
             raise AdmissionError("forbidden effect: " + name)
-        visiting.add(name)
+
+        imported = unit.get("imports", [])
+        if not isinstance(imported, (list, tuple)) or len(imported) > 256:
+            raise AdmissionError("invalid or excessive imports: " + name)
         permitted = (set(LAYERS[layer]["dependsOn"]) |
                      set(LAYERS[layer].get("optionalDependsOn", [])) |
                      {layer})
-        for dep in unit.get("imports", []):
-            if dep not in units:
-                raise AdmissionError("unknown import: " + dep)
+        for dep in imported:
+            edges += 1
+            if edges > 65536:
+                raise AdmissionError("import closure exceeds 65536 edges")
+            if not isinstance(dep, str) or dep not in units:
+                raise AdmissionError("unknown import: " + str(dep))
+            if not isinstance(units[dep], dict):
+                raise AdmissionError("invalid imported unit: " + dep)
             if units[dep].get("layer") not in permitted:
                 raise AdmissionError("forbidden layer edge: " + name + " -> " + dep)
-            visit(dep)
-        visiting.remove(name)
+            if dep not in visited:
+                pending.append(dep)
         visited.add(name)
 
-    for root in roots:
-        visit(root)
     return frozenset(visited)
 
 
@@ -171,11 +190,58 @@ class ImportClosureReferenceTests(unittest.TestCase):
         with self.assertRaisesRegex(AdmissionError, "unknown import"):
             audit_closure(units, ["core/scalars"], allowed_layers={"core"})
 
-    def test_cycle_rejected(self):
+    def test_legal_import_cycle_terminates_without_skipping_closure(self):
         units = synthetic_units()
-        units["core/scalars"]["imports"] = ["core/scalars"]
-        with self.assertRaisesRegex(AdmissionError, "dependency cycle"):
+        units["core/scalars"]["imports"] = ["core/helpers"]
+        units["core/helpers"] = {
+            "layer": "core", "imports": ["core/scalars"],
+        }
+        self.assertEqual(
+            audit_closure(units, ["core/scalars"], allowed_layers={"core"}),
+            frozenset({"core/scalars", "core/helpers"}),
+        )
+
+    def test_cyclic_import_does_not_hide_forbidden_layer_edge(self):
+        units = synthetic_units()
+        units["core/scalars"]["imports"] = ["core/helpers"]
+        units["core/helpers"] = {
+            "layer": "core", "imports": ["core/scalars", "actor/mail"],
+        }
+        with self.assertRaisesRegex(AdmissionError, "forbidden layer edge"):
             audit_closure(units, ["core/scalars"], allowed_layers={"core"})
+
+    def test_deep_import_chain_avoids_recursive_stack_overflow(self):
+        units = {
+            "core/" + str(i): {
+                "layer": "core",
+                "imports": [] if i == 2999 else ["core/" + str(i + 1)],
+            }
+            for i in range(3000)
+        }
+        self.assertEqual(
+            len(audit_closure(units, ["core/0"], allowed_layers={"core"})),
+            3000,
+        )
+
+    def test_import_fanout_and_closure_size_are_bounded(self):
+        units = {"core/root": {
+            "layer": "core",
+            "imports": ["core/" + str(i) for i in range(257)],
+        }}
+        for i in range(257):
+            units["core/" + str(i)] = {"layer": "core"}
+        with self.assertRaisesRegex(AdmissionError, "excessive imports"):
+            audit_closure(units, ["core/root"], allowed_layers={"core"})
+
+        chain = {
+            "core/" + str(i): {
+                "layer": "core",
+                "imports": [] if i == 4096 else ["core/" + str(i + 1)],
+            }
+            for i in range(4097)
+        }
+        with self.assertRaisesRegex(AdmissionError, "exceeds 4096 units"):
+            audit_closure(chain, ["core/0"], allowed_layers={"core"})
 
     def test_ambient_host_effect_rejected_even_in_core_unit(self):
         units = synthetic_units()
