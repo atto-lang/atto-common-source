@@ -98,6 +98,46 @@ class LedgerTests(unittest.TestCase):
         with self.assertRaises(AdmissionError):
             env(sender_incarnation=True)
 
+    def test_failed_means_proven_no_remote_admission_only(self):
+        ledger=BoundedLedger(capacity=1); message=env(); ledger.admit(message)
+        ledger.transition(message, Stage.REMOTE_ACCEPTED, authenticated=True)
+        with self.assertRaises(AdmissionError):
+            ledger.transition(message, Stage.FAILED, authenticated=True)
+        self.assertEqual(ledger.in_flight, 1)
+        self.assertEqual(ledger.transition(message, Stage.HANDLER_FAILED,
+                                           authenticated=True), Stage.HANDLER_FAILED)
+        self.assertEqual(ledger.in_flight, 0)
+        self.assertTrue(ledger.invariant())
+
+    def test_handler_failed_cannot_claim_pre_admission_terminal(self):
+        ledger=BoundedLedger(capacity=1); message=env(); ledger.admit(message)
+        with self.assertRaises(AdmissionError):
+            ledger.transition(message, Stage.HANDLER_FAILED, authenticated=True)
+        self.assertTrue(ledger.invariant())
+
+    def test_route_epoch_and_capability_generation_cannot_rollback(self):
+        ledger=BoundedLedger(capacity=2); first=env(); ledger.admit(first)
+        for changes in (dict(message_sequence=2, route_epoch=7),
+                        dict(message_sequence=2, capability_generation=1)):
+            with self.subTest(changes=changes), self.assertRaises(AdmissionError):
+                ledger.admit(env(**changes))
+        ledger.admit(env(message_sequence=2,route_epoch=9,capability_generation=3))
+        ledger.transition(first, Stage.REMOTE_ACCEPTED, authenticated=True)
+        ledger.transition(first, Stage.HANDLER_COMMITTED, authenticated=True)
+        self.assertTrue(ledger.invariant())
+
+    def test_denied_admission_never_consumes_sequence_or_credits(self):
+        ledger=BoundedLedger(capacity=1)
+        one=env(); two=env(message_sequence=2,route_epoch=9)
+        ledger.admit(one)
+        with self.assertRaises(AdmissionError):
+            ledger.admit(two)
+        self.assertEqual(ledger._last_seq,1)
+        ledger.transition(one,Stage.UNKNOWN,authenticated=True)
+        ledger.admit(two)
+        self.assertEqual(ledger._last_seq,2)
+        self.assertTrue(ledger.invariant())
+
     def test_transport_loss_is_unknown_not_definitive_failure(self):
         ledger=BoundedLedger(capacity=1); msg=env(); ledger.admit(msg)
         self.assertEqual(ledger.transition(msg,Stage.UNKNOWN,authenticated=True),
