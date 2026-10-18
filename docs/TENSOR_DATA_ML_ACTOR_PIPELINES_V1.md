@@ -85,7 +85,7 @@ Future gate: generate a JSON Schema witness from TypeSpec, compare the two in me
 
 ## Validation and release gates
 
-`tests/tensor-data-delivery-contract.test.mjs` is a **host-only** model covering independent partitions, count/byte backpressure, stale epochs and lease rejection, descriptor/overflow, idempotent ACK, replay tampering, monotonic watermarks, snapshot/restart and cancellation. Isolated V8 execution at publication: **10/10 tests, 6,067 assertions**. It does not hold a real Oreslang actor RW ticket or durable sink.
+`tests/tensor-data-delivery-contract.test.mjs` is a **host-only** model covering independent partitions, count/byte backpressure, stale epochs and lease rejection, descriptor/overflow, idempotent ACK, replay tampering, monotonic watermarks, snapshot/restart and cancellation. Isolated V8 execution at publication: **12/12 tests, 6,079 assertions**. It does not hold a real Oreslang actor RW ticket or durable sink.
 
 **P0**: Java/Graal source compiler consumes canonical `state`+`with`+`using` syntax and runs a bounded DATA pipeline from source with actual tensors; verify exact-tree Maven, Native Image and fail-closed negative diagnostics.
 
@@ -98,3 +98,15 @@ Future gate: generate a JSON Schema witness from TypeSpec, compare the two in me
 **P4**: Deterministic shuffling, event-time windows, checkpointed cursor and sink transactions, 1F1B training, tensor/data parallel sharding, CPU/NUMA/GPU placement and authenticated remote actors.
 
 Do not mirror private repository trees to another organization without an authorized private destination. A source-free numerical oracle, schema validator, TypeSpec witness or documentation page cannot replace an executed Oreslang compiler/runtime milestone.
+
+## Audit hardening: bounded replay receipts (October 18)
+
+The initial host reference model admitted an unbounded ACK-receipt map and used the JavaScript safe-integer range for tensor extents, whereas the independently authored schema caps row/stride values and byte lengths at 2,147,483,647. These were real semantic gaps. They are now corrected in the host ledger:
+
+- `maxReceipts` is a required bounded accounting domain (default 1,024). Admission **reserves** a future receipt slot before consuming tensor byte/item credits; the ACK can then publish its receipt and release credits without receipt-memory exhaustion.
+- If the receipt budget is full, reject new DATA with `DATA_RECEIPT_BACKPRESSURE`. Do not silently evict recent dedup records or claim at-most-once application without an authenticated durable checkpoint.
+- To resume indefinitely, a later milestone must implement trusted **durable receipt compaction and epoch transition**. A local checkpoint object alone is insufficient to authorize old-receipt eviction. Future snapshots must also enforce integrity and bounded restore sizes.
+- Rank-2 row/column extents, strides and byte length now match the JSON Schema integer caps in the host semantic validator. A JSON Schema string field is not an authority for a storage lease or digest identity.
+- Latest isolated host reference: **12/12 tests, 6,079 assertions**. These are still not Java/LLVM compiled actor or TypeSpec emitter tests.
+
+Never confuse a passing host state-machine test with a verified RW-lock implementation, durable exactly-once transport, tensor autograd guest run or model convergence.
