@@ -133,6 +133,21 @@
       "id": "untrusted-raw-native-io",
       "scenario": "untrusted actor turn invokes ordinary Java NativeIo outbound HTTP or TCP despite an attempted future capability expansion",
       "expect": "broker-required"
+    },
+    {
+      "id": "http-caller-future-cancel-isolated",
+      "scenario": "guest or caller cancels result future while the trusted HTTP exchange remains active: only host transport completion may free the in-flight permit",
+      "expect": "host-owned-completion"
+    },
+    {
+      "id": "tcp-transport-close-settlement",
+      "scenario": "trusted supervisor cancels real asynchronous TCP connect or closes an established socket: release live socket permit only after the OS channel has closed",
+      "expect": "physical-close-before-release"
+    },
+    {
+      "id": "monotonic-wrap-no-token-mint",
+      "scenario": "trusted monotonic nanosecond clock advances across signed or unsigned representation wrap and a backward sample follows: a negative interpretation never mints tokens",
+      "expect": "bounded-refill"
     }
   ],
   "network_policy": {
