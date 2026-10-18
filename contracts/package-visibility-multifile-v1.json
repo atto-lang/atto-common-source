@@ -32,7 +32,7 @@
   "declarations": [
     {
       "file": "src/auth/tokens.ores",
-      "visibility": "pub(package)",
+      "visibility": "pub[pkg]",
       "kind": "fnc",
       "name": "validate_token"
     },
@@ -47,6 +47,13 @@
       "visibility": "private",
       "kind": "fnc",
       "name": "main"
+    },
+    {
+      "file": "src/auth/auth.ores",
+      "container": "module Auth",
+      "visibility": "pub[file]",
+      "kind": "fnc",
+      "name": "helper"
     }
   ],
   "access_cases": [
@@ -186,7 +193,10 @@
     "hot-reload-stale-export-denied",
     "abi-membership-change-invalidates-consumers",
     "public-type-signature-cannot-leak-package-only-type",
-    "freestanding-link-time-visibility-no-runtime-allocator"
+    "freestanding-link-time-visibility-no-runtime-allocator",
+    "file-scoped-member-hidden-from-other-source-unit-even-same-package",
+    "file-scoped-member-visible-across-modules-in-same-source-unit",
+    "syntax-synonym-same-ABI-and-formatter-idempotence"
   ],
   "backend_status": {
     "java": "implementation-pending; no runtime evidence",
@@ -194,5 +204,146 @@
     "net": "pending",
     "forge": "pending",
     "wasm": "pending"
-  }
+  },
+  "canonical_syntax": {
+    "PUBLIC": "pub",
+    "FILE": "pub[file]",
+    "PACKAGE": "pub[pkg]",
+    "PRIVATE": "(omitted)"
+  },
+  "syntax_cases": [
+    {
+      "source": "pub[file]",
+      "normalized": "FILE",
+      "formatted": "pub[file]",
+      "expect": "admit"
+    },
+    {
+      "source": "pub(file)",
+      "normalized": "FILE",
+      "formatted": "pub[file]",
+      "expect": "admit"
+    },
+    {
+      "source": "pub[pkg]",
+      "normalized": "PACKAGE",
+      "formatted": "pub[pkg]",
+      "expect": "admit"
+    },
+    {
+      "source": "pub[package]",
+      "normalized": "PACKAGE",
+      "formatted": "pub[pkg]",
+      "expect": "admit"
+    },
+    {
+      "source": "pub(pkg)",
+      "normalized": "PACKAGE",
+      "formatted": "pub[pkg]",
+      "expect": "admit"
+    },
+    {
+      "source": "pub(package)",
+      "normalized": "PACKAGE",
+      "formatted": "pub[pkg]",
+      "expect": "admit"
+    },
+    {
+      "source": "pub[file)",
+      "expect": "reject",
+      "reason": "mixed-delimiters"
+    },
+    {
+      "source": "pub(pkg]",
+      "expect": "reject",
+      "reason": "mixed-delimiters"
+    },
+    {
+      "source": "pub[",
+      "expect": "reject",
+      "reason": "incomplete-scoped-qualifier"
+    },
+    {
+      "source": "pub[]",
+      "expect": "reject",
+      "reason": "missing-scoped-identifier"
+    },
+    {
+      "source": "pub[super]",
+      "expect": "reject",
+      "reason": "unknown-scoped-identifier"
+    },
+    {
+      "source": "pub[1+2]",
+      "expect": "reject",
+      "reason": "not-a-scope-expression"
+    },
+    {
+      "source": "pub[file] fnc topLevel",
+      "normalized": "FILE",
+      "expect": "admit",
+      "lint": "redundant-file-visibility"
+    },
+    {
+      "source": "pub[file] method foo",
+      "expect": "reject",
+      "reason": "unapproved-class-member-scope"
+    }
+  ],
+  "file_visibility_cases": [
+    {
+      "id": "same-file-other-module-can-call-file-member",
+      "expect": "admit",
+      "source": "src/auth/auth.ores",
+      "source_module": "Auth",
+      "symbol": "helper",
+      "importer": "src/auth/auth.ores",
+      "importer_module": "LocalConsumer"
+    },
+    {
+      "id": "same-package-other-file-cannot-call-file-member",
+      "expect": "reject",
+      "source": "src/auth/auth.ores",
+      "source_module": "Auth",
+      "symbol": "helper",
+      "importer": "src/auth/permissions.ores",
+      "reason": "file-boundary"
+    },
+    {
+      "id": "different-package-cannot-call-file-member",
+      "expect": "reject",
+      "source": "src/auth/auth.ores",
+      "source_module": "Auth",
+      "symbol": "helper",
+      "importer": "src/main.ores",
+      "reason": "file-boundary"
+    },
+    {
+      "id": "same-file-other-module-cannot-call-default-private-member",
+      "expect": "reject",
+      "source": "src/auth/auth.ores",
+      "source_module": "Auth",
+      "symbol": "internal",
+      "importer": "src/auth/auth.ores",
+      "importer_module": "LocalConsumer",
+      "reason": "module-private"
+    },
+    {
+      "id": "same-file-same-module-can-call-private-member",
+      "expect": "admit",
+      "source": "src/auth/auth.ores",
+      "source_module": "Auth",
+      "symbol": "internal",
+      "importer": "src/auth/auth.ores",
+      "importer_module": "Auth"
+    },
+    {
+      "id": "top-level-file-alias-no-wider-than-private",
+      "expect": "admit",
+      "source": "src/main.ores",
+      "symbol": "topLevel",
+      "importer": "src/main.ores",
+      "reason": "redundant-file-visibility"
+    }
+  ]
 }
