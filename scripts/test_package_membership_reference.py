@@ -129,6 +129,14 @@ class ReferenceTests(unittest.TestCase):
         (self.root/'alias').symlink_to(self.root/'src/auth', target_is_directory=True)
         self.m['packages']['auth']['files'].append('alias/auth.ores')
         with self.assertRaises(Rejected): membership(self.root, self.m, 'dep-A')
+        self.m['packages']['auth']['files'].pop()
+        with tempfile.TemporaryDirectory() as outside:
+            secret = Path(outside)/'external.ores'
+            secret.write_text('// external synthetic source\\n')
+            link = self.root/'src/auth/external.ores'
+            link.symlink_to(secret)
+            self.m['packages']['auth']['files'].append('src/auth/external.ores')
+            with self.assertRaises(Rejected): membership(self.root, self.m, 'dep-A')
 
     def test_nested_markers_and_nonfiles(self):
         for marker in MARKERS:
