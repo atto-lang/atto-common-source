@@ -5,7 +5,7 @@ import module ipc_receipts from "../experiments/ipc_receipts.ores";
 pub routine main(): void {
   val key = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 7, 10,
-    "sessionA", 1, 1, 2, "sha-a"
+    "sessionA", 1, 1, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   );
   val admitted = ipc_receipts.initially_admitted(key);
   stdio.println(admitted.is_ok());
@@ -55,7 +55,7 @@ pub routine main(): void {
 
   val wrong = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 8, 10,
-    "sessionA", 1, 1, 2, "sha-a"
+    "sessionA", 1, 1, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   );
   stdio.println(ipc_receipts.advance(
     first, wrong, ipc_receipts.remote_accepted(), true
@@ -64,26 +64,26 @@ pub routine main(): void {
   // Hot code/route changes preserve logical order in one actor incarnation.
   val newer = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 7, 11,
-    "sessionB", 2, 1, 3, "sha-b"
+    "sessionB", 2, 1, 3, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   );
   stdio.println(ipc_receipts.may_admit_after(key, newer));
 
   val rollback_route = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 7, 9,
-    "sessionB", 2, 1, 3, "sha-b"
+    "sessionB", 2, 1, 3, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   );
   stdio.println(!ipc_receipts.may_admit_after(key, rollback_route));
 
   val rollback_capability = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 7, 11,
-    "sessionB", 2, 1, 1, "sha-b"
+    "sessionB", 2, 1, 1, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   );
   stdio.println(!ipc_receipts.may_admit_after(key, rollback_capability));
 
   // Reject invalid identity and stale sequence; never silently coerce.
   val invalid = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 7, 10,
-    "sessionA", 0, 1, 2, "sha-a"
+    "sessionA", 0, 1, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   );
   stdio.println(ipc_receipts.initially_admitted(invalid).is_err());
   stdio.println(!ipc_receipts.may_admit_after(key, key));
