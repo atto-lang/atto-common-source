@@ -35,10 +35,16 @@ class Actor:
     def __init__(self, kind="private", placement="trusted-process"):
         if kind not in ("private", "shared", "untrusted"):
             raise Refused("unknown actor kind")
-        if kind == "untrusted" and placement == "trusted-process":
-            raise Refused("untrusted in trusted process")
-        if kind != "untrusted" and placement == "untrusted-pool":
-            raise Refused("trusted in untrusted pool")
+        if placement not in ("trusted-host", "trusted-process",
+                             "untrusted-pool", "sandbox-process",
+                             "sandbox-isolate"):
+            raise Refused("unknown physical protection placement")
+        if kind == "untrusted" and placement not in (
+                "untrusted-pool", "sandbox-process", "sandbox-isolate"):
+            raise Refused("untrusted in trusted address space")
+        if kind != "untrusted" and placement not in (
+                "trusted-host", "trusted-process"):
+            raise Refused("trusted actor in untrusted pool")
         domain = "untrusted" if kind == "untrusted" else "trusted"
         self.kind = kind
         self.placement = placement
@@ -214,7 +220,10 @@ class ContractTests(unittest.TestCase):
                                     "trusted-supervisor"))
         self.refused(lambda: self.candidate(a, domain="trusted"))
         self.refused(lambda: Actor("untrusted", "trusted-process"))
+        self.refused(lambda: Actor("untrusted", "trusted-host"))
+        self.refused(lambda: Actor("untrusted", "arbitrary-ffi-pointer"))
         self.refused(lambda: Actor("private", "untrusted-pool"))
+        self.refused(lambda: Actor("shared", "sandbox-process"))
 
     def test_mailbox_and_capability_mismatch(self):
         for name, value in (("mailbox_abi", "mail-v2"),
