@@ -9,6 +9,9 @@ REQUIRED = {
     "burst-capacity", "sustained-refill", "atomic-hierarchy", "failed-enqueue",
     "bytes-and-credits", "clock-rollback", "restart-fanout", "forged-source",
     "alternate-transport", "runtime-panic", "forged-panic", "retire-race",
+    "http-inflight-eleventh", "http-start-rate-eleventh", "http-cancel-release",
+    "tcp-connection-eleventh", "tcp-connect-failure", "tcp-connection-churn",
+    "http-redirect-and-multiplex", "network-permission-and-restart",
 }
 EXPECTATIONS = {
     "burst-capacity": "rate-limited",
@@ -23,6 +26,14 @@ EXPECTATIONS = {
     "runtime-panic": "bounded-control-delivery",
     "forged-panic": "capability-denied",
     "retire-race": "fail-closed-and-once-only-settlement",
+    "http-inflight-eleventh": "too-many-in-flight",
+    "http-start-rate-eleventh": "rate-limited",
+    "http-cancel-release": "release-once",
+    "tcp-connection-eleventh": "too-many-connections",
+    "tcp-connect-failure": "release-once",
+    "tcp-connection-churn": "bounded-starts",
+    "http-redirect-and-multiplex": "same-egress-gate",
+    "network-permission-and-restart": "fail-closed",
 }
 BACKENDS = {"java-graalvm", "llvm", "wasm", "forge", ".net"}
 
@@ -36,7 +47,15 @@ def no_duplicate_keys(pairs):
 
 def validate(doc):
     assert type(doc) is dict
-    assert set(doc) == {"schema_version", "status", "pending_backends", "cases"}
+    assert set(doc) == {"schema_version", "status", "pending_backends", "cases", "network_policy"}
+    policy = doc["network_policy"]
+    assert type(policy) is dict
+    assert policy["status"] == "proposed-host-owned-and-not-wired"
+    assert policy["default_http_max_in_flight"] == 10
+    assert policy["default_http_request_starts_per_second"] == 10
+    assert policy["default_http_burst"] == 2
+    assert policy["default_tcp_max_open_connections"] == 10
+    assert policy["network_capability"] == "explicitly-mediated-only-default-untrusted-denied"
     assert doc["schema_version"] == "untrusted-supervisor-outbound-quota.v1-proposal"
     assert doc["status"] == "contract-only-no-runtime-enforcement-claim"
     assert type(doc["pending_backends"]) is list
