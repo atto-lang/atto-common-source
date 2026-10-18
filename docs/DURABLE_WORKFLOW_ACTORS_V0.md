@@ -37,7 +37,7 @@ An incoming GitHub webhook is authenticated at ingress, durably stored and ackno
 
 A freeze request seals execution admission, waits for safe handler completion (or a defined durable suspension), stores a versioned snapshot + inbox/outbox cursors and registered timers, then releases the arena and activation lease. Any new message is stored durably and may reactivate the actor. No guest callback runs during database recovery outside the actor execution lease. In-flight AI calls, container jobs and Git pushes are persisted as *operations with external receipts*, not suspended Java/LLVM stacks. Rehydration reconciles such operations before submitting duplicates.
 
-The snapshot envelope must identify the state-schema version, code generation and snapshot checksum/hash. Migrations need explicit version edges, rollback strategy, and test vectors. Activation epochs are independent of code generations: a hot reload and a lease takeover may have distinct fencing and code versions.
+The snapshot envelope must identify the state-schema version, code generation and snapshot checksum/hash. For v0, `snapshot_digest` is mandatory, formatted `sha256:<64 lowercase hex>` and computed over RFC 8785 JCS canonical JSON of the entire snapshot envelope **excluding the digest member**; validate it before activating, and bind the hash to the expected tenant/address and storage version. A digest detects accidental corruption, not malicious storage tampering; authentication and encryption-at-rest are separate adapter responsibilities. Migrations need explicit version edges, rollback strategy, and test vectors. Activation epochs are independent of code generations: a hot reload and a lease takeover may have distinct fencing and code versions.
 
 ## Workflow graph
 
