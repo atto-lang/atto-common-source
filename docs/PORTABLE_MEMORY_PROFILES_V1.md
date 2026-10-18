@@ -125,3 +125,33 @@ mirror merely to obtain runner minutes.
 All three source-organization branch workflows still show **zero executed
 job steps** at the checked current heads. No current-branch compiler,
 CTest, Maven, sanitizer or target-device PASS is asserted.
+
+
+### Follow-up red-team audit (October 17): exact-once retirement and admission closure
+
+- **Native graph reclamation is a different capability from a live read, loan
+  or write.** LLVM #596 now keeps a separate atomic reclamation claim beyond
+  the loan/writer gate, so two supervisor retirement attempts cannot run drop
+  glue simultaneously; standalone gates fail-close if destructed with outstanding
+  leases or mutation tokens. Queries check stale target generations, retirement
+  observation is atomic, and overlapping byte writes use `memmove` before
+  scrubbing trailing storage.
+- **Testing must exercise every newly introduced negative.** LLVM #596 adds
+  fork-isolated gate-lifetime fatal tests, competing supervisor retire/drop
+  test, and a 6000-operation independent graph accounting model. These C++
+  tests are checked in, not executed by current source-org Actions.
+- **Directly exported validators must not be weaker than their wrappers.**
+  Wasm #94 now rejects imports, tables, elements, starts, tags and future
+  extension section IDs even when `assertNoManagedWasm` is invoked without
+  `inspectWasmBytes`. The actual checked-in JS scanner was exercised with
+  ten generated binary admission probes (10/10 expected decisions); no
+  `npm test` or compiled `.ores` pass is inferred.
+- **Embedded no-GC must fail closed on indirection.** Cortex-M #20 adds
+  native allocator-wrapper/mangled-symbol denial and rejects opaque inline
+  assembly that would evade LLVM symbol inspection. These gates cannot prove
+  transitive linked firmware or zero post-init allocations.
+
+The exact latest LLVM/Wasm/embedded/Graal draft-head Actions runs observed
+during this audit all report zero executed job steps and zero artifacts.
+Such a workflow is **not compiler/test evidence**, independent of its
+badge color. No production target is certified zero GC by these draft PRs.
