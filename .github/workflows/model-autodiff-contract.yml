@@ -5,6 +5,8 @@ on:
       - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
       - "contracts/v1/model-autodiff/**"
       - "tests/model-autodiff-contract.test.mjs"
+      - "tests/model-actor-state-versioning-contract.test.mjs"
+      - "docs/MODEL_ACTOR_SEALED_STATE_V1.md"
       - ".github/workflows/model-autodiff-contract.yml"
   workflow_dispatch:
 permissions:
@@ -19,6 +21,6 @@ jobs:
         with:
           node-version: "22"
       - name: Execute source-free model transport contract
-        run: node --test tests/model-autodiff-contract.test.mjs
+        run: node --test tests/model-autodiff-contract.test.mjs tests/model-actor-state-versioning-contract.test.mjs
       - name: State evidence boundary
         run: echo "HOST_ONLY; guest_execution=NOT_EXECUTED"
