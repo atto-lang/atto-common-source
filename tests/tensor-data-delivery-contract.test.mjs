@@ -32,9 +32,9 @@ function validateData(e){
      t.shape.length!==2||t.strides.length!==2)die("INVALID_TENSOR_LAYOUT");
   const [rows,cols]=t.shape,[major,minor]=t.strides;
   if(![rows,cols,major,minor].every(Number.isSafeInteger)||
-     [rows,cols,major,minor].some(x=>x<0)||
+     [rows,cols,major,minor].some(x=>x<0||x>2147483647)||
      major!==cols||minor!==1)die("INVALID_TENSOR_LAYOUT");
-  if(!Number.isSafeInteger(t.byteLength)||t.byteLength<0||
+  if(!Number.isSafeInteger(t.byteLength)||t.byteLength<0||t.byteLength>2147483647||
      (BigInt(rows)*BigInt(cols)*8n)!==BigInt(t.byteLength))
     die("INVALID_TENSOR_BYTES");
   const l=e.lease;
@@ -58,10 +58,15 @@ function event(partitionId,sequence,overrides={}) {
   };
 }
 class DataStage {
-  constructor({maxItems=2,maxBytes=80,runId="runA",graphEpoch=2,actorEpoch=3,restore=null}={}) {
+  constructor({maxItems=2,maxBytes=80,maxReceipts=1024,runId="runA",graphEpoch=2,actorEpoch=3,restore=null}={}) {
+    if(![maxItems,maxBytes,maxReceipts].every(Number.isSafeInteger)||
+       maxItems<1||maxBytes<0||maxReceipts<1||maxItems>maxReceipts)
+      die("INVALID_STAGE_LIMITS");
+    if(restore&&(!Array.isArray(restore.receipts)||restore.receipts.length>maxReceipts))
+      die("INVALID_RESTORE_RECEIPTS");
     this.state={
       runId,graphEpoch,actorEpoch,
-      usedItems:0,usedBytes:0,maxItems,maxBytes,
+      usedItems:0,usedBytes:0,maxItems,maxBytes,maxReceipts,
       partitions:new Map(),active:new Map(),receipts:new Map(),
       cancelled:false,checkpointEpoch:restore?.checkpointEpoch??0
     };
@@ -93,6 +98,10 @@ class DataStage {
     if(e.watermarkMs<p.watermark)die("LATE_EVENT_BELOW_WATERMARK");
     const bytes=e.tensor.byteLength;
     if(s.usedItems>=s.maxItems||bytes>s.maxBytes-s.usedBytes)die("DATA_BACKPRESSURE");
+    // A receipt slot is reserved at admission, so ACK never fails simply
+    // because it needs to record a dedup receipt and release held credits.
+    if(s.receipts.size+s.active.size>=s.maxReceipts)
+      die("DATA_RECEIPT_BACKPRESSURE");
     if(s.active.has(pid))die("DUPLICATE_ACTIVE_DATA");
     // All preflight above happens BEFORE state or credits mutate.
     s.active.set(pid,{bytes,digest:e.digest,partitionId:e.partitionId,sequence:e.sequence,
@@ -265,4 +274,31 @@ test("seeded 1000 bounded admit/ack/replay cycles maintain counts and byte invar
     seq++;
   }
   assert.equal(s.checkpoint().partitions[0].next,1000);
+});
+
+test("ack receipt retention is bounded; full ledger fails closed before new admission",()=>{
+  const s=new DataStage({maxItems:2,maxBytes:128,maxReceipts:2});
+  for(let i=0;i<2;i++){
+    const e=event(0,i);
+    assert.equal(s.accept(e).status,"admitted");
+    assert.equal(s.ack(0,i,e.digest).status,"acked");
+  }
+  assert.throws(()=>s.accept(event(0,2)),/DATA_RECEIPT_BACKPRESSURE/);
+  assert.equal(s.status().bytes,0);
+  assert.equal(s.checkpoint().receipts.length,2);
+  // No unverified eviction of dedup history or automatic durable checkpoint.
+});
+test("stage bounds and JSON Schema maximums are validated before memory reservation",()=>{
+  assert.throws(()=>new DataStage({maxItems:0}),/INVALID_STAGE_LIMITS/);
+  assert.throws(()=>new DataStage({maxItems:3,maxReceipts:2}),/INVALID_STAGE_LIMITS/);
+  const s=new DataStage();
+  const tooWide=event(0,0,{tensor:{
+    dtype:"f64",shape:[3000000000,1],strides:[1,1],byteLength:24000000000
+  }});
+  assert.throws(()=>s.accept(tooWide),/INVALID_TENSOR_LAYOUT/);
+  const tooBig=event(0,0,{tensor:{
+    dtype:"f64",shape:[1,300000000],strides:[300000000,1],byteLength:2400000000
+  }});
+  assert.throws(()=>s.accept(tooBig),/INVALID_TENSOR_BYTES/);
+  assert.equal(s.status().bytes,0);
 });
