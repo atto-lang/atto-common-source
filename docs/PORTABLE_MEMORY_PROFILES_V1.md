@@ -155,3 +155,39 @@ The exact latest LLVM/Wasm/embedded/Graal draft-head Actions runs observed
 during this audit all report zero executed job steps and zero artifacts.
 Such a workflow is **not compiler/test evidence**, independent of its
 badge color. No production target is certified zero GC by these draft PRs.
+
+
+### Additional runner-capacity and exact-blob audit (October 17 evening)
+
+- LLVM graph source branch [PR #596](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/596) gained a three-thread
+  graph read/write/link contention regression; an equivalent locally compiled
+  workload using *byte-identical, SHA-confirmed native header blobs* passed
+  GCC ThreadSanitizer and Clang AddressSanitizer/UndefinedBehaviorSanitizer.
+  The existing exact-header graph model harness also passed 150,000
+  operations under Clang ASan/UBSan. A bounded borrow-gate harness passed
+  1,000 GCC TSan races, 2,000 seal-vs-live-claim tests and two fork-isolated
+  lifetime-failure checks. These are **local header tests**, not a compiled
+  Oreslang guest or exact-Git-tree CI run.
+- Embedded [PR #20](https://github.com/ores-truffle-oreslang/oreslang-platform.embedded/pull/20)
+  now screens indirect LLVM `call`, `invoke` and `callbr` instructions
+  so unknown function pointers cannot silently bypass collector/allocator
+  symbol checks. A quote-aware inline-comment scrub prevents
+  `; @harmless()` from laundering a dynamic callee. Its source-free locally
+  reproduced parser regression suite passed 8/8; the exact new GitHub
+  blob still needs a proper fresh-head CI execution.
+- Existing private destination `ores-vector-embedding/ores-vector-embedding-lib-core`
+  has historical executed GitHub Actions (12 steps in a September 2026 run),
+  but **historical success does not confirm current available minutes**.
+  The private cross-org source copy was blocked before any blob/tree transfer.
+  The temporary mirror ref remained at the destination's original tree, so
+  it MUST NOT be treated as a source copy or exact-tree test.
+- One explicit GitHub rerun of the source embedded host workflow was accepted
+  by GitHub, but attempt 2 still failed with **zero executed job steps**.
+  The latest observed LLVM, Wasm, embedded and Graal source heads also had
+  failed zero-step jobs. Do not publish PASS receipts from those runs.
+
+Remaining release blockers: signed or otherwise trusted exact-tree provenance;
+native full-CTest and sanitizer execution; real `.ores` source-to-AOT actor
+ownership/deterministic-drop parity; Wasm worker execution; real Cortex-M QEMU
+and firmware binary closure; measured GraalVM JVM and Native Image resource
+allocation and GC pause-tail evidence.
