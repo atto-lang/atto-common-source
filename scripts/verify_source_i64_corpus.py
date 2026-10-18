@@ -11,6 +11,7 @@ import sys
 CORPUS = Path(__file__).resolve().parents[1] / "contracts/v1/source-i64/portable-i64.v1.json"
 MAX_BYTES = 8192
 GIT_BLOB_SHA1 = "bbc319c19ecd007109d33592e210091eb267e5a2"
+BYTES_SHA256 = "39bddbe558ad1c336271f91e6403c4555f2f16a7ed33a3355ee897721b6ab02a"
 I64_MIN, I64_MAX = -(1 << 63), (1 << 63) - 1
 EXPECTED_CASES = (
     "precedence", "grouping", "signed-multiplication", "subtraction",
@@ -71,6 +72,8 @@ def validate_bytes(raw: bytes):
     blob = b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw
     if hashlib.sha1(blob).hexdigest() != GIT_BLOB_SHA1:
         raise ContractError("corpus differs from reviewed Git blob")
+    if hashlib.sha256(raw).hexdigest() != BYTES_SHA256:
+        raise ContractError("corpus differs from independent SHA-256 pin")
     try:
         parsed = json.loads(raw.decode("utf-8"), object_pairs_hook=no_duplicate_keys,
                             parse_constant=bad_constant)
