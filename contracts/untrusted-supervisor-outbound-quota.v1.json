@@ -68,6 +68,58 @@
       "id": "retire-race",
       "scenario": "send races parent close and outstanding reservation release",
       "expect": "fail-closed-and-once-only-settlement"
+    },
+    {
+      "id": "http-inflight-eleventh",
+      "scenario": "eleven overlapping untrusted HTTP operations without completion: deny the eleventh before dispatch",
+      "expect": "too-many-in-flight"
+    },
+    {
+      "id": "http-start-rate-eleventh",
+      "scenario": "eleven HTTP starts in a one second window with no earned refill: the policy has limited rate tokens",
+      "expect": "rate-limited"
+    },
+    {
+      "id": "http-cancel-release",
+      "scenario": "HTTP request completes or cancels concurrently with supervisor termination and cancellation",
+      "expect": "release-once"
+    },
+    {
+      "id": "tcp-connection-eleventh",
+      "scenario": "with ten live outbound TCP socket leases deny eleventh before DNS resolution or connect",
+      "expect": "too-many-connections"
+    },
+    {
+      "id": "tcp-connect-failure",
+      "scenario": "failed socket creation DNS resolution or connect must not leak the reserved active TCP slot",
+      "expect": "release-once"
+    },
+    {
+      "id": "tcp-connection-churn",
+      "scenario": "closing and reopening TCP sockets rapidly cannot bypass separately configured connection-start-rate and resource budgets",
+      "expect": "bounded-starts"
+    },
+    {
+      "id": "http-redirect-and-multiplex",
+      "scenario": "redirect HTTP2 concurrent streams and HTTP connection pooling cannot bypass per-request HTTP quotas or underlying physical socket budgets",
+      "expect": "same-egress-gate"
+    },
+    {
+      "id": "network-permission-and-restart",
+      "scenario": "an untrusted actor relabels destination or restarts without an explicitly issued mediated capability",
+      "expect": "fail-closed"
     }
-  ]
+  ],
+  "network_policy": {
+    "status": "proposed-host-owned-and-not-wired",
+    "default_http_max_in_flight": 10,
+    "default_http_request_starts_per_second": 10,
+    "default_http_burst": 2,
+    "default_tcp_max_open_connections": 10,
+    "connection_starts_per_second": "supervisor-configured-separate",
+    "enforcement": "trusted-egress-broker-before-dns-connect-and-request-dispatch",
+    "lease_ownership": "runtime-only-exactly-once-release",
+    "scope": "stable-lineage-supervisor-and-tenant",
+    "network_capability": "explicitly-mediated-only-default-untrusted-denied"
+  }
 }
