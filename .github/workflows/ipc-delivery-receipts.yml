@@ -1,0 +1,29 @@
+name: IPC delivery receipt reference checks
+on:
+  pull_request:
+    paths:
+      - 'scripts/ipc_delivery_ledger.py'
+      - 'scripts/ipc_receipt_protocol.py'
+      - 'tests/test_ipc_delivery_ledger.py'
+      - 'tests/test_ipc_delivery_ledger_stress.py'
+      - 'tests/test_ipc_receipt_protocol.py'
+      - '.github/workflows/ipc-delivery-receipts.yml'
+  push:
+    branches:
+      - 'draft/issue-wave30-ipc-current-20261018'
+permissions:
+  contents: read
+jobs:
+  reference-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact PR tree
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Execute IPC receipt reference and randomized tests
+        run: python3 -m unittest discover -s tests -p 'test_ipc_*.py' -v
+      - name: Assert reference-only evidence classification
+        run: |
+          echo 'REFERENCE_ONLY: not a compiler/transport/native parity certificate'
