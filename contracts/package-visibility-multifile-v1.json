@@ -1,0 +1,198 @@
+{
+  "contract_version": "oreslang.package-visibility-multifile.v1",
+  "status": "proposed-only-not-compiler-tested",
+  "manifest_format": ".ores.pkg.toml",
+  "proposed_schema_version": "2",
+  "manifest_example": {
+    "schema_version": "2",
+    "project": {
+      "name": "sample",
+      "root": "."
+    },
+    "source": {
+      "roots": [
+        "src"
+      ]
+    },
+    "packages": {
+      "auth": {
+        "files": [
+          "src/auth/auth.ores",
+          "src/auth/tokens.ores",
+          "src/auth/permissions.ores"
+        ]
+      },
+      "billing": {
+        "files": [
+          "src/billing/billing.ores"
+        ]
+      }
+    }
+  },
+  "declarations": [
+    {
+      "file": "src/auth/tokens.ores",
+      "visibility": "pub(package)",
+      "kind": "fnc",
+      "name": "validate_token"
+    },
+    {
+      "file": "src/auth/auth.ores",
+      "visibility": "pub",
+      "kind": "fnc",
+      "name": "authenticate"
+    },
+    {
+      "file": "src/main.ores",
+      "visibility": "private",
+      "kind": "fnc",
+      "name": "main"
+    }
+  ],
+  "access_cases": [
+    {
+      "id": "same-package-import",
+      "expect": "admit",
+      "importer": "src/auth/auth.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "validate_token",
+      "reason": "auth"
+    },
+    {
+      "id": "same-package-project-root-import",
+      "expect": "admit",
+      "importer": "src/auth/permissions.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "validate_token",
+      "reason": "auth"
+    },
+    {
+      "id": "other-package-denied",
+      "expect": "reject",
+      "importer": "src/billing/billing.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "validate_token",
+      "reason": "not-same-package"
+    },
+    {
+      "id": "singleton-file-denied",
+      "expect": "reject",
+      "importer": "src/main.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "validate_token",
+      "reason": "not-same-package"
+    },
+    {
+      "id": "public-cross-package",
+      "expect": "admit",
+      "importer": "src/main.ores",
+      "source": "src/auth/auth.ores",
+      "symbol": "authenticate",
+      "reason": "public"
+    },
+    {
+      "id": "same-project-is-not-same-package",
+      "expect": "reject",
+      "importer": "src/other.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "validate_token",
+      "reason": "not-same-package"
+    },
+    {
+      "id": "wildcard-is-not-bypass",
+      "expect": "reject",
+      "importer": "src/billing/billing.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "validate_token",
+      "reason": "hidden-wildcard-export"
+    },
+    {
+      "id": "same-package-in-private-module",
+      "expect": "reject",
+      "importer": "src/auth/auth.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "private_module.helper",
+      "reason": "containing-module-private"
+    },
+    {
+      "id": "cross-package-private-alias",
+      "expect": "reject",
+      "importer": "src/billing/billing.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "public_alias_of_validate_token",
+      "reason": "cannot-launder-package-private"
+    },
+    {
+      "id": "cross-package-public-signature-leak",
+      "expect": "reject",
+      "importer": "src/auth/auth.ores",
+      "source": "src/auth/tokens.ores",
+      "symbol": "pub-returning-package-private-type",
+      "reason": "public-abi-leak"
+    }
+  ],
+  "manifest_negative_cases": [
+    {
+      "id": "duplicate-membership",
+      "expect": "reject",
+      "reason": "same source path listed in auth and billing"
+    },
+    {
+      "id": "canonical-alias-membership",
+      "expect": "reject",
+      "reason": "different paths or symlinks resolve to same source inode/content identity"
+    },
+    {
+      "id": "out-of-root-source",
+      "expect": "reject",
+      "reason": "membership path traverses outside project root"
+    },
+    {
+      "id": "nested-manifest-crossing",
+      "expect": "reject",
+      "reason": "group includes file owned by nearer independent manifest"
+    },
+    {
+      "id": "bad-version",
+      "expect": "reject",
+      "reason": "unknown manifest schema must fail closed"
+    },
+    {
+      "id": "unlisted-is-not-parent-package",
+      "expect": "reject",
+      "reason": "unlisted file must be singleton despite shared project root"
+    },
+    {
+      "id": "dependency-name-spoof",
+      "expect": "reject",
+      "reason": "two resolved dependency instances share a package key"
+    },
+    {
+      "id": "missing-source",
+      "expect": "reject",
+      "reason": "listed source file absent"
+    },
+    {
+      "id": "non-regular-source",
+      "expect": "reject",
+      "reason": "source path names directory or non-file"
+    }
+  ],
+  "required_dynamic_cases": [
+    "cyclic-imports-do-not-widen-access",
+    "late-wildcard-no-leak",
+    "runtime-private-member-dispatch-denied",
+    "package-member-not-in-public-structural-shape",
+    "hot-reload-stale-export-denied",
+    "abi-membership-change-invalidates-consumers",
+    "public-type-signature-cannot-leak-package-only-type",
+    "freestanding-link-time-visibility-no-runtime-allocator"
+  ],
+  "backend_status": {
+    "java": "implementation-pending; no runtime evidence",
+    "llvm": "source-import-graph-pending; no parity claim",
+    "net": "pending",
+    "forge": "pending",
+    "wasm": "pending"
+  }
+}
