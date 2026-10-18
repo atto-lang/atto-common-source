@@ -90,6 +90,21 @@ class MemoryProfileEvidenceTest(unittest.TestCase):
         self.reject("desktop-native", lambda r: r["metrics"].update(alloc_bytes_per_operation=True))
         self.reject("desktop-native", lambda r: r["metrics"].update(alloc_bytes_per_operation=float("nan")))
 
+    def test_schema_and_unhashable_profile_fail_closed(self):
+        for name in ("llvm-native", "graal-jvm"):
+            self.reject(name, lambda r: r.update(schema_version=True))
+            self.reject(name, lambda r: r.update(profile=["invalid"]))
+        manifest = copy.deepcopy(MANIFEST)
+        manifest["schema_version"] = True
+        with self.assertRaises(gate.MemoryEvidenceError):
+            gate.validate_manifest(manifest)
+
+    def test_duplicate_evidence_json_keys_rejected(self):
+        with self.assertRaisesRegex(gate.MemoryEvidenceError, "duplicate JSON field"):
+            gate.parse_json('{"run_id":1, "run_id":2}')
+        with self.assertRaisesRegex(gate.MemoryEvidenceError, "duplicate JSON field"):
+            gate.parse_json('{"metrics":{"tracing_gc_invocations":0,"tracing_gc_invocations":1}}')
+
     def test_extra_manifest_proof_not_silently_ignored(self):
         manifest = copy.deepcopy(MANIFEST)
         manifest["shared_proofs"].append("new_mandatory_borrow_boundary")
