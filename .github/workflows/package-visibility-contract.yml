@@ -6,6 +6,7 @@ on:
       - '.github/workflows/package-visibility-contract.yml'
       - 'contracts/package-visibility-multifile-v1.json'
       - 'scripts/verify_package_visibility_contract.py'
+      - 'scripts/test_package_membership_reference.py'
       - 'docs/PACKAGE_VISIBILITY_AND_MULTIFILE_V1.md'
   push:
     branches: [main]
@@ -28,3 +29,5 @@ jobs:
           persist-credentials: false
       - name: Run Python standard-library contract verifier
         run: python3 scripts/verify_package_visibility_contract.py
+      - name: Run source-free filesystem membership reference tests
+        run: python3 scripts/test_package_membership_reference.py
