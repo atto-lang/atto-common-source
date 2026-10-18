@@ -86,4 +86,4 @@ if __name__ == "__main__":
     if (not result.wasSuccessful() or result.skipped or result.expectedFailures
             or result.unexpectedSuccesses):
         raise SystemExit(1)
-    print("SHARED_DOMAIN_PROXY_SOURCE_TESTS=46")
+    print("SHARED_DOMAIN_PROXY_SOURCE_TESTS=49")
