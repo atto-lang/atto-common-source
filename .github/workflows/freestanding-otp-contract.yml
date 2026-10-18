@@ -1,0 +1,27 @@
+name: Freestanding core / OTP contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/library/v1/otp-portability.json'
+      - 'docs/CORE_ALLOC_ACTOR_OTP_BOUNDARY_V1.md'
+      - 'tests/test_otp_*contract.py'
+      - '.github/workflows/freestanding-otp-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/library/v1/otp-portability.json'
+      - 'docs/CORE_ALLOC_ACTOR_OTP_BOUNDARY_V1.md'
+      - 'tests/test_otp_*contract.py'
+      - '.github/workflows/freestanding-otp-contract.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate manifest and portability boundaries (metadata only)
+        run: python3 -m unittest discover -s tests -p 'test_otp_*contract.py' -v
