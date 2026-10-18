@@ -41,10 +41,10 @@ class SharedDomainProxySourceV1Test(unittest.TestCase):
     def test_no_backend_claims_guest_support(self):
         self.assertNotIn("implemented", CANONICAL["backend_support"].values())
 
-    def test_llvm_is_host_candidate_only(self):
+    def test_llvm_is_source_admission_only(self):
         self.assertEqual(
             CANONICAL["backend_support"]["llvm"],
-            "host-runtime-candidate-no-guest-lowering")
+            "source-admission-no-executable-lowering")
 
     def test_unknown_root_field_rejected(self):
         mutated = copy.deepcopy(CANONICAL)
