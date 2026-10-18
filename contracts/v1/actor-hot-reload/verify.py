@@ -26,6 +26,8 @@ class LiveImage:
     pins: int = 0
     unloaded: bool = False
     quarantined: bool = False
+    stage_key: object = None
+    staged_epoch: int = 0
 
 
 class Actor:
@@ -52,6 +54,8 @@ class Actor:
         self.external_pins = 0
         self.pending_mail = 0
         self.quarantine = False
+        # Abstract host-only identity; NOT serializable guest capability material.
+        self._stage_key = object()
 
     def stage(self, candidate, authority):
         # authority is an abstract trusted-host input, not a guest string API.
@@ -63,7 +67,8 @@ class Actor:
             raise Refused("invalid executable image mode")
         if candidate.domain != self.active.image.domain:
             raise Refused("cross-trust-domain code")
-        return LiveImage(candidate)
+        return LiveImage(candidate, stage_key=self._stage_key,
+                         staged_epoch=self.epoch)
 
     def pin(self):
         if self.frozen:
@@ -94,6 +99,9 @@ class Actor:
         if self.active.pins or self.external_pins or self.pending_mail:
             raise Refused("old code not physically quiescent")
         old, new = self.active.image, candidate.image
+        if (candidate.stage_key is not self._stage_key
+                or candidate.staged_epoch != expected):
+            raise Refused("foreign, unstaged or obsolete code image")
         if not new.admitted or old.domain != new.domain:
             raise Refused("code provenance/domain mismatch")
         if old.mailbox_abi != new.mailbox_abi or old.capabilities != new.capabilities:
@@ -277,6 +285,17 @@ class ContractTests(unittest.TestCase):
         c = self.candidate(a)
         a.freeze(a.epoch)
         self.refused(lambda: a.promote(c, a.epoch))
+
+    def test_foreign_and_unstaged_candidate_rejected(self):
+        a = self.setup_actor()
+        foreign = self.setup_actor()
+        other = self.candidate(foreign)
+        forged = LiveImage(self.candidate(a).image)
+        a.freeze(1)
+        self.refused(lambda: a.promote(other, 1))
+        self.refused(lambda: a.promote(forged, 1))
+        self.assertEqual((a.epoch, a.state), (1, 42))
+        a.abort()
 
     def test_invalid_loader_mode(self):
         a = self.setup_actor()
