@@ -20,6 +20,7 @@ class Stage(str, Enum):
     LOCAL_ADMITTED = "LOCAL_ADMITTED"
     REMOTE_ACCEPTED = "REMOTE_ACCEPTED"
     HANDLER_COMMITTED = "HANDLER_COMMITTED"
+    HANDLER_FAILED = "HANDLER_FAILED"
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
 
@@ -66,6 +67,8 @@ class BoundedLedger:
         self.capacity = capacity
         self._stream = None
         self._last_seq = 0
+        self._last_route_epoch = 0
+        self._last_capability_generation = 0
         self._live = {}
         self._transport_credits = 0
 
@@ -87,10 +90,16 @@ class BoundedLedger:
             raise AdmissionError("mixed tenant/actor/incarnation stream")
         if envelope.message_sequence <= self._last_seq:
             raise AdmissionError("stale, duplicate, or reordered logical sequence")
+        if envelope.route_epoch < self._last_route_epoch:
+            raise AdmissionError("route epoch rollback")
+        if envelope.capability_generation < self._last_capability_generation:
+            raise AdmissionError("capability generation rollback")
         if len(self._live) >= self.capacity:
             raise AdmissionError("bounded correlation table full")
         self._stream = stream
         self._last_seq = envelope.message_sequence
+        self._last_route_epoch = envelope.route_epoch
+        self._last_capability_generation = envelope.capability_generation
         self._live[envelope.message_sequence] = [envelope, Stage.LOCAL_ADMITTED]
         self._transport_credits += 1
         return Stage.LOCAL_ADMITTED
@@ -107,7 +116,7 @@ class BoundedLedger:
             record[1] = stage
             self._transport_credits -= 1
             return stage
-        if stage in (Stage.HANDLER_COMMITTED, Stage.FAILED) and previous is Stage.REMOTE_ACCEPTED:
+        if stage in (Stage.HANDLER_COMMITTED, Stage.HANDLER_FAILED) and previous is Stage.REMOTE_ACCEPTED:
             del self._live[envelope.message_sequence]
             return stage
         if stage is Stage.FAILED and previous is Stage.LOCAL_ADMITTED:
