@@ -1,0 +1,137 @@
+// Guest Oreslang reference for cross-process receipt contracts (#79).
+// This module performs immutable envelope/stage validation only. The trusted
+// runtime must authenticate the source, maintain bounded correlation state,
+// reject replay, and commit a transition atomically before exposing it.
+// Nothing here is a network transport or a durable deduplication journal.
+define module ipc_receipts as
+
+  // Terminal values do not imply exactly-once durable application effects.
+  pub fnc local_admitted(): int { return 1; }
+  pub fnc remote_accepted(): int { return 2; }
+  pub fnc handler_committed(): int { return 3; }
+  pub fnc rejected_before_remote(): int { return 4; }
+  pub fnc outcome_unknown(): int { return 5; }
+  pub fnc handler_failed(): int { return 6; }
+
+  pub define class ReceiptKey as
+    pub val String sender_domain;
+    pub val String sender_actor;
+    pub val int sender_incarnation;
+    pub val String destination_actor;
+    pub val int destination_incarnation;
+    pub val int route_epoch;
+    pub val String transport_session;
+    pub val int message_sequence;
+    pub val int frame_sequence;
+    pub val int capability_generation;
+    pub val String payload_sha256;
+
+    pub is_valid(): bool {
+      if self.sender_domain == "" || self.sender_actor == "" ||
+         self.destination_actor == "" || self.transport_session == "" ||
+         self.payload_sha256 == ""; then
+        return false;
+      fi
+      if self.sender_incarnation <= 0 || self.destination_incarnation <= 0 ||
+         self.route_epoch <= 0 || self.message_sequence <= 0 ||
+         self.frame_sequence <= 0 || self.capability_generation <= 0; then
+        return false;
+      fi
+      // Hash length, canonical encoding and signature checking belong to the
+      // transport's independently verified decoder, not this guest module.
+      return true;
+    }
+
+    pub matches(ReceiptKey other): bool {
+      return self.sender_domain == other.sender_domain &&
+             self.sender_actor == other.sender_actor &&
+             self.sender_incarnation == other.sender_incarnation &&
+             self.destination_actor == other.destination_actor &&
+             self.destination_incarnation == other.destination_incarnation &&
+             self.route_epoch == other.route_epoch &&
+             self.transport_session == other.transport_session &&
+             self.message_sequence == other.message_sequence &&
+             self.frame_sequence == other.frame_sequence &&
+             self.capability_generation == other.capability_generation &&
+             self.payload_sha256 == other.payload_sha256;
+    }
+  end
+
+  pub define class ReceiptSnapshot as
+    pub val ReceiptKey key;
+    pub val int stage;
+  end
+
+  pub fnc new_key(
+    String domain, String sender, int sender_incarnation,
+    String destination, int destination_incarnation, int route_epoch,
+    String session, int message_sequence, int frame_sequence,
+    int capability_generation, String sha256
+  ): ReceiptKey {
+    return new ReceiptKey(domain, sender, sender_incarnation,
+                          destination, destination_incarnation, route_epoch,
+                          session, message_sequence, frame_sequence,
+                          capability_generation, sha256);
+  }
+
+  pub fnc initially_admitted(ReceiptKey key): Result<ReceiptSnapshot, String> {
+    if !key.is_valid(); then
+      return Err("invalid IPC correlation identity");
+    fi
+    return Ok(new ReceiptSnapshot(key, local_admitted()));
+  }
+
+  // This function checks an incoming message against the previously admitted
+  // sequence in the same sender/destination incarnation. Storage and atomic
+  // monotonic sequence updates MUST be enforced in the trusted runtime.
+  pub fnc may_admit_after(ReceiptKey prior, ReceiptKey next): bool {
+    if !prior.is_valid() || !next.is_valid(); then
+      return false;
+    fi
+    if prior.sender_domain != next.sender_domain ||
+       prior.sender_actor != next.sender_actor ||
+       prior.sender_incarnation != next.sender_incarnation ||
+       prior.destination_actor != next.destination_actor ||
+       prior.destination_incarnation != next.destination_incarnation; then
+      return false;
+    fi
+    if next.message_sequence <= prior.message_sequence ||
+       next.route_epoch < prior.route_epoch ||
+       next.capability_generation < prior.capability_generation; then
+      return false;
+    fi
+    return true;
+  }
+
+  pub fnc advance(
+    ReceiptSnapshot current,
+    ReceiptKey authenticated_receipt,
+    int next_stage,
+    bool authenticated
+  ): Result<ReceiptSnapshot, String> {
+    if !authenticated || !current.key.matches(authenticated_receipt); then
+      return Err("receipt identity or transport authentication mismatch");
+    fi
+    if !current.key.is_valid(); then
+      return Err("invalid receipt envelope");
+    fi
+
+    if current.stage == local_admitted(); then
+      if next_stage == remote_accepted() ||
+         next_stage == rejected_before_remote() ||
+         next_stage == outcome_unknown(); then
+        return Ok(new ReceiptSnapshot(current.key, next_stage));
+      fi
+    fi
+    if current.stage == remote_accepted(); then
+      if next_stage == handler_committed() ||
+         next_stage == handler_failed() ||
+         next_stage == outcome_unknown(); then
+        return Ok(new ReceiptSnapshot(current.key, next_stage));
+      fi
+    fi
+    // Terminal/duplicate/reordered transitions are never applied.
+    // An UNKNOWN cannot be automatically replayed by this API.
+    return Err("illegal or duplicate IPC receipt transition");
+  }
+end
