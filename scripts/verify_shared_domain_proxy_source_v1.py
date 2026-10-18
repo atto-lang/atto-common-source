@@ -20,8 +20,8 @@ EXPECTED_SUSPENSION = {
     "resume": "scheduler-owned-capability-wake-only",
 }
 EXPECTED_BACKENDS = {
-    "java": "historical-draft-reconcile-required",
-    "llvm": "host-runtime-candidate-no-guest-lowering",
+    "java": "host-runtime-candidate-no-guest-lowering",
+    "llvm": "source-admission-no-executable-lowering",
     "net": "unsupported",
     "wasm": "unsupported",
     "forge": "unsupported",
@@ -58,6 +58,9 @@ EXPECTED_CASES = {
     "physical-release-before-logical-handoff": "required",
     "lifetime-pin-separate-from-byte-authority": "required",
     "retirement-seals-new-proxy-authority": "required",
+    "proxy-return-escape-denied": "deny",
+    "proxy-call-argument-escape-denied": "deny",
+    "proxy-message-send-escape-denied": "deny",
     "proxy-serialization-denied": "deny",
     "private-untrusted-proxy-transport-denied": "deny",
     "stale-proxy-generation-denied": "deny-stale",
