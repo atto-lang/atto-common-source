@@ -36,3 +36,20 @@ Freestanding `core` contains only optional policy/semantic types and does not re
 - Simultaneous send races, N+1 burst/refill, byte overflow, rollback/ack, full mailbox, monotonic rollback, restart, fanout, spoofed identity, control spoof/real panic, shutdown races, and actual runtime no-guest-escape assertions.
 - Native sanitizer builds and Java isolated-guest tests; attach exact commit SHAs and executed test logs. A schema/model test is not execution parity.
 - Unsupported protected execution must fail closed, including LLVM's raw in-process scheduler domain.
+
+## Additional outbound network budgets (proposed; NOT yet enforced)
+
+Default UNTRUSTED egress budgets (tunable only by trusted supervisor policy):
+
+| Budget | Initial default | What consumes a slot |
+| --- | ---: | --- |
+| HTTP starts | 10 starts/s (burst 2) | Every outgoing HTTP request dispatched, including retries and redirects |
+| HTTP concurrency | 10 in flight | Until response is fully consumed, aborted, cancelled or timed out |
+| Raw outbound TCP live sockets | 10 | From reservation before DNS/connect through actual socket close |
+| TCP connection starts | separately configurable | Opening attempts, including failures and rapid reconnect loops |
+
+HTTP requests/s and concurrency are **independent limits**. A static token bucket does not enforce a strict rolling second unless a sliding window is added. HTTP/2 streams each count against in-flight HTTP requests even when multiplexing onto one socket; physical sockets must still count against any configured *total egress socket* cap, including pooled HTTP keepalive connections.
+
+The network broker must authenticate originating actor, enforce network permissions on the original hostname and resolved IP, prevent DNS rebinding and SSRF, disallow unreviewed redirects, block raw FFI/socket bypasses, and reserve quotas **before** DNS, TCP connect or HTTP dispatch. An untrusted actor cannot configure its own limits or counters or call a privileged broker API without a supervisor-provided capability. On guest cancellation, wait for the host operation's actual terminal state (or forcibly close it) before refunding any live connection credit. RAII/AutoCloseable alone is not proof of proper async lifetime.
+
+**Current Java untrusted actors have zero ambient network capabilities, and LLVM raw native UNTRUSTED execution is not isolated. Preserve both fail-closed defaults.** The contract and host helper are not permission to relax those restrictions. Existing tracing / metrics/logging cannot become an unrestricted unaccounted outbound path.
