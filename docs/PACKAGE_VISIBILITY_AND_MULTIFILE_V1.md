@@ -50,6 +50,39 @@ import fnc validate_token from "./auth/tokens"; // COMPILE ERROR: package-privat
 
 Brackets are canonical because the modifier is a compile-time qualifier, **not** an indexing expression or function call. Both delimiter forms are admitted for ergonomic compatibility, but only matching `[]` or `()` pairs are legal; `pub(file]`, `pub[pkg)`, empty scopes, arbitrary expressions, and unknown scope words reject. `pkg` and `package` normalize to the same `PACKAGE` visibility enum (and equivalent ABI metadata). Scope names are reserved contextually after `pub[`/`pub(`, not globally new identifiers. Bare `pub` retains its existing meaning.
 
+### Scoped visibility on module declarations (normative)
+
+All scoped qualifiers apply to **module declarations** as well as their eligible members. The formatter emits `define pub[pkg] module Auth as` and `define pub[file] module Internal as`. Parentheses and long aliases remain accepted in the same positions as on functions.
+
+```ores
+// src/auth/api.ores, resolved package auth
+define pub[pkg] module Auth as
+
+    pub fnc login(): bool { return true; }
+    // Effective PACKAGE: pub member, package-scoped parent
+
+    pub[file] fnc helper(): bool { return true; }
+    // Effective FILE: restricted to src/auth/api.ores
+
+    fnc internal(): bool { return true; }
+    // Effective declaring-module only
+
+end
+
+define pub[file] module AuthHelpers as
+    pub fnc extra(): bool { return true; }
+    // Effective FILE, despite pub member
+end
+```
+
+For a member `M.x`, access requires **both** visibility checks: the selected module declaration `M` must be accessible to the importer, and `x` must be accessible to the importer in the context of its declaring module. Public children never promote a hidden parent. A package-private module with a `pub` child is still package-private. A file-private module with a `pub[pkg]` child remains file-private.
+
+A private **module declaration at file top level** follows current file-private top-level declaration rules, while a private **member inside a module** is available only inside that same lexical module. These are different lexical owners. Both static type checking and late/dynamic resolution enforce the same intersection; wildcard imports and publicly exported aliases cannot bypass it.
+
+For files in the package, explicit imports of `Auth` are allowed but visibility of `Auth.helper` is restricted to the original source file. For files in a different package (even one with the same package name in another dependency), the `Auth` import itself is forbidden. In the declaring file, other modules may access `Auth.helper` because both enclosing module and member permit it. A `pub` public API cannot expose a private/package-only module as an inaccessible nominal type.
+
+Do not add module nesting: Oreslang modules remain flat. Do not interpret `pub[file]` or `pub[pkg]` as actor state/memory isolation grants. Visibility modifiers on class/actor instance fields and methods remain gated on a separate sound access design.
+
 ### File visibility inside modules
 
 The file's existing top-level default is file-private, so `pub[file]` on a top-level declaration is semantically redundant. Accept it without changing accessibility, but allow a `redundant-file-visibility` lint; do not silently rewrite it to `pub`. Inside a `define module`, the default member is **module-private**; `pub[file]` widens that member's visibility to other modules and top-level code in the **same source file**, but not to any other file, even inside the same package.
@@ -118,7 +151,7 @@ files = ["src/billing/billing.ores"]
 ## Resolver, typechecker, runtime and security requirements
 
 1. **Resolve complete graph first.** Validate manifest schema/version, source ownership, imports, and strongly connected components before any guest execution. An import cycle does not weaken visibility.
-2. **Static accessibility:** for each selected declaration `d` and importer `i`, `PUBLIC` admits as before; `PACKAGE` requires `PackageInstanceId(d) == PackageInstanceId(i)`; `FILE` requires `SourceUnitId(d) == SourceUnitId(i)`; `PRIVATE` uses existing lexical rules. Require a valid visible path through parent modules/types. No private alias/public re-export laundering.
+2. **Static accessibility:** for each selected declaration `d` and importer `i`, `PUBLIC` admits as before; `PACKAGE` requires `PackageInstanceId(d) == PackageInstanceId(i)`; `FILE` requires `SourceUnitId(d) == SourceUnitId(i)`; `PRIVATE` uses existing lexical rules. For imported module members, the linker MUST evaluate the module visibility and member visibility separately and require both. Require a valid visible path through parent modules/types. No private alias/public re-export laundering.
 3. **Public ABI hygiene:** `pub` signatures, constructors, structural shapes, contracts and exported actor messages may not expose an inaccessible package-private nominal type/member. Require a public abstraction or reject.
 4. **Runtime parity:** late imports, reflection, dynamic dispatch, aliases, wildcard selectors, hot-reload generations and runtime class/member access must use the same visibility result; don't rely solely on the import statement's textual spelling. Package-private members never enter a public structural view.
 5. **Trust boundary separation:** package visibility never grants host access, file/network permissions, shared mutable actor state, cross-isolate pointer access, FFI, or symbol minting. Cross-package `pub` must still obey capability/ownership requirements.
@@ -132,7 +165,7 @@ files = ["src/billing/billing.ores"]
 - **Java/Graal:** extend parser/AST visibility enum, manifest validator/import graph, all export selectors (including actors/modules/aliases; see issue #859), typechecker and runtime, ABI/incremental loader, formatter and JUnit tests. Coordinate with canonical `+/` project-root import PR #1082.
 - **LLVM:** add source graph and import linking (tracked in LLVM #341) before claiming multi-file visibility. The current bootstrap only supports single-file compilation. Unsupported syntax must reject without LLVM IR output.
 - **Other backends:** use common fixtures; do not count a parser acceptance or schema linter as executed compiler parity.
-- **Proof:** test same-package relative and `+/` imports, cross-package denial, singleton defaults, `pub[file]` same-file cross-module access and other-file rejection, redundant top-level `pub[file]` equivalence, modifier synonym normalization and mixed-delimiter rejection, module-member visibility, nested manifest denial, symlink aliases and escapes, duplicate membership, cyclic imports, wildcard laundering, public signature leakage, compile cache invalidation, hot-reload and late/dynamic calls; distinguish source tests from executed exact-commit CI.
+- **Proof:** test same-package relative and `+/` imports, cross-package denial, singleton defaults, `pub[file]` same-file cross-module access and other-file rejection, redundant top-level `pub[file]` equivalence, modifier synonym normalization and mixed-delimiter rejection, module-declaration `pub[pkg]`/`pub[file]` accessibility, containing-module intersection, module-member visibility, nested manifest denial, symlink aliases and escapes, duplicate membership, cyclic imports, wildcard laundering, public signature leakage, compile cache invalidation, hot-reload and late/dynamic calls; distinguish source tests from executed exact-commit CI.
 
 **Migration:** existing schema v1 projects and `.oreslangc.cfg.toml` imports retain existing semantics. Schema v2 is opt-in and unsupported compilers fail closed. The rollout must not make previously private symbols importable just because files share a project root.
 
