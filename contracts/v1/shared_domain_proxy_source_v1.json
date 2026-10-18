@@ -18,8 +18,8 @@
     "resume": "scheduler-owned-capability-wake-only"
   },
   "backend_support": {
-    "java": "historical-draft-reconcile-required",
-    "llvm": "host-runtime-candidate-no-guest-lowering",
+    "java": "host-runtime-candidate-no-guest-lowering",
+    "llvm": "source-admission-no-executable-lowering",
     "net": "unsupported",
     "wasm": "unsupported",
     "forge": "unsupported"
@@ -148,6 +148,18 @@
     {
       "id": "retirement-seals-new-proxy-authority",
       "expect": "required"
+    },
+    {
+      "id": "proxy-return-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "proxy-call-argument-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "proxy-message-send-escape-denied",
+      "expect": "deny"
     },
     {
       "id": "proxy-serialization-denied",
