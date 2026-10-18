@@ -72,6 +72,9 @@ def check_record(manifest, record):
     profiles = validate_manifest(manifest)
     if type(record) is not dict or type(record.get("schema_version")) is not int or record.get("schema_version") != 1:
         raise MemoryEvidenceError("record: unsupported schema_version")
+    expected_record_fields = ["schema_version","profile","delivery","source_tree_sha","fixture_blob_sha","binary_sha256","run_id","job_id","executed_steps","executed_guest_tests","failed_tests","skipped_tests","errored_tests","run_conclusion","execution_kind","host_gc_policy","guest_gc_policy","proofs","metrics"]
+    if set(record) != set(expected_record_fields):
+        raise MemoryEvidenceError("record: unknown/missing evidence fields")
     name = record.get("profile")
     if type(name) is not str or name not in profiles:
         raise MemoryEvidenceError("record: unknown profile")
@@ -97,11 +100,15 @@ def check_record(manifest, record):
         raise MemoryEvidenceError("record: guest GC policy mismatch")
     evidence = record.get("proofs")
     needed = manifest["shared_proofs"] + profile["proofs"]
-    if type(evidence) is not dict or any(evidence.get(p) is not True for p in needed):
-        raise MemoryEvidenceError("record: missing/failed mandatory ownership/GC proof")
+    # Reject unknown keys instead of accidentally giving downstream release
+    # consumers a second, unaudited authority for GC/ownership claims.
+    if type(evidence) is not dict or set(evidence) != set(needed) or any(
+        evidence[p] is not True for p in needed
+    ):
+        raise MemoryEvidenceError("record: missing/unknown/failed mandatory ownership/GC proof")
     metrics = record.get("metrics")
-    if type(metrics) is not dict:
-        raise MemoryEvidenceError("record: missing metrics")
+    if type(metrics) is not dict or set(metrics) != set(profile["metrics"]):
+        raise MemoryEvidenceError("record: missing/unknown metrics")
     for metric, rule in profile["metrics"].items():
         val = metrics.get(metric)
         _nonnegative_number(val, metric)
