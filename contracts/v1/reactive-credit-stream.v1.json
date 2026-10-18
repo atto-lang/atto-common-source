@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "status": "draft_no_compiler_or_native_evidence",
+  "proposed_source_repo": "ores-truffle-oreslang/rx-oreslang-channels#20",
+  "transport_type": "CreditPipe<T,E>",
+  "consumer_type": "Option<Result<Option<T>,E>>",
+  "families": {
+    "future": "single completion, not an implicit stream",
+    "channel": "bounded domain-local transport",
+    "observable": "subscription factory, not necessarily multicast",
+    "iterator": "one serial sync cursor",
+    "async_iterator": "one Future per next",
+    "generator": "iterator activation",
+    "async_generator": "async iterator activation",
+    "actor_stream": "authenticated actor routing, not Stream<T>"
+  },
+  "protocol": [
+    {
+      "id": "next",
+      "frame": "Some(Ok(Some(value)))",
+      "terminal": false
+    },
+    {
+      "id": "complete",
+      "frame": "Some(Ok(None))",
+      "terminal": true
+    },
+    {
+      "id": "error",
+      "frame": "Some(Err(error))",
+      "terminal": true
+    },
+    {
+      "id": "cancelled",
+      "frame": "None",
+      "terminal": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "typed_option_payload",
+      "precondition": "T=Option<int>",
+      "steps": [
+        "request",
+        "send(None)",
+        "next_event"
+      ],
+      "expect": "Some(Ok(Some(None)))"
+    },
+    {
+      "id": "typed_result_payload",
+      "precondition": "T=Result<int,String>",
+      "steps": [
+        "request",
+        "send(Err(data))",
+        "next_event"
+      ],
+      "expect": "Some(Ok(Some(Err(data))))"
+    },
+    {
+      "id": "empty_complete",
+      "steps": [
+        "request",
+        "complete",
+        "next_event"
+      ],
+      "expect": "Some(Ok(None))"
+    },
+    {
+      "id": "ordinary_error_terminal",
+      "steps": [
+        "request",
+        "fail(E)",
+        "next_event"
+      ],
+      "expect": "Some(Err(E))"
+    },
+    {
+      "id": "cancel_after_request",
+      "steps": [
+        "request",
+        "cancel",
+        "next_event"
+      ],
+      "expect": "None"
+    },
+    {
+      "id": "duplicate_credit",
+      "steps": [
+        "request",
+        "request"
+      ],
+      "expect": "second request rejected"
+    },
+    {
+      "id": "no_subscriber",
+      "steps": [
+        "request"
+      ],
+      "expect": "rejected"
+    },
+    {
+      "id": "send_after_end",
+      "steps": [
+        "request",
+        "complete",
+        "send(T)"
+      ],
+      "expect": "rejected"
+    },
+    {
+      "id": "double_end",
+      "steps": [
+        "request",
+        "fail(E)",
+        "complete"
+      ],
+      "expect": "rejected"
+    },
+    {
+      "id": "concurrent_pull",
+      "steps": [
+        "request",
+        "next_pending",
+        "next_pending"
+      ],
+      "expect": "second pull rejected"
+    },
+    {
+      "id": "pending_write_cancel",
+      "steps": [
+        "request",
+        "send_pending_capacity0",
+        "cancel"
+      ],
+      "expect": "writer unblocked, false; no leaked waiter"
+    },
+    {
+      "id": "pending_credit_cancel",
+      "steps": [
+        "send_pending_no_credit",
+        "cancel"
+      ],
+      "expect": "writer unblocked, false; no leaked waiter"
+    },
+    {
+      "id": "terminal_order",
+      "steps": [
+        "request",
+        "send(T)",
+        "request",
+        "complete",
+        "next_event"
+      ],
+      "expect": "NEXT before COMPLETE per-source"
+    },
+    {
+      "id": "capacity0",
+      "steps": [
+        "request",
+        "send_pending_capacity0",
+        "next_event"
+      ],
+      "expect": "one rendezvous, zero buffered"
+    },
+    {
+      "id": "forbid_stream_mailbox",
+      "steps": [
+        "actor_send(CreditPipe<T,E>)"
+      ],
+      "expect": "compile rejection, not sendable"
+    },
+    {
+      "id": "forbid_callable_channel_payload",
+      "steps": [
+        "Channel<Fnc<int,int>>"
+      ],
+      "expect": "compile rejection, data-only"
+    },
+    {
+      "id": "borrow_yield_suspension",
+      "steps": [
+        "borrow(T)",
+        "await send(T)"
+      ],
+      "expect": "compile rejection for live borrow"
+    },
+    {
+      "id": "future_throw_not_err",
+      "steps": [
+        "await failed_future",
+        "next_event"
+      ],
+      "expect": "throw/cancel distinct, not materialized Err"
+    },
+    {
+      "id": "callback_scheduler",
+      "steps": [
+        "complete_future",
+        "callback"
+      ],
+      "expect": "no inline guest reentry"
+    },
+    {
+      "id": "repeated_terminal_observation",
+      "steps": [
+        "request",
+        "complete",
+        "next_event",
+        "request"
+      ],
+      "expect": "one terminal, later request rejected"
+    }
+  ],
+  "backends": {
+    "java": "pending exact-head execution",
+    "llvm": "unsupported features must fail closed",
+    "net": "unsupported features must fail closed",
+    "wasm": "unsupported features must fail closed",
+    "forge": "unsupported features must fail closed"
+  },
+  "evidence": {
+    "model": "Python source-free test only",
+    "jvm": "none",
+    "native": "none",
+    "ci": "zero-step failures are non-evidence"
+  }
+}

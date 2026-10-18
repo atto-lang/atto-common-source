@@ -1,0 +1,5 @@
+// CustomOpWithoutVJP has no registered VJP.
+// Expected diagnostic MODEL_MISSING_VJP for differentiable training.
+define model MissingGradient as
+    CustomOpWithoutVJP()
+end
