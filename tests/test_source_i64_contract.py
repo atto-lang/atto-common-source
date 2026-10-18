@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import json
+import random
 from pathlib import Path
 import unittest
 
@@ -25,7 +26,7 @@ class SourceI64ContractTests(unittest.TestCase):
                          gate.GIT_BLOB_SHA1)
 
     def test_oracle_rejects_unsafe_or_unsupported_expressions(self):
-        for expression in ("3/2", "2 ** 63", "foo()", "1;2", "1 or 2",
+        for expression in ("3/2", "2 ** 63", "foo()", "+1", "1;2", "1 or 2",
                            "9223372036854775807+1", "-9223372036854775808-1",
                            "3037000500*3037000500", "--9223372036854775808",
                            "(-9223372036854775808)*(-1)", "[1][0]",
@@ -46,6 +47,21 @@ class SourceI64ContractTests(unittest.TestCase):
             with self.subTest(size=len(altered)):
                 with self.assertRaises(gate.ContractError):
                     gate.validate_bytes(altered)
+
+    def test_seeded_boundary_arithmetic_differential(self):
+        rng = random.Random(0xBADC0DE)
+        for _ in range(512):
+            a = rng.randint(-1_000_000, 1_000_000)
+            b = rng.randint(-1_000_000, 1_000_000)
+            self.assertEqual(gate.oracle(f"({a})+({b})"), a+b)
+            self.assertEqual(gate.oracle(f"({a})-({b})"), a-b)
+            self.assertEqual(gate.oracle(f"({a})*({b})"), a*b)
+            positive_overflow = (1 << 63) - 1 - rng.randint(0, 50)
+            with self.assertRaises(gate.ContractError):
+                gate.oracle(f"{positive_overflow}+100")
+            negative_overflow = -(1 << 63) + rng.randint(0, 50)
+            with self.assertRaises(gate.ContractError):
+                gate.oracle(f"({negative_overflow})-100")
 
     def test_duplicate_json_keys_rejected_if_blob_is_re_reviewed(self):
         with self.assertRaises(gate.ContractError):
