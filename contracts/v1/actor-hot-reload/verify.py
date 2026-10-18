@@ -18,6 +18,7 @@ class Image:
     shared_schema: str
     capabilities: frozenset
     admitted: bool = True
+    placement: str = ""
 
 
 @dataclass
@@ -42,7 +43,8 @@ class Actor:
         self.kind = kind
         self.placement = placement
         self.active = LiveImage(Image("v1", "aot", domain, "mail-v1",
-                                      "state-v1", "shared-v1", frozenset({"send"})))
+                                      "state-v1", "shared-v1", frozenset({"send"}),
+                                      placement=placement))
         self.retired = []
         self.epoch = 1
         self.incarnation = 1
@@ -67,6 +69,8 @@ class Actor:
             raise Refused("invalid executable image mode")
         if candidate.domain != self.active.image.domain:
             raise Refused("cross-trust-domain code")
+        if candidate.placement != self.placement:
+            raise Refused("candidate changed immutable protected placement")
         return LiveImage(candidate, stage_key=self._stage_key,
                          staged_epoch=self.epoch)
 
@@ -102,8 +106,9 @@ class Actor:
         if (candidate.stage_key is not self._stage_key
                 or candidate.staged_epoch != expected):
             raise Refused("foreign, unstaged or obsolete code image")
-        if not new.admitted or old.domain != new.domain:
-            raise Refused("code provenance/domain mismatch")
+        if (not new.admitted or old.domain != new.domain
+                or new.placement != self.placement):
+            raise Refused("code provenance/domain/placement mismatch")
         if old.mailbox_abi != new.mailbox_abi or old.capabilities != new.capabilities:
             raise Refused("mailbox/capability ABI change")
         state_changed = old.state_schema != new.state_schema
@@ -142,7 +147,7 @@ class ContractTests(unittest.TestCase):
         actor = Actor(kind, placement)
         actor.active.image = Image("v1", mode, actor.active.image.domain,
                                    "mail-v1", "state-v1", "shared-v1",
-                                   frozenset({"send"}))
+                                   frozenset({"send"}), placement=actor.placement)
         return actor
 
     def candidate(self, actor, **updates):
@@ -296,6 +301,31 @@ class ContractTests(unittest.TestCase):
         self.refused(lambda: a.promote(forged, 1))
         self.assertEqual((a.epoch, a.state), (1, 42))
         a.abort()
+
+    def test_protected_placement_cannot_change_during_hot_code_upgrade(self):
+        for kind in ("private", "shared", "untrusted"):
+            a = self.setup_actor(kind)
+            original = a.placement
+            forged = "trusted-host" if kind != "untrusted" else "trusted-process"
+            self.refused(lambda: self.candidate(a, placement=forged))
+            self.assertEqual(a.placement, original)
+            self.assertEqual((a.epoch, a.state), (1, 42))
+
+    def test_suspends_await_holds_old_code_pin_until_physical_exit(self):
+        a = self.setup_actor("shared")
+        # A suspends call does not launch a second Task. The already owned
+        # Task's one lease survives each suspend/await carrier handoff.
+        active_task = a.pin()
+        self.assertEqual(a.active.pins, 1)
+        for _ in range(100):
+            a.control()  # scheduler/CONTROL may continue during suspension
+            self.assertEqual(a.active.pins, 1)
+        candidate = self.candidate(a, digest="v2", mode="jit")
+        a.freeze(1)
+        self.refused(lambda: a.promote(candidate, 1))
+        a.release(active_task)  # only AFTER finally + actual Task exit
+        a.promote(candidate, 1)
+        self.assertEqual((a.epoch, a.active.image.mode), (2, "jit"))
 
     def test_invalid_loader_mode(self):
         a = self.setup_actor()
