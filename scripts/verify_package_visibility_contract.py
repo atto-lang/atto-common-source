@@ -129,6 +129,41 @@ def validate(data: dict) -> tuple[int, int]:
             if "visibility" in case:
                 check(scope == case["visibility"], "module scope mismatch")
 
+    # Source-to-source visibility tests are separate from module-parent tests.
+    files = data["file_visibility_cases"]
+    check(len(files) >= 6, "missing file/module visibility cases")
+    member_vis = {"helper": "FILE", "internal": "PRIVATE", "topLevel": "FILE"}
+    for case in files:
+        symbol = case["symbol"]
+        check(symbol in member_vis, "unknown file visibility fixture symbol " + symbol)
+        owner_module = case.get("source_module", "")
+        allowed = scope_allows(
+            member_vis[symbol], case["source"], owner_module,
+            case["importer"], case.get("importer_module", ""),
+            owners, member=bool(owner_module))
+        check(allowed == (case["expect"] == "admit"),
+              "file visibility mismatch in " + case["id"])
+
+    decls = {d["name"]: d for d in data["declarations"]}
+    executed_import_cases = 0
+    for case in data["access_cases"]:
+        name = case["symbol"]
+        if name not in decls:
+            # Some planned dynamic/ABI cases lack executable source fixtures.
+            # They MUST NOT be counted as tested by this verifier.
+            continue
+        declaration = decls[name]
+        check(case["source"] == declaration["file"], "declaration/source mismatch")
+        mapping = {"pub": "PUBLIC", "pub[pkg]": "PACKAGE",
+                   "pub[file]": "FILE", "private": "PRIVATE"}
+        allowed = scope_allows(mapping[declaration["visibility"]],
+                               declaration["file"], "", case["importer"], "",
+                               owners, member=False)
+        check(allowed == (case["expect"] == "admit"),
+              "import visibility mismatch in " + case["id"])
+        executed_import_cases += 1
+    check(executed_import_cases >= 7, "missing executable static import cases")
+
     cases = data["module_visibility_cases"]
     check(len(cases) >= 21, "missing module visibility regression cases")
     for case in cases:
@@ -142,7 +177,7 @@ def validate(data: dict) -> tuple[int, int]:
     check(any(c["id"] == "pkg-module-file-member-peer-file"
               and c["expected"] == "reject" for c in cases),
           "missing file scope denial inside same package")
-    return len(syntax), len(cases)
+    return len(syntax), len(cases), len(files), executed_import_cases
 
 
 def test_rejects_mutations(original: dict) -> None:
@@ -187,13 +222,14 @@ def test_rejects_mutations(original: dict) -> None:
 def main() -> int:
     try:
         data = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        syntax_count, module_count = validate(data)
+        syntax_count, module_count, file_count, import_count = validate(data)
         test_rejects_mutations(data)
     except (ValueError, KeyError, TypeError, AssertionError, OSError) as exc:
         print("FAIL package-visibility-contract: " + str(exc), file=sys.stderr)
         return 1
     print(f"PASS source-free package visibility contract: {syntax_count} syntax, "
-          f"{module_count} module visibility, 4 mutation tests")
+          f"{module_count} module, {file_count} file, {import_count} static import, "
+          "4 mutation checks")
     print("NOT executed compiler/JVM/LLVM/AOT tests; remaining manifest/runtime "
           "security scenarios require integration fixtures.")
     return 0
