@@ -75,6 +75,15 @@ class MemoryProfileEvidenceTest(unittest.TestCase):
                 self.reject(name, lambda r: r["proofs"].update({proof: False}))
                 self.reject(name, lambda r: r["proofs"].update({proof: 1}))
 
+    def test_no_actor_retirement_without_execution_lane_quorum(self):
+        proof = "actor_execution_lane_quorum_before_retirement"
+        self.assertIn(proof, MANIFEST["shared_proofs"])
+        for name in MANIFEST["profiles"]:
+            with self.subTest(profile=name):
+                self.reject(name, lambda r: r["proofs"].pop(proof))
+                self.reject(name, lambda r: r["proofs"].update({proof: False}))
+                self.reject(name, lambda r: r["proofs"].update({proof: 1}))
+
     def test_no_nonzero_strict_gc_or_wasm_gc(self):
         self.reject("llvm-native", lambda r: r["metrics"].update(tracing_gc_invocations=1))
         self.reject("wasm32-core", lambda r: r["metrics"].update(wasm_gc_opcode_count=1))
