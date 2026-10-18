@@ -13,6 +13,7 @@ REQUIRED = {
     "tcp-connection-eleventh", "tcp-connect-failure", "tcp-connection-churn",
     "http-redirect-and-multiplex", "network-permission-and-restart",
     "late-cancel-no-burst-credit", "revoked-before-dispatch", "allocation-before-quota-charge",
+    "hierarchical-revoke-commit", "untrusted-raw-native-io",
 }
 EXPECTATIONS = {
     "burst-capacity": "rate-limited",
@@ -38,6 +39,8 @@ EXPECTATIONS = {
     "late-cancel-no-burst-credit": "no-refund-of-published-start-token",
     "revoked-before-dispatch": "deny-new-commit-and-release-slot",
     "allocation-before-quota-charge": "no-leaked-capacity",
+    "hierarchical-revoke-commit": "deny-all-commit",
+    "untrusted-raw-native-io": "broker-required",
 }
 BACKENDS = {"java-graalvm", "llvm", "wasm", "forge", ".net"}
 
