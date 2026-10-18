@@ -98,3 +98,19 @@ until those checks have executed at the exact PR head.
    allocation and GC tails without disabling host GC.
 6. Desktop: native LLVM full-AOT distribution with tracked OS/FFI resource
    lifetimes; separately exercise Graal desktop as a low-GC, not no-GC mode.
+
+
+## October 17 implementation slices and non-evidence boundaries
+
+The following are draft work branches, **not release certifications**:
+
+- [LLVM native CFG suspension-fence PR #596](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/596): adds host CFG `Suspend` operation rejecting all ordinary live loans, including projection and branch-join cases. Every real source lowering path still needs to emit the fence, and pinned async frames need separate actual runtime proof.
+- [LLVM native IR admission PR #594](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/594): early rejection of known LLVM tracing collector intrinsics/strategies/calls in standalone AOT driver. Cannot certify linked/loaded dependencies.
+- [Wasm strict guest admission PR #94](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/94): parses type, global and code sections to reject GC/reference operations before the host compiles/admits the Wasm scalar guest. Checked-in gate was exercised via source-fetched V8 evaluation against 8 source-free binary fixtures; Node 22 validated the corresponding module shapes. Not `npm test`, .ores guest codegen, deterministic drops, or host no-GC evidence.
+
+As of these checkpoints the source-organization Actions jobs for all these
+draft PR heads terminate before any job steps execute (zero-step failures).
+Classify them as **CI infrastructure blocked**, not source-test passes or
+implementation test failures. Use only separately executed evidence with exact
+source provenance; never place protected private source in a public Actions
+mirror merely to obtain runner minutes.
