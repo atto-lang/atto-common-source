@@ -1,0 +1,51 @@
+// Proposed WIT transport ABI, NOT an exact equivalence claim to the TypeSpec
+// JSON or Oreslang source actor message ABI. Kebab-case field mapping,
+// digest content canonicalization and u64/i64 narrowing are explicit gates.
+package oreslang:tensor-pipeline@0.1.0;
+
+interface envelopes {
+  record tensor-descriptor {
+    dtype: string,
+    shape: list<u64>,
+    strides: list<u64>,
+    byte-length: u64,
+  }
+  record frozen-tensor-lease {
+    id: string,
+    epoch: u64,
+    mode: string,
+  }
+  record tensor-data {
+    run-id: string,
+    graph-epoch: u64,
+    actor-epoch: u64,
+    partition-id: u64,
+    sequence: u64,
+    step-id: u64,
+    microbatch-id: u64,
+    watermark-ms: u64,
+    tensor: tensor-descriptor,
+    lease: frozen-tensor-lease,
+    digest: string,
+  }
+  record tensor-ack {
+    run-id: string,
+    graph-epoch: u64,
+    actor-epoch: u64,
+    partition-id: u64,
+    sequence: u64,
+    digest: string,
+  }
+  record tensor-watermark {
+    run-id: string,
+    graph-epoch: u64,
+    actor-epoch: u64,
+    partition-id: u64,
+    watermark-ms: u64,
+  }
+  variant message {
+    data(tensor-data),
+    ack(tensor-ack),
+    watermark(tensor-watermark),
+  }
+}
