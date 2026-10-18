@@ -1,6 +1,6 @@
 # Unifying Oreslang tensor, data and AI/ML actor pipelines — v1 (PROPOSED)
 
-**October 18, 2026.** Shared language/runtime contract, not shipping Java/LLVM/Graal source interoperability. This PR is stacked on the sealed-state/autograd common-source drafts #78 and #76. The tensor row-batch/gradient implementation is in [oreslang-tensor PR #5](https://github.com/ores-truffle-oreslang/oreslang-tensor/pull/5); aligned data loading + affine training is in [oreslang-ml PR #8](https://github.com/ores-truffle-oreslang/oreslang-ml/pull/8). These sibling PRs are independent and unmerged.
+**October 18, 2026.** Shared language/runtime contract, not shipping Java/LLVM/Graal source interoperability. This PR is stacked on the sealed-state/autograd common-source drafts #78 and #76. The tensor row-batch/gradient implementation is in [oreslang-tensor PR #5](https://github.com/ores-truffle-oreslang/oreslang-tensor/pull/5); [oreslang-autograd PR #5](https://github.com/ores-truffle-oreslang/oreslang-autograd/pull/5) adds saved-forward value-consistency validation before invoking its gather VJP; aligned data loading + affine training is in [oreslang-ml PR #8](https://github.com/ores-truffle-oreslang/oreslang-ml/pull/8). These sibling PRs are independent and unmerged.
 
 ## One execution model for data and ML
 
