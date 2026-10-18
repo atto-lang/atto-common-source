@@ -8,6 +8,7 @@
     "suspension_and_pinned_frame_lifetimes",
     "actor_mailbox_transfer_and_aba",
     "cancellation_unwind_and_ffi_fencing",
+    "abandoned_frame_cleanup_ack_before_retirement",
     "effects_no_alloc_and_no_block_fail_closed",
     "compiled_guest_positive_negative_execution"
   ],
