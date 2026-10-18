@@ -16,6 +16,8 @@ REQUIRED = {
     "hierarchical-revoke-commit", "untrusted-raw-native-io",
     "http-caller-future-cancel-isolated", "tcp-transport-close-settlement",
     "monotonic-wrap-no-token-mint",
+    "actor-context-network-ingress", "actor-ticket-budget-replay",
+    "host-future-callback-isolation",
 }
 EXPECTATIONS = {
     "burst-capacity": "rate-limited",
@@ -46,6 +48,9 @@ EXPECTATIONS = {
     "http-caller-future-cancel-isolated": "host-owned-completion",
     "tcp-transport-close-settlement": "physical-close-before-release",
     "monotonic-wrap-no-token-mint": "bounded-refill",
+    "actor-context-network-ingress": "runtime-provenance-required",
+    "actor-ticket-budget-replay": "bounded-one-shot-ticket",
+    "host-future-callback-isolation": "no-guest-callback-on-host",
 }
 BACKENDS = {"java-graalvm", "llvm", "wasm", "forge", ".net"}
 
