@@ -123,6 +123,16 @@
       "id": "allocation-before-quota-charge",
       "scenario": "host allocation failure while building an admission envelope or native lease occurs before token or slot charge",
       "expect": "no-leaked-capacity"
+    },
+    {
+      "id": "hierarchical-revoke-commit",
+      "scenario": "revoke child supervisor or tenant after admission and before dispatch: none of the three scope leases becomes committed",
+      "expect": "deny-all-commit"
+    },
+    {
+      "id": "untrusted-raw-native-io",
+      "scenario": "untrusted actor turn invokes ordinary Java NativeIo outbound HTTP or TCP despite an attempted future capability expansion",
+      "expect": "broker-required"
     }
   ],
   "network_policy": {
