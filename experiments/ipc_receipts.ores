@@ -74,7 +74,7 @@ define module ipc_receipts as
                           capability_generation, sha256);
   }
 
-  pub fnc initially_admitted(ReceiptKey key): Result<ReceiptSnapshot, String> {
+  pub fnc reference_initially_admitted(ReceiptKey key): Result<ReceiptSnapshot, String> {
     if !key.is_valid(); then
       return Err("invalid IPC correlation identity");
     fi
@@ -103,14 +103,16 @@ define module ipc_receipts as
     return true;
   }
 
-  pub fnc advance(
+  // Pure guest-side stage check ONLY. A caller may forge any input values:
+  // NEVER accept this return value as trusted proof of transport delivery.
+  // The host must authenticate peers and enforce atomic bounded correlation.
+  pub fnc reference_transition(
     ReceiptSnapshot current,
-    ReceiptKey authenticated_receipt,
-    int next_stage,
-    bool authenticated
+    ReceiptKey candidate_receipt,
+    int next_stage
   ): Result<ReceiptSnapshot, String> {
-    if !authenticated || !current.key.matches(authenticated_receipt); then
-      return Err("receipt identity or transport authentication mismatch");
+    if !current.key.matches(candidate_receipt); then
+      return Err("receipt identity mismatch");
     fi
     if !current.key.is_valid(); then
       return Err("invalid receipt envelope");
