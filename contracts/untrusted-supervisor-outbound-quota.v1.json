@@ -148,6 +148,21 @@
       "id": "monotonic-wrap-no-token-mint",
       "scenario": "trusted monotonic nanosecond clock advances across signed or unsigned representation wrap and a backward sample follows: a negative interpretation never mints tokens",
       "expect": "bounded-refill"
+    },
+    {
+      "id": "actor-context-network-ingress",
+      "scenario": "host-issued egress binding resolves an untrusted sender solely from the current runtime actor context and refuses foreign actors or unbound runtimes",
+      "expect": "runtime-provenance-required"
+    },
+    {
+      "id": "actor-ticket-budget-replay",
+      "scenario": "untrusted actor attempts more than sixteen unconsumed network results or tries to consume a completed ticket twice and then after host revocation",
+      "expect": "bounded-one-shot-ticket"
+    },
+    {
+      "id": "host-future-callback-isolation",
+      "scenario": "guest network completion must not run user-controlled CompletableFuture callbacks with trusted host thread authority or expose host I/O objects",
+      "expect": "no-guest-callback-on-host"
     }
   ],
   "network_policy": {
