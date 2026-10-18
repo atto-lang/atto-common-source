@@ -39,3 +39,24 @@ AOT-to-AOT replacement is valid: an approved supervisor stages a relocatable, ve
 The adjacent `verify.py` is a **source-independent reference monitor**. Success only validates these modeled invariants. Release requires a new, non-skipped actual source-compiled actor test per backend for AOT→AOT, AOT→ORC→AOT, JIT→JIT, actor identity, same- and changed-schema migrations, rollback, malicious loader rejection, shared FFI/critical leases, 3 concurrent actor turns, awaited callbacks, stale/foreign refs, malformed images, code retention, failed unload quarantine and untrusted sandbox placement. Pin source commit/tree, compiler artifact/dependency digest, signed manifest, platform/toolchain, logs and sanitizer results. Do not reclassify a source-free or public synthetic run as compiler/runtime proof.
 
 Linked source work: [Java #1270](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1270), [LLVM #602](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/602), [LLVM #627](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/627), [LLVM #606](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/606), [LLVM #607](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/607), [LLVM #610](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/610) and [common source #73](https://github.com/ores-truffle-oreslang/oreslang-common-source/issues/73).
+
+## Task/suspends generation pins and placement invariance (v1 extension)
+
+The `suspends` effect executes within the **same Task**; an `await`
+suspends its carrier but must retain the old code image and actor-generation
+lease. Only physical Task quiescence after lexical cleanup releases the
+lease. Nested `task {}` launches acquire *independent* child Task generation
+pins, including for `do task` (discarded handle). Pending shared Future
+producers do not become child-owned merely because an awaiting Task cancels.
+
+Hot reload cannot change the actor's kind, physical protection placement or
+shared-cell schema by silently switching from AOT to JIT. The reference
+monitor now binds immutable placement directly into every staged image,
+rejects malformed/unknown placement names, and checks the same placement
+again at generation publication. This is a **model label**, not a proof
+that a sandbox process or isolation boundary was actually instantiated.
+
+Two additional model regressions cover suspended Task pin retention and
+cross-protection placement rejection. The underlying Python reference
+monitor, Java actor gate, Java Task/cleanup runtime and LLVM PIC/ORC paths
+still require independent, exact-head executable verification.
