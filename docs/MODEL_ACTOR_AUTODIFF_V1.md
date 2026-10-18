@@ -61,6 +61,10 @@ nominal_layer_call = IDENT "(" [ compile_time_arguments ] ")" ;
 - Support explicit `detach`/no-grad boundaries when added; `detach` is never implicit on message delivery, a device hop, or an actor boundary. Unsupported dynamic control flow and higher derivatives fail closed in v1.
 - Trainable parameter and optimizer state have unique mutable owners. Frozen immutable tensors may share within authorized allocation/trust domains; `rt share` does not export private pointers. Across isolation boundaries and machines, use an admitted copy/transport or scoped lease.
 
+## Actor stage state and parameter ownership (normative refinement)
+
+Every concrete actor stage owns all persistent guest data through its **single `state { ... }` declaration**, not arbitrary actor fields such as `val Linear layer;`. State must be borrowed only inside sealed lexical read/critical-write loans. Short critical transactions protect reservation, snapshot pinning, gradient accumulation, and local weight/optimizer publish; tensor kernels, awaits and actor sends happen after releasing the state loan. Forward/backward must reference the same immutable pinned parameter version. Local criticality alone cannot guarantee distributed optimizer atomicity. See [the detailed state, snapshot and commit protocol](MODEL_ACTOR_SEALED_STATE_V1.md).
+
 ## Typed forward/backward actor transport
 
 The built-in differentiable stage contract **uses the existing typed actor directionality** (`self.forward`, `self.backward`), but messages for training carry a validated envelope:
