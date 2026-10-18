@@ -53,10 +53,9 @@ def oracle(expression: str) -> int:
             raise ContractError("expression exceeds depth budget")
         if isinstance(expr, ast.Constant) and type(expr.value) is int:
             return expr.value  # unary sign is applied before the i64 range check
-        if isinstance(expr, ast.UnaryOp) and isinstance(expr.op, (ast.UAdd, ast.USub)):
+        if isinstance(expr, ast.UnaryOp) and isinstance(expr.op, ast.USub):
             operand = interpret(expr.operand, depth+1)
-            result = -operand if isinstance(expr.op, ast.USub) else operand
-            return _checked(result)
+            return _checked(-operand)
         if isinstance(expr, ast.BinOp) and type(expr.op) in (ast.Add, ast.Sub, ast.Mult):
             left = _checked(interpret(expr.left, depth+1))
             right = _checked(interpret(expr.right, depth+1))
