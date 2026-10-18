@@ -313,3 +313,20 @@ mutable/shadowed bindings. This remains an **analysis-only** path:
 `OresCompiler.parseAndTypeCheck` intentionally does not admit guest
 `Zorde.infer`/refinement construction until checked runtime and ownership
 lowering exist. LLVM and other backends must fail closed until conformance.
+
+
+## Canonical Zorde scalar descriptor boundary
+
+The source-free Zorde bridge now emits the same normalized scalar identity as
+the compiler schema ABI instead of maintaining a second min/max interpretation.
+`zorde.scalar/v1` carries version, base, property, inclusive minimum/maximum,
+sorted effective exclusions, compiler-qualified nominal identity, and the
+SHA-256 refinement fingerprint.
+
+Exclusive source comparisons are normalized before runtime handoff: for
+example `value gt 0 and value lt 10` becomes the inclusive interval
+`[1,9]`. Effective `ne` holes are preserved rather than silently erased.
+A nominal descriptor **requires a compiler-qualified identity** such as
+`app.auth.UserId`; a short source name is never sufficient authority.
+The bridge intentionally contains no `runtime_supported` boolean: capability
+support belongs to independently executed backend evidence, not schema data.
