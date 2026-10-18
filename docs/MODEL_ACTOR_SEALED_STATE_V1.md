@@ -123,3 +123,13 @@ G3: real multi-stage actor training with exact source-tree test evidence, bounde
 G4: controlled multi-thread actors, GPU events and distributed shard commit/fencing, with sanitizer and provenance artifacts.
 
 **No private source mirroring to an unrelated GitHub organization without explicit authorization.** Earlier host-only oracle runs are not native guest execution evidence.
+
+## Implemented follow-up (October 18, 2026, still host-only)
+
+- `tests/model-actor-rw-state-contract.test.mjs`: eight deterministic async host admission scenarios. Model preserves parallel read cohorts, exclusive writers, queued-writer fairness barrier, cancellation (including idempotent cancellation), bounded waiting queue, epoch retirement, forged/double ticket rejection and local atomic version publication while immutable old scalars remain valid.
+- `tests/model-actor-state-versioning-contract.test.mjs`: nine MVCC/optimizer-ledger host scenarios from this draft. Together they test **state ownership and admission as separate abstract machines**, not as a compiled actor runtime.
+- `oreslang-ml` draft [PR #7](https://github.com/ores-truffle-oreslang/oreslang-ml/pull/7): a proposed `.ores` actor scalar-gradient source fixture exercises read-only `using`, write `using(critical ...)`, both `self.handle_state(critical read ...)` and `(critical write ...)`, declared `with` effect rows, duplicate microbatch admission and premature/stale optimizer checks. Its test suite has isolated host V8 reference evidence only. The actual `.ores` program is **not yet verified** compiled/executed.
+
+The RW host model is intentionally **conservative on nested same-owner admissions**: all nesting is rejected until the native/Java verified reentrancy policy is implemented. A separately admitted write does not inherit a former read ticket; read→write upgrade never happens implicitly. A retiring gate lets already running callbacks unwind before state reclamation; cancelling a queued waiter cannot release an executing permit. No OS/native mutex is held over an Oreslang guest callback or `await`.
+
+Do not conflate a host simulator's `gate` member (runtime-only admission metadata) with a second guest-owned actor field. In Oreslang source, all guest-owned persistent state remains in the sole `state { ... }` variable. The scheduler's authenticated gate remains internal.
