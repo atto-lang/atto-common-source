@@ -67,3 +67,24 @@ CI must distinguish: `contract-pass`, `source-compilation-pass`, `runtime-execut
 ## Additional G0 security reference checks
 
 `tests/test_otp_import_closure_contract.py` exercises a parsed-unit **reference model** of closure admission, including hosted-mode core-to-host escapes, missing imports, legal cycles and forbidden-layer edges inside cycles, bounded 4,096-unit/65,536-edge traversal, transitive OTP-to-OS imports, missing actor providers, absent OTP feature primitives, explicit clock requirements and optional allocation. Import cycles are not inherently illegal library dependencies; the real compiler separately enforces static initialization safety and source import validity. These tests do not parse or execute any `.ores` source. An actual compiler must derive imports, effects and generated-code edges itself and must prove the same cases with real positive and negative guest fixtures.
+
+## October 17 implementation status — staged, not promoted
+
+Java/Graal [OTP PR #1216](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1216)
+now carries a draft closed `otp/*` resolver mapping to the same packaged
+sources and linked unit IDs as `std/otp/*`. This is **branch-local source**,
+not merged/released or runner-verified. Therefore this common-source manifest
+continues to report `sourceImplementationAvailable=false` and pending
+full-behaviour implementation; this is intentional rather than ignorance of
+the Java branch. It is not a freestanding LLVM module linker.
+
+Java's [GenServer CallPort bridge](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1216)
+also stitches an internal one-shot reply ledger to `OresFuture` for
+host/runtime-only use, but **does not yet dispatch actual guest handler
+messages**. Authenticated CONTROL supervisor and restart orchestration,
+source-level call/cast APIs, semantic effects validation, native typed module
+linking, and physical bare-metal proof are still required separately.
+
+A private funded test-org G0 run verifies exact **source-free** metadata and
+reference-model Git blobs only; it is not an exact compiler Git-tree mirror or
+evidence of OresVM execution. The required evidence labels remain distinct.
