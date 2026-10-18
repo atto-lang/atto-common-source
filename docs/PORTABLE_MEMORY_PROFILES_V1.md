@@ -215,3 +215,52 @@ operations). The last recorded LLVM exact-head GitHub Actions run
 local-header test results into compiled-language, executable-binary or
 production no-GC evidence. Multi-DSO runtimes need a host-assigned,
 stable runtime-instance identity as an additional namespace.
+
+
+### Abandoned continuation cleanup is a retirement precondition
+
+A joined carrier is not sufficient evidence that actor-owned memory is safe to
+reclaim. If a logical turn entered user/generated frame code and STOP,
+cancellation or protocol failure abandons it before DONE, the frame must execute
+a trusted carrier-thread cancellation/drop transition and explicitly acknowledge
+successful cleanup. Queued envelopes that never entered user code have no frame
+cleanup obligation.
+
+LLVM [PR #596](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/596)
+now tracks the active logical turn independently of I/O/cooperation state.
+A V2 generated frame may provide a boolean cancellation callback. The callback
+runs at most once on the actor carrier with actor-heap authority. Missing cleanup
+or a false cleanup acknowledgment permanently blocks
+`CarrierRetirementProof`; successful generated cleanup can authorize retirement
+only after actor, broker and producer quiescence. DONE racing STOP wins completion
+and receives no cancellation callback. The real experimental compiled scalar
+frame exports `oreslang_rt_scalar_frame_cancel`, and the checked-in AOT
+integration test binds successful cancellation to retirement-proof issuance.
+The source-to-frame cooperative loop also passes through the reusable
+`OwnershipCfg::Suspend` operation before lowering.
+
+The normative evidence manifest therefore requires
+`abandoned_frame_cleanup_ack_before_retirement` as a shared proof for every
+memory profile. This is intentionally stronger than merely recording that a
+cancel callback was invoked.
+
+#### Runner/provenance status at this checkpoint
+
+- The exact current LLVM source-organization workflow still terminates with
+  **zero executed steps**. This is not test evidence.
+- A harmless capacity probe in private
+  `ores-vector-embedding/ores-vector-embedding-lib-core` executed successfully
+  (GitHub run `39098403413`, three real steps), proving that organization had
+  hosted-runner capacity at the probe time. Platform safety controls blocked
+  transferring private Oreslang source into that unrelated repository, so it
+  was not used for source CI.
+- The purpose-built private Oreslang validation repository
+  `zed-pkg-test/oreslang-private-pr-validation-20261012` accepts
+  content-addressed private Oreslang blobs and preserves their Git SHA, but its
+  tiny LLVM runner probe `39098774961` also failed with zero executed steps.
+  Its preexisting LLVM mirror is substantially older than the current branch,
+  so no partial overlay is presented as exact-tree evidence.
+
+Keep #596 draft until the checked-in cancellation races, generated frame AOT,
+full CTest/sanitizers and exact source-tree provenance execute on an authorized
+runner.
