@@ -196,7 +196,10 @@
     "freestanding-link-time-visibility-no-runtime-allocator",
     "file-scoped-member-hidden-from-other-source-unit-even-same-package",
     "file-scoped-member-visible-across-modules-in-same-source-unit",
-    "syntax-synonym-same-ABI-and-formatter-idempotence"
+    "syntax-synonym-same-ABI-and-formatter-idempotence",
+    "public-member-inside-package-private-module-must-not-escape",
+    "public-member-inside-file-private-module-must-not-escape",
+    "cross-dependency-same-name-package-does-not-share-authority"
   ],
   "backend_status": {
     "java": "implementation-pending; no runtime evidence",
@@ -344,6 +347,313 @@
       "symbol": "topLevel",
       "importer": "src/main.ores",
       "reason": "redundant-file-visibility"
+    }
+  ],
+  "module_visibility_cases": [
+    {
+      "id": "pkg-module-public-member-same-package",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/tokens.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "Parent package-only allows package peer"
+    },
+    {
+      "id": "pkg-module-public-member-other-package",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/billing/billing.ores",
+      "importer_module": "Billing",
+      "expected": "reject",
+      "explanation": "Public child cannot widen restricted parent"
+    },
+    {
+      "id": "pkg-module-public-member-singleton",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/main.ores",
+      "importer_module": "App",
+      "expected": "reject",
+      "explanation": "Singleton is separate package"
+    },
+    {
+      "id": "pkg-module-file-member-same-file-other-module",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "FILE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "File-visible member accessible from same-file peer module"
+    },
+    {
+      "id": "pkg-module-file-member-peer-file",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "FILE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/tokens.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Package membership does not grant file visibility"
+    },
+    {
+      "id": "pkg-module-file-member-other-package",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "FILE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/billing/billing.ores",
+      "importer_module": "Billing",
+      "expected": "reject",
+      "explanation": "Two restrictions enforced"
+    },
+    {
+      "id": "file-module-public-member-same-file-other-module",
+      "module_name": "Auth",
+      "module_visibility": "FILE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "Public member cannot escape file-visible module"
+    },
+    {
+      "id": "file-module-public-member-package-peer",
+      "module_name": "Auth",
+      "module_visibility": "FILE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/tokens.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Public member cannot widen file-visible module"
+    },
+    {
+      "id": "file-module-package-member-package-peer",
+      "module_name": "Auth",
+      "module_visibility": "FILE",
+      "member_name": "run",
+      "member_visibility": "PACKAGE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/permissions.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Package member does not widen file module"
+    },
+    {
+      "id": "file-module-package-member-same-file",
+      "module_name": "Auth",
+      "module_visibility": "FILE",
+      "member_name": "run",
+      "member_visibility": "PACKAGE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "Same file also same package"
+    },
+    {
+      "id": "public-module-package-member-package-peer",
+      "module_name": "Auth",
+      "module_visibility": "PUBLIC",
+      "member_name": "run",
+      "member_visibility": "PACKAGE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/tokens.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "Member package boundary applies"
+    },
+    {
+      "id": "public-module-package-member-other-package",
+      "module_name": "Auth",
+      "module_visibility": "PUBLIC",
+      "member_name": "run",
+      "member_visibility": "PACKAGE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/billing/billing.ores",
+      "importer_module": "Billing",
+      "expected": "reject",
+      "explanation": "Member package boundary applies"
+    },
+    {
+      "id": "public-module-file-member-same-file",
+      "module_name": "Auth",
+      "module_visibility": "PUBLIC",
+      "member_name": "run",
+      "member_visibility": "FILE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "Member file boundary applies"
+    },
+    {
+      "id": "public-module-file-member-package-peer",
+      "module_name": "Auth",
+      "module_visibility": "PUBLIC",
+      "member_name": "run",
+      "member_visibility": "FILE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/permissions.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Member file boundary applies"
+    },
+    {
+      "id": "public-module-private-member-same-module",
+      "module_name": "Auth",
+      "module_visibility": "PUBLIC",
+      "member_name": "run",
+      "member_visibility": "PRIVATE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Auth",
+      "expected": "admit",
+      "explanation": "Module-private accessible within lexical module"
+    },
+    {
+      "id": "public-module-private-member-other-module",
+      "module_name": "Auth",
+      "module_visibility": "PUBLIC",
+      "member_name": "run",
+      "member_visibility": "PRIVATE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Private member must remain module-local"
+    },
+    {
+      "id": "private-top-level-module-public-member-same-file",
+      "module_name": "Auth",
+      "module_visibility": "PRIVATE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "admit",
+      "explanation": "Private module at file root means same-file"
+    },
+    {
+      "id": "private-top-level-module-public-member-package-peer",
+      "module_name": "Auth",
+      "module_visibility": "PRIVATE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/tokens.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Private file-root module cannot cross file"
+    },
+    {
+      "id": "pkg-module-private-member-same-module",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "PRIVATE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Auth",
+      "expected": "admit",
+      "explanation": "Private member accessible to declaring module"
+    },
+    {
+      "id": "pkg-module-private-member-other-module",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "PRIVATE",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Package module does not widen private member"
+    },
+    {
+      "id": "pkg-module-public-member-other-dependency-same-name",
+      "module_name": "Auth",
+      "module_visibility": "PACKAGE",
+      "member_name": "run",
+      "member_visibility": "PUBLIC",
+      "origin_source": "src/auth/auth.ores",
+      "importer_source": "dependency-copy/src/auth/auth.ores",
+      "importer_module": "Other",
+      "expected": "reject",
+      "explanation": "Matching printed package names do not grant authority"
+    }
+  ],
+  "module_syntax_cases": [
+    {
+      "source": "define pub[pkg] module Auth as",
+      "visibility": "PACKAGE",
+      "canonical": "define pub[pkg] module Auth as",
+      "expect": "admit"
+    },
+    {
+      "source": "define pub[package] module Auth as",
+      "visibility": "PACKAGE",
+      "canonical": "define pub[pkg] module Auth as",
+      "expect": "admit"
+    },
+    {
+      "source": "define pub(package) module Auth as",
+      "visibility": "PACKAGE",
+      "canonical": "define pub[pkg] module Auth as",
+      "expect": "admit"
+    },
+    {
+      "source": "define pub(pkg) module Auth as",
+      "visibility": "PACKAGE",
+      "canonical": "define pub[pkg] module Auth as",
+      "expect": "admit"
+    },
+    {
+      "source": "define pub[file] module Auth as",
+      "visibility": "FILE",
+      "canonical": "define pub[file] module Auth as",
+      "expect": "admit"
+    },
+    {
+      "source": "define pub(file) module Auth as",
+      "visibility": "FILE",
+      "canonical": "define pub[file] module Auth as",
+      "expect": "admit"
+    },
+    {
+      "source": "define pub[unknown] module Auth as",
+      "expect": "reject",
+      "reason": "unknown-scope"
+    },
+    {
+      "source": "define pub[pkg) module Auth as",
+      "expect": "reject",
+      "reason": "mismatched-delimiter"
+    },
+    {
+      "source": "define pub[file] module Outer as define module Nested",
+      "expect": "reject",
+      "reason": "nested-modules-unsupported"
     }
   ]
 }
