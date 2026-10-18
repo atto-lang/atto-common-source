@@ -37,7 +37,7 @@ def _nonnegative_number(value, field):
 
 
 def validate_manifest(manifest):
-    if type(manifest) is not dict or manifest.get("schema_version") != 1:
+    if type(manifest) is not dict or type(manifest.get("schema_version")) is not int or manifest.get("schema_version") != 1:
         raise MemoryEvidenceError("manifest: unsupported schema_version")
     shared = manifest.get("shared_proofs")
     if type(shared) is not list or not shared or any(type(x) is not str or not x for x in shared):
@@ -48,9 +48,9 @@ def validate_manifest(manifest):
     if type(profiles) is not dict or set(profiles) != EXPECTED_GUEST:
         raise MemoryEvidenceError("manifest: missing or unknown target profiles")
     for name, profile in profiles.items():
-        if type(profile) is not dict or profile.get("guest_gc") not in ALLOWED_GUEST_GC:
+        if type(profile) is not dict or type(profile.get("guest_gc")) is not str or profile.get("guest_gc") not in ALLOWED_GUEST_GC:
             raise MemoryEvidenceError(f"{name}: invalid guest GC policy")
-        if not profile.get("host_gc") or not profile.get("delivery"):
+        if type(profile.get("host_gc")) is not str or not profile["host_gc"] or type(profile.get("delivery")) is not str or not profile["delivery"]:
             raise MemoryEvidenceError(f"{name}: host GC / delivery missing")
         proofs, metrics = profile.get("proofs"), profile.get("metrics")
         if type(proofs) is not list or not proofs or any(type(p) is not str or not p for p in proofs):
@@ -70,10 +70,10 @@ def validate_manifest(manifest):
 
 def check_record(manifest, record):
     profiles = validate_manifest(manifest)
-    if type(record) is not dict or record.get("schema_version") != 1:
+    if type(record) is not dict or type(record.get("schema_version")) is not int or record.get("schema_version") != 1:
         raise MemoryEvidenceError("record: unsupported schema_version")
     name = record.get("profile")
-    if name not in profiles:
+    if type(name) is not str or name not in profiles:
         raise MemoryEvidenceError("record: unknown profile")
     profile = profiles[name]
     if record.get("delivery") != profile["delivery"]:
@@ -110,6 +110,19 @@ def check_record(manifest, record):
     return name
 
 
+def strict_json_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise MemoryEvidenceError(f"duplicate JSON field: {key}")
+        result[key] = value
+    return result
+
+
+def parse_json(text):
+    return json.loads(text, object_pairs_hook=strict_json_pairs)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path,
@@ -117,8 +130,8 @@ def main(argv=None):
     parser.add_argument("--evidence", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
-        evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
+        manifest = parse_json(args.manifest.read_text(encoding="utf-8"))
+        evidence = parse_json(args.evidence.read_text(encoding="utf-8"))
         target = check_record(manifest, evidence)
     except (MemoryEvidenceError, ValueError, OSError, UnicodeError) as error:
         print("MEMORY_EVIDENCE_REJECTED: " + str(error), file=sys.stderr)
