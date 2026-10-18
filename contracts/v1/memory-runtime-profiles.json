@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "status": "normative-target-not-implementation-evidence",
+  "shared_proofs": [
+    "cfg_place_and_projection_loans",
+    "affine_moves_and_partial_init",
+    "deterministic_drop_all_exits",
+    "suspension_and_pinned_frame_lifetimes",
+    "actor_mailbox_transfer_and_aba",
+    "cancellation_unwind_and_ffi_fencing",
+    "effects_no_alloc_and_no_block_fail_closed",
+    "compiled_guest_positive_negative_execution"
+  ],
+  "profiles": {
+    "llvm-native": {
+      "guest_gc": "forbidden",
+      "host_gc": "forbidden-within-linked-process",
+      "delivery": "native-aot",
+      "proofs": [
+        "no_gc_ir_intrinsics_or_fallback",
+        "transitive_link_and_plugin_gc_audit",
+        "actor_region_quiescence_and_cycle_reclamation"
+      ],
+      "metrics": {
+        "tracing_gc_invocations": "zero",
+        "linked_collector_symbols": "zero",
+        "alloc_bytes_per_operation": "measured"
+      }
+    },
+    "desktop-native": {
+      "guest_gc": "forbidden",
+      "host_gc": "forbidden-within-linked-process",
+      "delivery": "native-aot",
+      "proofs": [
+        "no_gc_ir_intrinsics_or_fallback",
+        "transitive_link_and_plugin_gc_audit",
+        "desktop_resource_close_and_reload"
+      ],
+      "metrics": {
+        "tracing_gc_invocations": "zero",
+        "linked_collector_symbols": "zero",
+        "alloc_bytes_per_operation": "measured"
+      }
+    },
+    "wasm32-core": {
+      "guest_gc": "forbidden",
+      "host_gc": "embedder-dependent",
+      "delivery": "wasm-module-aot",
+      "proofs": [
+        "wasm_linear_memory_owned_drop",
+        "wasm_gc_reference_types_rejected",
+        "wasm_no_implicit_managed_imports",
+        "module_binary_import_and_opcode_audit"
+      ],
+      "metrics": {
+        "guest_tracing_gc_invocations": "zero",
+        "wasm_gc_opcode_count": "zero",
+        "guest_alloc_bytes_per_operation": "measured"
+      }
+    },
+    "embedded-freestanding": {
+      "guest_gc": "forbidden",
+      "host_gc": "forbidden",
+      "delivery": "native-aot",
+      "proofs": [
+        "freestanding_no_os_no_libc_core_link",
+        "bounded_static_or_injected_region_allocator",
+        "deterministic_drop_and_interrupt_fences",
+        "firmware_image_and_qemu_or_hardware_execution"
+      ],
+      "metrics": {
+        "tracing_gc_invocations": "zero",
+        "collector_linked_symbols": "zero",
+        "post_init_heap_alloc_bytes_in_no_alloc_region": "zero"
+      }
+    },
+    "graal-jvm": {
+      "guest_gc": "not-required-for-guest-resource-correctness",
+      "host_gc": "allowed-and-measured",
+      "delivery": "jvm-jit",
+      "proofs": [
+        "guest_resource_cleanup_independent_of_jvm_gc",
+        "jfr_or_allocation_profiler_trace",
+        "warmup_separated_from_steady_state",
+        "host_gc_pause_tail_report"
+      ],
+      "metrics": {
+        "steady_state_guest_hot_loop_alloc_bytes_per_op": "zero",
+        "jvm_gc_pause_p99_us": "measured",
+        "jvm_gc_invocations": "measured"
+      }
+    },
+    "graal-native-image": {
+      "guest_gc": "not-required-for-guest-resource-correctness",
+      "host_gc": "allowed-and-measured",
+      "delivery": "native-image-aot",
+      "proofs": [
+        "guest_resource_cleanup_independent_of_jvm_gc",
+        "native_image_aot_binary_verified",
+        "warmup_separated_from_steady_state",
+        "native_image_gc_pause_tail_report"
+      ],
+      "metrics": {
+        "steady_state_guest_hot_loop_alloc_bytes_per_op": "zero",
+        "native_image_gc_pause_p99_us": "measured",
+        "native_image_gc_invocations": "measured"
+      }
+    }
+  }
+}
