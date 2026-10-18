@@ -7,58 +7,63 @@ pub routine main(): void {
     "tenantA", "sender", 4, "worker", 7, 10,
     "sessionA", 1, 1, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   );
-  val admitted = ipc_receipts.initially_admitted(key);
+  val admitted = ipc_receipts.reference_initially_admitted(key);
   stdio.println(admitted.is_ok());
 
   val first = admitted.unwrap();
   stdio.println(first.stage == ipc_receipts.local_admitted());
 
   // Authenticated remote receipt is NOT completion of the handler turn.
-  val remote = ipc_receipts.advance(first, key, ipc_receipts.remote_accepted(), true);
+  val remote = ipc_receipts.reference_transition(first, key, ipc_receipts.remote_accepted()
+  );
   stdio.println(remote.is_ok());
   stdio.println(remote.unwrap().stage != ipc_receipts.handler_committed());
 
-  val completed = ipc_receipts.advance(
-    remote.unwrap(), key, ipc_receipts.handler_committed(), true
+  val completed = ipc_receipts.reference_transition(
+    remote.unwrap(), key, ipc_receipts.handler_committed()
   );
   stdio.println(completed.is_ok());
-  stdio.println(ipc_receipts.advance(
-    completed.unwrap(), key, ipc_receipts.handler_committed(), true
+  stdio.println(ipc_receipts.reference_transition(
+    completed.unwrap(), key, ipc_receipts.handler_committed()
   ).is_err());
 
   // False remote-admission failure after authenticated acceptance is denied.
-  stdio.println(ipc_receipts.advance(
-    remote.unwrap(), key, ipc_receipts.rejected_before_remote(), true
+  stdio.println(ipc_receipts.reference_transition(
+    remote.unwrap(), key, ipc_receipts.rejected_before_remote()
   ).is_err());
-  stdio.println(ipc_receipts.advance(
-    first, key, ipc_receipts.handler_failed(), true
+  stdio.println(ipc_receipts.reference_transition(
+    first, key, ipc_receipts.handler_failed()
   ).is_err());
 
   // Before remote acceptance, definitive no-admission is legal.
-  stdio.println(ipc_receipts.advance(
-    first, key, ipc_receipts.rejected_before_remote(), true
+  stdio.println(ipc_receipts.reference_transition(
+    first, key, ipc_receipts.rejected_before_remote()
   ).is_ok());
 
   // Unknown is terminal and never authorizes replay.
-  val unknown = ipc_receipts.advance(
-    remote.unwrap(), key, ipc_receipts.outcome_unknown(), true
+  val unknown = ipc_receipts.reference_transition(
+    remote.unwrap(), key, ipc_receipts.outcome_unknown()
   );
   stdio.println(unknown.is_ok());
-  stdio.println(ipc_receipts.advance(
-    unknown.unwrap(), key, ipc_receipts.remote_accepted(), true
-  ).is_err());
-
-  // Caller cannot assert that an unauthenticated reply is trusted.
-  stdio.println(ipc_receipts.advance(
-    first, key, ipc_receipts.remote_accepted(), false
+  stdio.println(ipc_receipts.reference_transition(
+    unknown.unwrap(), key, ipc_receipts.remote_accepted()
   ).is_err());
 
   val wrong = ipc_receipts.new_key(
     "tenantA", "sender", 4, "worker", 8, 10,
     "sessionA", 1, 1, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   );
-  stdio.println(ipc_receipts.advance(
-    first, wrong, ipc_receipts.remote_accepted(), true
+  stdio.println(ipc_receipts.reference_transition(
+    first, wrong, ipc_receipts.remote_accepted()
+  ).is_err());
+
+  // A modified payload digest cannot satisfy the admitted correlation key.
+  val tampered = ipc_receipts.new_key(
+    "tenantA", "sender", 4, "worker", 7, 10,
+    "sessionA", 1, 1, 2, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  );
+  stdio.println(ipc_receipts.reference_transition(
+    first, tampered, ipc_receipts.remote_accepted()
   ).is_err());
 
   // Hot code/route changes preserve logical order in one actor incarnation.
@@ -85,7 +90,7 @@ pub routine main(): void {
     "tenantA", "sender", 4, "worker", 7, 10,
     "sessionA", 0, 1, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   );
-  stdio.println(ipc_receipts.initially_admitted(invalid).is_err());
+  stdio.println(ipc_receipts.reference_initially_admitted(invalid).is_err());
   stdio.println(!ipc_receipts.may_admit_after(key, key));
   return;
 }
