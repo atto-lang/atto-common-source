@@ -26,8 +26,8 @@
     },
     {
       "id": "failed-enqueue",
-      "scenario": "reservation succeeds but message copy or mailbox enqueue fails",
-      "expect": "refund-all-scopes"
+      "scenario": "unpublished hierarchical reservation fails before broker exposure: reverse all scopes without partial charge",
+      "expect": "rollback-unpublished-only"
     },
     {
       "id": "bytes-and-credits",
@@ -108,6 +108,21 @@
       "id": "network-permission-and-restart",
       "scenario": "an untrusted actor relabels destination or restarts without an explicitly issued mediated capability",
       "expect": "fail-closed"
+    },
+    {
+      "id": "late-cancel-no-burst-credit",
+      "scenario": "guest keeps a reserved HTTP/TCP operation through rate refill then cancels: release concurrency only, no new start tokens",
+      "expect": "no-refund-of-published-start-token"
+    },
+    {
+      "id": "revoked-before-dispatch",
+      "scenario": "supervisor closes trusted policy after admission but before network dispatch commitment",
+      "expect": "deny-new-commit-and-release-slot"
+    },
+    {
+      "id": "allocation-before-quota-charge",
+      "scenario": "host allocation failure while building an admission envelope or native lease occurs before token or slot charge",
+      "expect": "no-leaked-capacity"
     }
   ],
   "network_policy": {
@@ -116,10 +131,13 @@
     "default_http_request_starts_per_second": 10,
     "default_http_burst": 2,
     "default_tcp_max_open_connections": 10,
-    "connection_starts_per_second": "supervisor-configured-separate",
+    "connection_starts_per_second": 10,
     "enforcement": "trusted-egress-broker-before-dns-connect-and-request-dispatch",
     "lease_ownership": "runtime-only-exactly-once-release",
     "scope": "stable-lineage-supervisor-and-tenant",
-    "network_capability": "explicitly-mediated-only-default-untrusted-denied"
+    "network_capability": "explicitly-mediated-only-default-untrusted-denied",
+    "default_tcp_burst": 2,
+    "published_cancel_refunds_start_tokens": false,
+    "unpublished_internal_rollback_refunds_start_tokens": true
   }
 }
