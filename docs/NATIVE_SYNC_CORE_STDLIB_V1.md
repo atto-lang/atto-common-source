@@ -39,21 +39,29 @@ core gate plus bounded scheduler queues and linear borrows. They must never
 use blocking host mutex acquisition on an actor carrier.
 
 Illustrative *target* source API (not currently LLVM source-executable):
+the `with_lock` API is a proposed sealed scoped-borrow operation, not an
+intrinsic that a guest can implement by calling the raw C release ABI.
+`using` belongs on function effect declarations, not as a lock statement.
 
 ```ores
 val Mutex<int> counter = Mutex.new(0);
-using counter.with_lock(|rt borrow mut value| -> {
+counter.with_lock(|value| -> {
     value += 1;
 });
 
 val RwLock<Config> config = RwLock.new(initial);
-using config.with_read(|rt borrow value| -> {
+config.with_read(|value| -> {
     inspect(value);
 });
-using config.with_write(|rt borrow mut value| -> {
+config.with_write(|value| -> {
     update(value);
 });
 ```
+
+The source compiler must distinguish immutable and mutable callback loan
+types; the sketch does not establish acceptance of these calls. Effects
+under a future standard-library `sync` module require separate explicit
+declarations and verification before source execution.
 
 For actor-owned persistent state, keep **one** `state { ... }` aggregate.
 Sealed `handle_state(critical |s| -> ...)`, `using state.read` and
@@ -95,3 +103,37 @@ must use short metadata transactions, not borrowed guest mutex guards.
    Java-backed locks may be used as host mechanisms, not as exported semantics.
 
 Source host tests or compiler syntax admission alone do not satisfy 2-5.
+
+## Native implementation progress (2026-10-18)
+
+The LLVM draft PR #633 now includes three distinct native **host/compiler
+substrates**, not an Oreslang source implementation:
+
+- `OresCoreSync.h`: freestanding C11 atomic core mutex and RW gates.
+- `OresStdSyncAdmission.h`: bounded 64-ticket FIFO logical scheduler gate,
+  nonparking metadata try-admission, reader cohorts, STOP sealing, cancellation,
+  physical callback start/end, quiescence and wake/failure ticket lists.
+- `OresActorStateRwAdmission.h`: verifies runtime-authenticated actor ID and
+  incarnation, compiler-verified critical callbacks, declared versus inferred
+  `using state.read/state.write` effects, and suspension/retirement fences.
+
+Every stdlib ticket carries its scope pointer, a **trusted nonzero lock-instance
+generation** and a monotonically increasing per-instance sequence. New lock
+incarnations at the same address must use a fresh generation, and teardown
+must wait for all physical callbacks to quiesce before recycling storage.
+The C interface is **trusted native ABI only**, not an Oreslang module or
+public guest FFI. Actor identity inputs and critical/effect proof flags must
+be derived by verified compiler/runtime code, never user arguments.
+
+Native tests cover FIFO handoff, read cohorts, writer exclusion, concurrent
+read/write payload access, invalid effects and wrong-incarnation requests,
+queued/granted cancellation, physical callback STOP races, and same-address
+lock recreation. Final exact-source-blob private CI evidence uses GCC/Clang
+with Release/NDEBUG, ASan/UBSan, and GCC TSan. These focused native tests
+must not be misreported as end-to-end Oreslang source lowering or as a
+complete copied Git tree.
+
+Remaining P0: source AST/HIR/MIR mapping to sealed linear guard operations;
+scheduler-minted continuation ownership; transitive `using` effects; actual
+source `handle_state` RW lowering; supervisor CONTROL-to-state lifecycle
+integration; and full backend source conformance under max=1 and max=3.
