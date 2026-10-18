@@ -114,3 +114,14 @@ Classify them as **CI infrastructure blocked**, not source-test passes or
 implementation test failures. Use only separately executed evidence with exact
 source provenance; never place protected private source in a public Actions
 mirror merely to obtain runner minutes.
+
+
+### Additional executable-path hardening (October 17 follow-up)
+
+- [LLVM #596](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/596) now also adds an atomic exclusive graph-heap mutation gate. An outstanding FFI/continuation lease fences allocate/emplace/write/link/remove and the destructor terminates rather than reclaim still-borrowed storage. Read methods acquire counted pins before checking retirement. An existing native CTest includes 128 race rounds plus a fork-isolated fatal lifetime regression. This is source-code implementation and checked-in testing, **not** executed exact-head sanitizer evidence.
+- [Embedded #20](https://github.com/ores-truffle-oreslang/oreslang-platform.embedded/pull/20) hooks a tracing-GC/heap-allocator IR and actual ARM object-symbol screen into the `.ores` Cortex-M compiler-to-object publication path, with source-free CTest negatives. This is a deliberately restricted no-heap guest profile, not proof about the complete Zephyr or board firmware image.
+- [Java/Graal #1278](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1278) adds opt-in JVM current-thread allocation counters and global collector count/time deltas around actual repeated Graal Polyglot guest evaluation. Missing JMX metrics are **UNAVAILABLE**, never zero. This is measurement infrastructure; it cannot certify zero allocation, independent actor heaps, or GC pause quantiles. Run separate JFR and Native Image evidence before making a near-zero claim.
+
+All three source-organization branch workflows still show **zero executed
+job steps** at the checked current heads. No current-branch compiler,
+CTest, Maven, sanitizer or target-device PASS is asserted.
