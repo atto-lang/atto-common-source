@@ -17,7 +17,6 @@ const reg = () => new Map([
   ["ScalarInput", op([], S)],
   ["MassInput", op([], W)],
   ["MassScale", op([W], W, { vjp: true })],
-  ["Impure", op([V], V, { effect: "network", vjp: true })],
   ["BigScratch", op([V], V, { scratchBytes: 4096 })]
 ]);
 const n = (id, opName, ...inputs) => ({ id, op: opName, inputs });
@@ -91,8 +90,9 @@ test("unknown/malformed signature and untrusted registry rejected", () => {
   errs("MODEL_INVALID_OP_SIGNATURE", () => admit(graph, bad));
 });
 test("nonpure signature never admitted even if unused", () => {
-  errs("MODEL_EFFECTFUL_OP", () => admit(g([n("x", "VecInput")]), reg()));
-  const safe = reg(); safe.delete("Impure");
+  const unsafe = reg(); unsafe.set("Impure", op([V], V, { effect: "network", vjp: true }));
+  errs("MODEL_EFFECTFUL_OP", () => admit(g([n("x", "VecInput")]), unsafe));
+  const safe = reg();
   assert.doesNotThrow(() => admit(g([n("x", "VecInput")]), safe));
 });
 test("shape mismatch and mismatched physical units denied", () => {
