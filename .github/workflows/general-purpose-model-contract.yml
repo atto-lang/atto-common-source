@@ -8,6 +8,7 @@ on:
       - "tests/general-purpose-model-contract.test.mjs"
       - "tests/model-graph-admission-v2.test.mjs"
       - "experiments/model_graph_admission.mjs"
+      - "contracts/v1/model-graph/**"
       - ".github/workflows/general-purpose-model-contract.yml"
   push:
     branches: [main]
