@@ -492,3 +492,70 @@ test("invalid resource limits and duplicate graph edges fail closed", () => {
     {edges: [null]}, {capacity: 2.5}
   ]) assert.throws(() => new VersionedStage(config), /ML_INVALID_STAGE_LIMITS/);
 });
+
+test("deterministic state-machine interleavings preserve pin, fan-in, and commit invariants", () => {
+  for (let seed = 1; seed <= 128; seed++) {
+    let rng = seed >>> 0;
+    const next = () => {
+      rng ^= rng << 13; rng ^= rng >>> 17; rng ^= rng << 5;
+      return rng >>> 0;
+    };
+    const a = new VersionedStage({capacity: 4, byteBudget: 32,
+      maxPins: 8, maxReceipts: 3});
+    const tickets = [], leases = [], prepares = [];
+    for (let i = 0; i < 96; i++) {
+      const n = next() % 10;
+      try {
+        if (n <= 2) {
+          const ticket = a.forward(a.currentKey(next() % 5), 1 + next() % 12);
+          tickets.push(ticket);
+        } else if (n <= 4 && tickets.length) {
+          const ticket = tickets[next() % tickets.length];
+          a.backward(ticket, (next() & 1) ? "left" : "right");
+        } else if (n === 5 && tickets.length) {
+          a.abortForward(tickets[next() % tickets.length]);
+        } else if (n === 6) {
+          leases.push(a.snapshot());
+        } else if (n === 7 && leases.length) {
+          const index = next() % leases.length;
+          const lease = leases[index];
+          a.release(lease);
+          leases.splice(index, 1);
+        } else if (n === 8) {
+          prepares.push(a.prepare(a.state.step, a.state.activeVersion, 4.5));
+        } else if (n === 9 && prepares.length) {
+          a.commit(prepares[next() % prepares.length]);
+        }
+      } catch (e) {
+        // Failure is permitted only through a named, fail-closed protocol gate.
+        assert.match(String(e), /ML_[A-Z_]+/);
+      }
+      const s = a.state;
+      assert.equal(s.usedBytes,
+        [...s.contexts.values()].reduce((sum, c) => sum + c.bytes, 0));
+      assert.equal(s.finishedContexts,
+        [...s.contexts.values()].filter(c => c.finished).length);
+      assert.equal(s.livePins, a.totalPins(s));
+      assert.equal(s.livePins, s.contexts.size + s.pins.size);
+      assert(s.livePins <= s.maxPins);
+      assert(s.usedBytes <= s.byteBudget);
+      assert(s.contexts.size <= s.capacity);
+      assert(s.committed.size <= s.maxReceipts);
+      assert.equal(s.optimizer.iteration, s.activeVersion - 1);
+      assert(s.versions.has(s.activeVersion));
+      assert.equal(s.step, s.activeVersion);
+      for (const [version, storage] of s.versions) {
+        assert(storage.pins >= 0);
+        if (version !== s.activeVersion) assert(storage.pins > 0);
+      }
+      for (const ctx of s.contexts.values()) {
+        assert.equal(ctx.key.step, s.step);
+        assert.equal(ctx.key.version, s.activeVersion);
+      }
+      if (s.prepared) {
+        assert(s.contexts.size > 0);
+        assert.equal(s.finishedContexts, s.contexts.size);
+      }
+    }
+  }
+});
