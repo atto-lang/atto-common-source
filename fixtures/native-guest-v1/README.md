@@ -4,6 +4,13 @@
 
 This version starts the shared one-language/two-implementations track without renaming a host interpreter compiled by Native Image to "compiled Oreslang."
 
+## Backend implementation PRs (2026-10-19)
+
+- [LLVM source-to-native CTest #670](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/670): the three byte-identical fixture texts are SHA-256 checked in its standalone test harness, then compiled using the actual native compiler and Clang (normal and ASan/UBSan CTest registrations). Backend compiler run results remain unverified until runners start.
+- [Java/Graal JVM conformance #1483](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1483): the canonical scalar bytes are checked and compiled/executed with the real Maven-built Java guest launcher. Array, field diagnostics, and guest native AOT remain pending on this backend.
+
+The backend PRs embed **SHA-pinned immutable test snapshots**, not a live import or a secret-bearing cross-repository checkout. Never use a different source text merely to get a green result. These are **draft PRs**, not merged performance or semantic guarantees. The integration depends on exact-head CI execution and independent code/binary evidence.
+
 ## Frozen source cases
 
 | Fixture | Oracle | LLVM native AOT | Graal JVM guest | Graal application guest AOT |
