@@ -7,8 +7,15 @@ import { admitModelGraph as admit, ModelAdmissionError } from "../experiments/mo
 const V = Object.freeze({ dtype: "f64", shape: [4], layout: "contiguous" });
 const W = Object.freeze({ dtype: "f64", shape: [4], layout: "contiguous", unit: "kg" });
 const S = Object.freeze({ dtype: "f64", shape: [], layout: "scalar" });
-const op = (inputs, output, { effect = "pure", vjp = false, scratchBytes = 0, abi = "v1" } = {}) =>
-  ({ inputs, output, effect, vjp, scratchBytes, abi });
+const PRICE = Object.freeze({ kind: "nominal", typeAbi: "finance.Price@v1", bytes: 16 });
+const MONEY = Object.freeze({ kind: "nominal", typeAbi: "finance.Money@v1", bytes: 16 });
+const PURE_STATIC = Object.freeze({ freestanding: true, allocation: "none", deterministic: true });
+const SCRATCH_ONLY = Object.freeze({ freestanding: true, allocation: "scratch", deterministic: true });
+const DYNAMIC = Object.freeze({ freestanding: false, allocation: "dynamic", deterministic: true });
+const NONDET = Object.freeze({ freestanding: true, allocation: "none", deterministic: false });
+const op = (inputs, output, {
+  effect = "pure", vjp = false, scratchBytes = 0, abi = "v1", constKinds = [], profile = PURE_STATIC
+} = {}) => ({ inputs, output, effect, vjp, scratchBytes, abi, constKinds, profile });
 const reg = () => new Map([
   ["VecInput", op([], V)],
   ["VecAdd", op([V, V], V, { vjp: true, scratchBytes: 8 })],
@@ -17,9 +24,16 @@ const reg = () => new Map([
   ["ScalarInput", op([], S)],
   ["MassInput", op([], W)],
   ["MassScale", op([W], W, { vjp: true })],
-  ["BigScratch", op([V], V, { scratchBytes: 4096 })]
+  ["BigScratch", op([V], V, { scratchBytes: 4096, profile: SCRATCH_ONLY })],
+  ["PriceInput", op([], PRICE)],
+  ["ValidatePrice", op([PRICE], PRICE)],
+  ["ApplyTax", op([PRICE], MONEY, { constKinds: ["f64bits"] })],
+  ["RoundCurrency", op([MONEY], MONEY)],
+  ["DynamicPure", op([V], V, { profile: DYNAMIC })],
+  ["NonDetPure", op([V], V, { profile: NONDET })]
 ]);
 const n = (id, opName, ...inputs) => ({ id, op: opName, inputs });
+const nc = (id, opName, inputs, constArgs) => ({ id, op: opName, inputs, constArgs });
 const g = (nodes, outputs = [nodes[nodes.length - 1].id]) => ({ name: "SafeGraph", nodes, outputs });
 const errs = (code, fn) => assert.throws(fn, e => e instanceof ModelAdmissionError && e.code === code);
 const grad = (outputs, targets) => ({ gradient: { outputs, targets } });
@@ -222,4 +236,122 @@ test("sparse and accessor-backed dependency arrays fail closed", () => {
   Object.defineProperty(graph.nodes[1].inputs, "0", { enumerable: true, get() { calls++; return "x"; } });
   errs("MODEL_ARITY_MISMATCH", () => admit(graph, reg()));
   assert.equal(calls, 0);
+});
+
+
+test("cross-domain nominal values admit a pricing model without tensor/autograd semantics", () => {
+  const tax = { kind: "f64bits", value: "0x3fc3333333333333" }; // 0.15
+  const graph = g([
+    n("price", "PriceInput"),
+    n("valid", "ValidatePrice", "price"),
+    nc("taxed", "ApplyTax", ["valid"], [tax]),
+    n("rounded", "RoundCurrency", "taxed")
+  ]);
+  const result = admit(graph, reg(), {
+    requireFreestanding: true,
+    forbidDynamicAllocation: true,
+    requireDeterministic: true
+  });
+  assert.equal(result.nodes, 4);
+  assert.equal(result.staticArgs, 1);
+  assert.equal(result.upperBoundBytes, 64);
+  assert.deepEqual(result.capabilities, {
+    freestandingEligible: true,
+    noDynamicAllocation: true,
+    deterministic: true
+  });
+  assert.equal(result.gradientEdges, 0);
+});
+
+test("nominal type ABI identity is exact and cannot be structurally guessed", () => {
+  const OTHER_PRICE = Object.freeze({ kind: "nominal", typeAbi: "finance.OtherPrice@v1", bytes: 16 });
+  const safe = reg();
+  safe.set("OtherPriceInput", op([], OTHER_PRICE));
+  errs("MODEL_PORT_TYPE_MISMATCH", () =>
+    admit(g([n("x", "OtherPriceInput"), n("validate", "ValidatePrice", "x")]), safe));
+});
+
+test("static operation arguments use canonical typed HIR and reject nonfinite floats", () => {
+  const safe = reg();
+  const base = n("price", "PriceInput");
+  assert.doesNotThrow(() => admit(g([
+    base,
+    nc("taxed", "ApplyTax", ["price"], [{ kind: "f64bits", value: "0x3fc3333333333333" }])
+  ]), safe));
+  errs("MODEL_CONST_ARITY_MISMATCH", () =>
+    admit(g([n("price", "PriceInput"), n("taxed", "ApplyTax", "price")]), safe));
+  errs("MODEL_CONST_TYPE_MISMATCH", () =>
+    admit(g([n("price", "PriceInput"), nc("taxed", "ApplyTax", ["price"], [{ kind: "i64", value: "15" }])]), safe));
+  errs("MODEL_NONFINITE_CONST", () =>
+    admit(g([n("price", "PriceInput"), nc("taxed", "ApplyTax", ["price"],
+      [{ kind: "f64bits", value: "0x7ff0000000000000" }])]), safe));
+  errs("MODEL_INVALID_CONST", () =>
+    admit(g([n("price", "PriceInput"), nc("taxed", "ApplyTax", ["price"],
+      [{ kind: "f64bits", value: "0X3fc3333333333333" }])]), safe));
+});
+
+test("all canonical constant kinds are bounded and i64 overflow fails closed", () => {
+  const safe = reg();
+  safe.set("Configured", op([V], V, { constKinds: ["bool", "i64", "string", "symbol"] }));
+  const good = nc("cfg", "Configured", ["x"], [
+    { kind: "bool", value: true },
+    { kind: "i64", value: "-42" },
+    { kind: "string", value: "window-a" },
+    { kind: "symbol", value: "#fixed" }
+  ]);
+  assert.equal(admit(g([n("x", "VecInput"), good]), safe).staticArgs, 4);
+  const bad = structuredClone(g([n("x", "VecInput"), good]));
+  bad.nodes[1].constArgs[1] = { kind: "i64", value: "9223372036854775808" };
+  errs("MODEL_CONST_OVERFLOW", () => admit(bad, safe));
+});
+
+test("static constant accessors and forged metadata are rejected without execution", () => {
+  let calls = 0;
+  const hostile = { kind: "f64bits" };
+  Object.defineProperty(hostile, "value", {
+    enumerable: true,
+    get() { calls++; return "0x3fc3333333333333"; }
+  });
+  const graph = g([
+    n("price", "PriceInput"),
+    nc("taxed", "ApplyTax", ["price"], [hostile])
+  ]);
+  errs("MODEL_INVALID_CONST", () => admit(graph, reg()));
+  assert.equal(calls, 0);
+
+  const forged = { kind: "f64bits", value: "0x3fc3333333333333", callback: "() => pwn()" };
+  errs("MODEL_INVALID_CONST", () => admit(g([
+    n("price", "PriceInput"),
+    nc("taxed", "ApplyTax", ["price"], [forged])
+  ]), reg()));
+});
+
+test("freestanding, allocation and determinism claims are derived from trusted op profiles", () => {
+  const dynamicGraph = g([n("x", "VecInput"), n("y", "DynamicPure", "x")]);
+  const portable = admit(dynamicGraph, reg());
+  assert.equal(portable.capabilities.freestandingEligible, false);
+  assert.equal(portable.capabilities.noDynamicAllocation, false);
+  errs("MODEL_PROFILE_UNSUPPORTED", () => admit(dynamicGraph, reg(), { requireFreestanding: true }));
+  errs("MODEL_DYNAMIC_ALLOCATION", () => admit(dynamicGraph, reg(), { forbidDynamicAllocation: true }));
+
+  const nonDetGraph = g([n("x", "VecInput"), n("y", "NonDetPure", "x")]);
+  assert.equal(admit(nonDetGraph, reg()).capabilities.deterministic, false);
+  errs("MODEL_NONDETERMINISTIC_OP", () => admit(nonDetGraph, reg(), { requireDeterministic: true }));
+
+  const scratchGraph = g([n("x", "VecInput"), n("y", "BigScratch", "x")]);
+  assert.doesNotThrow(() => admit(scratchGraph, reg(), {
+    requireFreestanding: true,
+    forbidDynamicAllocation: true,
+    requireDeterministic: true
+  }));
+});
+
+test("model admission deliberately makes no hard-real-time claim", () => {
+  const result = admit(g([n("x", "VecInput"), n("y", "VecScale", "x")]), reg(), {
+    requireFreestanding: true,
+    forbidDynamicAllocation: true,
+    requireDeterministic: true
+  });
+  assert.equal(Object.hasOwn(result, "hardRealtime"), false);
+  assert.equal(Object.hasOwn(result.capabilities, "hardRealtime"), false);
 });
