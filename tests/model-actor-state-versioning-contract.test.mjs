@@ -17,6 +17,7 @@ class VersionedStage {
       run: "run-A", epoch: 4, graph: 7, step: 1, activeVersion: 1,
       versions: new Map([[1, {value: 5, pins: 0, frozen: true}]]),
       contexts: new Map(), pins: new Map(), usedBytes: 0,
+      livePins: 0, finishedContexts: 0,
       edges: new Set(edges), capacity, byteBudget, maxPins, maxReceipts,
       admissionRevision: 0,
       optimizer: Object.freeze({iteration: 0}),
@@ -56,7 +57,7 @@ class VersionedStage {
   snapshot() {
     return this.critical(s => {
       if (s.cancelled) this.error("ML_RUN_CANCELLED");
-      if (this.totalPins(s) >= s.maxPins) this.error("ML_PIN_QUOTA_EXHAUSTED");
+      if (s.livePins >= s.maxPins) this.error("ML_PIN_QUOTA_EXHAUSTED");
       const version = s.activeVersion;
       const storage = s.versions.get(version);
       const token = Symbol("immutable-weight-pin");
@@ -64,6 +65,7 @@ class VersionedStage {
       const lease = Object.freeze({token, value: storage.value, version,
         run: s.run, epoch: s.epoch, graph: s.graph});
       storage.pins += 1;
+      s.livePins += 1;
       s.pins.set(token, {version, lease});
       return lease;
     });
@@ -76,6 +78,7 @@ class VersionedStage {
       if (!storage || storage.pins < 1) this.error("ML_PIN_LEDGER_CORRUPT");
       s.pins.delete(lease.token);
       storage.pins -= 1;
+      s.livePins -= 1;
       this.retireOld(s);
     });
   }
@@ -91,10 +94,11 @@ class VersionedStage {
       if (!Number.isSafeInteger(bytes) || bytes <= 0) this.error("ML_BAD_TENSOR_BYTES");
       if (s.contexts.size >= s.capacity || bytes > s.byteBudget - s.usedBytes)
         this.error("ML_BACKPRESSURE");
-      if (this.totalPins(s) >= s.maxPins) this.error("ML_PIN_QUOTA_EXHAUSTED");
+      if (s.livePins >= s.maxPins) this.error("ML_PIN_QUOTA_EXHAUSTED");
       const admission = Symbol("issued-forward-activation");
       const ticket = Object.freeze({...key, bytes, admission});
       s.versions.get(key.version).pins += 1;
+      s.livePins += 1;
       s.usedBytes += bytes;
       s.contexts.set(key.microbatch, {
         key: Object.freeze({...key}), ticket, bytes, received: new Set(), finished: false
@@ -115,6 +119,7 @@ class VersionedStage {
       if (context.received.has(edge)) this.error("ML_DUPLICATE_GRADIENT");
       context.received.add(edge);
       context.finished = context.received.size === s.edges.size;
+      if (context.finished) s.finishedContexts += 1;
       s.admissionRevision += 1;
       return context.finished;
     });
@@ -133,6 +138,7 @@ class VersionedStage {
       s.contexts.delete(ticket.microbatch);
       s.usedBytes -= ctx.bytes;
       storage.pins -= 1;
+      s.livePins -= 1;
       s.admissionRevision += 1;
       this.retireOld(s);
       return true;
@@ -149,7 +155,7 @@ class VersionedStage {
       if (step !== s.step) this.error("ML_STEP_MISMATCH");
       if (expectedVersion !== s.activeVersion) this.error("ML_WEIGHT_VERSION_MISMATCH");
       if (!s.contexts.size) this.error("ML_STEP_NO_GRADIENTS");
-      if ([...s.contexts.values()].some(c => !c.finished))
+      if (s.finishedContexts !== s.contexts.size)
         this.error("ML_STEP_NOT_QUIESCENT");
       if (s.prepared) this.error("ML_PREPARE_ALREADY_EXISTS");
       if (s.committed.size >= s.maxReceipts) this.error("ML_RECEIPT_QUOTA_EXHAUSTED");
@@ -179,7 +185,7 @@ class VersionedStage {
         this.error("ML_PREPARE_GENERATION_MISMATCH");
       if (s.admissionRevision !== s.prepared.revision)
         this.error("ML_PREPARE_INVALIDATED");
-      if (!s.contexts.size || [...s.contexts.values()].some(c => !c.finished))
+      if (!s.contexts.size || s.finishedContexts !== s.contexts.size)
         this.error("ML_STEP_NOT_QUIESCENT");
       // Full preflight before any guest-visible publication.
       const nextVersion = s.activeVersion + 1, nextStep = s.step + 1;
@@ -188,6 +194,7 @@ class VersionedStage {
         this.error("ML_VERSION_OVERFLOW");
       if (s.committed.size >= s.maxReceipts) this.error("ML_RECEIPT_QUOTA_EXHAUSTED");
       if (s.versions.has(nextVersion)) this.error("ML_VERSION_COLLISION");
+      if (s.livePins < s.contexts.size) this.error("ML_PIN_LEDGER_CORRUPT");
       const candidate = s.prepared.weights;
       if (!Object.isFrozen(candidate) || !Number.isFinite(candidate.value))
         this.error("ML_INVALID_PREPARED_WEIGHTS");
@@ -202,8 +209,10 @@ class VersionedStage {
       s.activeVersion = nextVersion;
       s.optimizer = Object.freeze({iteration: nextIteration});
       for (const [v, n] of decrements) s.versions.get(v).pins -= n;
+      s.livePins -= s.contexts.size;
       this.retireOld(s);
       s.contexts.clear();
+      s.finishedContexts = 0;
       s.usedBytes = 0;
       s.prepared = null;
       s.committed.add(receipt.step);
@@ -222,9 +231,12 @@ class VersionedStage {
         const storage = s.versions.get(v);
         if (!storage || storage.pins < n) this.error("ML_PIN_LEDGER_CORRUPT");
       }
+      if (s.livePins < s.contexts.size) this.error("ML_PIN_LEDGER_CORRUPT");
       for (const [v, n] of decrements) s.versions.get(v).pins -= n;
+      s.livePins -= s.contexts.size;
       this.retireOld(s);
       s.contexts.clear();
+      s.finishedContexts = 0;
       s.usedBytes = 0;
       s.prepared = null;
       s.cancelled = true;
