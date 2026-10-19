@@ -171,10 +171,12 @@ permitting misassociation with a different issued forward context.
   may return its activation/pin credits before any gradient is accepted.
   Externally leased frozen snapshots remain valid across commits/cancellation
   until their authenticated releases.
-- Production must additionally bound retained **weight-version storage
-  bytes**, device reservations, in-flight completion events and durable
-  receipt storage; the scalar host model does not provide those byte
-  budgets. All kernels and asynchronous operations stay outside state loans.
+- Production must bound retained **weight-version storage bytes**,
+  device reservations, in-flight completion events and durable receipt storage.
+  The follow-up host scalar model includes a deliberately simplified retained-version
+  byte budget; it does **not** model real tensor layouts, device allocations,
+  fragmentation or asynchronous deallocation. All kernels and asynchronous
+  operations stay outside state loans.
 
 **Important nonproofs:** The JS critical callback checks only direct
 return of the state root; it does NOT prevent nested alias escape, closure
@@ -192,3 +194,78 @@ fencing. This is not Node 22 GitHub Actions evidence, exhaustive model checking
 or real Java/LLVM Oreslang guest execution. Real state-loan compiler checks,
 1- and 3-thread race tests, durable multi-shard publication, actual tensor VJPs
 and guest CPU training all remain blocking.
+
+## October 18 follow-up audit: capability boundaries, bounded snapshots and recovery
+
+The subsequent host-only hardening commit changes the simulated protocol as follows:
+
+1. **Capability identity precedes metadata reads.** `backward` and
+   `abortForward` first look up the exact issued activation ticket in
+   `state.contextByTicket` and only then access the trusted stored context.
+   `release` looks up the exact snapshot lease object in the live-pin map,
+   and `commit`/`abortPrepare` require the exact stored prepare receipt.
+   Cloned objects and objects with malicious getters are not interpreted as
+   proof of authority. Caller-supplied forward-key fields are copied using
+   data-property descriptors *before* the simulated state loan; accessor
+   fields fail closed without calling getters. These are host-model
+   protections: proxy traps, FFI boundaries and state loan aliasing require
+   real compiler/runtime enforcement.
+2. **Prepare can be aborted without cancelling the run.** An exact-receipt
+   `abortPrepare` releases the admission fence and increments a checked
+   admission revision, while preserving already completed gradient fan-in
+   and context pins. The revoked receipt cannot commit or abort a later
+   prepare. This provides a retry path for optimizer calculation failures.
+   Before any *real* optimizer retry, its gradient manifest and prepared
+   candidate must be revalidated; the scalar host does not attest either.
+3. **Pinned immutable weight-version byte quota.** The fixture now
+   parametrizes each scalar weight version's model byte cost, with a
+   separate `maxVersionBytes` quota. Before local publication, it computes
+   the projected retained bytes **after** retiring context-owned pins:
+   incoming candidate bytes plus older versions still held by external
+   snapshot leases. A full quota rejects commit before publication.
+   Releasing a real external lease permits retrying the same prepared
+   commit. This quota is independent of pin count, activation count and
+   activation bytes. The model has no GPU/allocator or actual tensor-buffer
+   evidence.
+4. **Receipt replay accounting remains bounded.** Both committed step
+   identifiers and exact committed receipt objects are tracked within the
+   existing bounded receipt quota. Exact replay is explicitly rejected;
+   clones and forged receipts are unrecognized. This is **not durable
+   idempotency**: crash/restart, checkpoint manifests and receipt compaction
+   are release-blocking.
+
+**Additional critical trust boundary:** An issued activation ticket alone
+does **not** authorize a particular upstream/downstream actor to submit
+a particular graph-edge gradient. The current host `backward(ticket, edge)`
+still takes an edge name from its caller. A real runtime must bind each
+gradient to a registered sender actor incarnation, destination actor,
+exact graph edge, run, microbatch, step, version and contribution nonce;
+authorize it using sender-scoped one-time capabilities or authenticated
+transport identity; and consume/reject it in a bounded replay ledger.
+It must not treat a public edge string or copied activation ticket as
+sender authentication. A malicious holder of a valid activation ticket
+could otherwise contribute for an unowned edge.
+
+**Publication remains a release blocker:** In this JavaScript host model,
+`Map.set`, `Set.add`, object allocation, callback execution and
+`Object.freeze` can still throw. Preflight of limits is **not** a proof of
+failure-atomicity. The Java/LLVM implementation must allocate and validate
+a complete immutable next-publication record (weight pointer, optimizer
+pointer, step, graph/run epoch, version, receipt identity) *before* the
+irrevocable transition; reserve storage and durability slots before
+entering the critical publication lane; then make a single non-throwing
+publish operation with a crash-consistent durable journal/commit record.
+It must specify how readers observe the old or new record, never a mix;
+free/reclaim old versions only once all leases and GPU events are quiescent;
+and recover unambiguously after a crash at every fault-injection point.
+
+**Verification scope:** 26/26 isolated V8-adapted host assertions
+from exact test blob `dc28daff146cca10c4b292ec1abab1ab9b39bb0b`
+(19 prior plus seven new regression scenarios). The existing 128 x 96
+seeded interleaving test also checks the new context ticket index, exact
+receipt ledger and retained-version byte budget. This is *not*
+Node 22/GitHub Actions or compiled Oreslang evidence. Java/GraalVM,
+LLVM, 1-thread and 3-thread actor race fixtures, tensor VJPs, durable
+multi-shard coordinator and transport-authenticated gradient fan-in
+remain **NOT_EXECUTED/UNVERIFIED**. No private source was transferred
+outside the owner organization for this follow-up.
