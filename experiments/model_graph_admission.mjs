@@ -56,7 +56,8 @@ function prepareRegistry(registry) {
     if (typeof key !== "string" || !/^[A-Za-z][A-Za-z0-9_.]*$/.test(key))
       fail("MODEL_INVALID_OP_ID");
     exactFields(sig, ["inputs", "output", "effect", "vjp", "scratchBytes", "abi"], "MODEL_INVALID_OP_SIGNATURE");
-    if (sig.effect !== "pure") fail("MODEL_EFFECTFUL_OP");
+    if (typeof sig.effect !== "string" || !["pure", "io", "network", "random", "clock", "actor", "ffi", "suspend"].includes(sig.effect))
+      fail("MODEL_INVALID_OP_SIGNATURE");
     if (typeof sig.vjp !== "boolean" || !Array.isArray(sig.inputs) || sig.inputs.length > 16)
       fail("MODEL_INVALID_OP_SIGNATURE");
     if (typeof sig.abi !== "string" || !/^[A-Za-z0-9_.-]{1,64}$/.test(sig.abi))
@@ -64,7 +65,7 @@ function prepareRegistry(registry) {
     const inputs = sig.inputs.map(x => { port(x); return x; });
     const outputBytes = port(sig.output);
     const scratchBytes = boundInt(sig.scratchBytes, "MODEL_INVALID_SCRATCH");
-    prepared.set(key, { inputs, output: sig.output, outputBytes, scratchBytes, vjp: sig.vjp });
+    prepared.set(key, { inputs, output: sig.output, outputBytes, scratchBytes, vjp: sig.vjp, effect: sig.effect });
   }
   return prepared;
 }
@@ -92,6 +93,7 @@ export function admitModelGraph(graph, registry, options = {}) {
     if (!Array.isArray(n.inputs) || n.inputs.length !== signatures.get(n.op).inputs.length)
       fail("MODEL_ARITY_MISMATCH");
     const sig = signatures.get(n.op);
+    if (sig.effect !== "pure") fail("MODEL_EFFECTFUL_OP");
     const parents = [];
     let depth = 1n;
     for (let i = 0; i < n.inputs.length; i++) {
