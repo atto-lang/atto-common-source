@@ -1,0 +1,7 @@
+// A model computation graph cannot acquire ambient I/O/network/actor effects.
+// Expected diagnostic MODEL_EFFECTFUL_BODY.
+define model BadNetworkModel as
+    DecodeRequest()
+    HttpGet()
+    ParseResponse()
+end
