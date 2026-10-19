@@ -10,6 +10,12 @@ A capability must be minted by the compiler or trusted runtime, unforgeable by g
 
 The useful abstraction is **Access<Region, Mode, Scope>** in the internal type/effect system. It need not be a public source type or heap object. Modes are READ (coexisting, deeply read-only) and WRITE (exclusive against READ and WRITE for intersecting places). Each loan also records provenance and a trusted loan generation. Carriers can migrate while these logical proofs survive; explicit ThreadBound<T> is a separate, deliberately pinned affinity API and cannot migrate.
 
+## Code ownership is a separate lifetime problem
+
+Many Tasks or threads may execute the same immutable compiled function body simultaneously. There is no reason to move or copy the instruction bytes to the thread. Passing a callable across a Task boundary instead requires: (a) verified transfer/shareability of its *captured environment* and borrowed data, (b) a typed callable effect and ownership signature, and (c) a **CodeVersionLease** or equivalent runtime-issued pin for the compiled module generation. The code lease prevents JIT eviction, dynamic-library unloading, hot-reload retirement or stale function-pointer use while any executing/suspended Task, callback, FFI trampoline or destructor may return into that code generation. This lease is not write permission to user data.
+
+Oreslang hot reload should publish the new module generation atomically, allow existing Tasks to finish under their pinned old generation (or cancel and physically drain them), and reclaim old code only when all code leases and continuation/FFI references have retired. An actor incarnation or code-generation ID is not an ownership token for mutable data. The two resources—code lifetime and data access—must be tracked independently.
+
 ## Compilation rules
 
 1. **Move across a Task boundary.** A captured non-Copy value moved using existing rt take becomes inaccessible to its former owner immediately after successful admission. Failed scheduling/admission must restore ownership transactionally. Concurrent sibling Tasks cannot both receive a unique owner. The transfer must stay within an approved allocation/trust domain or use a checked RegionTransfer/transport boundary.
