@@ -157,13 +157,17 @@ permitting misassociation with a different issued forward context.
   prepared version and unchanged admission revision. Cancellation may
   invalidate prepare and must release stage-owned reservations.
 - Live parameter pins, activation count/bytes and in-memory idempotency
-  receipts have independent quotas. Active pin and completed-context counts
+  receipts have independent quotas. Saturated receipts reject new forward admission;
+  checked admission-revision overflow fails before mutation. Active pin and completed-context counts
   have constant-time admission checks. Exhausted receipts block publication
   until durable checkpoint/receipt compaction has been designed and proven;
   silent receipt eviction is forbidden.
 - Commit preflights candidate validity, next version/step/optimizer overflow,
   version collision, receipt capacity and every pinned-context decrement
-  **before** mutating committed weight+optimizer state. A failed forward
+  **before** mutating committed weight+optimizer state. Real implementations
+  must reserve the publication slot and prepare no-throw/no-allocation next-state
+  handles before entering the final local publish, so OOM or a language callback
+  cannot leave an observable half-commit. A failed forward
   may return its activation/pin credits before any gradient is accepted.
   Externally leased frozen snapshots remain valid across commits/cancellation
   until their authenticated releases.
@@ -180,8 +184,8 @@ state loans. Similarly, the host model takes a candidate scalar from its
 caller rather than deriving it from an authenticated gradient manifest,
 so these tests do NOT establish gradient provenance or numerical correctness.
 
-**Evidence:** 18/18 isolated V8-adapted host cases on Git blob
-2c341b6c3d9c22c99353cc1af975a022dacd3f09, including 128 deterministic
+**Evidence:** 19/19 isolated V8-adapted host cases on Git blob
+3fea3ca79301c59fbd6c86d375f39e32635b1951, including 128 deterministic
 seeds x 96 transitions checking byte/pin conservation, stage capacity, fan-in
 accounting, snapshot retirement, optimizer-version monotonicity and admission
 fencing. This is not Node 22 GitHub Actions evidence, exhaustive model checking
