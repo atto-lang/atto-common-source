@@ -1,0 +1,36 @@
+# Host-only model admission oracle. No source copying, secrets or guest compiler claims.
+name: General-purpose model contract (host-only)
+on:
+  pull_request:
+    paths:
+      - "docs/GENERAL_PURPOSE_MODELS_V1.md"
+      - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "tests/general-purpose-model-contract.test.mjs"
+      - ".github/workflows/general-purpose-model-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/GENERAL_PURPOSE_MODELS_V1.md"
+      - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "tests/general-purpose-model-contract.test.mjs"
+      - ".github/workflows/general-purpose-model-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact workflow ref
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Require Node host environment and execute reference oracle
+        run: |
+          node --version
+          node --test tests/general-purpose-model-contract.test.mjs
+      - name: Evidence boundary
+        run: |
+          echo 'HOST_ORACLE_ONLY; model_guest_execution=NOT_EXECUTED'
+          echo 'This is not Java/GraalVM, LLVM, native runtime, or numerical model evidence.'
