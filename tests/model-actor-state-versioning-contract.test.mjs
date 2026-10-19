@@ -241,11 +241,12 @@ class VersionedStage {
 }
 
 function completedStep(stage, microbatches = [1]) {
-  for (const mb of microbatches) stage.forward(stage.currentKey(mb));
+  const tickets = new Map();
+  for (const mb of microbatches) tickets.set(mb, stage.forward(stage.currentKey(mb)));
   for (const mb of [...microbatches].reverse()) {
-    const key = stage.currentKey(mb);
-    stage.backward(key, "right");
-    stage.backward(key, "left");
+    const ticket = tickets.get(mb);
+    stage.backward(ticket, "right");
+    stage.backward(ticket, "left");
   }
   const receipt = stage.prepare(1, 1, 4.75);
   return stage.commit(receipt);
@@ -265,12 +266,12 @@ test("all persistent model-stage data is rooted in a single state variable", () 
 test("two forward microbatches keep the same weight version through out-of-order fan-in", () => {
   const a = new VersionedStage();
   const k1 = a.currentKey(1), k2 = a.currentKey(2);
-  a.forward(k1); a.forward(k2);
-  assert.equal(a.backward(k2, "right"), false);
-  assert.equal(a.backward(k1, "left"), false);
+  const t1 = a.forward(k1), t2 = a.forward(k2);
+  assert.equal(a.backward(t2, "right"), false);
+  assert.equal(a.backward(t1, "left"), false);
   assert.throws(() => a.prepare(1, 1, 4.9), /ML_STEP_NOT_QUIESCENT/);
-  assert.equal(a.backward(k2, "left"), true);
-  assert.equal(a.backward(k1, "right"), true);
+  assert.equal(a.backward(t2, "left"), true);
+  assert.equal(a.backward(t1, "right"), true);
   const r = a.prepare(1, 1, 4.9);
   assert.deepEqual(a.commit(r), {step: 1, version: 2});
   assert.deepEqual(a.status(), {version: 2, step: 2,
@@ -280,20 +281,20 @@ test("two forward microbatches keep the same weight version through out-of-order
 test("duplicate edge, cross-epoch and stale-version gradients all fail closed", () => {
   const a = new VersionedStage();
   const key = a.currentKey(5);
-  a.forward(key);
-  a.backward(key, "left");
-  assert.throws(() => a.backward(key, "left"), /ML_DUPLICATE_GRADIENT/);
-  assert.throws(() => a.backward({...key, epoch: 99}, "right"),
+  const ticket = a.forward(key);
+  a.backward(ticket, "left");
+  assert.throws(() => a.backward(ticket, "left"), /ML_DUPLICATE_GRADIENT/);
+  assert.throws(() => a.backward({...ticket, epoch: 99}, "right"),
     /ML_ACTOR_INCARNATION_MISMATCH/);
-  assert.throws(() => a.backward({...key, version: 2}, "right"),
+  assert.throws(() => a.backward({...ticket, version: 2}, "right"),
     /ML_WEIGHT_VERSION_MISMATCH/);
-  assert.throws(() => a.backward({...key, graph: 8}, "right"),
+  assert.throws(() => a.backward({...ticket, graph: 8}, "right"),
     /ML_GRAPH_GENERATION_MISMATCH/);
-  assert.throws(() => a.backward({...key, run: "other"}, "right"),
+  assert.throws(() => a.backward({...ticket, run: "other"}, "right"),
     /ML_RUN_MISMATCH/);
-  assert.throws(() => a.backward({...key, step: 5}, "right"),
+  assert.throws(() => a.backward({...ticket, step: 5}, "right"),
     /ML_STEP_MISMATCH/);
-  assert.throws(() => a.backward(key, "intruder"), /ML_UNKNOWN_EDGE/);
+  assert.throws(() => a.backward(ticket, "intruder"), /ML_UNKNOWN_EDGE/);
 });
 
 test("atomic local commit changes weights and optimizer state once, not twice", () => {
@@ -334,8 +335,8 @@ test("bounded activation count and byte-budget backpressure are independent", ()
 test("prepare receipt cannot be forged, duplicated, or based on a stale version", () => {
   const a = new VersionedStage();
   const k = a.currentKey(1);
-  a.forward(k);
-  a.backward(k, "left"); a.backward(k, "right");
+  const ticket = a.forward(k);
+  a.backward(ticket, "left"); a.backward(ticket, "right");
   assert.throws(() => a.prepare(1, 2, 3), /ML_WEIGHT_VERSION_MISMATCH/);
   assert.throws(() => a.prepare(1, 1, Infinity), /ML_NONFINITE_WEIGHTS/);
   const receipt = a.prepare(1, 1, 4);
@@ -364,10 +365,118 @@ test("next step adopts new version and the prior step cannot commit again", () =
   const key = a.currentKey(2);
   assert.equal(key.version, 2);
   assert.equal(key.step, 2);
-  a.forward(key);
-  a.backward(key, "left"); a.backward(key, "right");
+  const ticket = a.forward(key);
+  a.backward(ticket, "left"); a.backward(ticket, "right");
   const next = a.prepare(2, 2, 4.5);
   a.commit(next);
   assert.equal(a.status().version, 3);
   assert.equal(a.status().optimizerIteration, 2);
+});
+
+test("a backward gradient is bound to the issued forward ticket, not guessable IDs", () => {
+  const a = new VersionedStage({edges: ["left"]});
+  const t1 = a.forward(a.currentKey(1)), t2 = a.forward(a.currentKey(2));
+  assert.throws(() => a.backward({...t1, microbatch: 2}, "left"),
+    /ML_ACTIVATION_LEASE_MISMATCH/);
+  assert.throws(() => a.backward({...t1}, "left"), /ML_ACTIVATION_LEASE_MISMATCH/);
+  assert.throws(() => a.backward(a.currentKey(1), "left"),
+    /ML_ACTIVATION_LEASE_MISMATCH/);
+  assert.equal(a.backward(t2, "left"), true);
+  assert.equal(a.backward(t1, "left"), true);
+  assert.deepEqual(a.commit(a.prepare(1, 1, 4)), {step: 1, version: 2});
+});
+
+test("optimizer prepare fences late forward, backward and abort admissions", () => {
+  const a = new VersionedStage({edges: ["left"]});
+  const t = a.forward(a.currentKey(1));
+  a.backward(t, "left");
+  const prepared = a.prepare(1, 1, 4);
+  assert.throws(() => a.forward(a.currentKey(2)), /ML_STEP_PREPARING/);
+  assert.throws(() => a.abortForward(t), /ML_STEP_PREPARING/);
+  assert.throws(() => a.backward(t, "left"), /ML_STEP_PREPARING/);
+  assert.throws(() => a.commit({...prepared, graph: 999}),
+    /ML_PREPARE_GENERATION_MISMATCH/);
+  assert.equal(a.status().version, 1);
+  assert.deepEqual(a.commit(prepared), {step: 1, version: 2});
+});
+
+test("version pin and durable receipt quotas fail closed before mutation", () => {
+  const a = new VersionedStage({maxPins: 2, maxReceipts: 1, edges: ["left"]});
+  const first = a.snapshot();
+  const ticket = a.forward(a.currentKey(1));
+  assert.throws(() => a.snapshot(), /ML_PIN_QUOTA_EXHAUSTED/);
+  assert.throws(() => a.forward(a.currentKey(2)), /ML_PIN_QUOTA_EXHAUSTED/);
+  a.release(first);
+  assert.equal(a.snapshot().version, 1);
+  // The extra pin stays active through publication: its old version survives.
+  a.backward(ticket, "left");
+  a.commit(a.prepare(1, 1, 4));
+  assert.deepEqual(a.status().weightVersions, [1, 2]);
+  const next = a.forward(a.currentKey(2));
+  a.backward(next, "left");
+  assert.throws(() => a.prepare(2, 2, 3),
+    /ML_RECEIPT_QUOTA_EXHAUSTED/);
+  assert.equal(a.status().optimizerIteration, 1);
+  assert.equal(a.status().version, 2);
+});
+
+test("failed forward can release activation quota and never replay its token", () => {
+  const a = new VersionedStage({edges: ["left"], capacity: 1, byteBudget: 8});
+  const old = a.forward(a.currentKey(1), 8);
+  assert.throws(() => a.forward(a.currentKey(2)), /ML_BACKPRESSURE/);
+  assert.equal(a.abortForward(old), true);
+  assert.equal(a.status().bytes, 0);
+  assert.throws(() => a.abortForward(old), /ML_UNKNOWN_OR_STALE_ACTIVATION/);
+  const current = a.forward(a.currentKey(1), 8);
+  assert.throws(() => a.backward(old, "left"), /ML_ACTIVATION_LEASE_MISMATCH/);
+  assert.throws(() => a.abortForward({...current}), /ML_UNKNOWN_OR_STALE_ACTIVATION/);
+  a.backward(current, "left");
+  assert.throws(() => a.abortForward(current),
+    /ML_FORWARD_ALREADY_BACKPROPAGATING/);
+  a.commit(a.prepare(1, 1, 4));
+});
+
+test("frozen storage lease identity prevents cloned release or cross-stage use", () => {
+  const a = new VersionedStage(), b = new VersionedStage();
+  const lease = a.snapshot();
+  assert.throws(() => a.release({...lease}), /ML_UNKNOWN_OR_EXPIRED_LEASE/);
+  assert.throws(() => b.release(lease), /ML_UNKNOWN_OR_EXPIRED_LEASE/);
+  assert.equal(a.totalPins(a.state), 1);
+  a.release(lease);
+  assert.equal(a.totalPins(a.state), 0);
+  assert.throws(() => a.release(lease), /ML_UNKNOWN_OR_EXPIRED_LEASE/);
+});
+
+test("preflight detects pin ledger corruption without partially publishing", () => {
+  const a = new VersionedStage({edges: ["left"]});
+  const ticket = a.forward(a.currentKey(1));
+  a.backward(ticket, "left");
+  const prepared = a.prepare(1, 1, 4);
+  a.critical(s => { s.versions.get(1).pins = 0; }); // injected internal fault
+  assert.throws(() => a.commit(prepared), /ML_PIN_LEDGER_CORRUPT/);
+  assert.equal(a.status().version, 1);
+  assert.equal(a.status().optimizerIteration, 0);
+  a.critical(s => { s.versions.get(1).pins = 1; }); // repair injected fault
+  assert.deepEqual(a.commit(prepared), {step: 1, version: 2});
+});
+
+test("cancel after prepare leaves external immutable snapshot releasable", () => {
+  const a = new VersionedStage({edges: ["left"]});
+  const old = a.snapshot(), ticket = a.forward(a.currentKey(1));
+  a.backward(ticket, "left");
+  const prepared = a.prepare(1, 1, 4);
+  assert.equal(a.cancel(), true);
+  assert.throws(() => a.commit(prepared), /ML_RUN_CANCELLED/);
+  assert.equal(a.status().active, 0);
+  assert.equal(a.totalPins(a.state), 1);
+  a.release(old);
+  assert.equal(a.totalPins(a.state), 0);
+});
+
+test("invalid resource limits and duplicate graph edges fail closed", () => {
+  for (const config of [
+    {capacity: 0}, {byteBudget: -1}, {maxPins: 0},
+    {maxReceipts: 0}, {edges: []}, {edges: ["same", "same"]},
+    {edges: [null]}, {capacity: 2.5}
+  ]) assert.throws(() => new VersionedStage(config), /ML_INVALID_STAGE_LIMITS/);
 });
