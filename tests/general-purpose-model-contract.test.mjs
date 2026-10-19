@@ -52,7 +52,9 @@ function admit(graph, { gradient = null, budgetBytes = 4096, maxNodes = 64 } = {
     const hitsTarget = (id) => {
       if (reaches.has(id)) return reaches.get(id);
       if (targets.has(id)) { reaches.set(id, true); return true; }
-      const yes = nodes.get(id).inputs.some(e => hitsTarget(e.from));
+      let yes = false;
+      // Visit every dependency: short-circuiting here misses fan-in gradients.
+      for (const e of nodes.get(id).inputs) if (hitsTarget(e.from)) yes = true;
       reaches.set(id, yes);
       return yes;
     };
@@ -95,6 +97,17 @@ test("irrelevant nondifferentiable branch does not prohibit requested gradient",
   ], outputs: ["train", "notDifferentiable"] };
   assert.doesNotThrow(() => admit(g, { gradient: { outputs: ["train"], targets: ["w"] } }));
 });
+test("fan-in visits ALL gradient dependencies, including missing VJPs", () => {
+  const g = { name: "FanIn", nodes: [
+    input("w"), unary("left", "w", { vjp: true }),
+    unary("right", "w", { vjp: false }),
+    { id: "merge", effect: "pure", output: vec, vjp: true,
+      inputs: [{ from: "left", expected: vec }, { from: "right", expected: vec }] }
+  ], outputs: ["merge"] };
+  expects("MODEL_MISSING_VJP", () => admit(g, { gradient: { outputs: ["merge"], targets: ["w"] } }));
+  g.nodes[2].vjp = true;
+  assert.doesNotThrow(() => admit(g, { gradient: { outputs: ["merge"], targets: ["w"] } }));
+});
 test("gradient against disconnected input is denied", () => {
   const g = { name:"X", nodes: [input("x"), input("y"), unary("f", "x", { vjp: true })], outputs: ["f"] };
   expects("MODEL_GRADIENT_DISCONNECTED", () => admit(g, { gradient: { outputs: ["f"], targets: ["y"] } }));
@@ -117,7 +130,7 @@ test("cyclic/forward dependency and duplicate identity rejected", () => {
 });
 test("extents, checked integer overflow, memory and node budgets", () => {
   expects("MODEL_INVALID_EXTENT", () => admit(graph(input("x", { dtype: "f64", shape: [-1] }))));
-  expects("MODEL_SIZE_OVERFLOW", () => admit(graph(input("x", { dtype: "f64", shape: [2 ** 48] }))));
+  expects("MODEL_SIZE_OVERFLOW", () => admit(graph(input("x", { dtype: "f64", shape: [2 ** 51] }))));
   expects("MODEL_MEMORY_BUDGET", () => admit(graph(input("x"), unary("f", "x")), { budgetBytes: 63 }));
   expects("MODEL_NODE_BUDGET", () => admit(graph(input("x"), unary("f", "x")), { maxNodes: 1 }));
 });
