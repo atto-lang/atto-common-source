@@ -6,12 +6,19 @@ import assert from "node:assert/strict";
 // Only `state` carries simulated guest-owned persistent data. The admission bit is
 // test-harness infrastructure, corresponding to a sealed runtime gate.
 class VersionedStage {
-  constructor({edges = ["left", "right"], capacity = 2, byteBudget = 64} = {}) {
+  constructor({edges = ["left", "right"], capacity = 2, byteBudget = 64,
+    maxPins = 64, maxReceipts = 1024} = {}) {
+    if (!Array.isArray(edges) || !edges.length ||
+        edges.some(e => typeof e !== "string" || !e.length) ||
+        new Set(edges).size !== edges.length ||
+        [capacity, byteBudget, maxPins, maxReceipts].some(n => !Number.isSafeInteger(n) || n < 1))
+      throw Error("ML_INVALID_STAGE_LIMITS");
     this.state = {
       run: "run-A", epoch: 4, graph: 7, step: 1, activeVersion: 1,
       versions: new Map([[1, {value: 5, pins: 0, frozen: true}]]),
       contexts: new Map(), pins: new Map(), usedBytes: 0,
-      edges: new Set(edges), capacity, byteBudget,
+      edges: new Set(edges), capacity, byteBudget, maxPins, maxReceipts,
+      admissionRevision: 0,
       optimizer: Object.freeze({iteration: 0}),
       prepared: null, committed: new Set(), cancelled: false
     };
@@ -35,6 +42,11 @@ class VersionedStage {
     if (key.step !== s.step) this.error("ML_STEP_MISMATCH");
     if (key.version !== s.activeVersion) this.error("ML_WEIGHT_VERSION_MISMATCH");
   }
+  totalPins(s) { return [...s.versions.values()].reduce((n, v) => n + v.pins, 0); }
+  retireOld(s) {
+    for (const [version, storage] of s.versions)
+      if (version !== s.activeVersion && storage.pins === 0) s.versions.delete(version);
+  }
   currentKey(microbatch) {
     return this.critical(s => Object.freeze({
       run: s.run, epoch: s.epoch, graph: s.graph,
@@ -43,25 +55,28 @@ class VersionedStage {
   }
   snapshot() {
     return this.critical(s => {
+      if (s.cancelled) this.error("ML_RUN_CANCELLED");
+      if (this.totalPins(s) >= s.maxPins) this.error("ML_PIN_QUOTA_EXHAUSTED");
       const version = s.activeVersion;
       const storage = s.versions.get(version);
       const token = Symbol("immutable-weight-pin");
+      // Host scalar only: production requires an authenticated, immutable buffer lease.
+      const lease = Object.freeze({token, value: storage.value, version,
+        run: s.run, epoch: s.epoch, graph: s.graph});
       storage.pins += 1;
-      s.pins.set(token, version);
-      // Copy scalar reference data for the simulator. Real code returns an
-      // independent, immutable storage lease, not the mutable state record.
-      return Object.freeze({token, value: storage.value, version, epoch: s.epoch});
+      s.pins.set(token, {version, lease});
+      return lease;
     });
   }
   release(lease) {
     return this.critical(s => {
-      const ver = s.pins.get(lease.token);
-      if (ver === undefined) this.error("ML_UNKNOWN_OR_EXPIRED_LEASE");
+      const record = lease && s.pins.get(lease.token);
+      if (!record || record.lease !== lease) this.error("ML_UNKNOWN_OR_EXPIRED_LEASE");
+      const storage = s.versions.get(record.version);
+      if (!storage || storage.pins < 1) this.error("ML_PIN_LEDGER_CORRUPT");
       s.pins.delete(lease.token);
-      const storage = s.versions.get(ver);
       storage.pins -= 1;
-      if (storage.pins < 0) this.error("ML_NEGATIVE_PINS");
-      if (storage.pins === 0 && ver !== s.activeVersion) s.versions.delete(ver);
+      this.retireOld(s);
     });
   }
   forward(key, bytes = 8) {
@@ -69,30 +84,58 @@ class VersionedStage {
       if (s.cancelled) this.error("ML_RUN_CANCELLED");
       this.checkIdentity(s, key);
       if (s.committed.has(key.step)) this.error("ML_STEP_ALREADY_COMMITTED");
+      if (s.prepared) this.error("ML_STEP_PREPARING");
+      if (!Number.isSafeInteger(key.microbatch) || key.microbatch < 0)
+        this.error("ML_INVALID_MICROBATCH");
       if (s.contexts.has(key.microbatch)) this.error("ML_DUPLICATE_MICROBATCH");
       if (!Number.isSafeInteger(bytes) || bytes <= 0) this.error("ML_BAD_TENSOR_BYTES");
       if (s.contexts.size >= s.capacity || bytes > s.byteBudget - s.usedBytes)
         this.error("ML_BACKPRESSURE");
-      const snapshot = s.versions.get(key.version);
-      snapshot.pins += 1; // pinned until commit or cancellation
+      if (this.totalPins(s) >= s.maxPins) this.error("ML_PIN_QUOTA_EXHAUSTED");
+      const admission = Symbol("issued-forward-activation");
+      const ticket = Object.freeze({...key, bytes, admission});
+      s.versions.get(key.version).pins += 1;
       s.usedBytes += bytes;
       s.contexts.set(key.microbatch, {
-        key, bytes, received: new Set(), finished: false
+        key: Object.freeze({...key}), ticket, bytes, received: new Set(), finished: false
       });
-      return Object.freeze({ ...key, bytes }); // no state loan escapes
+      s.admissionRevision += 1;
+      return ticket;
     });
   }
-  backward(key, edge) {
+  backward(ticket, edge) {
     return this.critical(s => {
       if (s.cancelled) this.error("ML_RUN_CANCELLED");
-      this.checkIdentity(s, key);
-      const context = s.contexts.get(key.microbatch);
+      this.checkIdentity(s, ticket);
+      const context = s.contexts.get(ticket.microbatch);
       if (!context) this.error("ML_UNKNOWN_ACTIVATION");
+      if (context.ticket !== ticket) this.error("ML_ACTIVATION_LEASE_MISMATCH");
+      if (s.prepared) this.error("ML_STEP_PREPARING");
       if (!s.edges.has(edge)) this.error("ML_UNKNOWN_EDGE");
       if (context.received.has(edge)) this.error("ML_DUPLICATE_GRADIENT");
       context.received.add(edge);
       context.finished = context.received.size === s.edges.size;
+      s.admissionRevision += 1;
       return context.finished;
+    });
+  }
+  abortForward(ticket) {
+    return this.critical(s => {
+      if (s.cancelled) this.error("ML_RUN_CANCELLED");
+      if (s.prepared) this.error("ML_STEP_PREPARING");
+      this.checkIdentity(s, ticket);
+      const ctx = s.contexts.get(ticket.microbatch);
+      if (!ctx || ctx.ticket !== ticket) this.error("ML_UNKNOWN_OR_STALE_ACTIVATION");
+      if (ctx.received.size) this.error("ML_FORWARD_ALREADY_BACKPROPAGATING");
+      const storage = s.versions.get(ctx.key.version);
+      if (!storage || storage.pins < 1 || ctx.bytes > s.usedBytes)
+        this.error("ML_PIN_LEDGER_CORRUPT");
+      s.contexts.delete(ticket.microbatch);
+      s.usedBytes -= ctx.bytes;
+      storage.pins -= 1;
+      s.admissionRevision += 1;
+      this.retireOld(s);
+      return true;
     });
   }
   prepare(step, expectedVersion, candidateValue) {
@@ -109,41 +152,62 @@ class VersionedStage {
       if ([...s.contexts.values()].some(c => !c.finished))
         this.error("ML_STEP_NOT_QUIESCENT");
       if (s.prepared) this.error("ML_PREPARE_ALREADY_EXISTS");
+      if (s.committed.size >= s.maxReceipts) this.error("ML_RECEIPT_QUOTA_EXHAUSTED");
       const token = Symbol("prepared-optimizer-candidate");
-      s.prepared = {token, step, expectedVersion, weights: frozenCandidate};
-      return Object.freeze({token, step, expectedVersion});
+      s.prepared = {token, step, expectedVersion, run: s.run,
+        epoch: s.epoch, graph: s.graph, revision: s.admissionRevision,
+        weights: frozenCandidate};
+      // Numerical candidate remains a caller-supplied oracle in this host model.
+      return Object.freeze({token, step, expectedVersion,
+        run: s.run, epoch: s.epoch, graph: s.graph});
     });
   }
   commit(receipt) {
     return this.critical(s => {
       if (s.cancelled) this.error("ML_RUN_CANCELLED");
-      if (s.committed.has(receipt.step)) this.error("ML_STEP_ALREADY_COMMITTED");
-      if (!s.prepared || s.prepared.token !== receipt.token)
+      if (receipt && s.committed.has(receipt.step)) this.error("ML_STEP_ALREADY_COMMITTED");
+      if (!receipt || !s.prepared || s.prepared.token !== receipt.token)
         this.error("ML_UNRECOGNIZED_PREPARE");
-      if (receipt.step !== s.step) this.error("ML_STEP_MISMATCH");
-      if (receipt.expectedVersion !== s.activeVersion)
+      if (receipt.step !== s.step || receipt.step !== s.prepared.step)
+        this.error("ML_STEP_MISMATCH");
+      if (receipt.expectedVersion !== s.activeVersion ||
+          receipt.expectedVersion !== s.prepared.expectedVersion)
         this.error("ML_WEIGHT_VERSION_MISMATCH");
+      if (receipt.run !== s.run || receipt.run !== s.prepared.run ||
+          receipt.epoch !== s.epoch || receipt.epoch !== s.prepared.epoch ||
+          receipt.graph !== s.graph || receipt.graph !== s.prepared.graph)
+        this.error("ML_PREPARE_GENERATION_MISMATCH");
+      if (s.admissionRevision !== s.prepared.revision)
+        this.error("ML_PREPARE_INVALIDATED");
       if (!s.contexts.size || [...s.contexts.values()].some(c => !c.finished))
         this.error("ML_STEP_NOT_QUIESCENT");
-      const nextVersion = s.activeVersion + 1;
-      if (!Number.isSafeInteger(nextVersion)) this.error("ML_VERSION_OVERFLOW");
+      // Full preflight before any guest-visible publication.
+      const nextVersion = s.activeVersion + 1, nextStep = s.step + 1;
+      const nextIteration = s.optimizer.iteration + 1;
+      if (![nextVersion, nextStep, nextIteration].every(Number.isSafeInteger))
+        this.error("ML_VERSION_OVERFLOW");
+      if (s.committed.size >= s.maxReceipts) this.error("ML_RECEIPT_QUOTA_EXHAUSTED");
+      if (s.versions.has(nextVersion)) this.error("ML_VERSION_COLLISION");
       const candidate = s.prepared.weights;
-      // Locally atomic publication: weights AND optimizer iteration.
-      s.versions.set(nextVersion, {value: candidate.value, pins: 0, frozen: true});
-      const previous = s.activeVersion;
-      s.activeVersion = nextVersion;
-      s.optimizer = Object.freeze({iteration: s.optimizer.iteration + 1});
-      for (const ctx of s.contexts.values()) {
-        const pinned = s.versions.get(ctx.key.version);
-        pinned.pins -= 1;
-        if (pinned.pins < 0) this.error("ML_NEGATIVE_PINS");
+      if (!Object.isFrozen(candidate) || !Number.isFinite(candidate.value))
+        this.error("ML_INVALID_PREPARED_WEIGHTS");
+      const decrements = new Map();
+      for (const ctx of s.contexts.values())
+        decrements.set(ctx.key.version, (decrements.get(ctx.key.version) || 0) + 1);
+      for (const [v, n] of decrements) {
+        const storage = s.versions.get(v);
+        if (!storage || storage.pins < n) this.error("ML_PIN_LEDGER_CORRUPT");
       }
-      if (s.versions.get(previous).pins === 0) s.versions.delete(previous);
+      s.versions.set(nextVersion, {value: candidate.value, pins: 0, frozen: true});
+      s.activeVersion = nextVersion;
+      s.optimizer = Object.freeze({iteration: nextIteration});
+      for (const [v, n] of decrements) s.versions.get(v).pins -= n;
+      this.retireOld(s);
       s.contexts.clear();
       s.usedBytes = 0;
       s.prepared = null;
       s.committed.add(receipt.step);
-      s.step += 1;
+      s.step = nextStep;
       return Object.freeze({step: receipt.step, version: nextVersion});
     });
   }
@@ -151,11 +215,15 @@ class VersionedStage {
     return this.critical(s => {
       if (s.cancelled) return false;
       if (s.committed.has(s.step)) this.error("ML_STEP_ALREADY_COMMITTED");
-      for (const ctx of s.contexts.values()) {
-        const pinned = s.versions.get(ctx.key.version);
-        pinned.pins -= 1;
-        if (pinned.pins < 0) this.error("ML_NEGATIVE_PINS");
+      const decrements = new Map();
+      for (const ctx of s.contexts.values())
+        decrements.set(ctx.key.version, (decrements.get(ctx.key.version) || 0) + 1);
+      for (const [v, n] of decrements) {
+        const storage = s.versions.get(v);
+        if (!storage || storage.pins < n) this.error("ML_PIN_LEDGER_CORRUPT");
       }
+      for (const [v, n] of decrements) s.versions.get(v).pins -= n;
+      this.retireOld(s);
       s.contexts.clear();
       s.usedBytes = 0;
       s.prepared = null;
