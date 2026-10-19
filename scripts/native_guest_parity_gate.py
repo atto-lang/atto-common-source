@@ -112,7 +112,7 @@ def validate(report: dict, manifest_digest: str, cases: dict) -> dict:
         require(type(report[k]) is str and HEX40.fullmatch(report[k]) is not None,
                 f"invalid source identity: {k}")
     require(type(report["compiler_artifact_sha256"]) is str and
-            HEX64.fullmatch(report["artifact_sha256"]) is not None,
+            HEX64.fullmatch(report["compiler_artifact_sha256"]) is not None,
             "invalid compiler executable digest")
     for k in ("run_id", "job_id", "run_attempt", "runner_id"):
         require(type(report[k]) is int and report[k] > 0, f"invalid positive provenance: {k}")
