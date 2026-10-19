@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ores-truffle-oreslang/oreslang-common-source/contracts/v1/model-graph/graph.schema.json",
   "title": "Proposed Oreslang ModelGraph HIR v1 (not an executable guest format)",
-  "description": "A typed graph with no caller-provided effect, shape, code, VJP or scratch metadata. Compiler-owned operation signatures supply all semantic attributes.",
+  "description": "Versioned compiler HIR shape for a general-purpose ModelGraph. Caller data never supplies trusted effect, type ABI, VJP, allocation, execution-profile or scratch metadata; those come from compiler/linker-owned operation signatures. Node static arguments use canonical tagged constants.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -59,10 +59,181 @@
           "items": {
             "$ref": "#/$defs/id"
           }
+        },
+        "constArgs": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/constant"
+          }
         }
       }
     },
     "port": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/bufferPort"
+        },
+        {
+          "$ref": "#/$defs/nominalPort"
+        }
+      ]
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputs",
+        "output",
+        "effect",
+        "vjp",
+        "scratchBytes",
+        "abi",
+        "constKinds",
+        "profile"
+      ],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/port"
+          }
+        },
+        "output": {
+          "$ref": "#/$defs/port"
+        },
+        "effect": {
+          "enum": [
+            "pure",
+            "io",
+            "network",
+            "random",
+            "clock",
+            "actor",
+            "ffi",
+            "suspend"
+          ]
+        },
+        "vjp": {
+          "type": "boolean"
+        },
+        "scratchBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "abi": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+        },
+        "constKinds": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "enum": [
+              "bool",
+              "i64",
+              "f64bits",
+              "string",
+              "symbol"
+            ]
+          }
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        }
+      }
+    },
+    "constant": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bool"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "i64"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^-?(0|[1-9][0-9]*)$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "f64bits"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{16}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "symbol"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^#[A-Za-z][A-Za-z0-9_]{0,63}$"
+            }
+          }
+        }
+      ],
+      "description": "Canonical compile-time constant encoding. Semantic admission additionally rejects out-of-range i64 and non-finite f64 bit patterns."
+    },
+    "bufferPort": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -99,52 +270,52 @@
         }
       }
     },
-    "signature": {
+    "nominalPort": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "inputs",
-        "output",
-        "effect",
-        "vjp",
-        "scratchBytes",
-        "abi"
+        "kind",
+        "typeAbi",
+        "bytes"
       ],
       "properties": {
-        "inputs": {
-          "type": "array",
-          "maxItems": 16,
-          "items": {
-            "$ref": "#/$defs/port"
-          }
+        "kind": {
+          "const": "nominal"
         },
-        "output": {
-          "$ref": "#/$defs/port"
+        "typeAbi": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.:@-]{0,127}$"
         },
-        "effect": {
-          "enum": [
-            "pure",
-            "io",
-            "network",
-            "random",
-            "clock",
-            "actor",
-            "ffi",
-            "suspend"
-          ]
-        },
-        "vjp": {
-          "type": "boolean"
-        },
-        "scratchBytes": {
+        "bytes": {
           "type": "integer",
           "minimum": 0
-        },
-        "abi": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9_.-]{1,64}$"
         }
       }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "freestanding",
+        "allocation",
+        "deterministic"
+      ],
+      "properties": {
+        "freestanding": {
+          "type": "boolean"
+        },
+        "allocation": {
+          "enum": [
+            "none",
+            "scratch",
+            "dynamic"
+          ]
+        },
+        "deterministic": {
+          "type": "boolean"
+        }
+      },
+      "description": "Compiler/linker-owned conservative execution capabilities. These do not imply hard-real-time safety."
     }
   }
 }
