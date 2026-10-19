@@ -89,11 +89,11 @@ test("unknown/malformed signature and untrusted registry rejected", () => {
   const bad = reg(); bad.set("Bad", op([V], V, { abi: "" }));
   errs("MODEL_INVALID_OP_SIGNATURE", () => admit(graph, bad));
 });
-test("nonpure signature never admitted even if unused", () => {
+test("effectful operation is disallowed on use; unused registry entries remain harmless", () => {
   const unsafe = reg(); unsafe.set("Impure", op([V], V, { effect: "network", vjp: true }));
-  errs("MODEL_EFFECTFUL_OP", () => admit(g([n("x", "VecInput")]), unsafe));
-  const safe = reg();
-  assert.doesNotThrow(() => admit(g([n("x", "VecInput")]), safe));
+  assert.doesNotThrow(() => admit(g([n("x", "VecInput")]), unsafe));
+  errs("MODEL_EFFECTFUL_OP", () =>
+    admit(g([n("x", "VecInput"), n("bad", "Impure", "x")]), unsafe));
 });
 test("shape mismatch and mismatched physical units denied", () => {
   const safe = reg(); safe.delete("Impure");
