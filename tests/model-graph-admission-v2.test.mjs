@@ -199,3 +199,27 @@ test("bounded randomized DAG mutations detect non-differentiable gradients", () 
     else assert.equal(admit(graph, safe, opts).gradientEdges, count - 1);
   }
 });
+
+test("accessors, symbol metadata and non-enumerable fields fail closed without getter execution", () => {
+  let calls = 0;
+  const graph = g([n("x", "VecInput")]);
+  Object.defineProperty(graph.nodes[0], "op", { enumerable: true, get() { calls++; return "VecInput"; } });
+  errs("MODEL_FORGED_OP_METADATA", () => admit(graph, reg()));
+  assert.equal(calls, 0);
+  const marked = g([n("x", "VecInput")]);
+  marked.nodes[0][Symbol("untrusted")] = true;
+  errs("MODEL_FORGED_OP_METADATA", () => admit(marked, reg()));
+  const hidden = g([n("x", "VecInput")]);
+  Object.defineProperty(hidden, "secret", { value: 1, enumerable: false });
+  errs("MODEL_INVALID_GRAPH", () => admit(hidden, reg()));
+});
+test("sparse and accessor-backed dependency arrays fail closed", () => {
+  const sparse = g([n("x", "VecInput")]);
+  sparse.outputs = new Array(1);
+  errs("MODEL_INVALID_GRAPH", () => admit(sparse, reg()));
+  const graph = g([n("x", "VecInput"), n("y", "VecScale", "x")]);
+  let calls = 0;
+  Object.defineProperty(graph.nodes[1].inputs, "0", { enumerable: true, get() { calls++; return "x"; } });
+  errs("MODEL_ARITY_MISMATCH", () => admit(graph, reg()));
+  assert.equal(calls, 0);
+});
