@@ -152,9 +152,11 @@ export function admitModelGraph(graph, registry, options = {}) {
       const id = stack.pop();
       if (visited.has(id)) continue;
       visited.add(id);
-      if (wants.has(id)) continue;
       const n = found.get(id);
       const relevant = n.parents.filter(p => reaches.get(p).size !== 0);
+      // If this target has target ancestors, gradient propagation must continue
+      // for those other requested derivatives. Stop only for a leaf target.
+      if (wants.has(id) && relevant.length === 0) continue;
       if (relevant.length && !n.sig.vjp) fail("MODEL_MISSING_VJP");
       gradientEdges += BigInt(relevant.length);
       for (const parent of relevant) stack.push(parent);
