@@ -22,6 +22,45 @@ From the common-source checkout:
 
     python3 -m unittest discover -s tests -p 'test_native_guest_parity_gate.py' -v
 
+## Capture real raw guest observations
+
+Build the production compiler first. For LLVM, the source root must provide
+src/main/cpp/oreslang/runtime/NativeIntArrayRegion.c and the actual LLVM compiler
+binary must be built. With Clang available:
+
+    python3 scripts/run_native_guest_v1.py \
+      --profile llvm-native-aot \
+      --compiler-source-root /absolute/path/to/oreslang-source.llvm \
+      --compiler /absolute/path/to/oreslang-llvmc \
+      --clang /absolute/path/to/clang \
+      --report llvm-raw.json
+
+For JVM guest execution (not application-specific native AOT), build the Java
+Maven launcher first, including its Maven-resolved classpath:
+
+    python3 scripts/run_native_guest_v1.py \
+      --profile graal-jvm-guest \
+      --compiler-source-root /absolute/path/to/oreslang-source.java \
+      --java-probe /absolute/path/to/oreslang-source.java/contracts/v1/java_probe.py \
+      --java-class-artifact /absolute/path/to/oreslang-source.java/target/classes/dev/oreslang/launcher/OresMain.class \
+      --report graal-jvm-raw.json
+
+The runner invokes actual compiler processes on SHA-pinned source files and,
+for LLVM, links the generated IR with Clang and the real native array runtime.
+It fingerprints generated IR and each linked binary before and after execution.
+For a negative fixture, it requires a compiler failure, expected diagnostic
+and **zero emitted IR**. The JVM profile is explicitly guest execution under
+the real launcher; it cannot certify full guest-code AOT.
+
+Both outputs are **raw process observations**, not complete attested CI records.
+They intentionally omit run_id, job_id, runner_id and workflow conclusions.
+Never fill those in from guesses; retrieve exact-head job/step and checkout
+evidence from GitHub. The full record checker requires one compiler-artifact
+fingerprint and, for every native-execution case, separately matching before/
+after executable SHA-256 plus emitted IR SHA-256. Captured results still do
+not prove complete garbage-collector reachability, allocation claims, or
+deterministic cleanup on exception/cancellation paths.
+
 An independently obtained compiler report can be checked with:
 
     python3 scripts/native_guest_parity_gate.py --report llvm-record.json
