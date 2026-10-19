@@ -50,6 +50,16 @@ end
 
 A physics step can be a pure `State -> State` transform. A multi-step simulation is an outer loop calling that step; cycles and time are not secretly introduced in the immutable graph. Recurrent nets, stateful operators and event feedback require explicit state-in/state-out or a separately specified, capability-checked session API. Never infer mutable feedback from graph edges.
 
+## Operation authoring and extensibility
+
+The model abstraction must be useful outside ML without turning the compiler into a catalog of domain-specific layers. A model operation therefore resolves from an ordinary nominal/pure Oreslang callable or from an explicitly trusted native operation manifest. The compiler derives or verifies the operation's type/effects; source code may not self-assert purity, VJP availability, scratch bounds, hard-real-time safety or ABI compatibility.
+
+A future `core::model::Op<I,O>` protocol or `@ModelOp`-style annotation can make operation eligibility explicit, but that metadata is a request for compiler verification, not an authority token. Pure Oreslang operations should be the default extension mechanism across finance, DSP, simulation, control and data transforms. Native/FFI/accelerated operations require authenticated package/toolchain provenance plus target/resource declarations.
+
+Each resolved operation carries both an ABI version and an exact implementation/content digest. ABI equality is not semantic identity: replacing code while retaining the same calling convention must change the graph content identity unless an explicitly admitted equivalence policy proves the substitution.
+
+The canonical lowering/identity rules are specified in [MODEL_GRAPH_LOWERING_ABI_V1.md](MODEL_GRAPH_LOWERING_ABI_V1.md).
+
 ## Mandatory static admission
 
 - Every node resolves to a registered **nominal op signature** with exact input/output type and constraints (shapes/extents/layout/units where applicable); ports and types unify without implicit dtype conversion, reshape, broadcasting, unit conversion, GPU transfer, cloning or allocation. Explicit operators can do those conversions. Reject unresolved/ambiguous overloads and forged op metadata.
