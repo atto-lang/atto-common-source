@@ -104,6 +104,29 @@ test("prototype-inherited nodes and metadata are rejected at trust boundary", ()
   const inheritedGraph = Object.create({ name: "SafeGraph", nodes: [n("x", "VecInput")], outputs: ["x"] });
   errs("MODEL_INVALID_GRAPH", () => admit(inheritedGraph, reg()));
 });
+test("operation identity binds implementation digest and provenance, not ABI alone", () => {
+  const graph = g([n("x", "VecInput"), n("y", "VecScale", "x")]);
+  const a = reg();
+  const first = admit(graph, a);
+  const b = reg();
+  b.set("VecScale", op([V], V, { vjp: true, abi: "v1", implDigest: "b".repeat(64) }));
+  const second = admit(graph, b);
+  assert.notDeepEqual(first.implementationTrace, second.implementationTrace);
+  assert.match(first.implementationTrace[1], /#a{64}:verified-ores$/);
+  assert.match(second.implementationTrace[1], /#b{64}:verified-ores$/);
+});
+test("registry subclasses and malformed provenance fail closed", () => {
+  class EvilMap extends Map {}
+  errRegistry:
+  errs("MODEL_UNTRUSTED_OP_REGISTRY", () => admit(g([n("x", "VecInput")]), new EvilMap(reg())));
+  const badDigest = reg();
+  badDigest.set("BadDigest", op([], V, { implDigest: "abc" }));
+  errs("MODEL_INVALID_OP_SIGNATURE", () => admit(g([n("x", "VecInput")]), badDigest));
+  const badProvenance = reg();
+  badProvenance.set("BadSource", op([], V, { provenance: "guest-asserted" }));
+  errs("MODEL_INVALID_OP_SIGNATURE", () => admit(g([n("x", "VecInput")]), badProvenance));
+});
+
 test("unknown/malformed signature and untrusted registry rejected", () => {
   const graph = g([n("x", "VecInput")]);
   errs("MODEL_UNTRUSTED_OP_REGISTRY", () => admit(graph, { VecInput: op([], V) }));
