@@ -133,3 +133,58 @@ G4: controlled multi-thread actors, GPU events and distributed shard commit/fenc
 The RW host model is intentionally **conservative on nested same-owner admissions**: all nesting is rejected until the native/Java verified reentrancy policy is implemented. A separately admitted write does not inherit a former read ticket; read→write upgrade never happens implicitly. A retiring gate lets already running callbacks unwind before state reclamation; cancelling a queued waiter cannot release an executing permit. No OS/native mutex is held over an Oreslang guest callback or `await`.
 
 Do not conflate a host simulator's `gate` member (runtime-only admission metadata) with a second guest-owned actor field. In Oreslang source, all guest-owned persistent state remains in the sole `state { ... }` variable. The scheduler's authenticated gate remains internal.
+
+
+## October 18 audit hardening: activation provenance and prepare isolation
+
+**Observed host-protocol vulnerabilities (not evidence of native exploit):**
+the original simulator admitted new forward work after optimizer prepare, so
+a committed candidate could omit gradients from a late microbatch. It also
+selected backward activation context using public identity fields alone,
+permitting misassociation with a different issued forward context.
+
+**Hardened contract:**
+
+- A successful forward returns an opaque issued activation ticket bound to
+  its saved context and the run/incarnation/graph/step/version. Backward and
+  partial-abort require exactly that live issuance, not merely matching
+  public fields; replay, cloning and microbatch substitution fail closed.
+  JavaScript Symbol/object identity are host-model stand-ins ONLY. Real
+  cross-actor/process transport requires independently authenticated,
+  typed, owner-scoped capabilities and a replay ledger, not JS identity.
+- Prepare seals admission for that optimizer step: no new forward, backward
+  or forward-abort transition. Commit validates run/incarnation/graph/step,
+  prepared version and unchanged admission revision. Cancellation may
+  invalidate prepare and must release stage-owned reservations.
+- Live parameter pins, activation count/bytes and in-memory idempotency
+  receipts have independent quotas. Active pin and completed-context counts
+  have constant-time admission checks. Exhausted receipts block publication
+  until durable checkpoint/receipt compaction has been designed and proven;
+  silent receipt eviction is forbidden.
+- Commit preflights candidate validity, next version/step/optimizer overflow,
+  version collision, receipt capacity and every pinned-context decrement
+  **before** mutating committed weight+optimizer state. A failed forward
+  may return its activation/pin credits before any gradient is accepted.
+  Externally leased frozen snapshots remain valid across commits/cancellation
+  until their authenticated releases.
+- Production must additionally bound retained **weight-version storage
+  bytes**, device reservations, in-flight completion events and durable
+  receipt storage; the scalar host model does not provide those byte
+  budgets. All kernels and asynchronous operations stay outside state loans.
+
+**Important nonproofs:** The JS critical callback checks only direct
+return of the state root; it does NOT prevent nested alias escape, closure
+capture, untrusted getters or FFI effects. Actual language compilers/runtime
+must statically/dynamically enforce these before allowing guest code inside
+state loans. Similarly, the host model takes a candidate scalar from its
+caller rather than deriving it from an authenticated gradient manifest,
+so these tests do NOT establish gradient provenance or numerical correctness.
+
+**Evidence:** 18/18 isolated V8-adapted host cases on Git blob
+2c341b6c3d9c22c99353cc1af975a022dacd3f09, including 128 deterministic
+seeds x 96 transitions checking byte/pin conservation, stage capacity, fan-in
+accounting, snapshot retirement, optimizer-version monotonicity and admission
+fencing. This is not Node 22 GitHub Actions evidence, exhaustive model checking
+or real Java/LLVM Oreslang guest execution. Real state-loan compiler checks,
+1- and 3-thread race tests, durable multi-shard publication, actual tensor VJPs
+and guest CPU training all remain blocking.
