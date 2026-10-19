@@ -15,7 +15,11 @@ on:
     paths:
       - "docs/GENERAL_PURPOSE_MODELS_V1.md"
       - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "docs/MODEL_GRAPH_HARDENING_AUDIT_20261019.md"
       - "tests/general-purpose-model-contract.test.mjs"
+      - "tests/model-graph-admission-v2.test.mjs"
+      - "experiments/model_graph_admission.mjs"
+      - "contracts/v1/model-graph/**"
       - ".github/workflows/general-purpose-model-contract.yml"
   workflow_dispatch:
 permissions:
@@ -29,9 +33,13 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Require Node host environment and execute reference oracle
+      - name: Require Node host environment and syntax-check oracle
         run: |
           node --version
+          node --check experiments/model_graph_admission.mjs
+          node -e "JSON.parse(require('fs').readFileSync('contracts/v1/model-graph/graph.schema.json','utf8')); console.log('schema-json-parse=PASS')"
+      - name: Execute both host reference suites
+        run: |
           node --test tests/general-purpose-model-contract.test.mjs tests/model-graph-admission-v2.test.mjs
       - name: Evidence boundary
         run: |
