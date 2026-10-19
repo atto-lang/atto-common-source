@@ -82,6 +82,14 @@ test("user-supplied VJP/effect/shape/ABI/scratch overrides always rejected", () 
     errs("MODEL_FORGED_OP_METADATA", () => admit(graph, reg(), grad(["q"], ["x"])));
   }
 });
+test("prototype-inherited nodes and metadata are rejected at trust boundary", () => {
+  const graph = g([n("x", "VecInput")]);
+  const inherited = Object.create({ id: "x", op: "VecInput", inputs: [] });
+  graph.nodes = [inherited];
+  errs("MODEL_FORGED_OP_METADATA", () => admit(graph, reg()));
+  const inheritedGraph = Object.create({ name: "SafeGraph", nodes: [n("x", "VecInput")], outputs: ["x"] });
+  errs("MODEL_INVALID_GRAPH", () => admit(inheritedGraph, reg()));
+});
 test("unknown/malformed signature and untrusted registry rejected", () => {
   const graph = g([n("x", "VecInput")]);
   errs("MODEL_UNTRUSTED_OP_REGISTRY", () => admit(graph, { VecInput: op([], V) }));
