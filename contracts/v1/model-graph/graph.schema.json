@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ores-truffle-oreslang/oreslang-common-source/contracts/v1/model-graph/graph.schema.json",
   "title": "Proposed Oreslang ModelGraph HIR v1 (not an executable guest format)",
-  "description": "Versioned compiler HIR shape for a general-purpose ModelGraph. Caller data never supplies trusted effect, type ABI, VJP, allocation, execution-profile or scratch metadata; those come from compiler/linker-owned operation signatures. Node static arguments use canonical tagged constants.",
+  "description": "A typed graph with no caller-provided effect, shape, code, VJP, scratch, ABI, implementation digest or provenance metadata. Compiler/linker-owned operation signatures supply all semantic attributes.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -90,7 +90,9 @@
         "scratchBytes",
         "abi",
         "constKinds",
-        "profile"
+        "profile",
+        "implDigest",
+        "provenance"
       ],
       "properties": {
         "inputs": {
@@ -141,6 +143,16 @@
         },
         "profile": {
           "$ref": "#/$defs/profile"
+        },
+        "implDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provenance": {
+          "enum": [
+            "verified-ores",
+            "trusted-native"
+          ]
         }
       }
     },
