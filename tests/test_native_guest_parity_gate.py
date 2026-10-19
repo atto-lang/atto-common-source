@@ -54,7 +54,8 @@ class NativeGuestV1Tests(unittest.TestCase):
 
     def test_native_graal_aot_is_still_pending(self):
         a = self.record('graal-native-guest-aot')
-        self.assertEqual(gate.validate(a, self.digest, self.cases), {})
+        with self.assertRaisesRegex(gate.ContractError, 'no required executed'):
+            gate.validate(a, self.digest, self.cases)
         with self.assertRaisesRegex(gate.ContractError, 'no certified common'):
             gate.compare(a, self.record('llvm-native-aot'), self.cases)
 
