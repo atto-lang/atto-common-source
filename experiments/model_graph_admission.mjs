@@ -135,7 +135,7 @@ function validateConstant(c, expectedKind) {
 }
 
 function prepareRegistry(registry) {
-  if (!(registry instanceof Map)) fail("MODEL_UNTRUSTED_OP_REGISTRY");
+  if (!(registry instanceof Map) || Object.getPrototypeOf(registry) !== Map.prototype) fail("MODEL_UNTRUSTED_OP_REGISTRY");
   const prepared = new Map();
 
   for (const [key, sig] of registry) {
@@ -150,7 +150,9 @@ function prepareRegistry(registry) {
       fail("MODEL_INVALID_OP_SIGNATURE");
     if (typeof sig.vjp !== "boolean" || !denseArray(sig.inputs) || sig.inputs.length > 16)
       fail("MODEL_INVALID_OP_SIGNATURE");
-    if (typeof sig.abi !== "string" || !/^[A-Za-z0-9_.-]{1,64}$/.test(sig.abi))
+    if (typeof sig.abi !== "string" || !/^[A-Za-z0-9_.-]{1,64}$/.test(sig.abi) ||
+        typeof sig.implDigest !== "string" || !/^[0-9a-f]{64}$/.test(sig.implDigest) ||
+        !["verified-ores", "trusted-native"].includes(sig.provenance))
       fail("MODEL_INVALID_OP_SIGNATURE");
     if (!denseArray(sig.constKinds) || sig.constKinds.length > 32 ||
         sig.constKinds.some(k => typeof k !== "string" || !CONST_KINDS.has(k)))
