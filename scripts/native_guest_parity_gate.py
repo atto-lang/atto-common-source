@@ -101,7 +101,7 @@ def load_manifest(root: Path):
 def validate(report: dict, manifest_digest: str, cases: dict) -> dict:
     require(type(report) is dict and set(report) ==
             {"schema_version", "profile", "manifest_sha256", "source_tree", "compiler_sha",
-             "run_id", "job_id", "run_attempt", "runner_id", "artifact_sha256",
+             "run_id", "job_id", "run_attempt", "runner_id", "compiler_artifact_sha256",
              "artifact_kind", "guest_lowering", "fallback", "conclusion", "observed"},
             "invalid execution report keys")
     profile = report["profile"]
@@ -111,18 +111,18 @@ def validate(report: dict, manifest_digest: str, cases: dict) -> dict:
     for k in ("source_tree", "compiler_sha"):
         require(type(report[k]) is str and HEX40.fullmatch(report[k]) is not None,
                 f"invalid source identity: {k}")
-    require(type(report["artifact_sha256"]) is str and
+    require(type(report["compiler_artifact_sha256"]) is str and
             HEX64.fullmatch(report["artifact_sha256"]) is not None,
-            "invalid compiler artifact digest")
+            "invalid compiler executable digest")
     for k in ("run_id", "job_id", "run_attempt", "runner_id"):
         require(type(report[k]) is int and report[k] > 0, f"invalid positive provenance: {k}")
     require(report["conclusion"] == "success" and report["fallback"] == "none",
             "failed run or runtime fallback")
     if profile == "llvm-native-aot":
-        require(report["artifact_kind"] == "linked-native-guest-binary" and
+        require(report["artifact_kind"] == "llvm-native-compiler" and
                 report["guest_lowering"] == "llvm-ir", "not compiled native LLVM guest")
     elif profile == "graal-native-guest-aot":
-        require(report["artifact_kind"] == "application-specific-native-image" and
+        require(report["artifact_kind"] == "graal-guest-aot-compiler" and
                 report["guest_lowering"] == "compiled-guest-methods",
                 "Native Image of interpreter is not compiled guest AOT")
     else:
@@ -140,7 +140,15 @@ def validate(report: dict, manifest_digest: str, cases: dict) -> dict:
         require(type(obs) is dict and obs.get("fixture_sha256") == cases[key]["sha256"],
                 f"wrong fixture for {key}")
         if expectation["kind"] == "return":
-            require(set(obs) == {"fixture_sha256", "stage", "exit_code", "linked_guest"} and
+            fields = {"fixture_sha256", "stage", "exit_code", "linked_guest"}
+            if profile != "graal-jvm-guest":
+                fields |= {"guest_ir_sha256", "native_binary_sha256_before", "native_binary_sha256_after"}
+                for digest_field in ("guest_ir_sha256", "native_binary_sha256_before", "native_binary_sha256_after"):
+                    require(type(obs.get(digest_field)) is str and HEX64.fullmatch(obs[digest_field]) is not None,
+                            f"missing per-program native provenance: {key}.{digest_field}")
+                require(obs["native_binary_sha256_before"] == obs["native_binary_sha256_after"],
+                        f"native executable mutated during test: {key}")
+            require(set(obs) == fields and
                     obs["stage"] == STAGES[profile] and
                     type(obs["exit_code"]) is int and obs["exit_code"] == 42 and
                     obs["linked_guest"] is True, f"wrong native guest result for {key}")
