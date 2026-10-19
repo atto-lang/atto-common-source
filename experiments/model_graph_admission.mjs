@@ -10,8 +10,21 @@ const BYTES = new Map([["bool", 1n], ["i32", 4n], ["i64", 8n], ["f32", 4n], ["f6
 const record = x => x !== null && typeof x === "object" && !Array.isArray(x) &&
   (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
 const exactFields = (x, fields, code) => {
-  if (!record(x) || Object.keys(x).some(k => !fields.includes(k))) fail(code);
+  if (!record(x)) fail(code);
+  // Reject accessors and non-enumerable/symbol metadata before reading any fields.
+  // A hostile getter must never be invoked as part of graph admission.
+  const keys = Reflect.ownKeys(x);
+  if (keys.some(k => typeof k !== "string" || !fields.includes(k))) fail(code);
+  for (const k of keys) {
+    const d = Object.getOwnPropertyDescriptor(x, k);
+    if (!d || !Object.hasOwn(d, "value") || !d.enumerable) fail(code);
+  }
 };
+const denseArray = x => Array.isArray(x) &&
+  Object.keys(x).length === x.length &&
+  Object.keys(x).every((k, i) => k === String(i)) &&
+  Reflect.ownKeys(x).every(k => k === "length" || (typeof k === "string" && /^(0|[1-9][0-9]*)$/.test(k) && Number(k) < x.length)) &&
+  Object.keys(x).every(k => Object.hasOwn(Object.getOwnPropertyDescriptor(x, k), "value"));
 const boundInt = (x, code) => {
   if (!Number.isSafeInteger(x) || x < 0) fail(code);
   return BigInt(x);
@@ -23,7 +36,7 @@ const positiveInt = (x, code) => {
 };
 function port(p) {
   exactFields(p, ["dtype", "shape", "layout", "unit"], "MODEL_INVALID_PORT");
-  if (!BYTES.has(p.dtype) || !Array.isArray(p.shape) || p.shape.length > 8)
+  if (!BYTES.has(p.dtype) || !denseArray(p.shape) || p.shape.length > 8)
     fail("MODEL_INVALID_PORT");
   if (p.layout !== undefined && !["contiguous", "scalar"].includes(p.layout))
     fail("MODEL_INVALID_PORT");
@@ -58,7 +71,7 @@ function prepareRegistry(registry) {
     exactFields(sig, ["inputs", "output", "effect", "vjp", "scratchBytes", "abi"], "MODEL_INVALID_OP_SIGNATURE");
     if (typeof sig.effect !== "string" || !["pure", "io", "network", "random", "clock", "actor", "ffi", "suspend"].includes(sig.effect))
       fail("MODEL_INVALID_OP_SIGNATURE");
-    if (typeof sig.vjp !== "boolean" || !Array.isArray(sig.inputs) || sig.inputs.length > 16)
+    if (typeof sig.vjp !== "boolean" || !denseArray(sig.inputs) || sig.inputs.length > 16)
       fail("MODEL_INVALID_OP_SIGNATURE");
     if (typeof sig.abi !== "string" || !/^[A-Za-z0-9_.-]{1,64}$/.test(sig.abi))
       fail("MODEL_INVALID_OP_SIGNATURE");
@@ -72,8 +85,8 @@ function prepareRegistry(registry) {
 export function admitModelGraph(graph, registry, options = {}) {
   exactFields(graph, ["name", "nodes", "outputs"], "MODEL_INVALID_GRAPH");
   if (typeof graph.name !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(graph.name)
-      || !Array.isArray(graph.nodes) || graph.nodes.length === 0
-      || !Array.isArray(graph.outputs) || graph.outputs.length === 0)
+      || !denseArray(graph.nodes) || graph.nodes.length === 0
+      || !denseArray(graph.outputs) || graph.outputs.length === 0)
     fail("MODEL_INVALID_GRAPH");
   exactFields(options, ["maxNodes", "maxEdges", "maxDepth", "maxBytes", "gradient"], "MODEL_INVALID_OPTIONS");
   const maxNodes = positiveInt(options.maxNodes ?? 64, "MODEL_INVALID_BUDGET");
@@ -90,7 +103,7 @@ export function admitModelGraph(graph, registry, options = {}) {
     if (typeof n.id !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,127}$/.test(n.id) || found.has(n.id))
       fail("MODEL_DUPLICATE_NODE");
     if (typeof n.op !== "string" || !signatures.has(n.op)) fail("MODEL_UNKNOWN_OP");
-    if (!Array.isArray(n.inputs) || n.inputs.length !== signatures.get(n.op).inputs.length)
+    if (!denseArray(n.inputs) || n.inputs.length !== signatures.get(n.op).inputs.length)
       fail("MODEL_ARITY_MISMATCH");
     const sig = signatures.get(n.op);
     if (sig.effect !== "pure") fail("MODEL_EFFECTFUL_OP");
@@ -124,8 +137,8 @@ export function admitModelGraph(graph, registry, options = {}) {
   if (options.gradient !== undefined) {
     exactFields(options.gradient, ["outputs", "targets"], "MODEL_INVALID_GRADIENT_REQUEST");
     const { outputs: derivativeOutputs, targets: derivativeTargets } = options.gradient;
-    if (!Array.isArray(derivativeOutputs) || !derivativeOutputs.length ||
-        !Array.isArray(derivativeTargets) || !derivativeTargets.length)
+    if (!denseArray(derivativeOutputs) || !derivativeOutputs.length ||
+        !denseArray(derivativeTargets) || !derivativeTargets.length)
       fail("MODEL_INVALID_GRADIENT_REQUEST");
     const wants = new Set(derivativeTargets), outs = new Set(derivativeOutputs);
     if (wants.size !== derivativeTargets.length || outs.size !== derivativeOutputs.length)
