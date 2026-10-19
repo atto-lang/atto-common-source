@@ -7,8 +7,8 @@ export class ModelAdmissionError extends Error {
 const fail = code => { throw new ModelAdmissionError(code); };
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
 const BYTES = new Map([["bool", 1n], ["i32", 4n], ["i64", 8n], ["f32", 4n], ["f64", 8n]]);
-const OWN = (x, key) => Object.prototype.hasOwnProperty.call(x, key);
-const record = x => x !== null && typeof x === "object" && !Array.isArray(x);
+const record = x => x !== null && typeof x === "object" && !Array.isArray(x) &&
+  (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
 const exactFields = (x, fields, code) => {
   if (!record(x) || Object.keys(x).some(k => !fields.includes(k))) fail(code);
 };
