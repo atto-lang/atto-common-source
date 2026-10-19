@@ -29,20 +29,24 @@ class NativeGuestV1Tests(unittest.TestCase):
             if expected['kind'] == 'return':
                 obs = {'fixture_sha256': case['sha256'], 'stage': gate.STAGES[profile],
                        'exit_code': expected['exit_code'], 'linked_guest': True}
+                if profile != 'graal-jvm-guest':
+                    obs.update(guest_ir_sha256='d' * 64,
+                               native_binary_sha256_before='e' * 64,
+                               native_binary_sha256_after='e' * 64)
             else:
                 obs = {'fixture_sha256': case['sha256'], 'stage': 'compiler-reject',
                        'compiler_rc': 1, 'emitted_ir_bytes': 0,
                        'diagnostic': expected['diagnostic']}
             observations[name] = obs
         kind, lowering = {
-            'llvm-native-aot': ('linked-native-guest-binary', 'llvm-ir'),
+            'llvm-native-aot': ('llvm-native-compiler', 'llvm-ir'),
             'graal-jvm-guest': ('jvm-guest-launcher', 'truffle-guest'),
-            'graal-native-guest-aot': ('application-specific-native-image', 'compiled-guest-methods')
+            'graal-native-guest-aot': ('graal-guest-aot-compiler', 'compiled-guest-methods')
         }[profile]
         return {'schema_version': 1, 'profile': profile, 'manifest_sha256': self.digest,
                 'source_tree': 'a' * 40, 'compiler_sha': 'b' * 40,
                 'run_id': 101, 'job_id': 201, 'run_attempt': 1, 'runner_id': 301,
-                'artifact_sha256': 'c' * 64, 'artifact_kind': kind,
+                'compiler_artifact_sha256': 'c' * 64, 'artifact_kind': kind,
                 'guest_lowering': lowering, 'fallback': 'none', 'conclusion': 'success',
                 'observed': observations}
 
@@ -80,6 +84,7 @@ class NativeGuestV1Tests(unittest.TestCase):
     def test_exact_expected_values_and_rejection(self):
         for name, field, bad in [('scalar-main', 'exit_code', 43),
                                  ('owned-array-main', 'linked_guest', False),
+                                 ('scalar-main', 'native_binary_sha256_after', 'f' * 64),
                                  ('private-array-negative', 'emitted_ir_bytes', 200),
                                  ('private-array-negative', 'compiler_rc', 0)]:
             a = self.record('llvm-native-aot')
