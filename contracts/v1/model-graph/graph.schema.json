@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ores-truffle-oreslang/oreslang-common-source/contracts/v1/model-graph/graph.schema.json",
+  "title": "Proposed Oreslang ModelGraph HIR v1 (not an executable guest format)",
+  "description": "A typed graph with no caller-provided effect, shape, code, VJP or scratch metadata. Compiler-owned operation signatures supply all semantic attributes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "nodes",
+    "outputs"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 65536,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "op",
+        "inputs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.]*$"
+        },
+        "inputs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "port": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dtype",
+        "shape"
+      ],
+      "properties": {
+        "dtype": {
+          "enum": [
+            "bool",
+            "i32",
+            "i64",
+            "f32",
+            "f64"
+          ]
+        },
+        "shape": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "layout": {
+          "enum": [
+            "scalar",
+            "contiguous"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_/^-]{1,40}$"
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputs",
+        "output",
+        "effect",
+        "vjp",
+        "scratchBytes",
+        "abi"
+      ],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/port"
+          }
+        },
+        "output": {
+          "$ref": "#/$defs/port"
+        },
+        "effect": {
+          "enum": [
+            "pure",
+            "io",
+            "network",
+            "random",
+            "clock",
+            "actor",
+            "ffi",
+            "suspend"
+          ]
+        },
+        "vjp": {
+          "type": "boolean"
+        },
+        "scratchBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "abi": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+        }
+      }
+    }
+  }
+}
