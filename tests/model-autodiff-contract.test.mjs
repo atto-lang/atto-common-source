@@ -46,7 +46,7 @@ test("manifest has explicit proposal/evidence status",()=>{
  assert.equal(manifest.guest_execution,"NOT_EXECUTED");
  assert.equal(manifest.reference_tests,"HOST_ONLY");
 });
-test("every source case points to a real proposed fixture and owns a diagnostic",()=>{
+test("every source case points to a real proposed fixture with phase-correct diagnostics",()=>{
  const ids=new Set();
  for(const item of manifest.source_cases){
   assert(!ids.has(item.id),item.id);ids.add(item.id);
@@ -59,6 +59,11 @@ test("every source case points to a real proposed fixture and owns a diagnostic"
   const source=readFileSync(file,"utf8");
   assert(source.includes("define model"),item.id);
   if(item.diagnostic_class)assert(source.includes(item.diagnostic_class),item.id);
+  if(item.id==="non-differentiable-op"){
+   assert.equal(item.expect,"accept");
+   assert.equal(item.diagnostic_class,null);
+   assert.match(item.note,/gradient-admission/);
+  }
  }
  assert(manifest.source_cases.length>=8);
 });
