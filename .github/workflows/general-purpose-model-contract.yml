@@ -6,6 +6,8 @@ on:
       - "docs/GENERAL_PURPOSE_MODELS_V1.md"
       - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
       - "tests/general-purpose-model-contract.test.mjs"
+      - "tests/model-graph-admission-v2.test.mjs"
+      - "experiments/model_graph_admission.mjs"
       - ".github/workflows/general-purpose-model-contract.yml"
   push:
     branches: [main]
@@ -29,7 +31,7 @@ jobs:
       - name: Require Node host environment and execute reference oracle
         run: |
           node --version
-          node --test tests/general-purpose-model-contract.test.mjs
+          node --test tests/general-purpose-model-contract.test.mjs tests/model-graph-admission-v2.test.mjs
       - name: Evidence boundary
         run: |
           echo 'HOST_ORACLE_ONLY; model_guest_execution=NOT_EXECUTED'
