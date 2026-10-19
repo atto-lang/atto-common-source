@@ -61,7 +61,7 @@ class CapabilityContractTests(unittest.TestCase):
         }
         self.assertTrue(required <= negatives)
         for phrase in ["physical carrier thread", "ThreadToken", "TaskScope",
-                       "freestanding", "structural", "quiescen"]:
+                       "freestanding", "structural", "quiescen", "CodeVersionLease", "JIT eviction"]:
             self.assertIn(phrase.lower(), self.doc.lower())
 
 if __name__ == "__main__":
