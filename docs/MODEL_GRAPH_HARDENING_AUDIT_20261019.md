@@ -39,3 +39,11 @@ Gradient request admission checks *every* live predecessor, including repeated o
 5. Only then stage optional actors, Tasks, parallelism, GPU and distributed model execution under independent security and correctness gates.
 
 Keep PR #93 in DRAFT until these gates are satisfied.
+
+## Follow-up hardening (2026-10-19)
+
+The source-free admission oracle now rejects own accessor properties, symbol/non-enumerable metadata, and sparse/accessor-backed HIR arrays before consulting their values. The regression suite adds two cases asserting that hostile getter functions are not invoked. This specifically closes a host-oracle validation trust-boundary weakness; it does not establish a tamper-proof compiler op registry or hardened execution of third-party operation code.
+
+**Evidence:** Changes committed to PR #93, but exact-head Node CLI tests, compiler fixtures, native sanitizers and numerical runtime tests have not passed in this update. A new or retried workflow must report actual executed steps before any test-pass claim.
+
+**Residual:** Proxies can intercept reflective operations and must never cross a real compiler trust boundary as arbitrary host JS values. A production frontend must validate a decoded plain-data representation, use immutable compiler-owned signatures, and impose decoding, memory and operation budgets before lowering. Budget accounting here is conservative and is not a lifetime-sensitive allocation proof.
