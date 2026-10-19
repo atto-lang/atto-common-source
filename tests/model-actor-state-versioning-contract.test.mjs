@@ -44,6 +44,11 @@ class VersionedStage {
     if (key.version !== s.activeVersion) this.error("ML_WEIGHT_VERSION_MISMATCH");
   }
   totalPins(s) { return [...s.versions.values()].reduce((n, v) => n + v.pins, 0); }
+  nextAdmissionRevision(s) {
+    const revision = s.admissionRevision + 1;
+    if (!Number.isSafeInteger(revision)) this.error("ML_ADMISSION_REVISION_OVERFLOW");
+    return revision;
+  }
   retireOld(s) {
     for (const [version, storage] of s.versions)
       if (version !== s.activeVersion && storage.pins === 0) s.versions.delete(version);
@@ -88,6 +93,8 @@ class VersionedStage {
       this.checkIdentity(s, key);
       if (s.committed.has(key.step)) this.error("ML_STEP_ALREADY_COMMITTED");
       if (s.prepared) this.error("ML_STEP_PREPARING");
+      if (s.committed.size >= s.maxReceipts) this.error("ML_RECEIPT_QUOTA_EXHAUSTED");
+      const nextRevision = this.nextAdmissionRevision(s);
       if (!Number.isSafeInteger(key.microbatch) || key.microbatch < 0)
         this.error("ML_INVALID_MICROBATCH");
       if (s.contexts.has(key.microbatch)) this.error("ML_DUPLICATE_MICROBATCH");
@@ -103,7 +110,7 @@ class VersionedStage {
       s.contexts.set(key.microbatch, {
         key: Object.freeze({...key}), ticket, bytes, received: new Set(), finished: false
       });
-      s.admissionRevision += 1;
+      s.admissionRevision = nextRevision;
       return ticket;
     });
   }
@@ -117,10 +124,11 @@ class VersionedStage {
       if (s.prepared) this.error("ML_STEP_PREPARING");
       if (!s.edges.has(edge)) this.error("ML_UNKNOWN_EDGE");
       if (context.received.has(edge)) this.error("ML_DUPLICATE_GRADIENT");
+      const nextRevision = this.nextAdmissionRevision(s);
       context.received.add(edge);
       context.finished = context.received.size === s.edges.size;
       if (context.finished) s.finishedContexts += 1;
-      s.admissionRevision += 1;
+      s.admissionRevision = nextRevision;
       return context.finished;
     });
   }
@@ -132,6 +140,7 @@ class VersionedStage {
       const ctx = s.contexts.get(ticket.microbatch);
       if (!ctx || ctx.ticket !== ticket) this.error("ML_UNKNOWN_OR_STALE_ACTIVATION");
       if (ctx.received.size) this.error("ML_FORWARD_ALREADY_BACKPROPAGATING");
+      const nextRevision = this.nextAdmissionRevision(s);
       const storage = s.versions.get(ctx.key.version);
       if (!storage || storage.pins < 1 || ctx.bytes > s.usedBytes)
         this.error("ML_PIN_LEDGER_CORRUPT");
@@ -139,7 +148,7 @@ class VersionedStage {
       s.usedBytes -= ctx.bytes;
       storage.pins -= 1;
       s.livePins -= 1;
-      s.admissionRevision += 1;
+      s.admissionRevision = nextRevision;
       this.retireOld(s);
       return true;
     });
@@ -154,6 +163,7 @@ class VersionedStage {
       if (s.committed.has(step)) this.error("ML_STEP_ALREADY_COMMITTED");
       if (step !== s.step) this.error("ML_STEP_MISMATCH");
       if (expectedVersion !== s.activeVersion) this.error("ML_WEIGHT_VERSION_MISMATCH");
+      if (s.committed.size >= s.maxReceipts) this.error("ML_RECEIPT_QUOTA_EXHAUSTED");
       if (!s.contexts.size) this.error("ML_STEP_NO_GRADIENTS");
       if (s.finishedContexts !== s.contexts.size)
         this.error("ML_STEP_NOT_QUIESCENT");
@@ -424,8 +434,8 @@ test("version pin and durable receipt quotas fail closed before mutation", () =>
   a.backward(ticket, "left");
   a.commit(a.prepare(1, 1, 4));
   assert.deepEqual(a.status().weightVersions, [1, 2]);
-  const next = a.forward(a.currentKey(2));
-  a.backward(next, "left");
+  assert.throws(() => a.forward(a.currentKey(2)),
+    /ML_RECEIPT_QUOTA_EXHAUSTED/);
   assert.throws(() => a.prepare(2, 2, 3),
     /ML_RECEIPT_QUOTA_EXHAUSTED/);
   assert.equal(a.status().optimizerIteration, 1);
@@ -558,4 +568,18 @@ test("deterministic state-machine interleavings preserve pin, fan-in, and commit
       }
     }
   }
+});
+
+test("admission revision overflow is rejected before reserving bytes or pins", () => {
+  const a = new VersionedStage({edges: ["left"]});
+  a.critical(s => { s.admissionRevision = Number.MAX_SAFE_INTEGER; });
+  assert.throws(() => a.forward(a.currentKey(1)), /ML_ADMISSION_REVISION_OVERFLOW/);
+  assert.equal(a.status().active, 0);
+  assert.equal(a.state.livePins, 0);
+  a.critical(s => { s.admissionRevision = 0; });
+  const ticket = a.forward(a.currentKey(1));
+  a.critical(s => { s.admissionRevision = Number.MAX_SAFE_INTEGER; });
+  assert.throws(() => a.backward(ticket, "left"), /ML_ADMISSION_REVISION_OVERFLOW/);
+  assert.equal(a.state.finishedContexts, 0);
+  assert.equal(a.state.contexts.get(1).received.size, 0);
 });
