@@ -163,6 +163,26 @@
       "id": "host-future-callback-isolation",
       "scenario": "guest network completion must not run user-controlled CompletableFuture callbacks with trusted host thread authority or expose host I/O objects",
       "expect": "no-guest-callback-on-host"
+    },
+    {
+      "id": "actor-finalization-cached-ticket",
+      "scenario": "Automatic actor finalization races a cached bridge reference polling a pending or completed result ticket; after revocation neither cached nor new lookups can return an authorized result",
+      "expect": "revoked-no-result"
+    },
+    {
+      "id": "terminated-actor-dispatch-fence",
+      "scenario": "An already queued trusted host egress task races actor termination and cannot issue a fresh network dispatch after the revocation fence",
+      "expect": "no-post-revocation-dispatch"
+    },
+    {
+      "id": "host-cleanup-capacity-exhaustion",
+      "scenario": "More than the reserved number of host egress bindings are requested while terminated brokers await cleanup; admission rejects instead of producing unlimited deferred cleanup tasks",
+      "expect": "bounded-fail-closed"
+    },
+    {
+      "id": "cleanup-failure-retry",
+      "scenario": "A host transport close operation fails transiently then permanently; cleanup retries only within a bounded budget, records failure, and never returns extra quota/cleanup capacity without settlement",
+      "expect": "bounded-retry-and-capacity-retention"
     }
   ],
   "network_policy": {

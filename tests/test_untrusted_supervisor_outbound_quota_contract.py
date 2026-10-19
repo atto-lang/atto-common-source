@@ -18,6 +18,10 @@ REQUIRED = {
     "monotonic-wrap-no-token-mint",
     "actor-context-network-ingress", "actor-ticket-budget-replay",
     "host-future-callback-isolation",
+    "actor-finalization-cached-ticket",
+    "terminated-actor-dispatch-fence",
+    "host-cleanup-capacity-exhaustion",
+    "cleanup-failure-retry",
 }
 EXPECTATIONS = {
     "burst-capacity": "rate-limited",
@@ -51,6 +55,10 @@ EXPECTATIONS = {
     "actor-context-network-ingress": "runtime-provenance-required",
     "actor-ticket-budget-replay": "bounded-one-shot-ticket",
     "host-future-callback-isolation": "no-guest-callback-on-host",
+    "actor-finalization-cached-ticket": "revoked-no-result",
+    "terminated-actor-dispatch-fence": "no-post-revocation-dispatch",
+    "host-cleanup-capacity-exhaustion": "bounded-fail-closed",
+    "cleanup-failure-retry": "bounded-retry-and-capacity-retention",
 }
 BACKENDS = {"java-graalvm", "llvm", "wasm", "forge", ".net"}
 

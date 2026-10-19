@@ -111,3 +111,29 @@ The Java prototype does not enable Oreslang guest NETWORK or provide
 production SSRF-safe arbitrary egress. Java/Graal and LLVM protected guest
 execution, host transport quiescence, stable actor lineage, supervisor mailbox
 quota admission and original source CI remain hard blockers before merge.
+
+
+## Actor finalization and broker cleanup hardening — October 18
+
+Automatic actor finalization, explicit host close, bound-ticket polling, and
+cached bridge references must share a single **revocation linearization point**.
+A removed binding must not allow any future ticket result or HTTP start, even if
+the guest previously resolved its binding. The trusted host broker shall expose
+a synchronous, no-network-I/O dispatch fence to prevent a check-then-send gap.
+Do not perform host transport I/O under an actor lifecycle callback or bridge
+monitor. Actual HTTP cancellation and socket quiescence are separate, asynchronous
+host obligations; do not mark a backend verified based on a completed future
+or a local simulation of actor identity.
+
+Termination cleanup scheduling must be **finite** and failure aware: reserve
+cleanup capacity before a host broker becomes reachable, enqueue each terminated
+binding at most once, bound retry attempts, and expose exhausted cleanup errors.
+If host cleanup cannot be confirmed, fail closed and retain capacity; neither a
+new actor incarnation nor a supervisor restart may gain new egress capacity by
+abandoning still-live host transports.
+
+Evidence: Java source PR #1266, commit `c76701a9d287fa79952f4b4fbb9955a15758162b`,
+and private carrier run #39199747989 (25/25 exact blob checks, JDK21 simulated
+actor and HTTP/TCP host tests passed). **This is HOST-ONLY verification.**
+Protected Graal guest, true JVM ActorRuntime integration, host socket teardown
+and LLVM containment remain unverified and are merge blockers.
