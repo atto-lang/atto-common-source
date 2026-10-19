@@ -16,9 +16,21 @@ Examples of meaningful models: tensor inference, DSP/image filters, physics time
 
 This is an API design sketch, not a declaration of available syntax in the current compilers. Exact method signatures and generic constraints require Java/LLVM parity review.
 
+### Type/value semantics
+
+- In a type position, the declaration name (for example `Classifier` or `PriceEstimate`) denotes a distinct nominal model type. Two declarations with structurally identical graphs are not assignment-compatible merely because their nodes match.
+- In an expression, `Classifier(...)` constructs a value of that model type. Construction resolves bounded static configuration and creates independently owned mutable parameter/state storage only when required by the operation contracts. A stateless model value may lower to zero runtime state.
+- The compiler owns the immutable graph blueprint and its ABI/generation identity. Referring to a model type does not expose a mutable graph object, executable code pointer, actor handle, lease, op registry or authority-bearing runtime descriptor.
+- Model values may be passed/stored like other values only when ordinary ownership and capability rules allow it. Parameterized/stateful instances are not implicitly `Copy`, shareable, serializable, actor-sendable or thread-safe. An explicitly frozen immutable snapshot can acquire stronger traits only when its complete storage graph proves them.
+- Model composition is nominal composition: a model may be lowered as a statically known operation inside another model only after the compiler proves an acyclic dependency, exact input/output ABI, bounded resources and compatible effects. Recursive model composition fails closed.
+
+This keeps the useful “model type/value” surface without turning `model` into a dynamic closure or an alternate object system.
+
 ## Canonical shape and grammar compatibility
 
 Keep the accepted `define model Classifier(...) as Dense(...) ReLU() end` spelling. V1 nominal constructors must resolve to *typed model operations*, with NN layers a specialization; operators are not limited to tensor-shaped values. Operators can have scalar, fixed-size vector, record, or domain-specific, nominal input/output ports. No magic conversion of `|>` or `pipe` into model nodes. Retain the v1 static ordered sequence; the typed DAG and named-port/branch syntax is a **future explicitly versioned extension**, not retroactive approval of unimplemented new grammar.
+
+Static constructor/configuration arguments are part of the graph ABI. The frontend must lower them to a canonical typed constant representation rather than preserving arbitrary executable expressions. V1 admits bounded compile-time constants only; the reference HIR uses tagged booleans, signed i64 strings, finite IEEE-754 f64 bit patterns, bounded strings and nominal symbols. Default arguments are resolved before HIR emission. Closures, object identities, mutable values, pointers, actor refs, capabilities, NaN/Infinity and compile-time function execution are not graph constants. Changing a static argument changes the graph fingerprint/generation when it can affect type, layout, resources or computation.
 
 Examples **conceptual, subject to future validated operator definitions**:
 
@@ -41,10 +53,13 @@ A physics step can be a pure `State -> State` transform. A multi-step simulation
 ## Mandatory static admission
 
 - Every node resolves to a registered **nominal op signature** with exact input/output type and constraints (shapes/extents/layout/units where applicable); ports and types unify without implicit dtype conversion, reshape, broadcasting, unit conversion, GPU transfer, cloning or allocation. Explicit operators can do those conversions. Reject unresolved/ambiguous overloads and forged op metadata.
+- General-purpose ports are not restricted to tensor-like buffers. A compiler-owned nominal type ABI can represent scalar values, records and domain values such as `Price`, `Pose`, `ControlState` or a fixed simulation state. Structural lookalikes never substitute for a different nominal ABI. Fixed storage/resource bounds remain part of admission for freestanding profiles.
+- Static op arguments are checked against compiler-owned argument signatures and canonicalized before hashing/lowering. The graph may carry those inert constants, but it may not carry caller-supplied claims about output type, VJP support, purity, allocation class, execution profile, ABI or scratch cost.
 - Compiler verifies a finite deterministic topology, unique/stable node and edge identities, no cycles (including recursive model composition), no data-dependent topology, no side-effecting/suspending/FFI/spawn/clock/random/I/O operations. Graph construction uses only bounded checked compile-time constants and inert imports; op constructors may not run arbitrary user code at compile time.
 - Pure models have no observable effects, but kernels can still fail deterministically on bad input or resource limits; use typed `Result`/errors and deny partially published output/state on failure. External non-determinism, random seeds and clock readings must enter as explicit typed inputs.
 - Every runtime input is validated at the trust boundary, including rank, shape, stride, bounds, alignment, buffer byte spans, tensor element types, encoding and optional physical dimensions. Overflow and overlapping mutable views fail closed. No graph-provided pointer, lease or serialized metadata is trusted on its own.
 - Check graph depth, node count, fan-in, live buffer/activation estimate and arithmetic overflow against an explicit compilation/execution budget; never allocate unbounded memory merely because a graph compiled. Freestanding profiles can statically provision all scratch. An op marked pure is **not** automatically safe for untrusted inputs or hard real-time use.
+- Derive execution capabilities from the trusted operation registry and target backend, never from source annotations on a graph node. At minimum keep separate facts for freestanding eligibility, absence of dynamic runtime allocation and deterministic evaluation. A caller may request a stricter profile and admission must fail rather than silently fall back. These facts are still insufficient to claim hard real time: WCET, bounded loop/reduction counts, scheduler/preemption behavior, interrupt policy, page residency, device behavior and target-specific code generation need separate evidence.
 - Preserve lexical ownership and lifetime rules. Immutable code/graph descriptors can share inside authorized trust domains; `rt share` never publishes private pointers to unauthorized actors or processes. Mutable instance parameters/scratch/session state have exactly one owner, generation-aware leases and no loan spanning a suspension point.
 - No op has ambient access to actor CONTROL, supervisor authority, filesystem, network or other capability. Optimizer, device, actor stage, transport and data-source permissions are each explicitly admitted by higher layers.
 
@@ -77,12 +92,17 @@ This corrects the overstrict reject fixture `contracts/v1/model-autodiff/fixture
 
 Freestanding `core` must remain usable without Linux, threads, malloc, JIT or floating-point hardware (ops requiring f64 can be unavailable on a target). Public APIs should favor a shared type/trait contract and library-lowered IR over intrinsic ML kernels.
 
+A fully static model does not require a runtime graph allocation at all: after verification, AOT lowering may erase most graph metadata into direct calls/code and fixed read-only descriptors. A preallocated execution profile can use caller-provided/fixed scratch and therefore perform no runtime allocator calls. That makes `model` a useful vehicle for full-AOT and zero-runtime-allocation targets, while **not** confusing those properties with zero-GC or hard-real-time proof.
+
+No new top-level repository is required for the abstraction itself. Keep the language/ABI contract in common-source, the freestanding primitives in the existing core/alloc split, and generic hosted facilities in stdlib. Tensor/autograd/ML and other domain packages remain consumers. A separate repository is justified only if a substantial independently versioned domain library emerges; it is not necessary to make `define model` general-purpose.
+
 ## Compatibility and acceptance gates
 
-1. **Contract-only**: host oracle checks infer-only un-differentiable graph, gradient missing-VJP path, unrelated non-grad branch, effect/cycle/type/missing dependency/overflow/memory budget failures, deterministic topology and instance ownership.
-2. **Compiler**: both Java/Graal and LLVM parser/HIR emit the same nominal model signatures, identical diagnostics and effects, contextual-keyword, zero-import-side-effect and serialization-negative cases. Existing ML v1 syntax must remain accepted.
-3. **Real guest**: run and compare pure CPU non-ML scalar/record and signal model fixtures on both backends; execute an independent reference oracle and fault-injection/alias failures; record exact compiler/fixture SHA and executed steps.
-4. **ML**: prove VJP for requested outputs/targets only, numerical finite differences, fan-in, optimizer commit and activation generation controls.
-5. **Optional scaling**: actor, Task, GPU, remote, replay/hot reload and hard real-time profiles require their own scheduler/resource/security/trace-refinement gates.
+1. **Contract-only**: host oracle checks inference-only nondifferentiable graphs, gradient missing-VJP paths, unrelated non-grad branches, nominal record/domain ABI matching, canonical static constants, forged metadata/accessors, effect/cycle/type/missing dependency/overflow/memory budget failures, deterministic topology and derived execution capabilities.
+2. **Compiler**: both Java/Graal and LLVM parser/HIR emit the same nominal model signatures, canonical static arguments, graph generations, diagnostics and effects; preserve contextual-keyword behavior, zero-import-side-effect construction and serialization-negative cases. Existing ML v1 syntax must remain accepted.
+3. **Real guest**: run and compare pure CPU non-ML scalar/record, pricing and signal model fixtures on both backends; execute an independent reference oracle and fault-injection/alias failures; record exact compiler/fixture SHA, toolchain and executed steps.
+4. **Freestanding/AOT**: compile at least one non-ML model with no OS/thread/JIT dependency and a fixed preallocated scratch plan; inspect/measure that the qualified execution path performs no runtime allocator calls. This is not by itself a hard-real-time result.
+5. **ML**: prove VJP for requested outputs/targets only, numerical finite differences, fan-in, optimizer commit and activation generation controls.
+6. **Optional scaling**: actor, Task, GPU, remote, replay/hot reload and hard-real-time profiles require their own scheduler/resource/security/trace-refinement gates.
 
 **No real compiler/backend or runtime coverage is claimed by this RFC or by its source-free reference tests.** Do not mirror private Git trees across organizations unless a separately reviewed source/destination authorization policy permits that exact export.
