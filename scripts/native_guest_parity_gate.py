@@ -132,6 +132,7 @@ def validate(report: dict, manifest_digest: str, cases: dict) -> dict:
     require(type(observations) is dict, "missing observations")
     required = {key for key, case in cases.items()
                 if case["readiness"][profile] == "required"}
+    require(bool(required), "no required executed cases for this profile")
     require(set(observations) == required,
             f"missing required cases or unearned pending passes for {profile}")
     for key, obs in observations.items():
