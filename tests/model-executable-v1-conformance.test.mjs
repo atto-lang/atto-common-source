@@ -75,7 +75,7 @@ test("line-oriented backend projection is generated exactly from normative JSON"
 
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
-  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.5");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.6");
   assert.equal(corpus.portable_profile, "model-core-i64-v1");
   assert.deepEqual(
     corpus.profile_semantics.operation_expression_subset,
