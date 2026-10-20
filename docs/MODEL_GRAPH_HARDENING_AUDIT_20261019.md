@@ -32,7 +32,7 @@ Gradient request admission checks *every* live predecessor, including repeated o
   - ModelRunStamp fencing: **10/10 PASS**;
   - total independently re-executed in this harness: **58/58 PASS**.
 - This isolated V8 execution is **not** a real `node --test` process, compiler/parser, Java/GraalVM, LLVM, Native Image, numerical kernel or Oreslang guest result. The filesystem-dependent model-autodiff suite was not re-executed by this isolated harness.
-- Latest exact-head source-org model workflow observed during this audit: run **39345272467**, job `host-contract`, completed failure with **steps=null**. Therefore zero workflow steps executed; this is neither a code assertion failure nor passing CI evidence.
+- Latest exact-head source-org model workflow observed during this audit: run **39345353370**, job `host-contract`, completed failure with **steps=null**. Therefore zero workflow steps executed; this is neither a code assertion failure nor passing CI evidence.
 - The read-only workflow now syntax-checks the admission module, parses the JSON schema, and requests all model host suites when a runner is actually allocated.
 - No private Git tree was copied outside the source organization. External runner capacity does not authorize private-source export.
 
