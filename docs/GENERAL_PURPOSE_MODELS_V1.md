@@ -58,7 +58,7 @@ A future `core::model::Op<I,O>` protocol or `@ModelOp`-style annotation can make
 
 Each resolved operation carries both an ABI version and an exact implementation/content digest. ABI equality is not semantic identity: replacing code while retaining the same calling convention must change the graph content identity unless an explicitly admitted equivalence policy proves the substitution.
 
-The canonical lowering/identity rules are specified in [MODEL_GRAPH_LOWERING_ABI_V1.md](MODEL_GRAPH_LOWERING_ABI_V1.md).
+The canonical lowering/identity rules are specified in [MODEL_GRAPH_LOWERING_ABI_V1.md](MODEL_GRAPH_LOWERING_ABI_V1.md). Portable graph identity is pinned by [MODEL_GRAPH_DIGEST_V1.md](MODEL_GRAPH_DIGEST_V1.md), including cross-backend golden SHA-256 vectors. Stable diagnostic classes/phases are versioned in `contracts/v1/model-graph/diagnostics-v1.json`.
 
 ## Mandatory static admission
 
@@ -79,7 +79,7 @@ A model that is used only for forward inference can freely contain nondifferenti
 
 VJPs must cover broadcasting/unbroadcast, duplicate operands, per-edge fan-in, saved activation version leases and dtype-specific numeric behavior. Optimizer and training state are not intrinsic to `ModelGraph`; trained parameters are a separately owned/versioned `ModelInstance` or session. CPU deterministic inference is the first target; stochastic operations require explicit seed/state input (not an ambient RNG).
 
-This corrects the overstrict reject fixture `contracts/v1/model-autodiff/fixtures/reject_missing_vjp.ores`: interpret it as a *gradient-admission* negative fixture after expansion, not as evidence that a nondifferentiable forward-only model is illegal. Keep existing ML actor protocol, rollback/version fences and optimizer barrier requirements.
+The shared fixture is now `contracts/v1/model-autodiff/fixtures/accept_forward_without_vjp.ores`: declaration/forward admission is positive. The same semantic graph becomes a `MODEL_MISSING_VJP` negative case only when an explicit live gradient path traverses the nondifferentiable operation. Keep existing ML actor protocol, rollback/version fences and optimizer barrier requirements.
 
 ## Ownership, identity, portability, optimization
 
