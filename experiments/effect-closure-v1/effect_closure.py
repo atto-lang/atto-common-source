@@ -220,7 +220,8 @@ def main(argv=None):
     parser.add_argument("--profile", action="append", choices=sorted(PROFILES), required=True)
     args = parser.parse_args(argv)
     try:
-        raw = args.graph.read_bytes()
+        with args.graph.open("rb") as source:
+            raw = source.read(MAX_INPUT_BYTES + 1)
         graph = parse_bytes(raw)
         result = analyze(graph, list(dict.fromkeys(args.profile)))
     except (InvalidGraph, OSError) as exc:
