@@ -181,3 +181,113 @@ not compiler failures. The previously identified private funded repository canno
 be used for a private cross-organization source mirror through the available
 connector because that transfer is blocked by the connector safety boundary.
 No alternate-org compiler pass is claimed.
+
+
+## Executable corpus revision .10 and alpha-stable operation identity — 2026-10-20
+
+The portable executable contract is now mechanically consumed by both active
+backends rather than copied case-by-case.
+
+Normative source:
+
+- `contracts/v1/model-graph/executable-v1-conformance.json`
+- revision `model-core-i64-v1.2026-10-20.10`
+
+Deterministic backend projection:
+
+- `contracts/v1/model-graph/executable-v1-conformance.cases`
+- vendored byte-for-byte into Java test resources and LLVM tests;
+- current Git blob SHA in all three repositories:
+  `5b91104d2c963f801a53ba60c31da54fef38b88f`.
+
+Common-source regenerates the line-oriented projection from the normative JSON
+and requires exact byte equality. The format carries case ID, backend mode,
+diagnostic, graph/configured digests, semantic result, explicit configured i64
+value, and hex-encoded ASCII source. Identity differential records carry both
+baseline and variant source.
+
+The corpus currently contains 28 executable/admission cases plus four identity
+differential pairs. It covers signed boundaries, configuration arity/default
+ordering, nonconstant configuration, effectful operations, empty and recursive
+models, identifier/model/node/config/static-argument budgets, unknown operations
+and formals, duplicate model/operation parameters, disabled composition, run
+arity, Java-only stored model values, and positive/negative/INT64_MIN execution.
+
+### Alpha-stable operation implementation identity
+
+The previous implementation digest encoded source parameter names
+(`name:input`, `name:delta`). That made alpha-renaming a verified operation
+invalidate the graph despite unchanged behavior.
+
+Portable v1 now canonicalizes operation parameter references by declared ordinal:
+
+- `Identity(int input) { return input; }` -> `return=arg:0`
+- `AddDelta(int delta, int input) { return input + delta; }` ->
+  `return=binary:+(arg:1,arg:0)`
+
+Parameter spelling, comments, formatting and source locations therefore do not
+change operation identity. Operand order, literal values and static-argument
+order remain deliberately identity-sensitive; v1 performs structural semantic
+identity, not algebraic equivalence normalization.
+
+Current canonical vectors:
+
+- Identity implementation:
+  `962f6b4865f7d64c5dfea914b09abdac61af4f1a41679e8f6b3adaa2bfabc9fe`
+- AddDelta implementation:
+  `75370f10ccb547c3a559258c0ced1fa07cdf603b4e612702b8204250d3c4f71a`
+- PriceAdjust(delta=2) graph:
+  `6c5e66eb67149e59c7d4d2d962b5671850ee3298f729214127d1452cb8d5ca21`
+- configured delta=2:
+  `3975a5571cb2fddcc6206ee0b3f0f893dcb3fa9bfbe591b8c5b9f5ab8ff539e1`
+- PriceAdjust(delta=-2) graph:
+  `f5b7956076ea5bc9696f4cd23d68c3e4c67d7ec90023a64c834d14d304249c1d`
+- configured delta=-2:
+  `15ca34acbdc5478bc2971ae7895d708aca2d324be418819a2e60b3c04bc20a5c`
+- PriceAdjust(INT64_MIN) graph:
+  `cb008cb043de50f1663ba8faa77de94c50d92514fa2b95cbd72de5225cf5cb80`
+- configured INT64_MIN:
+  `27ed4d26451fa960a8271495ee8ac96bbb67bc3369ca45cf2205222a962de5a3`
+- explicit delta=-3 configured on the -2 blueprint:
+  `ecf89f781f51b8f9cd71539e84b308c953ef55c85a52e716ce885b83fa3c20c6`.
+
+LLVM now rejects duplicate operation parameter names before ordinal identity
+encoding. Java already required distinct immutable operation parameters.
+
+### Derived portable profile
+
+Portable eligibility is a compiler-derived fact, never guest metadata.
+
+Java exposes `model-core-i64-v1` only when all model configuration, ports,
+static arguments and verified operation expressions are in the shared i64
+subset. Java models using float/string/Symbol or operators such as integer
+division may still execute on Java but do not acquire the portable profile.
+
+The current LLVM executable model slice is exactly the admitted
+`model-core-i64-v1` subset and records that profile on the compiler-owned model
+descriptor after successful admission.
+
+### Shared execution
+
+Java's `FirstClassModelGraphTest` parses the vendored projection and:
+
+- runs all rejection cases through the real parser/type/ModelGraph admission path;
+- validates graph/configured identities;
+- executes result-bearing Java cases through Polyglot and compares the returned
+  i64 result;
+- executes all shared identity differential pairs.
+
+LLVM's C++ ModelGraph contract parses the same vendored projection for
+admission/identity checks. `native_model_source_execution.py` now also reads
+that projection and drives the real source -> oreslang-llvmc -> LLVM IR -> Clang
+-> native-process gate for result-bearing cases, with INT64_MIN compile-only
+until a lossless native i64 result transport replaces process exit status.
+
+The shared corpus itself found an additional Java bug during this wiring:
+explicit negative constructor arguments such as `PriceAdjust(-3)` were still
+rejected because construction typing admitted only `LiteralExpr`. Java now
+admits exactly a direct numeric unary-minus literal, matching defaults/static
+arguments, while `-(1 + 1)` remains `MODEL_NONCONSTANT_CONFIG`.
+
+These tests are committed but source-org Actions are still required to execute
+them. No zero-step workflow is evidence of backend conformance.
