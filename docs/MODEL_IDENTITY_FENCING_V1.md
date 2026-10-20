@@ -11,7 +11,8 @@ V1 therefore defines the following independent identities.
 | Identity | Meaning | Changes when |
 | --- | --- | --- |
 | `ModelTypeId` | nominal source-level model declaration identity | package/module/declaration ABI identity changes |
-| `GraphDigest` | portable semantic fingerprint of one lowered immutable graph | topology, typed ports, static config, op ABI/implementation/provenance or semantic profile changes |
+| `BlueprintGraphDigest` | declaration/public-ABI fingerprint before constructor configuration is bound | model formals/defaults, topology, op ABI/implementation/provenance or symbolic static-argument binding changes |
+| `GraphDigest` / `ConfiguredGraphDigest` | portable semantic fingerprint of one concrete lowered immutable graph | bound static config, topology, typed ports, op ABI/implementation/provenance or semantic profile changes |
 | `GraphGeneration` | local publication generation for hot reload/replacement | a process/session publishes another graph generation |
 | `InstanceId` | one owned model instance/storage identity | a new independently owned instance is constructed |
 | `ParameterVersion` | version of mutable/frozen parameters for an instance | parameters are atomically published |
@@ -19,6 +20,8 @@ V1 therefore defines the following independent identities.
 | `ExecutionProfileDigest` | exact backend/target/numeric/allocation execution contract | backend, target, compiler semantic version or execution semantics change |
 
 None is interchangeable with another.
+
+A source-level executable model may expose both a blueprint digest and a configured digest. The blueprint digest is suitable for incremental/public declaration ABI invalidation; it is **not sufficient as run/cache identity** when different constructor values change computation. Run stamps and compiled-plan keys bind the concrete configured graph digest (or the equivalent fully resolved portable `GraphDigest`).
 
 ## Canonical graph descriptor\n\nThe sole normative v1 graph encoding and digest is `MODEL_GRAPH_DIGEST_V1.md` and its vectors in `contracts/v1/model-graph/digest-v1-vectors.json`. Java/Graal and LLVM must independently reproduce that binary byte stream and SHA-256 result; backend-private or second textual graph hashes are not conformance identities.\n\nThe portable graph digest binds nominal model identity, topology, typed static constants, operation ABI, trusted implementation digest/provenance, exact ports, effects/VJP capability, scratch bounds and the portable operation profile. Temporary HIR node labels are excluded after canonical ordinal mapping. Graph generation, instance identity, parameter version, run identity and execution-profile digest remain separate fences.\n\n## Graph generation
 
@@ -57,7 +60,7 @@ Every stateful, asynchronous, cached, actor, accelerator or training execution c
 RunStamp {
     runId,
     modelTypeId,
-    graphDigest,
+    graphDigest, // concrete configured graph digest
     graphGeneration,
     instanceId,
     parameterVersion,
@@ -97,7 +100,7 @@ The sole normative v1 derivation is `MODEL_EXECUTION_PROFILE_DIGEST_V1.md` and i
 
 A compiled-plan cache key is at least:
 
-`(GraphDigest, ExecutionProfileDigest)`
+`(ConfiguredGraphDigest, ExecutionProfileDigest)`
 
 Backend-local implementation caches may add target/compiler/toolchain keys. They must not remove either component.
 
