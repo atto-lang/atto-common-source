@@ -83,3 +83,18 @@ Use severity `error` for proven ownership/critical-lock violations and hard stri
 The existing `docs/STATIC_ANALYSIS_V0.md` and draft PR #106 cover loop termination, weighted actor/task amplification and capability/taint risks. This extension adds a **temporal and callback-effect domain**; it must use the same canonical typed IR, verified producer provenance, source digests, and strict-profile `unknown` handling. A future versioned `callback_facts` schema can carry verified CFG events and summaries; ad hoc user-supplied facts are *test fixtures*, never a proof.
 
 Existing runtime no-Zalgo work (Java PRs #1006/#1016, LLVM #410, shared #33) addresses *dispatch behavior*. This source analyzer is complementary: it warns when user code can publish before subscribing, misuse callback lifetimes or reenter critical sections, even if the runtime correctly schedules completed Future handlers.
+
+
+## Experimental executable reference (October 20, 2026)
+
+`scripts/callback_temporal_reference.py` now implements independent callback fact validation and all six `ORES-CB-001..006` *potential* findings. It is a **fact-level reference**, not an Oreslang parser, source-certified effect/borrow verifier, or production lint gate.
+
+Use `python3 -m scripts.callback_temporal_reference path/to/callback-facts.json --fail-on warning`. Supported node facts include `launch`, `subscribe` (a *verified fully installed* listener), `request_subscribe` (registration requested but completion unproven), `unsubscribe`, `publish`, `await`, and `end_turn`. A `launch` can include `timing`, `lane`, `captures`, `locks_held`, `active_mutable_loans`, invocation multiplicity, and `serial_turn_proven`. Events may be marked `replayable` only with a verified producer guarantee.
+
+**Never infer safe ordering from a queued registration request.** Only `subscribe` counts toward must-subscribe. A `request_subscribe` must not establish a listener, even when the registration API returns before launch. This is important for asynchronous registration or foreign event emitters.
+
+**Never infer serialized actor execution from merely naming an actor lane.** The after-actor-turn shortcut requires `timing=after_actor_turn`, `lane=actor_lane`, and `serial_turn_proven=true` from a trusted compiler/runtime contract. Every path to an `await`, `end_turn`, or return must already have an installed listener, with no intervening unsubscribe. Concurrent actor handlers without a verified ordering boundary do not qualify. Wildcard emitter/event identities never prove a subscription.
+
+`tests/test_callback_temporal_reference.py` and `tests/test_callback_temporal_integration.py` contain deterministic positive/negative controls including 500 seeded CFG differential cases checked against exhaustive path enumeration. The checked-in checker source and tests are locally executed under Python 3, but whole-backend `.ores` and GraalVM/LLVM CI are not established. Any input asserted to be a compiler proof must carry authenticated source identity, compiler version, complete exception/cancellation edges, and backend capability evidence before strict-profile admission.
+
+**Relationship to shared facts:** `scripts/static_facts_analyzer.py` contains a parallel, simpler `callback_orderings` summary domain in `ores-static-facts/v0`. This CFG reference is a more detailed experimental model for future merge into a single typed compiler fact pipeline. Do not interpret these two input formats as stable independent language ABIs or double-report identical findings to users.
