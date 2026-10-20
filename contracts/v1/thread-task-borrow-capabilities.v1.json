@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "feature": "thread-task-borrow-capabilities",
+  "status": "contract-only",
+  "scope": "shared semantics for independent Java/Graal and LLVM borrow checkers",
+  "backend_readiness": {
+    "java": "pending",
+    "llvm": "pending"
+  },
+  "is_guest_implementation": false,
+  "validation": "Scenario taxonomy only; does not invoke source compilers, scheduler, native sanitizers or real threads.",
+  "access_modes": [
+    "READ",
+    "WRITE"
+  ],
+  "compatibility": {
+    "READ": {
+      "READ": true,
+      "WRITE": false
+    },
+    "WRITE": {
+      "READ": false,
+      "WRITE": false
+    }
+  },
+  "cases": [
+    {
+      "id": "owned-move-to-scoped-task",
+      "expected": "accept",
+      "kind": "unique_owner_move",
+      "reason": "Owner inaccessible until Task completion or checked transfer back",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "two-immutable-readers",
+      "expected": "accept",
+      "kind": "read_read",
+      "reason": "Readonly shared reference and trusted same-domain shareability",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "two-disjoint-field-writers",
+      "expected": "accept",
+      "kind": "disjoint_write_write",
+      "reason": "Checked field identities and no enclosing alias",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "two-disjoint-partitions",
+      "expected": "accept",
+      "kind": "disjoint_write_write",
+      "reason": "Bounds, backing identity, layout generation, no structural mutation",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "reborrow-after-quiescent-join",
+      "expected": "accept",
+      "kind": "scope_barrier",
+      "reason": "All children and cleanup physically drained",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "nested-function-loan-forward",
+      "expected": "accept",
+      "kind": "callee_summary",
+      "reason": "Borrow/effect summaries verified through call chain",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "overlapping-writers",
+      "expected": "reject",
+      "kind": "write_write",
+      "reason": "Identical projected place simultaneously mutably loaned",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "reader-overlaps-writer",
+      "expected": "reject",
+      "kind": "read_write",
+      "reason": "Overlapping readonly and write loan",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "copy-exclusive-token",
+      "expected": "reject",
+      "kind": "token_forgery",
+      "reason": "Unique resource-bound capability cannot duplicate",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "thread-id-instead-of-resource-loan",
+      "expected": "reject",
+      "kind": "token_forgery",
+      "reason": "Physical thread ID grants no data permission",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "move-parent-while-borrowed",
+      "expected": "reject",
+      "kind": "owner_frozen",
+      "reason": "Owner cannot move or invalidate child loan",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "detached-task-borrow-escape",
+      "expected": "reject",
+      "kind": "escape",
+      "reason": "Detached capture lacks valid owned/shareable lifetime",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "scoped-task-early-return",
+      "expected": "reject",
+      "kind": "escape",
+      "reason": "Scope cannot exit before physically quiescent cleanup",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "await-with-unproven-borrow",
+      "expected": "reject",
+      "kind": "suspension",
+      "reason": "No continuation-owned pin/exclusion proof",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "cancel-token-is-not-quiescence",
+      "expected": "reject",
+      "kind": "quiescence",
+      "reason": "Task may continue executing after cancellation signal",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "unknown-ffi-alias",
+      "expected": "reject",
+      "kind": "unverified_alias",
+      "reason": "No trusted FFI alias/effect summary",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "ecs-layout-generation-invalidated",
+      "expected": "reject",
+      "kind": "structural_barrier",
+      "reason": "Live loan spans structural mutation or compaction",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "cross-actor-private-loan",
+      "expected": "reject",
+      "kind": "domain",
+      "reason": "Actor-private borrow cannot cross authorization domain",
+      "java": "pending",
+      "llvm": "pending"
+    },
+    {
+      "id": "stale-ABA-loan-generation",
+      "expected": "reject",
+      "kind": "generation",
+      "reason": "Reused slot does not renew expired capability",
+      "java": "pending",
+      "llvm": "pending"
+    }
+  ]
+}
