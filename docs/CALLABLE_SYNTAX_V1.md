@@ -203,6 +203,12 @@ private static functions and inherited static functions do not. Generic
 contracts may be specialized by a non-generic class; generic-class static-side
 conformance remains fail-closed until its substitution rules are explicit.
 
+Static-class contract conformance is same-source-unit-only in Java v1. The
+linked-unit checker does not yet transport interface/contract declarations, so
+a static contract must not be made to appear cross-file merely because
+`import contract` can name ordinary module contracts. Cross-unit static
+contracts require linked contract ABI metadata first.
+
 Instance interfaces and traits continue to use the type-level callable signature separator `=>`. This v1 contract does not change instance method declaration syntax.
 
 **Module contract fields remain supported** and use the same recursive
