@@ -61,11 +61,25 @@ fnc value(): int do
 end
 ```
 
-Without an explicit body separator, the first body token must begin on a later source line than the completed return type. An optional semantics-free `do` may instead appear immediately after the **complete** `-> ReturnType`; when present it provides the header/body boundary and permits compact same-line bodies:
+Without an explicit body separator, the first body token must begin on a later source line than the completed return type. An optional semantics-free `do` may instead appear immediately after the **complete** `-> ReturnType` **on the same physical source line**; when present it provides the header/body boundary and permits compact same-line bodies:
 
 ```ores
 fnc identity(int x) -> int do return x; end
 ```
+
+A `do` that begins on the following source line belongs to the callable body rather than the header. This is required so an ordinary first statement such as:
+
+```ores
+fnc consume(Channel<int> incoming) -> void
+    do select {
+        case readch incoming: val value {
+            return;
+        }
+    }
+end
+```
+
+is never swallowed as separator syntax. A standalone next-line `do` is therefore not a callable separator.
 
 `do` is not part of the return type and does not create a `do ... done` control-flow block. This remains valid for higher-order return types:
 
