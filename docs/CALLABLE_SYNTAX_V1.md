@@ -150,7 +150,7 @@ Tuple values remain ordinary tuple expressions, for example:
 return (1, x, "positive")
 ```
 
-The v1 parser/proof bound is 64 slots. Source exceeding that bound must fail at compile time rather than silently truncate, widen, or switch representation.
+The contextual spelling does not introduce a new tuple-specific arity limit. It preserves the existing finite-tuple arity policy of the canonical TypeRef representation; both accepted spellings must behave identically for the same element list.
 
 The word `tuple` is contextual: an ordinary value/function identifier named `tuple` remains legal outside the exact type-position shape `tuple (`.
 
@@ -179,7 +179,7 @@ Before claiming support, a backend must prove:
 2. nested `fi`/`end` ownership is deterministic;
 3. complex return types are parsed through the ordinary type system;
 4. non-`void` fallthrough is rejected by CFG analysis;
-5. tuple arity/types are checked, including aggregate return values;
+5. tuple arity/types are checked using the same canonical finite-tuple representation for every spelling, including aggregate return values;
 6. unsupported class/actor end bodies fail closed;
 7. optimizer/HIR reconstruction cannot erase the declaration-domain restriction;
 8. malformed or unsupported syntax emits no partial executable artifact.
@@ -196,9 +196,9 @@ parser/typechecker/codegen behavior against the same decisions.
 
 ## Current staged implementation status
 
-- Java/Graal reference work: free/module end-delimited bodies, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1611.
-- Static module/class-contract integration is staged separately in `oreslang-source.java` PR #1612 so class static implementations remain brace-only.
+- Java/Graal current-main reconciliation: free/module end-delimited bodies, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
+- Static module/class-contract integration remains a separate restack task; the older `oreslang-source.java` PR #1612 is not current-main evidence.
 - Canonical formatter support is staged in `oreslang-format` PR #81.
-- LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713; the current native scalar frontend does not claim executable parity.
+- LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713 and must be reconciled onto current native main before promotion; the current native scalar frontend does not claim executable parity.
 
 These references describe staged work, not a release guarantee. Exact-head executable tests remain required before promotion.
