@@ -85,3 +85,22 @@ test("forward-only missing VJP remains a phase distinction, not a declaration re
   assert.equal(gradient.diagnostic_class, "MODEL_MISSING_VJP");
   assert.equal(entries.get(gradient.diagnostic_class).phase, "gradient");
 });
+
+
+test("parser-independent Java/LLVM ModelGraph admission diagnostics are registered", () => {
+  const lowering = [
+    "MODEL_FORMAL_DEFAULT_TYPE_MISMATCH",
+    "MODEL_DUPLICATE_FORMAL",
+    "MODEL_INVALID_OP_ABI",
+    "MODEL_INVALID_IMPL_DIGEST",
+    "MODEL_INVALID_OP_PROVENANCE",
+    "MODEL_UNKNOWN_FORMAL",
+    "MODEL_NAMED_ARGUMENT_UNRESOLVED"
+  ];
+  const admission = [
+    "MODEL_FORMAL_BUDGET", "MODEL_ARGUMENT_BUDGET",
+    "MODEL_GRAPH_BUDGET", "MODEL_PORT_ARITY_MISMATCH"
+  ];
+  for (const code of lowering) assert.equal(entries.get(code)?.phase, "lowering", code);
+  for (const code of admission) assert.equal(entries.get(code)?.phase, "admission", code);
+});
