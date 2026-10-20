@@ -7,10 +7,12 @@ import assert from "node:assert/strict";
 // test-harness infrastructure, corresponding to a sealed runtime gate.
 class VersionedStage {
   constructor({edges = ["left", "right"], capacity = 2, byteBudget = 64,
-               expectedMicrobatches = 1, plannedMicrobatches = null, receiptLimit = 32} = {}) {
+               expectedMicrobatches = 1, plannedMicrobatches = null,
+               receiptLimit = 32, leaseLimit = 8} = {}) {
     if (!Number.isSafeInteger(capacity) || capacity < 1 ||
         !Number.isSafeInteger(byteBudget) || byteBudget < 1 ||
-        !Number.isSafeInteger(receiptLimit) || receiptLimit < 1)
+        !Number.isSafeInteger(receiptLimit) || receiptLimit < 1 ||
+        !Number.isSafeInteger(leaseLimit) || leaseLimit < 1)
       this.error("ML_INVALID_RESOURCE_LIMIT");
     if (!Array.isArray(edges) || !edges.length || new Set(edges).size !== edges.length ||
         edges.some(e => typeof e !== "string" || !e.length))
@@ -30,7 +32,7 @@ class VersionedStage {
       contexts: new Map(), pins: new Map(), usedBytes: 0,
       edges: new Set(edges), capacity, byteBudget,
       expectedMicrobatches, planned: plannedMicrobatches === null ? null : new Set(plannedMicrobatches),
-      receiptLimit,
+      receiptLimit, leaseLimit,
       optimizer: Object.freeze({iteration: 0}),
       prepared: null, committed: new Set(), cancelled: false
     };
@@ -93,6 +95,7 @@ class VersionedStage {
     return this.critical(s => {
       const version = s.activeVersion;
       const storage = s.versions.get(version);
+      if (s.pins.size >= s.leaseLimit) this.error("ML_SNAPSHOT_LEASE_BACKPRESSURE");
       const token = Symbol("immutable-weight-pin");
       if (!storage || !Number.isSafeInteger(storage.pins) ||
           storage.pins === Number.MAX_SAFE_INTEGER) this.error("ML_PIN_OVERFLOW");
@@ -558,4 +561,32 @@ test("deterministic interleaving stress: many planned steps and live snapshot le
       assert.equal(a.status().optimizerIteration, step);
     }
   }
+});
+
+test("frozen snapshot lease admission is bounded independently of activation credits", () => {
+  const a = new VersionedStage({leaseLimit:2});
+  const one = a.snapshot(), two = a.snapshot();
+  assert.throws(() => a.snapshot(), /ML_SNAPSHOT_LEASE_BACKPRESSURE/);
+  assert.equal(a.status().bytes, 0);
+  a.release(one);
+  const three = a.snapshot();
+  a.release(two); a.release(three);
+});
+
+test("cross-stage snapshot capability cannot release a foreign pin", () => {
+  const a = new VersionedStage(), b = new VersionedStage();
+  const lease = a.snapshot();
+  assert.throws(() => b.release(lease), /ML_UNKNOWN_OR_EXPIRED_LEASE/);
+  a.release(lease);
+});
+
+test("a corrupt cancellation refund fails without poisoning cancellation status", () => {
+  const a = new VersionedStage();
+  a.forward(a.currentKey(1));
+  a.critical(s => {s.versions.get(1).pins = 0;});
+  const before = a.state;
+  assert.throws(() => a.cancel(), /ML_PIN_LEDGER_CORRUPT/);
+  assert.equal(a.state, before);
+  assert.equal(a.state.cancelled, false);
+  assert.equal(a.status().active, 1);
 });
