@@ -14,8 +14,8 @@ const SCRATCH_ONLY = Object.freeze({ freestanding: true, allocation: "scratch", 
 const DYNAMIC = Object.freeze({ freestanding: false, allocation: "dynamic", deterministic: true });
 const NONDET = Object.freeze({ freestanding: true, allocation: "none", deterministic: false });
 const op = (inputs, output, {
-  effect = "pure", vjp = false, scratchBytes = 0, abi = "v1", constKinds = [], profile = PURE_STATIC
-} = {}) => ({ inputs, output, effect, vjp, scratchBytes, abi, constKinds, profile });
+  effect = "pure", vjp = false, scratchBytes = 0, abi = "v1", implDigest = "a".repeat(64), provenance = "verified-ores", constKinds = [], profile = PURE_STATIC
+} = {}) => ({ inputs, output, effect, vjp, scratchBytes, abi, implDigest, provenance, constKinds, profile });
 const reg = () => new Map([
   ["VecInput", op([], V)],
   ["VecAdd", op([V, V], V, { vjp: true, scratchBytes: 8 })],
@@ -117,7 +117,6 @@ test("operation identity binds implementation digest and provenance, not ABI alo
 });
 test("registry subclasses and malformed provenance fail closed", () => {
   class EvilMap extends Map {}
-  errRegistry:
   errs("MODEL_UNTRUSTED_OP_REGISTRY", () => admit(g([n("x", "VecInput")]), new EvilMap(reg())));
   const badDigest = reg();
   badDigest.set("BadDigest", op([], V, { implDigest: "abc" }));
