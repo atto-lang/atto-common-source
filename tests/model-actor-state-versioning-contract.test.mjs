@@ -7,14 +7,14 @@ import assert from "node:assert/strict";
 // test-harness infrastructure, corresponding to a sealed runtime gate.
 class VersionedStage {
   constructor({edges = ["left", "right"], capacity = 2, byteBudget = 64, expectedMicrobatches = 1, maxSnapshotPins = 8} = {}) {
-    if (!Number.isSafeInteger(expectedMicrobatches) || expectedMicrobatches < 1)
+    if (!Number.isSafeInteger(expectedMicrobatches) || expectedMicrobatches < 1 || expectedMicrobatches > 65536)
       throw Error("ML_INVALID_EXPECTED_MICROBATCHES");
     if (!Number.isSafeInteger(maxSnapshotPins) || maxSnapshotPins < 1)
       throw Error("ML_INVALID_PIN_BUDGET");
     this.state = {
       run: "run-A", epoch: 4, graph: 7, step: 1, activeVersion: 1,
       versions: new Map([[1, {value: 5, pins: 0, frozen: true}]]),
-      contexts: new Map(), pins: new Map(), usedBytes: 0,
+      contexts: new Map(), completed: new Set(), pins: new Map(), usedBytes: 0,
       edges: new Set(edges), capacity, byteBudget, expectedMicrobatches, maxSnapshotPins,
       optimizer: Object.freeze({iteration: 0}),
       prepared: null, committed: new Set(), cancelled: false
@@ -76,7 +76,10 @@ class VersionedStage {
       this.checkIdentity(s, key);
       if (s.committed.has(key.step)) this.error("ML_STEP_ALREADY_COMMITTED");
       if (s.prepared) this.error("ML_STEP_PREPARED");
-      if (s.contexts.has(key.microbatch)) this.error("ML_DUPLICATE_MICROBATCH");
+      if (s.contexts.has(key.microbatch) || s.completed.has(key.microbatch))
+        this.error("ML_DUPLICATE_MICROBATCH");
+      if (s.contexts.size + s.completed.size >= s.expectedMicrobatches)
+        this.error("ML_STEP_COHORT_FULL");
       if (!Number.isSafeInteger(bytes) || bytes <= 0) this.error("ML_BAD_TENSOR_BYTES");
       if (s.contexts.size >= s.capacity || bytes > s.byteBudget - s.usedBytes)
         this.error("ML_BACKPRESSURE");
@@ -99,6 +102,16 @@ class VersionedStage {
       if (context.received.has(edge)) this.error("ML_DUPLICATE_GRADIENT");
       context.received.add(edge);
       context.finished = context.received.size === s.edges.size;
+      if (context.finished) {
+        // Consume completion into a bounded step receipt, freeing activation
+        // credits before all expected microbatches have arrived.
+        s.completed.add(key.microbatch);
+        s.contexts.delete(key.microbatch);
+        s.usedBytes -= context.bytes;
+        const pinned = s.versions.get(context.key.version);
+        pinned.pins -= 1;
+        if (pinned.pins < 0) this.error("ML_NEGATIVE_PINS");
+      }
       return context.finished;
     });
   }
@@ -112,10 +125,9 @@ class VersionedStage {
       if (s.committed.has(step)) this.error("ML_STEP_ALREADY_COMMITTED");
       if (step !== s.step) this.error("ML_STEP_MISMATCH");
       if (expectedVersion !== s.activeVersion) this.error("ML_WEIGHT_VERSION_MISMATCH");
-      if (!s.contexts.size) this.error("ML_STEP_NO_GRADIENTS");
-      if (s.contexts.size !== s.expectedMicrobatches) this.error("ML_STEP_INCOMPLETE_MICROBATCH_SET");
-      if ([...s.contexts.values()].some(c => !c.finished))
-        this.error("ML_STEP_NOT_QUIESCENT");
+      if (s.completed.size !== s.expectedMicrobatches)
+        this.error("ML_STEP_INCOMPLETE_MICROBATCH_SET");
+      if (s.contexts.size !== 0) this.error("ML_STEP_NOT_QUIESCENT");
       if (s.prepared) this.error("ML_PREPARE_ALREADY_EXISTS");
       const token = Symbol("prepared-optimizer-candidate");
       s.prepared = {token, step, expectedVersion, weights: frozenCandidate};
@@ -131,8 +143,7 @@ class VersionedStage {
       if (receipt.step !== s.step) this.error("ML_STEP_MISMATCH");
       if (receipt.expectedVersion !== s.activeVersion)
         this.error("ML_WEIGHT_VERSION_MISMATCH");
-      if (s.contexts.size !== s.expectedMicrobatches ||
-          [...s.contexts.values()].some(c => !c.finished))
+      if (s.completed.size !== s.expectedMicrobatches || s.contexts.size !== 0)
         this.error("ML_STEP_NOT_QUIESCENT");
       const nextVersion = s.activeVersion + 1;
       if (!Number.isSafeInteger(nextVersion)) this.error("ML_VERSION_OVERFLOW");
@@ -144,13 +155,10 @@ class VersionedStage {
       const previous = s.activeVersion;
       s.activeVersion = nextVersion;
       s.optimizer = Object.freeze({iteration: nextIteration});
-      for (const ctx of s.contexts.values()) {
-        const pinned = s.versions.get(ctx.key.version);
-        pinned.pins -= 1;
-        if (pinned.pins < 0) this.error("ML_NEGATIVE_PINS");
-      }
+      // All activation pins were released on completed backward fan-in.
       if (s.versions.get(previous).pins === 0) s.versions.delete(previous);
       s.contexts.clear();
+      s.completed.clear();
       s.usedBytes = 0;
       s.prepared = null;
       s.committed.add(receipt.step);
@@ -168,6 +176,7 @@ class VersionedStage {
         if (pinned.pins < 0) this.error("ML_NEGATIVE_PINS");
       }
       s.contexts.clear();
+      s.completed.clear();
       s.usedBytes = 0;
       s.prepared = null;
       s.cancelled = true;
@@ -265,7 +274,7 @@ test("frozen snapshot remains unchanged across publication and retires only afte
 });
 
 test("bounded activation count and byte-budget backpressure are independent", () => {
-  const a = new VersionedStage({capacity: 2, byteBudget: 10});
+  const a = new VersionedStage({capacity: 2, byteBudget: 10, expectedMicrobatches: 3});
   a.forward(a.currentKey(1), 6);
   assert.throws(() => a.forward(a.currentKey(2), 5), /ML_BACKPRESSURE/);
   a.forward(a.currentKey(2), 4);
@@ -344,4 +353,29 @@ test("invalid expected step count or pin budget is rejected at admission", () =>
   assert.throws(() => new VersionedStage({expectedMicrobatches: 0}),/ML_INVALID_EXPECTED_MICROBATCHES/);
   assert.throws(() => new VersionedStage({expectedMicrobatches: 1.5}),/ML_INVALID_EXPECTED_MICROBATCHES/);
   assert.throws(() => new VersionedStage({maxSnapshotPins: 0}),/ML_INVALID_PIN_BUDGET/);
+});
+
+
+test("a step larger than in-flight capacity drains activation credits across batches",()=>{
+  const a=new VersionedStage({expectedMicrobatches: 4,capacity: 2,byteBudget: 16});
+  for(const mb of [1,2,3,4]){
+    const k=a.currentKey(mb);
+    a.forward(k,16);
+    assert.equal(a.backward(k,"left"),false);
+    assert.equal(a.backward(k,"right"),true);
+    assert.equal(a.status().bytes,0);
+    assert.equal(a.status().active,0);
+    assert.throws(()=>a.forward(k,8),/ML_DUPLICATE_MICROBATCH/);
+  }
+  const r=a.prepare(1,1,4.8);
+  assert.deepEqual(a.commit(r),{step:1,version:2});
+  assert.equal(a.status().optimizerIteration,1);
+});
+test("completed cohort ledger rejects extra microbatches and bounded count overflow",()=>{
+  const a=new VersionedStage({expectedMicrobatches:1});
+  const k=a.currentKey(1);
+  a.forward(k);
+  a.backward(k,"left");a.backward(k,"right");
+  assert.throws(()=>a.forward(a.currentKey(2)),/ML_STEP_COHORT_FULL/);
+  assert.throws(()=>new VersionedStage({expectedMicrobatches:65537}),/ML_INVALID_EXPECTED_MICROBATCHES/);
 });
