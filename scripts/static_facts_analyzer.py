@@ -127,18 +127,16 @@ def strongly_connected(nodes, edges):
         if node in seen:
             continue
         seen.add(node)
-        stack = [(node, False)]
+        stack = [(node, iter(forward[node]))]
         while stack:
-            cur, done = stack.pop()
-            if done:
+            cur, neighbors = stack[-1]
+            nxt = next(neighbors, None)
+            if nxt is None:
                 order.append(cur)
-                continue
-            stack.append((cur, True))
-            for nxt in reversed(forward[cur]):
-                if nxt not in seen:
-                    seen.add(nxt)
-                    stack.append((nxt, False))
-    # A node may be pushed multiple times before visited; order must retain unique nodes.
+                stack.pop()
+            elif nxt not in seen:
+                seen.add(nxt)
+                stack.append((nxt, iter(forward[nxt])))
     seen.clear()
     components = []
     for node in reversed(order):
@@ -208,15 +206,6 @@ def analyze(doc):
             if source["class"] != source_class:
                 continue
             origin, dest = source["id"], sink["id"]
-            queue = deque([origin])
-            parent = {origin: None}
-            while queue and dest not in parent:
-                for nxt in adjacency[queue.popleft()]:
-                    if nxt not in parent:
-                        parent[nxt] = next_node_placeholder = None
-                        # overwritten below with predecessor in the BFS version.
-                        queue.append(nxt)
-            # Build witness with a separate straightforward BFS for reproducibility.
             queue, parent = deque([origin]), {origin: None}
             while queue and dest not in parent:
                 current = queue.popleft()
