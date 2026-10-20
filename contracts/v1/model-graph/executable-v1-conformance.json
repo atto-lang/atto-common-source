@@ -182,8 +182,18 @@
         "java": "reject",
         "llvm": "reject"
       }
+    },
+    {
+      "id": "duplicate-model-parameter",
+      "expect": "reject",
+      "source": "fnc Identity(int input): int { return input; }\ndefine model Bad(delta: int, delta: int) as\n  Identity()\nend\n",
+      "diagnostic": "MODEL_DUPLICATE_PARAMETER",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.3"
+  "revision": "model-core-i64-v1.2026-10-20.4"
 }
