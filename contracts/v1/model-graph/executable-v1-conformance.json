@@ -292,10 +292,32 @@
         "java": "reject",
         "llvm": "reject"
       }
+    },
+    {
+      "id": "price-adjust-explicit-negative",
+      "expect": "accept",
+      "source": "fnc Identity(int input): int { return input; }\nfnc AddDelta(int delta, int input): int { return input + delta; }\npub define model PriceAdjust(delta: int = -2) as\n  Identity()\n  AddDelta(delta)\nend\npub fnc main(): int { return PriceAdjust(-3).run(40); }\n",
+      "graph_digest": "f5b7956076ea5bc9696f4cd23d68c3e4c67d7ec90023a64c834d14d304249c1d",
+      "configured_graph_digest": "ecf89f781f51b8f9cd71539e84b308c953ef55c85a52e716ce885b83fa3c20c6",
+      "semantic_result_i64": "37",
+      "backend_mode": {
+        "java": "execute",
+        "llvm": "execute"
+      }
+    },
+    {
+      "id": "computed-constructor-expression",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model M(delta: int) as\n  AddDelta(delta)\nend\npub fnc main(): int { return M(-(1 + 1)).run(40); }\n",
+      "diagnostic": "MODEL_NONCONSTANT_CONFIG",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.6",
+  "revision": "model-core-i64-v1.2026-10-20.7",
   "identity_properties": {
     "parameter_alpha_rename": "invariant",
     "whitespace_comments_source_locations": "invariant",
