@@ -25,7 +25,7 @@ LLVM draft [#560](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/
 rejects OTP imports fail-closed until source module linking is implemented.
 
 Migration gate: implement a closed compiler-owned `otp/*` resolver with exact
-six-module resource mapping and stable unit identities, then run import,
+eight-module resource mapping and stable unit identities, then run import,
 typecheck and actual guest-source execution tests. Alias compatibility with
 `std/otp/*` is a separate explicit decision; never allow duplicate module
 instances, shadowed classpath sources, implicit hosted fallback or different
