@@ -5,15 +5,18 @@ on:
     paths:
       - "docs/GENERAL_PURPOSE_MODELS_V1.md"
       - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "docs/MODEL_GRAPH_DIGEST_V1.md"
       - "docs/MODEL_GRAPH_LOWERING_ABI_V1.md"
       - "docs/MODEL_GRAPH_HARDENING_AUDIT_20261019.md"
       - "tests/general-purpose-model-contract.test.mjs"
       - "tests/model-graph-admission-v2.test.mjs"
       - "tests/model-run-fence.test.mjs"
+      - "tests/model-graph-digest-v1.test.mjs"
       - "tests/model-autodiff-contract.test.mjs"
       - "tests/model-compiler-fixtures.test.mjs"
       - "experiments/model_graph_admission.mjs"
       - "experiments/model_run_fence.mjs"
+      - "experiments/model_graph_digest_v1.mjs"
       - "contracts/v1/model-autodiff/**"
       - "contracts/v1/model-graph/**"
       - ".github/workflows/general-purpose-model-contract.yml"
@@ -24,12 +27,15 @@ on:
       - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
       - "docs/MODEL_GRAPH_HARDENING_AUDIT_20261019.md"
       - "docs/MODEL_GRAPH_LOWERING_ABI_V1.md"
+      - "docs/MODEL_GRAPH_DIGEST_V1.md"
       - "tests/general-purpose-model-contract.test.mjs"
       - "tests/model-graph-admission-v2.test.mjs"
       - "tests/model-run-fence.test.mjs"
+      - "tests/model-graph-digest-v1.test.mjs"
       - "tests/model-autodiff-contract.test.mjs"
       - "experiments/model_graph_admission.mjs"
       - "experiments/model_run_fence.mjs"
+      - "experiments/model_graph_digest_v1.mjs"
       - "contracts/v1/model-autodiff/**"
       - "contracts/v1/model-graph/**"
       - ".github/workflows/general-purpose-model-contract.yml"
@@ -49,10 +55,11 @@ jobs:
         run: |
           node --version
           node --check experiments/model_graph_admission.mjs
+          node --check experiments/model_graph_digest_v1.mjs
           node -e "JSON.parse(require('fs').readFileSync('contracts/v1/model-graph/graph.schema.json','utf8')); console.log('schema-json-parse=PASS')"
       - name: Execute host reference suites
         run: |
-          node --test tests/general-purpose-model-contract.test.mjs tests/model-graph-admission-v2.test.mjs tests/model-run-fence.test.mjs tests/model-compiler-fixtures.test.mjs tests/model-autodiff-contract.test.mjs
+          node --test tests/general-purpose-model-contract.test.mjs tests/model-graph-admission-v2.test.mjs tests/model-run-fence.test.mjs tests/model-graph-digest-v1.test.mjs tests/model-compiler-fixtures.test.mjs tests/model-autodiff-contract.test.mjs
       - name: Evidence boundary
         run: |
           echo 'HOST_ORACLE_ONLY; model_guest_execution=NOT_EXECUTED'
