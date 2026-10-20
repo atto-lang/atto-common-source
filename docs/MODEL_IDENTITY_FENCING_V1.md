@@ -23,7 +23,13 @@ None is interchangeable with another.
 
 A source-level executable model may expose both a blueprint digest and a configured digest. The blueprint digest is suitable for incremental/public declaration ABI invalidation; it is **not sufficient as run/cache identity** when different constructor values change computation. Run stamps and compiled-plan keys bind the concrete configured graph digest (or the equivalent fully resolved portable `GraphDigest`).
 
-## Canonical graph descriptor\n\nThe sole normative v1 graph encoding and digest is `MODEL_GRAPH_DIGEST_V1.md` and its vectors in `contracts/v1/model-graph/digest-v1-vectors.json`. Java/Graal and LLVM must independently reproduce that binary byte stream and SHA-256 result; backend-private or second textual graph hashes are not conformance identities.\n\nThe portable graph digest binds nominal model identity, topology, typed static constants, operation ABI, trusted implementation digest/provenance, exact ports, effects/VJP capability, scratch bounds and the portable operation profile. Temporary HIR node labels are excluded after canonical ordinal mapping. Graph generation, instance identity, parameter version, run identity and execution-profile digest remain separate fences.\n\n## Graph generation
+## Canonical graph descriptor
+
+The sole normative v1 graph encoding and digest is `MODEL_GRAPH_DIGEST_V1.md` and its vectors in `contracts/v1/model-graph/digest-v1-vectors.json`. Java/Graal and LLVM must independently reproduce that binary byte stream and SHA-256 result; backend-private or second textual graph hashes are not conformance identities.
+
+The portable graph digest binds nominal model identity, topology, typed static constants, operation ABI, trusted implementation digest/provenance, exact ports, effects/VJP capability, scratch bounds and the portable operation profile. Temporary HIR node labels are excluded after canonical ordinal mapping. Graph generation, instance identity, parameter version, run identity and execution-profile digest remain separate fences.
+
+## Graph generation
 
 `GraphGeneration` is not a substitute for `GraphDigest`. It is a checked monotonically increasing publication counter scoped to an owning runtime/session.
 
@@ -54,7 +60,7 @@ Rollback publishes no partial state. Frozen snapshots may be shareable only afte
 
 ## Run stamp
 
-Every stateful, asynchronous, cached, actor, accelerator or training execution carries a checked stamp:
+Every stateful, asynchronous, cached, actor, accelerator or training execution carries a checked stamp. In this stamp, `graphDigest` means the **concrete configured graph digest** (or equivalent fully resolved portable `GraphDigest`), never the unresolved blueprint digest:
 
 ```text
 RunStamp {
