@@ -32,7 +32,7 @@ function configuredDigest(graph, value) {
 
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
-  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.1");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.2");
   assert.equal(corpus.portable_profile, "model-core-i64-v1");
   assert.deepEqual(
     corpus.profile_semantics.operation_expression_subset,
@@ -54,6 +54,26 @@ test("shared positive, negative and INT64_MIN identities recompute independently
     assert.equal(graph, item.graph_digest, id);
     assert.equal(configuredDigest(graph, value), item.configured_graph_digest, id);
   }
+});
+
+test("signed i64 overflow corpus is symmetric around the one legal minimum endpoint", () => {
+  const ids = [
+    "default-positive-i64-overflow",
+    "default-negative-i64-overflow",
+    "static-positive-i64-overflow",
+    "static-negative-i64-overflow"
+  ];
+  for (const id of ids) {
+    const item = corpus.cases.find(x => x.id === id);
+    assert(item, id);
+    assert.equal(item.expect, "reject", id);
+    assert.equal(item.diagnostic, "MODEL_CONST_OVERFLOW", id);
+    assert.equal(item.backend_mode.java, "reject", id);
+    assert.equal(item.backend_mode.llvm, "reject", id);
+  }
+  const minimum = corpus.cases.find(x => x.id === "price-adjust-i64-minimum");
+  assert.equal(minimum.expect, "accept");
+  assert.equal(minimum.semantic_result_i64, "-9223372036854775808");
 });
 
 test("all executable-v1 rejection diagnostics are registered", () => {
