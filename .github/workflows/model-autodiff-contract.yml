@@ -10,6 +10,7 @@ on:
       - "docs/MODEL_ACTOR_SEALED_STATE_V1.md"
       - "docs/ACTOR_GRAPH_RUNTIME_AND_USERLAND_OPTIMIZATION_V1.md"
       - "tests/actor-graph-admission-contract.test.mjs"
+      - "tests/userland-mip-worklist-contract.test.mjs"
       - ".github/workflows/model-autodiff-contract.yml"
   workflow_dispatch:
 permissions:
@@ -24,6 +25,6 @@ jobs:
         with:
           node-version: "22"
       - name: Execute source-free model transport contract
-        run: node --test tests/model-autodiff-contract.test.mjs tests/model-actor-state-versioning-contract.test.mjs tests/model-actor-rw-state-contract.test.mjs tests/actor-graph-admission-contract.test.mjs
+        run: node --test tests/model-autodiff-contract.test.mjs tests/model-actor-state-versioning-contract.test.mjs tests/model-actor-rw-state-contract.test.mjs tests/actor-graph-admission-contract.test.mjs tests/userland-mip-worklist-contract.test.mjs
       - name: State evidence boundary
         run: echo "HOST_ONLY; guest_execution=NOT_EXECUTED"
