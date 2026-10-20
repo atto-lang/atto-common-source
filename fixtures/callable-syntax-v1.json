@@ -126,6 +126,17 @@
       "body_separator_line": "header"
     },
     {
+      "id": "root-end-arrow-do-leading-do-select",
+      "domain": "root_function",
+      "body": "end",
+      "separator": "->",
+      "return_type": "void",
+      "body_boundary": "do",
+      "body_separator_line": "header",
+      "first_statement": "do_select",
+      "expected": "accept"
+    },
+    {
       "id": "root-end-arrow-do-next-line",
       "domain": "root_function",
       "body": "end",
