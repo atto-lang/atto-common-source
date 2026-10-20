@@ -31,6 +31,6 @@
     "note": "Pinned canonical identity target. Matching literals/formulas are not a substitute for executing both compilers."
   },
   "superseded_by": "executable-v1-conformance.json",
-  "corpus_revision": "model-core-i64-v1.2026-10-20.8",
+  "corpus_revision": "model-core-i64-v1.2026-10-20.9",
   "note": "Compatibility view of executable-v1-conformance.json. Operation body identity is alpha-stable: parameter references are canonical arg ordinals."
 }
