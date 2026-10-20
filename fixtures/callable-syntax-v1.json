@@ -7,7 +7,8 @@
       "body": "end",
       "separator": "->",
       "return_type": "int",
-      "expected": "accept"
+      "expected": "accept",
+      "body_boundary": "newline"
     },
     {
       "id": "module-end-arrow-void",
@@ -15,7 +16,8 @@
       "body": "end",
       "separator": "->",
       "return_type": "void",
-      "expected": "accept"
+      "expected": "accept",
+      "body_boundary": "newline"
     },
     {
       "id": "root-end-implicit-return",
@@ -112,6 +114,24 @@
       "separator": "=>",
       "return_type": "bool",
       "expected": "accept"
+    },
+    {
+      "id": "root-end-arrow-do",
+      "domain": "root_function",
+      "body": "end",
+      "separator": "->",
+      "return_type": "int",
+      "body_boundary": "do",
+      "expected": "accept"
+    },
+    {
+      "id": "root-end-colon-do",
+      "domain": "root_function",
+      "body": "end",
+      "separator": ":",
+      "return_type": "int",
+      "body_boundary": "do",
+      "expected": "reject"
     }
   ],
   "return_flow": [
