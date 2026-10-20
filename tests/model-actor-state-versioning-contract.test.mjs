@@ -220,7 +220,7 @@ test("two forward microbatches keep the same weight version through out-of-order
   a.forward(k1); a.forward(k2);
   assert.equal(a.backward(k2, "right"), false);
   assert.equal(a.backward(k1, "left"), false);
-  assert.throws(() => a.prepare(1, 1, 4.9), /ML_STEP_NOT_QUIESCENT/);
+  assert.throws(() => a.prepare(1, 1, 4.9), /ML_STEP_INCOMPLETE_MICROBATCH_SET/);
   assert.equal(a.backward(k2, "left"), true);
   assert.equal(a.backward(k1, "right"), true);
   const r = a.prepare(1, 1, 4.9);
