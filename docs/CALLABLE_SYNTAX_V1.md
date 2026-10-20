@@ -208,6 +208,9 @@ The contextual spelling does not introduce a new tuple-specific arity limit. It 
 
 The word `tuple` is contextual: an ordinary value/function identifier named `tuple` remains legal outside the exact type-position shape `tuple (`.
 
+
+Interface/trait signature compatibility is intentionally asymmetric: `=> Type` is canonical, legacy `: Type` remains accepted and normalizes identically, while executable `-> Type` remains rejected for instance requirements.
+
 ## Contracts and static namespaces
 
 Module contracts and static-class contracts describe namespace/static members rather than instance dispatch. Their callable requirements may therefore use the executable-style return separator:
