@@ -53,7 +53,7 @@ function canonicalAttrs(value, depth=0) {
   }
   if (!value || typeof value!=="object" || Object.getPrototypeOf(value)!==Object.prototype ||
       Object.keys(value).length>32) fail("GRAPH_INVALID_ATTR");
-  return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))
+  return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a<b?-1:a>b?1:0)
     .map(([k,v])=>{validId(k);return [k,canonicalAttrs(v,depth+1)];}));
 }
 function onlyKeys(obj, allowed) {
@@ -130,8 +130,8 @@ function validateGraph(input) {
     schemaVersion:1,
     nodes:[...nodes.values()].map(n=>({
       id:n.id, op:n.op, attrs:canonicalAttrs(n.attrs??{}),
-      inputs:Object.fromEntries(Object.entries(n.inputs).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}])),
-      outputs:Object.fromEntries(Object.entries(n.outputs).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}]))
+      inputs:Object.fromEntries(Object.entries(n.inputs).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}])),
+      outputs:Object.fromEntries(Object.entries(n.outputs).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}]))
     })).sort((a,b)=>a.id.localeCompare(b.id)),
     edges:input.edges.map(e=>({...e})).sort((a,b)=>a.id.localeCompare(b.id))
   };
@@ -249,7 +249,7 @@ test("typed neural DAG accepts valid ordering, creates immutable canonical graph
   a.nodes[0].id="changed";
   a.nodes[0].outputs.out.shape[0]=8;
   assert.equal(p.nodes[0].id,"compute");
-  assert.deepEqual(p.nodes[2].outputs.out.shape,[2,2]);
+  assert.deepEqual(p.nodes[1].outputs.out.shape,[2,2]);
   assert(Object.isFrozen(p.nodes[0].outputs));
 });
 test("structural duplicate, unknown target, type mismatch and implicit many-to-one fail",()=>{
