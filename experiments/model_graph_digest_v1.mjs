@@ -125,6 +125,8 @@ function encodePort(out, p) {
   if (!plain(p)) fail("MODEL_INVALID_PORT");
   if (p.kind === "nominal") {
     exact(p, ["kind","typeAbi","bytes"], "MODEL_INVALID_PORT");
+    if (u64Value(p.bytes, "MODEL_INVALID_PORT") > MAX_I64)
+      fail("MODEL_SIZE_OVERFLOW");
     out.u8(1);
     out.string(p.typeAbi);
     out.u64(p.bytes);
@@ -132,10 +134,23 @@ function encodePort(out, p) {
   }
   exact(p, ["dtype","shape","layout","unit"], "MODEL_INVALID_PORT");
   if (!denseArray(p.shape) || p.shape.length > 8) fail("MODEL_INVALID_PORT");
+  const elementBytes = [1n, 4n, 8n, 4n, 8n][enumOrdinal(p.dtype, DTYPE, "MODEL_INVALID_PORT")];
+  const extents = p.shape.map(d => u64Value(d, "MODEL_INVALID_PORT"));
+  if (extents.some(d => d > MAX_I64)) fail("MODEL_SIZE_OVERFLOW");
+  if (!extents.includes(0n)) {
+    let bytes = elementBytes;
+    for (const d of extents) {
+      if (d !== 0n && bytes > MAX_I64 / d) fail("MODEL_SIZE_OVERFLOW");
+      bytes *= d;
+    }
+  }
+  if (p.unit !== undefined && (typeof p.unit !== "string" ||
+      p.unit.length > 40 || !/^[A-Za-z0-9_\/^-]*$/.test(p.unit)))
+    fail("MODEL_INVALID_PORT");
   out.u8(0);
   out.u8(enumOrdinal(p.dtype, DTYPE, "MODEL_INVALID_PORT"));
   out.u8(p.shape.length);
-  for (const d of p.shape) out.u64(d);
+  for (const d of extents) out.u64(d);
   const canonicalLayout = p.layout ?? (p.shape.length === 0 ? "scalar" : "contiguous");
   if ((p.shape.length === 0 && canonicalLayout !== "scalar") ||
       (p.shape.length > 0 && canonicalLayout !== "contiguous"))
@@ -172,6 +187,8 @@ export function canonicalModelGraphV1Bytes(graph) {
   if (graph.version !== 1 || !denseArray(graph.nodes) || graph.nodes.length === 0 ||
       !denseArray(graph.outputs) || graph.outputs.length === 0)
     fail("MODEL_INVALID_RESOLVED_GRAPH");
+  if (graph.nodes.length > 65536 || graph.outputs.length > 65536)
+    fail("MODEL_GRAPH_BUDGET");
 
   const out = new Bytes();
   out.raw(Buffer.from("ORESLANG-MODEL-GRAPH-V1\0", "ascii"));
@@ -211,8 +228,14 @@ export function canonicalModelGraphV1Bytes(graph) {
     for (const k of sig.constKinds)
       out.u8(enumOrdinal(k, CONST_KIND, "MODEL_INVALID_OP_SIGNATURE"));
 
+    if (n.constArgs.length !== sig.constKinds.length)
+      fail("MODEL_CONST_ARITY_MISMATCH");
     out.u32(n.constArgs.length);
-    for (const c of n.constArgs) encodeConstant(out, c);
+    for (let i = 0; i < n.constArgs.length; i++) {
+      if (n.constArgs[i].kind !== sig.constKinds[i])
+        fail("MODEL_CONST_TYPE_MISMATCH");
+      encodeConstant(out, n.constArgs[i]);
+    }
 
     // Ordered v1: the first node may consume one external run(input).
     // No other unmatched ports are permitted; later nodes must name all parents.
