@@ -1,8 +1,10 @@
 """Provisional layout-independent, scalar FSM trace oracle (not guest execution)."""
 from copy import deepcopy
+import json
 
 CONTRACT = "ores-fsm-trace-v0"
 LIMIT = (1 << 32) - 1
+MAX_TRACE_BYTES = 8 * 1024 * 1024  # bounded untrusted trace input; not a transport limit
 STATES = (0, 1, 2)
 REASONS = ("none", "invalid-state", "invalid-ticks", "version-exhausted",
            "guard", "unhandled")
@@ -63,6 +65,40 @@ def generate(events, entity_count=5):
         entities[entity] = after
     return {"contract": CONTRACT, "machine": "flat-fixture-v0",
             "entity_count": entity_count, "transitions": steps}
+
+
+def parse_trace(raw):
+    """Strict JSON admission for external candidate traces.
+
+    Python's default JSON reader silently keeps the final duplicate member.
+    For backend trace comparison, duplicate keys must fail closed rather than
+    allow two interpreters to disagree on an observed transition.
+    This parses an untrusted fixture trace, not an authenticated receipt.
+    """
+    if isinstance(raw, bytes):
+        require(len(raw) <= MAX_TRACE_BYTES, "trace exceeds byte bound")
+        try:
+            raw = raw.decode("utf-8", errors="strict")
+        except UnicodeError as exc:
+            raise ValueError("invalid UTF-8 trace") from exc
+    require(type(raw) is str, "trace input must be UTF-8 bytes or text")
+    require(len(raw.encode("utf-8", errors="surrogatepass")) <= MAX_TRACE_BYTES,
+            "trace exceeds byte bound")
+
+    def unique_members(pairs):
+        obj = {}
+        for key, value in pairs:
+            require(key not in obj, "duplicate JSON field: " + key)
+            obj[key] = value
+        return obj
+
+    def reject_nonfinite(value):
+        raise ValueError("non-finite JSON constant: " + value)
+
+    trace = json.loads(raw, object_pairs_hook=unique_members,
+                       parse_constant=reject_nonfinite)
+    validate(trace)
+    return trace
 
 
 def validate(trace):
