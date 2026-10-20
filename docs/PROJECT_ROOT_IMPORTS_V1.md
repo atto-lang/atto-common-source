@@ -58,6 +58,45 @@ manifest remain root-relative, consistent with the existing Java manifest.
   semantics. `+/` is not an implicit permission to read arbitrary files:
   compiler source-admission policy still applies.
 
+## Nested-package boundaries and physical source identity
+
+A project-root import must check both the **spelled path** and the
+**canonical physical target** against package boundaries. For example, if
+`nested/.ores.pkg.toml` exists, a parent project must reject
+`+/nested/parent-alias` even when that symlink resolves to
+`lib/helper.ores` in the parent package. The physical identity check
+alone is insufficient. An alias within the same package remains legal
+when it does not escape the physical root. A dangling or invalid nested
+manifest marker must fail closed, not fall back to the parent manifest.
+
+The machine-readable `namespace_boundary_cases` in
+`contracts/project-root-import-v1.json` freeze these distinctions. The
+Python source-only contract test is not backend execution evidence.
+
+**Unresolved root-authority difference:** this draft specifies that
+`[project].root` can select the filesystem anchor for `+/`. The
+platform-conformance v1 issue and LLVM PR #448 instead use the directory
+containing the nearest `.ores.pkg.toml`. Treat this as an open semantic
+decision. Do not mark the five backends at resolver parity or silently
+normalize the difference until one authority is agreed and tested.
+
+## Importer-relative and dot-prefixed bare names
+
+Explicit `./local` and `../up` resolve from the **importing source
+file's directory**, independently of process CWD or `[source].roots`.
+A bare name starting with a dot, such as `.hidden/helper` or
+`..backup/helper`, is **not** an explicit relative import; it follows
+ordinary bare-source lookup precedence. Do not implement this using a
+generic `startsWith(".")` test.
+
+The `relative_source_cases` in
+`contracts/project-root-import-v1.json` pin these identities. Current
+.NET/Forge experimental host resolvers can establish a restricted
+within-root mapping but still lack guest import binding; Wasm's scalar
+bridge must continue to reject unresolved `./` and `../` imports before
+any artifact publication. Do not confuse host-only source resolution with
+linked module execution or completed five-backend parity.
+
 ## Backend parity and admission gates
 
 The v1 contract applies to .java, .llvm, .net, .wasm and .forge, but
