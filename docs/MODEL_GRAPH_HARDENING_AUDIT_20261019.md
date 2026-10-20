@@ -6,37 +6,44 @@ Status: DRAFT / reference contract, not an implemented Oreslang compiler feature
 
 | Priority | Finding | Reference hardening | Remaining production obligation |
 | --- | --- | --- | --- |
-| Critical | Guest nodes could assert they are pure, differentiable or cheap | HIR input admits only id/op/inputs; type, effect, VJP, scratch upper bound and ABI come from a compiler-owned signature registry. Prototypes and forged fields rejected. | Real Java and LLVM typed lowering and trusted operation registration |
+| Critical | Guest nodes could assert they are pure, differentiable, allocation-free, deterministic or cheap | HIR carries structural IDs/dependencies plus canonical static constants only; type/effect/VJP/resource/profile/ABI/implementation provenance come from a compiler/linker-owned registry. Prototypes, accessors and forged fields rejected. | Real Java and LLVM typed lowering, trusted operation registration and implementation-digest provenance |
 | High | Short-circuit traversal misses gradient fan-in and duplicate operands | Deterministic iterative all-parent gradient reachability, path-aware VJP checks, nested targets | Compiled VJPs and independent finite-difference gradients |
 | High | Graph, training state, parameter ownership and actor placement were conflated | Immutable graph definition vs independently owned instance vs explicit execution session | Compiler/runtime ownership, leases, hot reload and version fences |
 | High | Unbounded shapes and scratch | Checked integer extents, rank, byte arithmetic, resource budget, node count, edge count and path depth | All runtime op scratch bounds enforced; zero-GC and hard real-time NOT proven |
-| High | Silent conversions and effect changes | Strict port matching for dtype, physical units, layout and shape; effectful nodes denied on use | Typed ABI, symbol identity and signed/attested code-version contracts |
+| High | Silent conversions and effect changes | Strict port matching for dense numeric/bool buffers and compiler-owned nominal value ABIs; unit/layout/shape mismatches and effectful nodes denied | Typed ABI, symbol identity and signed/attested code-version contracts |
+| High | General-purpose claim still encoded every port as a tensor-like shape | Added nominal value/record/domain ports with exact type ABI and conservative fixed storage bound | Backend representation and ordinary Oreslang nominal type integration |
+| High | Static layer/config arguments could execute code or destabilize graph identity | Canonical tagged constants with bounded kinds; nonfinite f64, i64 overflow, accessors and forged metadata rejected | Frontend constant evaluation, defaults, graph digest and ABI parity |
+| High | Freestanding/allocation/determinism could be guest-forged or confused with hard real time | Execution capabilities derive from trusted op profiles; strict callers can require freestanding/no-dynamic-allocation/determinism; no hard-real-time bit exists | Target-specific AOT/allocation/WCET/scheduler evidence |
 | Medium | Host reference could be mistaken for compiler proof | Both host summaries explicitly say executedGuest=false and executable=false | Exact-head real backend guest execution, CI runner steps |
 
 ## HIR admission boundary
 
-Versioned schema: contracts/v1/model-graph/graph.schema.json. The graph contains name, ordered nodes of id/op/inputs, and output node IDs. A trusted compiler signature registry supplies operation input/output ports, effects, VJP availability, resource cost and ABI. The schema alone does NOT validate graph topology, authenticity, trust-domain provenance, memory safety or guest execution.
+Versioned schema: contracts/v1/model-graph/graph.schema.json. The graph contains name, ordered nodes of id/op/inputs, optional canonical constArgs, and output node IDs. A trusted compiler signature registry supplies operation input/output ports, effects, VJP availability, resource cost, allocation/freestanding/determinism profile, ABI and implementation provenance. The schema alone does NOT validate graph topology, authenticity, trust-domain provenance, memory safety or guest execution.
 
-Current reference only covers numeric/bool finite primitive scalar and dense-shaped ports, plus optional unit and layout. Domain records, symbolic batch dimensions, strided storage, dynamic execution, serialized op code, and actual arithmetic are NOT implemented. This typed HIR is not automatically valid Oreslang source; v1 source syntax remains the ordered nominal operation sequence. Future named-port DAG syntax needs a separate language design and backend implementation.
+The reference now supports two port families: fixed dense numeric/bool buffers (optional unit/layout) and exact compiler-owned nominal values/records/domain types with a conservative fixed storage bound. It deliberately does **not** implement symbolic dimensions, arbitrary strided storage, dynamic execution, serialized executable op code, generic record layout reflection or actual arithmetic. Static op configuration is inert canonical data, not a callback/expression evaluator. This HIR is not automatically valid Oreslang source; v1 source syntax remains the ordered nominal operation sequence. Future named-port DAG syntax still needs a separately versioned language design and backend implementation.
 
 Gradient request admission checks *every* live predecessor, including repeated operands and nested target cases, and rejects missing VJPs on required paths. Inference-only nondifferentiable models are legal. The host reference cannot validate a VJP implementation; it only asserts its trusted signature availability.
 
 ## Evidence and execution gate
 
-- Old host reference suite: 12/12 passed.
-- New v2 suite: 25/25 passed including a 512-case deterministic randomized chain test.
-- Combined: 37/37 on the exact GitHub-fetched JS source in isolated V8 using Node test/assertion shims. **NOT** actual Node CLI execution or guest compiler proof.
-- Source-org model contract Actions run 39342761073 failed without any executed job steps (steps=null). That is NOT proof of test failure or available billing minutes.
-- New CI workflow requests both host suites under node --test with read-only permissions; its actual source-head execution remains unverified.
-- No private Git tree copied outside the source organization. The existing Java main source-transfer destination policy remains empty. External runner capacity probes do not authorize source export.
+- Exact current-branch source was re-evaluated in an isolated V8 harness with Node-compatible test/assert shims after the nominal-port/static-argument/profile hardening:
+  - general-purpose contract: **12/12 PASS**;
+  - hardened ModelGraph admission: **36/36 PASS**, including the seeded 512-chain mutation case;
+  - ModelRunStamp fencing: **10/10 PASS**;
+  - total independently re-executed in this harness: **58/58 PASS**.
+- This isolated V8 execution is **not** a real `node --test` process, compiler/parser, Java/GraalVM, LLVM, Native Image, numerical kernel or Oreslang guest result. The filesystem-dependent model-autodiff suite was not re-executed by this isolated harness.
+- Latest exact-head source-org model workflow observed during this audit: run **39345272467**, job `host-contract`, completed failure with **steps=null**. Therefore zero workflow steps executed; this is neither a code assertion failure nor passing CI evidence.
+- The read-only workflow now syntax-checks the admission module, parses the JSON schema, and requests all model host suites when a runner is actually allocated.
+- No private Git tree was copied outside the source organization. External runner capacity does not authorize private-source export.
 
 ## Before merge
 
 1. Independent architecture/security review, in particular trusted op-registration provenance and resource admission.
 2. Exact-head real Node CLI run with observed nonempty executed steps.
-3. Java/Graal and LLVM contextual parser/HIR, type/effect/ownership lowering, and real guest positive/negative programs (at least non-ML pricing/signal, ML forward-only, differentiable fan-in).
-4. Numerical independent oracle, saved activation/parameter version fences, allocator and sanitizer tests, AOT/freestanding evidence and cross-backend agreement.
-5. Only then stage optional actors, Tasks, parallelism, GPU and distributed model execution under independent security and correctness gates.
+3. Java/Graal and LLVM contextual parser/HIR, nominal model type/value semantics, canonical static constants, type/effect/ownership lowering, and real guest positive/negative programs using the cross-domain fixture manifest (pricing, signal/DSP, forward-only no-VJP, nonconstant config, effect and recursive-composition rejection).
+4. Cross-backend canonical graph/op-identity/run-fence agreement, including implementation digests, graph generation, instance/parameter versions and execution-profile digest.
+5. Numerical independent oracle, saved activation/parameter version fences, allocator and sanitizer tests, plus a full-AOT freestanding/preallocated execution path with measured no runtime allocator calls. Hard real time remains a separate qualification.
+6. Only then stage optional actors, Tasks, parallelism, GPU and distributed model execution under independent security and correctness gates.
 
 Keep PR #93 in DRAFT until these gates are satisfied.
 
@@ -47,3 +54,14 @@ The source-free admission oracle now rejects own accessor properties, symbol/non
 **Evidence:** Changes committed to PR #93, but exact-head Node CLI tests, compiler fixtures, native sanitizers and numerical runtime tests have not passed in this update. A new or retried workflow must report actual executed steps before any test-pass claim.
 
 **Residual:** Proxies can intercept reflective operations and must never cross a real compiler trust boundary as arbitrary host JS values. A production frontend must validate a decoded plain-data representation, use immutable compiler-owned signatures, and impose decoding, memory and operation budgets before lowering. Budget accounting here is conservative and is not a lifetime-sensitive allocation proof.
+
+
+## Cross-domain and execution-profile hardening (2026-10-19)
+
+The general-purpose contract now explicitly separates model **type**, immutable graph blueprint, owned model **value/instance**, compiled execution plan and long-lived session/run state. Static models may lower entirely to AOT code plus read-only descriptors; `core::model` does not require a heap, OS, threads, JIT, Tensor or autograd. `alloc::model` and hosted `std::model` are optional layers.
+
+The source-free HIR now carries canonical static operation arguments because real cross-domain models need configuration such as layer widths, filter cutoffs, solver constants and tax rates. The guest HIR still cannot provide purity, VJP, resource bounds, allocation class, ABI or implementation digest. Canonical f64 configuration is represented by finite IEEE-754 bits to avoid locale/text-rounding ambiguity.
+
+A model can be freestanding, preallocated and deterministic without being hard-real-time-qualified. The reference intentionally emits no `hardRealtime` capability. Production hard-real-time admission must add target-specific WCET/bounded-loop evidence, scheduler/preemption/interrupt constraints, memory residency and backend code-generation proof.
+
+Proposed source fixtures now cover non-ML pricing/business and signal-processing models plus forward-only nondifferentiable inference, nonconstant static configuration rejection, effect rejection and recursive composition rejection. They remain **NOT_EXECUTED** until real Java and LLVM compilers consume them.
