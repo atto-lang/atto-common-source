@@ -45,7 +45,8 @@
       "backend_mode": {
         "java": "execute",
         "llvm": "execute"
-      }
+      },
+      "configuration_i64": "2"
     },
     {
       "id": "price-adjust-default-negative",
@@ -57,7 +58,8 @@
       "backend_mode": {
         "java": "execute",
         "llvm": "execute"
-      }
+      },
+      "configuration_i64": "-2"
     },
     {
       "id": "price-adjust-i64-minimum",
@@ -70,7 +72,8 @@
         "java": "execute",
         "llvm": "compile_only",
         "llvm_note": "Process exit status is not a lossless i64 result channel."
-      }
+      },
+      "configuration_i64": "-9223372036854775808"
     },
     {
       "id": "negative-static-literal",
@@ -303,7 +306,8 @@
       "backend_mode": {
         "java": "execute",
         "llvm": "execute"
-      }
+      },
+      "configuration_i64": "-3"
     },
     {
       "id": "computed-constructor-expression",
@@ -327,7 +331,7 @@
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.8",
+  "revision": "model-core-i64-v1.2026-10-20.9",
   "identity_properties": {
     "parameter_alpha_rename": "invariant",
     "whitespace_comments_source_locations": "invariant",
