@@ -53,3 +53,28 @@ To test locally: `python3 -m unittest tests.test_static_facts_analyzer -v`.
 Acceptance: same fixture yields matching diagnostic **classes and witness graphs** on Java and LLVM; proof gaps stay `unknown`; no skipped or zero-step CI may be reported as a pass; exact source and fixture tree SHA are recorded. Production integration must not claim certification from this prototype.
 
 Related: `docs/IR-DESIGN.md`, `docs/REALTIME_EXECUTION.md`, `docs/REACHABILITY_MANIFEST.md`, `oreslang-platform-conformance` permission contracts.
+
+
+## Callback analysis authority and migration
+
+The **canonical v0 callback diagnostic contract** is
+`docs/CALLBACK_TEMPORAL_ANALYSIS.md` and
+`scripts/callback_temporal_reference.py` with `ORES-CB-001` through
+`ORES-CB-006`. It consumes a verified, versioned CFG-style callback-facts
+graph and requires conservative treatment of unknown dispatch, branches,
+emitter aliases, listener teardown, and eventual scheduling.
+
+The optional `callback_orderings` field in the general
+`static-facts.v0.schema.json` is a **legacy compatibility summary**, not an
+equivalent CFG proof or a separate source of admission authority. The
+general fact checker maps its warnings onto the canonical `ORES-CB`
+classes, but **a zero-diagnostic summary is not a proven-safe program**.
+The legacy format should be retired after both compilers emit canonical
+callback temporal CFG facts.
+
+An already-resolved `await` can resume without the scheduler boundary
+needed for a deferred-after-actor-turn proof. Only an explicit, verified
+`end_turn` event reached with a definitely installed listener on all
+applicable paths can establish this special-case ordering. A control-flow
+leaf or `await` node alone is insufficient. Separate runtime proof of
+listener installation and retained lease lifetime is required.
