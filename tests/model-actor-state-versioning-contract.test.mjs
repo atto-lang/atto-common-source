@@ -62,7 +62,14 @@ class VersionedStage {
         return false;
       };
       scan(this.state, v => {resident.add(v); return false;});
-      if (scan(result, v => resident.has(v))) this.error("ML_STATE_LOAN_ESCAPE");
+      // The storage subsystem intentionally mints *immutable opaque*
+      // snapshot/prepare capabilities. They are not guest-state loans,
+      // even though the actor ledger keeps the exact capability object.
+      const opaqueCapability = result && Object.isFrozen(result) &&
+        (result === this.state.prepared?.receipt ||
+         [...this.state.pins.values()].some(pin => pin.lease === result));
+      if (!opaqueCapability && scan(result, v => resident.has(v)))
+        this.error("ML_STATE_LOAN_ESCAPE");
       return result;
     } finally { this._runtimeGateHeld = false; }
   }
