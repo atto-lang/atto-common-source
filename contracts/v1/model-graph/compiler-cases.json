@@ -1,0 +1,59 @@
+{
+  "contract": "oreslang.model.graph.compiler-fixtures.v1",
+  "status": "PROPOSED",
+  "guest_execution": "NOT_EXECUTED",
+  "note": "Syntax expectations are backend-independent. typed_expect is normative future ModelGraph admission, not evidence that current compilers implement lowering.",
+  "cases": [
+    {
+      "id": "pricing-forward",
+      "fixture": "fixtures/pricing_forward.ores",
+      "domain": "finance",
+      "syntax_expect": "accept",
+      "typed_expect": "accept",
+      "gradient_requested": false
+    },
+    {
+      "id": "dsp-forward",
+      "fixture": "fixtures/dsp_forward.ores",
+      "domain": "signal-processing",
+      "syntax_expect": "accept",
+      "typed_expect": "accept",
+      "gradient_requested": false
+    },
+    {
+      "id": "forward-without-vjp",
+      "fixture": "fixtures/forward_without_vjp.ores",
+      "domain": "signal-processing",
+      "syntax_expect": "accept",
+      "typed_expect": "accept",
+      "gradient_requested": false,
+      "note": "No VJP is required for forward-only admission."
+    },
+    {
+      "id": "gradient-without-vjp",
+      "fixture": "fixtures/forward_without_vjp.ores",
+      "domain": "signal-processing",
+      "syntax_expect": "accept",
+      "typed_expect": "reject",
+      "diagnostic_class": "MODEL_MISSING_VJP",
+      "gradient_requested": true,
+      "note": "Same declaration; rejection occurs only when the requested live derivative path crosses Quantize8."
+    },
+    {
+      "id": "empty-body",
+      "fixture": "fixtures/reject_empty.ores",
+      "domain": "generic",
+      "syntax_expect": "reject",
+      "typed_expect": "not_reached",
+      "diagnostic_class": "MODEL_EMPTY_BODY"
+    },
+    {
+      "id": "expression-body",
+      "fixture": "fixtures/reject_expression_body.ores",
+      "domain": "generic",
+      "syntax_expect": "reject",
+      "typed_expect": "not_reached",
+      "diagnostic_class": "MODEL_NON_LAYER_EXPRESSION"
+    }
+  ]
+}
