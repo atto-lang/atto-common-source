@@ -62,6 +62,16 @@
       "syntax_expect": "reject",
       "typed_expect": "not_reached",
       "diagnostic_class": "MODEL_NON_LAYER_EXPRESSION"
+    },
+    {
+      "id": "named-config-unresolved",
+      "fixture": "fixtures/reject_unresolved_named_config.ores",
+      "domain": "finance",
+      "syntax_expect": "accept",
+      "typed_expect": "reject",
+      "diagnostic_class": "MODEL_NAMED_ARGUMENT_UNRESOLVED",
+      "gradient_requested": false,
+      "note": "Named configuration is syntax-valid but cannot alias positional constants until a trusted operation signature declares parameter names."
     }
   ]
 }
