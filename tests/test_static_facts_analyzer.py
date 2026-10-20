@@ -160,6 +160,48 @@ class StaticFactsTests(unittest.TestCase):
         with self.assertRaises(InvalidFacts):
             analyze(f)
 
+    def test_mixed_timing_publish_before_register_is_zalgo(self):
+        f = facts()
+        f["callback_orderings"] = [{
+            "id": "example", "emitter": "randie", "event": "done",
+            "publisher": "doMore", "invocation_timing": "mixed",
+            "order": "publish_first", "registration_continuation": "same_uninterrupted_turn",
+        }]
+        self.assertEqual(rules(f), ["ORES-ZALGO-001"])
+
+    def test_safe_registration_first_and_true_after_turn(self):
+        f = facts()
+        e = {"id": "example", "emitter": "randie", "event": "done",
+             "publisher": "doMore", "invocation_timing": "mixed",
+             "order": "register_first", "registration_continuation": "same_uninterrupted_turn"}
+        f["callback_orderings"] = [e]
+        self.assertEqual(rules(f), [])
+        e["order"] = "publish_first"
+        e["invocation_timing"] = "deferred_after_turn"
+        self.assertEqual(rules(f), [])
+        e["registration_continuation"] = "may_suspend"
+        self.assertEqual(rules(f), ["ORES-ZALGO-001"])
+
+    def test_unknown_order_or_concurrent_callback_warns(self):
+        f = facts()
+        e = {"id": "example", "emitter": "stream", "event": "ready",
+             "publisher": "start", "invocation_timing": "concurrent",
+             "order": "unknown", "registration_continuation": "unknown"}
+        f["callback_orderings"] = [e]
+        self.assertEqual(rules(f), ["ORES-ZALGO-002"])
+        e["order"] = "publish_first"
+        self.assertEqual(rules(f), ["ORES-ZALGO-001"])
+
+    def test_bad_callback_facts_fail_closed(self):
+        f = facts()
+        f["callback_orderings"] = [{
+            "id": "example", "emitter": "stream", "event": "ready",
+            "publisher": "start", "invocation_timing": "definitely_safe",
+            "order": "publish_first", "registration_continuation": "unknown",
+        }]
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
+
     def test_duplicate_json_key_rejected(self):
         with self.assertRaises(InvalidFacts):
             reject_duplicate_keys([("version", "good"), ("version", "bad")])
