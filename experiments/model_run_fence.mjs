@@ -1,4 +1,7 @@
 // Source-free reference for proposed ModelRunStamp identity/version fencing.
+// IMPORTANT: every graphDigest in this file is the concrete configured graph
+// digest (or equivalent fully resolved portable GraphDigest), never a source
+// blueprint/public-ABI digest.
 // NOT a compiler/runtime implementation and NOT cryptographic proof.
 export class ModelFenceError extends Error {
   constructor(code) { super(code); this.name = "ModelFenceError"; this.code = code; }
