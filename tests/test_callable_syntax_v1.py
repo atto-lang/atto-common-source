@@ -23,7 +23,9 @@ def expected_declaration(
     body_separator_line: str | None = None,
 ) -> str:
     if body == "end":
-        if body_boundary == "do" and body_separator_line != "header":
+        if body_boundary == "do":
+            return "reject"
+        if body_boundary == "as" and body_separator_line != "header":
             return "reject"
         return (
             "accept"
@@ -107,16 +109,17 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
             self.assertEqual(by_id[case_id]["expected"], "reject")
         self.assertEqual(by_id["module-contract-arrow"]["expected"], "accept")
         self.assertEqual(by_id["static-contract-arrow"]["expected"], "accept")
-        self.assertEqual(by_id["root-end-arrow-do"]["expected"], "accept")
-        self.assertEqual(by_id["root-end-arrow-do"]["body_boundary"], "do")
-        self.assertEqual(by_id["root-end-arrow-do"]["body_separator_line"], "header")
-        self.assertEqual(by_id["root-end-arrow-do-leading-do-select"]["expected"], "accept")
-        self.assertEqual(by_id["root-end-arrow-do-leading-do-select"]["first_statement"], "do_select")
-        self.assertEqual(by_id["root-end-arrow-do-next-line"]["expected"], "reject")
-        self.assertEqual(by_id["root-end-arrow-do-next-line"]["body_separator_line"], "body")
+        self.assertEqual(by_id["root-end-arrow-as"]["expected"], "accept")
+        self.assertEqual(by_id["root-end-arrow-as"]["body_boundary"], "as")
+        self.assertEqual(by_id["root-end-arrow-as"]["body_separator_line"], "header")
+        self.assertEqual(by_id["root-end-arrow-as-leading-do-select"]["expected"], "accept")
+        self.assertEqual(by_id["root-end-arrow-as-leading-do-select"]["first_statement"], "do_select")
+        self.assertEqual(by_id["root-end-arrow-as-next-line"]["expected"], "reject")
+        self.assertEqual(by_id["root-end-arrow-as-next-line"]["body_separator_line"], "body")
+        self.assertEqual(by_id["root-end-arrow-do-retired"]["expected"], "reject")
         self.assertEqual(by_id["root-end-arrow-leading-do-select"]["expected"], "accept")
         self.assertEqual(by_id["root-end-arrow-leading-do-select"]["first_statement"], "do_select")
-        self.assertEqual(by_id["root-end-colon-do"]["expected"], "reject")
+        self.assertEqual(by_id["root-end-colon-as"]["expected"], "reject")
 
 
 if __name__ == "__main__":
