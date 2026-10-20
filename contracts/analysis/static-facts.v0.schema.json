@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.org/contracts/analysis/static-facts.v0.schema.json",
+  "title": "Experimental Oreslang static analyzer compiler facts v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "unit", "procedures", "edges", "taint_sources", "flows", "sinks", "permission_checks"],
+  "properties": {
+    "version": {"const": "ores-static-facts/v0"},
+    "unit": {"$ref": "#/$defs/id"},
+    "procedures": {"type": "array", "maxItems": 10000, "items": {"type": "object", "additionalProperties": false, "required": ["id", "loops"], "properties": {"id": {"$ref": "#/$defs/id"}, "loops": {"type": "array", "maxItems": 20000, "items": {"type": "object", "additionalProperties": false, "required": ["id", "exit", "safepoint"], "properties": {"id": {"$ref": "#/$defs/id"}, "exit": {"enum": ["proved_exit", "proved_no_exit", "unknown"]}, "safepoint": {"type": "boolean"}, "location": {"$ref": "#/$defs/location"}}}}}}},
+    "edges": {"type": "array", "maxItems": 50000, "items": {"type": "object", "additionalProperties": false, "required": ["from", "to", "kind", "fanout", "guard"], "properties": {"from": {"$ref": "#/$defs/id"}, "to": {"$ref": "#/$defs/id"}, "kind": {"enum": ["call", "actor_spawn", "task_spawn", "message", "callback", "supervisor_restart", "retry"]}, "fanout": {"type": "integer", "minimum": 1, "maximum": 1000000}, "guard": {"enum": ["proved_bounded", "unproved"]}, "location": {"$ref": "#/$defs/location"}}}},
+    "taint_sources": {"type": "array", "maxItems": 10000, "items": {"type": "object", "additionalProperties": false, "required": ["id", "class"], "properties": {"id": {"$ref": "#/$defs/id"}, "class": {"enum": ["untrusted", "secret"]}, "location": {"$ref": "#/$defs/location"}}}},
+    "flows": {"type": "array", "maxItems": 50000, "items": {"type": "object", "additionalProperties": false, "required": ["from", "to"], "properties": {"from": {"$ref": "#/$defs/id"}, "to": {"$ref": "#/$defs/id"}, "validated_for": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/risk"}}, "location": {"$ref": "#/$defs/location"}}}},
+    "sinks": {"type": "array", "maxItems": 10000, "items": {"type": "object", "additionalProperties": false, "required": ["id", "risk"], "properties": {"id": {"$ref": "#/$defs/id"}, "risk": {"$ref": "#/$defs/risk"}, "location": {"$ref": "#/$defs/location"}}}},
+    "permission_checks": {"type": "array", "maxItems": 10000, "items": {"type": "object", "additionalProperties": false, "required": ["id", "requested", "ceiling"], "properties": {"id": {"$ref": "#/$defs/id"}, "requested": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/permission"}}, "ceiling": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/permission"}}, "location": {"$ref": "#/$defs/location"}}}}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 256},
+    "location": {"type": "object", "additionalProperties": false, "required": ["path", "line"], "properties": {"path": {"type": "string", "minLength": 1, "maxLength": 512}, "line": {"type": "integer", "minimum": 1, "maximum": 200000000}}},
+    "risk": {"enum": ["shell", "raw_sql", "file_path", "network_destination", "html", "ffi_pointer", "secret_log"]},
+    "permission": {"enum": ["read", "write", "net", "env", "run", "sys", "ffi", "import"]}
+  }
+}
