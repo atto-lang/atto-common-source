@@ -19,11 +19,14 @@
       "const": "ores-static-facts/v0"
     },
     "unit": {
-      "$ref": "#/$defs/id"
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "minLength": 71,
+      "maxLength": 71
     },
     "procedures": {
       "type": "array",
-      "maxItems": 10000,
+      "maxItems": 512,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -37,7 +40,7 @@
           },
           "loops": {
             "type": "array",
-            "maxItems": 20000,
+            "maxItems": 256,
             "items": {
               "type": "object",
               "additionalProperties": false,
@@ -71,7 +74,7 @@
     },
     "edges": {
       "type": "array",
-      "maxItems": 50000,
+      "maxItems": 8192,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -359,5 +362,6 @@
         "import"
       ]
     }
-  }
+  },
+  "description": "Experimental advisory facts; caps match the v0 restricted Rust consumer. Global combined loop cap of 4096 and duplicate caller/callee edges are validated by importer, not solely JSON Schema. Source SHA256 is an identity, NOT producer attestation."
 }
