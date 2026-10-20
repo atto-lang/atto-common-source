@@ -42,7 +42,10 @@
       "graph_digest": "a65fbdcab7c63eccdb5ec19409decb2da18ca9598d4c36a773f92e8b6521531d",
       "configured_graph_digest": "4531d20945630eed7bb451d63ae73ca5637559c438f6e89be18bbcd96abe9473",
       "semantic_result_i64": "42",
-      "backend_mode": { "java": "execute", "llvm": "execute" }
+      "backend_mode": {
+        "java": "execute",
+        "llvm": "execute"
+      }
     },
     {
       "id": "price-adjust-default-negative",
@@ -51,7 +54,10 @@
       "graph_digest": "dec8b5f587a47648fa8973f5901e9c25e049b08179a44dc682439ee0dab8f53e",
       "configured_graph_digest": "e52dd64a55cdf48bbe33c2d50a7c3beb9685c6ad0aeb030a44dbac4796bb7f56",
       "semantic_result_i64": "38",
-      "backend_mode": { "java": "execute", "llvm": "execute" }
+      "backend_mode": {
+        "java": "execute",
+        "llvm": "execute"
+      }
     },
     {
       "id": "price-adjust-i64-minimum",
@@ -71,35 +77,50 @@
       "expect": "accept",
       "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Fixed as\n  AddDelta(-2)\nend\npub fnc main(): int { return Fixed().run(5); }\n",
       "semantic_result_i64": "3",
-      "backend_mode": { "java": "execute", "llvm": "execute" }
+      "backend_mode": {
+        "java": "execute",
+        "llvm": "execute"
+      }
     },
     {
       "id": "computed-static-expression",
       "expect": "reject",
       "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad as\n  AddDelta(-(1 + 1))\nend\n",
       "diagnostic": "MODEL_NONCONSTANT_CONFIG",
-      "backend_mode": { "java": "reject", "llvm": "reject" }
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     },
     {
       "id": "unknown-operation",
       "expect": "reject",
       "source": "define model Bad as\n  Missing()\nend\n",
       "diagnostic": "MODEL_UNKNOWN_OP",
-      "backend_mode": { "java": "reject", "llvm": "reject" }
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     },
     {
       "id": "composition-disabled",
       "expect": "reject",
       "source": "fnc Identity(int input): int { return input; }\ndefine model Inner as\n  Identity()\nend\ndefine model Outer as\n  Inner()\nend\n",
       "diagnostic": "MODEL_COMPOSITION_NOT_ENABLED",
-      "backend_mode": { "java": "reject", "llvm": "reject" }
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     },
     {
       "id": "run-arity-zero",
       "expect": "reject",
       "source": "fnc Identity(int input): int { return input; }\ndefine model M as\n  Identity()\nend\npub fnc main(): int { return M().run(); }\n",
       "diagnostic": "MODEL_RUN_ARITY",
-      "backend_mode": { "java": "reject", "llvm": "reject" }
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     },
     {
       "id": "stored-model-value",
@@ -113,5 +134,6 @@
       "note": "Stored nominal model instances are implemented by Java but intentionally outside LLVM executable-v1."
     }
   ],
-  "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance."
+  "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
+  "revision": "model-core-i64-v1.2026-10-20.1"
 }
