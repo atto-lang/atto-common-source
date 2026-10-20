@@ -38,7 +38,7 @@ Both AoS, SoA, AoSoA and ECS storage must have identical logical taint/ownership
 
 ## Reference model
 
-`scripts/static_facts_analyzer.py` takes bounded JSON facts and emits deterministic JSON diagnostics. It demonstrates SCC and taint path analysis; it does **not** parse `.ores`, derive CFG proofs, validate proof provenance, perform symbolic execution or enforce security. Findings from hand-authored facts are tests, not authoritative vulnerabilities. Outputs are deliberately `potential` where termination/amplification depends on runtime paths. Security violations from permission sets represent contradictions **in the supplied facts**, not proof about real executables.
+`scripts/static_facts_analyzer.py` takes bounded JSON facts and emits deterministic JSON diagnostics. It demonstrates SCC and multi-source taint path analysis, emitting one shortest witness per sink rather than every possible path; it does **not** parse `.ores`, derive CFG proofs, validate proof provenance, perform symbolic execution or enforce security. Findings from hand-authored facts are tests, not authoritative vulnerabilities. Outputs are deliberately `potential` where termination/amplification depends on runtime paths. Security violations from permission sets represent contradictions **in the supplied facts**, not proof about real executables.
 
 To test locally: `python3 -m unittest tests.test_static_facts_analyzer -v`.
 
