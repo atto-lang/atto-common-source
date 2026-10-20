@@ -1,6 +1,5 @@
 {
   "schema": "oreslang-callable-syntax-v1",
-  "max_explicit_tuple_slots": 64,
   "cases": [
     {
       "id": "root-end-arrow-int",
@@ -155,16 +154,16 @@
       "expected": "accept"
     },
     {
-      "id": "tuple-64",
-      "source": "tuple (int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int)",
-      "slots": 64,
+      "id": "tuple-large-65",
+      "source": "tuple (int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int)",
+      "slots": 65,
       "expected": "accept"
     },
     {
-      "id": "tuple-65",
-      "source": "tuple (int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int)",
+      "id": "tuple-existing-large-65",
+      "source": "[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int]",
       "slots": 65,
-      "expected": "reject"
+      "expected": "accept"
     }
   ]
 }
