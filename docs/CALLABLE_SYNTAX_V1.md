@@ -56,18 +56,29 @@ fnc value(): int
     ...
 end
 
-fnc value(): int do
+fnc value(): int as
+    ...
+end
+
+fnc value() -> int do
     ...
 end
 ```
 
-Without an explicit body separator, the first body token must begin on a later source line than the completed return type. An optional semantics-free `do` may instead appear immediately after the **complete** `-> ReturnType` **on the same physical source line**; when present it provides the header/body boundary and permits compact same-line bodies:
+Without an explicit body separator, the first body token must begin on a later
+source line than the completed return type. An optional semantics-free `as`
+may instead appear immediately after the **complete** `-> ReturnType` **on the
+same physical source line**; when present it provides the header/body boundary
+and permits compact same-line bodies:
 
 ```ores
-fnc identity(int x) -> int do return x; end
+fnc identity(int x) -> int as return x; end
 ```
 
-A `do` that begins on the following source line belongs to the callable body rather than the header. This is required so an ordinary first statement such as:
+A next-line `as` is not a separator. The word `do` is deliberately **not**
+a callable-header separator: header `do` is retired and rejected so every
+`do` token remains ordinary executable body syntax. This makes both of these
+unambiguous:
 
 ```ores
 fnc consume(Channel<int> incoming) -> void
@@ -77,19 +88,28 @@ fnc consume(Channel<int> incoming) -> void
         }
     }
 end
+
+fnc consume_explicit(Channel<int> incoming) -> void as
+    do select {
+        case readch incoming: val value {
+            return;
+        }
+    }
+end
 ```
 
-is never swallowed as separator syntax. A standalone next-line `do` is therefore not a callable separator.
-
-`do` is not part of the return type and does not create a `do ... done` control-flow block. This remains valid for higher-order return types:
+The complete return type is resolved before optional `as`, including
+higher-order returns:
 
 ```ores
-fnc callback() -> () => void do
+fnc callback() -> () => void as
     return || -> { return; };
 end
 ```
 
-A colon-return callable does not gain this form: `: Type do ... end` remains invalid. These rules provide a deterministic header/body boundary while leaving indentation non-semantic.
+A colon-return callable does not gain this form: `: Type as ... end` remains
+invalid. These rules provide a deterministic header/body boundary while
+leaving indentation non-semantic.
 
 The existing braced forms remain source-compatible:
 
@@ -103,12 +123,14 @@ fnc value2() -> int {
 }
 ```
 
-An omitted return annotation on the legacy braced form may retain the existing `void` behavior where the reference frontend permits it. The keyword-delimited form never relies on that default.
+An omitted return annotation on the legacy braced form may retain the existing
+`void` behavior where the reference frontend permits it. The keyword-delimited
+form never relies on that default.
 
 ## Frontend normalization
 
-The body spelling and optional `do` separator are concrete syntax, not a semantic callable kind. After source
-admission, an end-delimited free/module callable—with or without `do`—should normalize to the same
+The body spelling and optional `as` separator are concrete syntax, not a semantic callable kind. After source
+admission, an end-delimited free/module callable—with or without `as`—should normalize to the same
 backend-neutral callable AST/HIR body as its equivalent braced declaration.
 Likewise, `tuple (T1, T2, ...)` must normalize to the existing finite tuple
 type representation. Optimizers and runtimes must not branch on which accepted
@@ -235,7 +257,7 @@ storage, initialization, ownership and reload semantics are implemented.
 Before claiming support, a backend must prove:
 
 1. the declaration domain is checked before body-form admission;
-2. nested `fi`/`end` ownership is deterministic and callable `do` cannot be confused with a `done`-terminated block;
+2. nested `fi`/`end` ownership is deterministic, optional callable `as` cannot steal body syntax, and `do` remains exclusively executable body syntax;
 3. complex return types are parsed through the ordinary type system;
 4. non-`void` fallthrough is rejected by CFG analysis;
 5. tuple arity/types are checked using the same canonical finite-tuple representation for every spelling, including aggregate return values;
@@ -255,7 +277,7 @@ parser/typechecker/codegen behavior against the same decisions.
 
 ## Current staged implementation status
 
-- Java/Graal current-main reconciliation: free/module end-delimited bodies, optional semantics-free callable `do`, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
+- Java/Graal current-main reconciliation: free/module end-delimited bodies, optional same-line semantics-free callable `as`, retired-header-`do` rejection, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
 - Static class callable-contract integration is staged as the narrow current-parent child `oreslang-source.java` PR #1642; the older #1612 is not current-main evidence and its class-static-field runtime scope is not implied by v1.
 - Canonical formatter support is staged in `oreslang-format` PR #81.
 - LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713 and must be reconciled onto current native main before promotion; the current native scalar frontend does not claim executable parity.
