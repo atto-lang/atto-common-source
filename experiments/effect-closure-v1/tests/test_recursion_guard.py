@@ -38,6 +38,19 @@ class RecursionGuardTests(unittest.TestCase):
         self.assertTrue(result["zero_gc"]["compatible_with_declared_facts"])
         self.assertTrue(result["full_aot"]["compatible_with_declared_facts"])
 
+    def test_cli_rejects_oversized_file_before_parsing(self):
+        import subprocess
+        import sys
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "oversize.json"
+            path.write_bytes(b"x" * (effect.MAX_INPUT_BYTES + 4096))
+            result = subprocess.run([sys.executable, str(ROOT / "effect_closure.py"),
+                                     str(path), "--profile", "hard_rt"],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 3)
+            self.assertEqual(result.stdout, "")
+
 
 if __name__ == "__main__":
     unittest.main()
