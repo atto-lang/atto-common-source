@@ -208,37 +208,41 @@ def analyze(doc):
         result.append(finding(rule, "error" if amplified else "warning", "potential",
             f"Unbounded cycle can generate {label} ({qualifier}); a finite total-cycle bound is unproved",
             at, comp))
+    # One reproducible shortest witness per sink, using at most one
+    # multi-source BFS per risk (not quadratic source x sink traversals).
+    sinks_by_risk = defaultdict(list)
     for sink in doc["sinks"]:
-        risk = sink["risk"]
+        sinks_by_risk[sink["risk"]].append(sink)
+    for risk in sorted(sinks_by_risk):
         adjacency = defaultdict(list)
-        for e in doc["flows"]:
-            # Only verified producer facts may supply sanitizer evidence.
-            if risk not in e.get("validated_for", []):
-                adjacency[e["from"]].append(e["to"])
+        for flow in doc["flows"]:
+            # These validation facts are trusted ONLY when supplied by a verified compiler.
+            if risk not in flow.get("validated_for", []):
+                adjacency[flow["from"]].append(flow["to"])
         for key in adjacency:
             adjacency[key] = sorted(set(adjacency[key]))
         source_class = "secret" if risk == "secret_log" else "untrusted"
-        for source in doc["taint_sources"]:
-            if source["class"] != source_class:
+        origins = sorted({src["id"] for src in doc["taint_sources"] if src["class"] == source_class})
+        parent = {origin: None for origin in origins}
+        queue = deque(origins)
+        while queue:
+            current = queue.popleft()
+            for nxt in adjacency[current]:
+                if nxt not in parent:
+                    parent[nxt] = current
+                    queue.append(nxt)
+        for sink in sorted(sinks_by_risk[risk], key=lambda item: item["id"]):
+            if sink["id"] not in parent:
                 continue
-            origin, dest = source["id"], sink["id"]
-            queue, parent = deque([origin]), {origin: None}
-            while queue and dest not in parent:
-                current = queue.popleft()
-                for nxt in adjacency[current]:
-                    if nxt not in parent:
-                        parent[nxt] = current
-                        queue.append(nxt)
-            if dest in parent:
-                path = []
-                current = dest
-                while current is not None:
-                    path.append(current)
-                    current = parent[current]
-                path.reverse()
-                result.append(finding("ORES-SEC-001", "error", "potential",
-                    f"{source_class} flow to {risk} sink without risk-specific validation",
-                    sink.get("location"), path))
+            path = []
+            current = sink["id"]
+            while current is not None:
+                path.append(current)
+                current = parent[current]
+            path.reverse()
+            result.append(finding("ORES-SEC-001", "error", "potential",
+                f"{source_class} flow to {risk} sink without risk-specific validation",
+                sink.get("location"), path))
     for check in doc["permission_checks"]:
         unauthorized = sorted(set(check["requested"]) - set(check["ceiling"]))
         if unauthorized:
@@ -248,6 +252,15 @@ def analyze(doc):
     return sorted(result, key=lambda x: (x["rule"], tuple(x.get("witness", [])), x["message"]))
 
 
+def reject_duplicate_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise InvalidFacts(f"duplicate JSON field: {key[:80]}")
+        result[key] = value
+    return result
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("facts", type=Path, help="verified compiler-facts JSON (not .ores source)")
@@ -255,9 +268,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         require(args.facts.stat().st_size <= MAX_INPUT_BYTES, "input too large")
-        doc = json.loads(args.facts.read_text(encoding="utf-8"))
+        doc = json.loads(args.facts.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_keys)
         results = analyze(doc)
-    except (OSError, UnicodeError, ValueError, TypeError) as error:
+    except (OSError, UnicodeError, ValueError, TypeError, RecursionError) as error:
         print(f"invalid facts: {error}", file=sys.stderr)
         return 2
     print(json.dumps({"version": VERSION, "unit": doc["unit"], "findings": results},
