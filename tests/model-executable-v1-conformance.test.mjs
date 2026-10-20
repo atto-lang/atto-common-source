@@ -32,7 +32,7 @@ function configuredDigest(graph, value) {
 
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
-  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.4");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.5");
   assert.equal(corpus.portable_profile, "model-core-i64-v1");
   assert.deepEqual(
     corpus.profile_semantics.operation_expression_subset,
@@ -91,6 +91,31 @@ test("duplicate model parameters use one shared diagnostic class", () => {
   assert.equal(item.diagnostic, "MODEL_DUPLICATE_PARAMETER");
   assert.equal(item.backend_mode.java, "reject");
   assert.equal(item.backend_mode.llvm, "reject");
+});
+
+test("operation identity is alpha-stable but operand-order sensitive", () => {
+  const identity = corpus.shared_operation_identity.Identity;
+  const add = corpus.shared_operation_identity.AddDelta;
+  assert.equal(
+    sha256(identity.abi + "|return=arg:0"),
+    identity.implementation_digest);
+  assert.equal(
+    sha256(add.abi + "|return=binary:+(arg:1,arg:0)"),
+    add.implementation_digest);
+
+  const alpha = corpus.identity_cases.find(x => x.id === "operation-parameter-alpha-rename");
+  assert(alpha);
+  assert.equal(alpha.expect_same_graph_digest, true);
+  assert.equal(alpha.expected_graph_digest,
+    corpus.cases.find(x => x.id === "price-adjust-default-positive").graph_digest);
+
+  const order = corpus.identity_cases.find(x => x.id === "operation-operand-order");
+  assert(order);
+  assert.equal(order.expect_same_graph_digest, false);
+  assert.equal(
+    sha256(add.abi + "|return=binary:+(arg:0,arg:1)"),
+    order.variant_operation_digest);
+  assert.notEqual(order.variant_graph_digest, alpha.expected_graph_digest);
 });
 
 test("all executable-v1 rejection diagnostics are registered", () => {
