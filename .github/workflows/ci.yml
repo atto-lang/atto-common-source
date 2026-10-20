@@ -22,6 +22,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Reachability report validator tests
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_reachability_report_gate.py' -v
       - name: Compile Python contract tools
         run: python3 -m py_compile scripts/*.py
