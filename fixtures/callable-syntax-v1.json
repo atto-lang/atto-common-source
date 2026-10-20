@@ -122,6 +122,27 @@
       "separator": "->",
       "return_type": "int",
       "body_boundary": "do",
+      "expected": "accept",
+      "body_separator_line": "header"
+    },
+    {
+      "id": "root-end-arrow-do-next-line",
+      "domain": "root_function",
+      "body": "end",
+      "separator": "->",
+      "return_type": "int",
+      "body_boundary": "do",
+      "body_separator_line": "body",
+      "expected": "reject"
+    },
+    {
+      "id": "root-end-arrow-leading-do-select",
+      "domain": "root_function",
+      "body": "end",
+      "separator": "->",
+      "return_type": "void",
+      "body_boundary": "newline",
+      "first_statement": "do_select",
       "expected": "accept"
     },
     {
@@ -131,7 +152,8 @@
       "separator": ":",
       "return_type": "int",
       "body_boundary": "do",
-      "expected": "reject"
+      "expected": "reject",
+      "body_separator_line": "header"
     }
   ],
   "return_flow": [
