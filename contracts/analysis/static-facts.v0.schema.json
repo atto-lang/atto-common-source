@@ -255,7 +255,8 @@
           "publisher",
           "invocation_timing",
           "order",
-          "registration_continuation"
+          "registration_continuation",
+          "registration_completion"
         ],
         "properties": {
           "id": {
@@ -297,6 +298,13 @@
           },
           "location": {
             "$ref": "#/$defs/location"
+          },
+          "registration_completion": {
+            "enum": [
+              "proved_sync_install",
+              "unproved"
+            ],
+            "description": "Whether listener installation completes synchronously before on() returns; must be compiler/library verified"
           }
         }
       }
