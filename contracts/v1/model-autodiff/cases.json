@@ -34,7 +34,7 @@
     },
     {
       "id": "non-differentiable-op",
-      "fixture": "fixtures/reject_missing_vjp.ores",
+      "fixture": "fixtures/accept_forward_without_vjp.ores",
       "expect": "accept",
       "diagnostic_class": null,
       "guest_execution": "NOT_EXECUTED",
