@@ -80,3 +80,26 @@ Real frontend work now exists, still behind deliberate non-executable gates:
 Source-organization Actions for Java #1554, LLVM #690 and common-source continue to show failed jobs with `steps=null`; no backend test pass is claimed. A source-free probe in `ores-stack/.github#3` also produced `steps=null` on push and pull-request events, so no private compiler source was mirrored there and the probe PR was closed.
 
 The next release gate is a compiler-owned resolved ModelGraph descriptor on both backends that passes the portable digest vectors and diagnostic registry before any model execution path is enabled.
+
+
+## Cross-backend identity/fencing milestone follow-up — 2026-10-19
+
+The Java and LLVM compiler prototype branches now carry the v1 portable graph digest, execution-profile digest, resolved ordered-model lowering and run/version fencing surfaces. This audit found and corrected several parity blockers before guest execution:
+
+- **Unary external input boundary:** the shared digest contract permits a first ordered operation with one signature input and zero graph-parent edges to represent `run(input)`. Both digest validators incorrectly required dependency count to equal signature-input count, making the external-input golden vector impossible. Java and LLVM now allow exactly this first-node unary case and still reject multi-input implicit boundaries.
+- **Java digest compilation:** the Java digest used a negated pattern variable across an `||` guard and did not compile under JDK 21 because the pattern variable was out of scope after the guard. The guard now performs an explicit checked cast.
+- **Fence diagnostics:** Java stale graph-generation rejection now uses the shared/native `MODEL_GRAPH_GENERATION_MISMATCH` diagnostic.
+- **Nominal identity grammar:** model/run IDs now align with portable nominal IDs such as `finance.PriceEstimate@v1`; malformed/whitespace IDs fail closed.
+- **Stateless instances:** `parameterVersion = null` is now an explicit valid run-fence state in the shared contract, Java and LLVM. A stateless run cannot silently match a stateful parameter version.
+- **Replay/cache/version separation:** graph generation, parameter version, run ID, graph digest and execution-profile digest remain independently fenced; compiled-plan cache identity continues to require graph + execution-profile digests.
+
+### Local isolated evidence
+
+Because current source-org Actions still report failed jobs with `steps=null`, no source-org CI pass is claimed. Additional isolated execution was performed without exporting private source:
+
+- JDK 21: the Java `ModelRunFencing` class logic compiled and executed a stateless/`@v1` identity harness successfully.
+- JDK 21: the Java portable graph-digest class logic compiled after the pattern-scope fix and matched the shared pricing golden digest `e4b3337b...833c`, canonical byte length 544, admitted the unary external-input boundary, and rejected an implicit binary external boundary.
+- JDK 21: the execution-profile digest logic matched shared reference digest `8440c7b5...9695` and canonical byte length 127.
+- Node 22: the run-fence reference logic executed canonical `@v1` and stateless cases successfully in an isolated direct test harness.
+
+These are component-level execution receipts, **not** full Maven/Gradle, Graal Context.eval, CMake/CTest, LLVM IR/native guest, Native Image, or end-to-end Oreslang model execution. The next promotion gate remains real source-to-resolved-graph-to-guest CPU execution using ordinary verified Oreslang operations, followed by cross-backend numerical/output parity.
