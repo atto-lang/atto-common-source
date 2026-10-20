@@ -118,7 +118,10 @@ def same_turn_subscribed(nodes, launch, event):
     """Prove subscription on every reachable path before actor-turn handoff.
 
     Only sound if `after_actor_turn` + `actor_lane` is a verified runtime
-    scheduling contract. The fact producer must include exceptional edges.
+    scheduling contract AND an explicit end_turn is reached on all paths
+    with a live installed subscription. Await does not establish a boundary
+    because a Future might be already settled. Exceptional/cancellation
+    exits must appear as terminal nodes or proven end_turn edges.
     """
     queue = deque((n, frozenset()) for n in launch["next"])
     seen = set()
@@ -134,12 +137,16 @@ def same_turn_subscribed(nodes, launch, event):
         seen.add((nid, subs))
         node = nodes[nid]
         out = transfer(subs, node)
-        if node["kind"] in {"await", "end_turn"} or not node["next"]:
+        # Await is not proof of yielding: an already-settled Future may
+        # resume without a scheduler turn boundary. Nor is a leaf node
+        # necessarily a qualified turn end (throw/cancel/partial CFG).
+        if node["kind"] == "end_turn":
             saw_boundary = True
             if not definitely_subscribed(out, event):
                 return False
-            # Do not continue through a suspended continuation.
             continue
+        if node["kind"] == "await" or not node["next"]:
+            return False
         for nxt in node["next"]:
             queue.append((nxt, out))
     return saw_boundary
