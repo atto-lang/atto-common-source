@@ -36,6 +36,30 @@ function portShape(p) {
     ? {kind:p.kind,dtype:p.dtype,shape:p.shape,layout:p.layout}
     : {kind:p.kind,type:p.type});
 }
+function canonicalAttrs(value, depth=0) {
+  if (depth>4) fail("GRAPH_ATTR_DEPTH");
+  if (value===null || typeof value==="boolean") return value;
+  if (typeof value==="string") {
+    if(value.length>256) fail("GRAPH_INVALID_ATTR");
+    return value;
+  }
+  if (typeof value==="number") {
+    if(!Number.isFinite(value)) fail("GRAPH_INVALID_ATTR");
+    return value;
+  }
+  if (Array.isArray(value)) {
+    if(value.length>64) fail("GRAPH_ATTR_SIZE");
+    return value.map(v=>canonicalAttrs(v,depth+1));
+  }
+  if (!value || typeof value!=="object" || Object.getPrototypeOf(value)!==Object.prototype ||
+      Object.keys(value).length>32) fail("GRAPH_INVALID_ATTR");
+  return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))
+    .map(([k,v])=>{validId(k);return [k,canonicalAttrs(v,depth+1)];}));
+}
+function onlyKeys(obj, allowed) {
+  if (!obj || typeof obj!=="object" ||
+      Object.keys(obj).some(k=>!allowed.includes(k))) fail("GRAPH_UNDECLARED_METADATA");
+}
 function validateGraph(input) {
   if (!input || !["dag","worklist"].includes(input.mode)) fail("GRAPH_BAD_MODE");
   if (!Array.isArray(input.nodes) || input.nodes.length < 1 || input.nodes.length > 1024 ||
@@ -44,21 +68,31 @@ function validateGraph(input) {
   const nodes=new Map(), edgeIds=new Set(), portEdges=new Map();
   for (const n of input.nodes) {
     validId(n?.id);
+    validId(n?.op);
+    onlyKeys(n,["id","op","attrs","inputs","outputs"]);
+    if(n.attrs!==undefined) canonicalAttrs(n.attrs);
     if (nodes.has(n.id)) fail("GRAPH_DUPLICATE_NODE");
     if (!n.inputs || !n.outputs || typeof n.inputs !== "object" ||
         typeof n.outputs !== "object" || Array.isArray(n.inputs) || Array.isArray(n.outputs))
       fail("GRAPH_BAD_PORTS");
     for (const [name,p] of Object.entries(n.inputs)) {
-      validId(name); portShape(p);
+      validId(name);
+      onlyKeys(p,["kind","type","dtype","shape","layout","fanIn"]);
+      portShape(p);
       if (!["one","many"].includes(p.fanIn)) fail("GRAPH_INVALID_FANIN");
     }
-    for (const [name,p] of Object.entries(n.outputs)) { validId(name); portShape(p); }
+    for (const [name,p] of Object.entries(n.outputs)) {
+      validId(name);
+      onlyKeys(p,["kind","type","dtype","shape","layout","fanIn"]);
+      portShape(p);
+    }
     nodes.set(n.id,n);
   }
   const indegree=new Map([...nodes.keys()].map(k=>[k,0]));
   const onward=new Map([...nodes.keys()].map(k=>[k,[]]));
   for (const e of input.edges) {
     validId(e?.id);
+    onlyKeys(e,["id","from","fromPort","to","toPort","kind","capacity","delayTokens"]);
     if (edgeIds.has(e.id)) fail("GRAPH_DUPLICATE_EDGE");
     edgeIds.add(e.id);
     const a=nodes.get(e.from),b=nodes.get(e.to);
@@ -93,10 +127,11 @@ function validateGraph(input) {
   // Canonical copy: caller mutations cannot rewrite admitted edges or identity.
   const normal={
     mode:input.mode,
+    schemaVersion:1,
     nodes:[...nodes.values()].map(n=>({
-      id:n.id,
-      inputs:Object.fromEntries(Object.entries(n.inputs).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v}])),
-      outputs:Object.fromEntries(Object.entries(n.outputs).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v}]))
+      id:n.id, op:n.op, attrs:canonicalAttrs(n.attrs??{}),
+      inputs:Object.fromEntries(Object.entries(n.inputs).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}])),
+      outputs:Object.fromEntries(Object.entries(n.outputs).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}]))
     })).sort((a,b)=>a.id.localeCompare(b.id)),
     edges:input.edges.map(e=>({...e})).sort((a,b)=>a.id.localeCompare(b.id))
   };
@@ -137,11 +172,19 @@ class DeliveryLedger {
       integer(msg.bytes,1,MAX,"GRAPH_INVALID_BYTES");
       const old=s.receipts.get(msg.delivery);
       if(old) {
-        if(old.digest!==msg.payloadDigest || old.edge!==msg.edge)
+        if(old.digest!==msg.payloadDigest || old.edge!==msg.edge || old.bytes!==msg.bytes)
           fail("GRAPH_REPLAY_TAMPERING");
         return Object.freeze({status:"acked",delivery:msg.delivery});
       }
-      if(s.active.has(msg.delivery)) fail("GRAPH_DUPLICATE_INFLIGHT");
+      if(s.active.has(msg.delivery)) {
+        const existing=s.active.get(msg.delivery);
+        if(existing.digest!==msg.payloadDigest || existing.edge!==msg.edge || existing.bytes!==msg.bytes)
+          fail("GRAPH_REPLAY_TAMPERING");
+        fail("GRAPH_DUPLICATE_INFLIGHT");
+      }
+      const maxEdge=s.plan.edges.find(e=>e.id===msg.edge).capacity;
+      const edgeActive=[...s.active.values()].filter(a=>a.edge===msg.edge).length;
+      if(edgeActive>=maxEdge) fail("GRAPH_EDGE_BACKPRESSURE");
       // Reserve a future receipt slot BEFORE consuming in-flight credits.
       if(s.receipts.size+s.active.size>=s.maxReceipts) fail("GRAPH_RECEIPT_BACKPRESSURE");
       if(s.active.size>=s.maxItems || msg.bytes>s.maxBytes-s.usedBytes)
@@ -160,11 +203,11 @@ class DeliveryLedger {
       const active=s.active.get(msg.delivery);
       if (!active) {
         const rec=s.receipts.get(msg.delivery);
-        if (rec && rec.token===token && rec.edge===msg.edge && rec.digest===msg.payloadDigest)
+        if (rec && rec.token===token && rec.edge===msg.edge && rec.digest===msg.payloadDigest && rec.bytes===msg.bytes)
           return Object.freeze({status:"already-acked",delivery:msg.delivery});
         fail("GRAPH_INVALID_COMPLETION");
       }
-      if(active.token!==token || active.edge!==msg.edge || active.digest!==msg.payloadDigest)
+      if(active.token!==token || active.edge!==msg.edge || active.digest!==msg.payloadDigest || active.bytes!==msg.bytes)
         fail("GRAPH_INVALID_COMPLETION");
       s.active.delete(msg.delivery);
       s.usedBytes-=active.bytes;
@@ -189,9 +232,9 @@ function tensor(shape=[2,2],fanIn="one") {
 function work(type="MipNode",fanIn="one") {return {kind:"job",type,fanIn};}
 function graph(mode="dag") {
   return {mode,nodes:[
-    {id:"input",inputs:mode==="worklist"?{retry:work()}:{},outputs:{out:mode==="worklist"?work():tensor()}},
-    {id:"compute",inputs:{input:mode==="worklist"?work():tensor()},outputs:{out:mode==="worklist"?work():tensor()}},
-    {id:"sink",inputs:{input:mode==="worklist"?work():tensor()},outputs:{}}
+    {id:"input",op:mode==="worklist"?"SeedQueue":"Input",inputs:mode==="worklist"?{retry:work()}:{},outputs:{out:mode==="worklist"?work():tensor()}},
+    {id:"compute",op:mode==="worklist"?"Relaxation":"Dense",inputs:{input:mode==="worklist"?work():tensor()},outputs:{out:mode==="worklist"?work():tensor()}},
+    {id:"sink",op:mode==="worklist"?"Incumbent":"Loss",inputs:{input:mode==="worklist"?work():tensor()},outputs:{}}
   ],edges:[
     {id:"first",from:"input",fromPort:"out",to:"compute",toPort:"input",kind:"data",capacity:2},
     {id:"second",from:"compute",fromPort:"out",to:"sink",toPort:"input",kind:"data",capacity:2}
@@ -204,7 +247,9 @@ test("typed neural DAG accepts valid ordering, creates immutable canonical graph
   assert.equal(p.digest,validateGraph(reordered).digest);
   assert.deepEqual(p.order,["input","compute","sink"]);
   a.nodes[0].id="changed";
+  a.nodes[0].outputs.out.shape[0]=8;
   assert.equal(p.nodes[0].id,"compute");
+  assert.deepEqual(p.nodes[2].outputs.out.shape,[2,2]);
   assert(Object.isFrozen(p.nodes[0].outputs));
 });
 test("structural duplicate, unknown target, type mismatch and implicit many-to-one fail",()=>{
@@ -279,4 +324,32 @@ test("job edges cannot masquerade as tensor descriptors",()=>{
   assert.throws(()=>validateGraph(a),/GRAPH_JOB_TENSOR_CONFUSION/);
   const b=graph("worklist");b.nodes[1].inputs.input.type="OtherNode";
   assert.throws(()=>validateGraph(b),/GRAPH_PORT_TYPE_MISMATCH/);
+});
+
+
+test("graph digest commits operator, optimizer attrs and nested values",()=>{
+  const a=graph();a.nodes[1].attrs={lr:0.01,flags:{checkpoint:true}};
+  const p=validateGraph(a);
+  a.nodes[1].attrs.lr=4;
+  assert.equal(p.nodes[0].attrs.flags.checkpoint,true);
+  assert.notEqual(p.digest,validateGraph(a).digest);
+  a.nodes[1].attrs.lr=0.01;a.nodes[1].op="Subtraction";
+  assert.notEqual(p.digest,validateGraph(a).digest);
+  a.nodes[1].attrs={lr:NaN};
+  assert.throws(()=>validateGraph(a),/GRAPH_INVALID_ATTR/);
+});
+test("undeclared graph metadata cannot escape snapshot fingerprint",()=>{
+  const a=graph();a.nodes[1].gpu="surprise";
+  assert.throws(()=>validateGraph(a),/GRAPH_UNDECLARED_METADATA/);
+  delete a.nodes[1].gpu;a.edges[0].transport="tcp";
+  assert.throws(()=>validateGraph(a),/GRAPH_UNDECLARED_METADATA/);
+});
+test("each edge capacity applies even when global credit remains",()=>{
+  const a=graph();a.edges[0].capacity=1;
+  const p=validateGraph(a),l=new DeliveryLedger(p,{maxItems:3,maxBytes:100});
+  const m={run:"r1",epoch:1,graph:p.digest,edge:"first",delivery:"one",payloadDigest:digest,bytes:1};
+  const r=l.admit(m);
+  assert.throws(()=>l.admit({...m,delivery:"two"}),/GRAPH_EDGE_BACKPRESSURE/);
+  l.ack(m,r.token);
+  assert.equal(l.admit({...m,delivery:"two"}).status,"admitted");
 });
