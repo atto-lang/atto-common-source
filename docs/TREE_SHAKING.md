@@ -8,6 +8,28 @@ A release build must be able to omit unreachable Oreslang code, unused core/allo
 
 Tree shaking is a semantic reachability problem first and a backend/linker optimization second. Backends may remove additional target-specific material, but they must not rely on linker garbage collection as the only definition of reachability.
 
+## Build-profile policy
+
+Tree shaking is **on by default for release artifacts**. A backend may expose an
+explicit diagnostic/unshaken build for comparison, but release tooling must not
+require users to discover a backend-specific size flag before unused language
+or runtime code is removed.
+
+- `dev`/debug builds may disable semantic pruning to favor compile speed and
+  debugging fidelity.
+- `release` builds enable semantic tree shaking and backend dead stripping by
+  default.
+- `minimal` and embedded/firmware release profiles require semantic tree
+  shaking; unresolved dynamic reachability must be explicitly retained or
+  rejected.
+- FPGA/ASIC release flows require semantic reachability before elaboration;
+  synthesis cone-of-influence removal is an additional downstream pass.
+- Library artifacts preserve their declared/exported ABI roots. Source `pub`
+  visibility by itself is not necessarily an executable deployment root.
+- An unshaken/reference artifact remains a verification mode, not the normal
+  production packaging policy.
+
+
 ## Required pipeline
 
 1. Resolve imports, names, overloads, types, ownership/effects and target admission.
