@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "kind": "oreslang.library.otp-portability",
+  "status": "contract-only",
+  "sourceImplementationAvailable": false,
+  "layers": [
+    {
+      "id": "core",
+      "dependsOn": [],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": [],
+      "optionalDependsOn": []
+    },
+    {
+      "id": "alloc",
+      "dependsOn": [
+        "core"
+      ],
+      "osRequired": false,
+      "heapRequired": true,
+      "requiredProviders": [
+        "explicit-memory-provider"
+      ],
+      "optionalDependsOn": []
+    },
+    {
+      "id": "actor",
+      "dependsOn": [
+        "core"
+      ],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": [
+        "scheduler-executor",
+        "bounded-mailbox-storage",
+        "trusted-control-lane"
+      ],
+      "optionalDependsOn": [
+        "alloc"
+      ]
+    },
+    {
+      "id": "otp",
+      "dependsOn": [
+        "core",
+        "actor"
+      ],
+      "osRequired": false,
+      "heapRequired": false,
+      "requiredProviders": [],
+      "optionalDependsOn": [
+        "alloc"
+      ]
+    },
+    {
+      "id": "host-adapter",
+      "dependsOn": [
+        "core"
+      ],
+      "osRequired": true,
+      "heapRequired": false,
+      "requiredProviders": [
+        "explicit-host-capabilities"
+      ],
+      "optionalDependsOn": []
+    }
+  ],
+  "modules": [
+    {
+      "module": "gen_server",
+      "path": "stdlib/otp/gen_server.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.serial",
+        "mailbox.bounded",
+        "reply.oneshot"
+      ],
+      "conditional": [
+        "clock.monotonic",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/gen_server"
+    },
+    {
+      "module": "supervisor",
+      "path": "stdlib/otp/supervisor.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.lifecycle-authority",
+        "control.authenticated",
+        "restart.bounded"
+      ],
+      "conditional": [
+        "clock.monotonic",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/supervisor"
+    },
+    {
+      "module": "gen_statem",
+      "path": "stdlib/otp/gen_statem.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.serial",
+        "mailbox.bounded",
+        "transition.typed"
+      ],
+      "conditional": [
+        "clock.monotonic",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/gen_statem"
+    },
+    {
+      "module": "application",
+      "path": "stdlib/otp/application.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.lifecycle-authority",
+        "startup.dependency-order",
+        "startup.rollback"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/application"
+    },
+    {
+      "module": "event_manager",
+      "path": "stdlib/otp/event_manager.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.serial",
+        "mailbox.bounded",
+        "subscriptions.bounded"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/event_manager"
+    },
+    {
+      "module": "registry",
+      "path": "stdlib/otp/registry.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.identity",
+        "registry.incarnation-fenced",
+        "registry.bounded"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/registry"
+    },
+    {
+      "module": "pg",
+      "path": "stdlib/otp/pg.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.group",
+        "actor.identity",
+        "group.membership-bounded",
+        "group.membership-incarnation-fenced",
+        "group.scope-explicit"
+      ],
+      "conditional": [
+        "distribution.membership-eventual",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/pg"
+    },
+    {
+      "module": "ets",
+      "path": "stdlib/otp/ets.ores",
+      "layer": "otp",
+      "requires": [
+        "table.runtime-owned",
+        "table.typed",
+        "table.capacity-bounded",
+        "table.atomic-operation",
+        "table.access-policy"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/ets"
+    }
+  ],
+  "forbiddenHostEffects": [
+    "os",
+    "posix",
+    "linux",
+    "libc",
+    "filesystem",
+    "network",
+    "process",
+    "threads",
+    "java-interop",
+    "clock.ambient",
+    "memory.ambient"
+  ],
+  "validation": "metadata-only; does not invoke an Oreslang compiler or runtime",
+  "canonicalImportPrefix": "otp/",
+  "transitionalJavaDraftImportPrefix": "std/otp/",
+  "transitionalJavaDraftImportStatus": "draft-source-slices-only; canonical otp/* import resolver not implemented"
+}

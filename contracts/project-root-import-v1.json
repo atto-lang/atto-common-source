@@ -9,7 +9,10 @@
     "lib/telemetry.ores",
     "lib/transport.java",
     "src/lib/store.ores",
-    "src/routes/rest/foo/bar/baz/local.ores"
+    "src/routes/rest/foo/bar/baz/local.ores",
+    "src/routes/rest/foo/bar/up.ores",
+    "src/.hidden/helper.ores",
+    "src/..backup/helper.ores"
   ],
   "resolution_cases": [
     {
@@ -137,6 +140,101 @@
     "wasm": "delegated-to-real-source-compiler"
   },
   "contract_version": "oreslang.project-root-imports.v1",
+  "namespace_boundary_cases": [
+    {
+      "id": "parent-child-direct-denied",
+      "importer_package": "parent",
+      "specifier": "+/nested/lib/child",
+      "spelled_path": "parent/nested/lib/child.ores",
+      "physical_target": "parent/nested/lib/child.ores",
+      "expect": "reject-nested-package"
+    },
+    {
+      "id": "parent-child-symlink-back-denied",
+      "importer_package": "parent",
+      "specifier": "+/nested/parent-alias",
+      "spelled_path": "parent/nested/parent-alias.ores",
+      "physical_target": "parent/lib/helper.ores",
+      "expect": "reject-nested-package"
+    },
+    {
+      "id": "parent-symlink-in-root-allowed",
+      "importer_package": "parent",
+      "specifier": "+/lib/alias",
+      "spelled_path": "parent/lib/alias.ores",
+      "physical_target": "parent/lib/helper.ores",
+      "expect": "resolve-parent-lib-helper"
+    },
+    {
+      "id": "child-own-root-allowed",
+      "importer_package": "nested",
+      "specifier": "+/lib/child",
+      "spelled_path": "parent/nested/lib/child.ores",
+      "physical_target": "parent/nested/lib/child.ores",
+      "expect": "resolve-child-lib-child"
+    },
+    {
+      "id": "parent-child-dangling-manifest-denied",
+      "importer_package": "parent",
+      "specifier": "+/dangling/lib/child",
+      "spelled_path": "parent/dangling/lib/child.ores",
+      "physical_target": "parent/dangling/lib/child.ores",
+      "expect": "reject-invalid-nested-marker"
+    }
+  ],
+  "promotion_gates": {
+    "safe_admission": "Negative source checks alone must never imply resolver/link/runtime parity",
+    "resolver": "Each supported import must resolve to the same pinned physical source identity and package context",
+    "execution": "Backend compiler must compile, link and execute the same multi-source fixture with correct result",
+    "provenance": "Executed non-skipped CI job must pin exact head, source blobs, fixture blobs and compiler/runtime identity",
+    "wasm": "Wasm output additionally requires a complete verified LLVM source graph and real wasm32 guest artifact"
+  },
+  "open_decisions": [
+    {
+      "id": "root-anchor-vs-project-root",
+      "question": "Does +/ bind to the physical directory containing the nearest .ores.pkg.toml or to [project].root from that manifest?",
+      "needs_alignment": [
+        "oreslang-platform-conformance#39",
+        "oreslang-source.java#1050",
+        "oreslang-source.llvm#448",
+        "oreslang-common-source#51"
+      ],
+      "normative_resolution": "The selected manifest directory anchors [project].root; +/ uses that configured project root.",
+      "status": "backend-alignment-pending"
+    }
+  ],
+  "relative_source_cases": [
+    {
+      "id": "explicit-sibling-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": "./local",
+      "namespace": "relative",
+      "expect": "src/routes/rest/foo/bar/baz/local.ores"
+    },
+    {
+      "id": "explicit-parent-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": "../up",
+      "namespace": "relative",
+      "expect": "src/routes/rest/foo/bar/up.ores"
+    },
+    {
+      "id": "dot-prefixed-bare-not-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": ".hidden/helper",
+      "namespace": "bare",
+      "source_root": "src",
+      "expect": "src/.hidden/helper.ores"
+    },
+    {
+      "id": "double-dot-prefixed-bare-not-relative",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "specifier": "..backup/helper",
+      "namespace": "bare",
+      "source_root": "src",
+      "expect": "src/..backup/helper.ores"
+    }
+  ],
   "namespace_parity_cases": [
     {
       "id": "project-root-field-subdir",

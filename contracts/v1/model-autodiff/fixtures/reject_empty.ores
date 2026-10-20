@@ -1,0 +1,3 @@
+// Expected diagnostic MODEL_EMPTY_BODY.
+define model Empty as
+end

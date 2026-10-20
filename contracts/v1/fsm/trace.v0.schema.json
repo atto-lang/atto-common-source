@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.org/contracts/v1/fsm/trace.v0.schema.json",
+  "title": "Oreslang finite flat-FSM abstract observation trace v0 (fixture only)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "machine",
+    "entity_count",
+    "transitions"
+  ],
+  "properties": {
+    "contract": {
+      "const": "ores-fsm-trace-v0"
+    },
+    "machine": {
+      "const": "flat-fixture-v0"
+    },
+    "entity_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1024
+    },
+    "transitions": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    }
+  },
+  "$defs": {
+    "u32": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "version",
+        "ticks"
+      ],
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/u32"
+        },
+        "version": {
+          "$ref": "#/$defs/u32"
+        },
+        "ticks": {
+          "$ref": "#/$defs/u32"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seq",
+        "entity",
+        "event",
+        "accepted",
+        "reason",
+        "before",
+        "after",
+        "effects"
+      ],
+      "properties": {
+        "seq": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9999
+        },
+        "entity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1023
+        },
+        "event": {
+          "$ref": "#/$defs/u32"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "reason": {
+          "enum": [
+            "none",
+            "invalid-state",
+            "invalid-ticks",
+            "version-exhausted",
+            "guard",
+            "unhandled"
+          ]
+        },
+        "before": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "after": {
+          "$ref": "#/$defs/snapshot"
+        },
+        "effects": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/u32"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "accepted": {
+                "const": false
+              }
+            },
+            "required": [
+              "accepted"
+            ]
+          },
+          "then": {
+            "properties": {
+              "effects": {
+                "maxItems": 0
+              },
+              "reason": {
+                "not": {
+                  "const": "none"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "accepted": {
+                "const": true
+              }
+            },
+            "required": [
+              "accepted"
+            ]
+          },
+          "then": {
+            "properties": {
+              "effects": {
+                "minItems": 1
+              },
+              "reason": {
+                "const": "none"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

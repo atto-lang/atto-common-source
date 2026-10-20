@@ -1,0 +1,7 @@
+// Dynamic model graph topology is outside v1.
+// Expected diagnostic MODEL_DYNAMIC_TOPOLOGY.
+define model Dynamic as
+    if condition then
+        Dense(12, 12)
+    end
+end

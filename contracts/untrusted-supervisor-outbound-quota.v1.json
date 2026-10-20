@@ -1,0 +1,203 @@
+{
+  "schema_version": "untrusted-supervisor-outbound-quota.v1-proposal",
+  "status": "contract-only-no-runtime-enforcement-claim",
+  "pending_backends": [
+    "java-graalvm",
+    "llvm",
+    "wasm",
+    "forge",
+    ".net"
+  ],
+  "cases": [
+    {
+      "id": "burst-capacity",
+      "scenario": "initial bucket capacity five accepts five at t=0 then rejects the sixth",
+      "expect": "rate-limited"
+    },
+    {
+      "id": "sustained-refill",
+      "scenario": "after one second with rate 20/sec, refill capped by burst and never exceeds capacity",
+      "expect": "bounded-refill"
+    },
+    {
+      "id": "atomic-hierarchy",
+      "scenario": "actor allows but supervisor or tenant denies: all scopes unchanged by rejected reservation",
+      "expect": "reject-without-partial-charge"
+    },
+    {
+      "id": "failed-enqueue",
+      "scenario": "unpublished hierarchical reservation fails before broker exposure: reverse all scopes without partial charge",
+      "expect": "rollback-unpublished-only"
+    },
+    {
+      "id": "bytes-and-credits",
+      "scenario": "payload or outstanding credit would exceed configured capacity",
+      "expect": "reject-without-allocation"
+    },
+    {
+      "id": "clock-rollback",
+      "scenario": "trusted monotonic sample lower than last observed",
+      "expect": "no-refill"
+    },
+    {
+      "id": "restart-fanout",
+      "scenario": "child restarts or spawns descendants without privileged policy update",
+      "expect": "stable-lineage-quota"
+    },
+    {
+      "id": "forged-source",
+      "scenario": "guest-provided sender id, route or quota object conflicts with trusted actor execution context",
+      "expect": "capability-denied"
+    },
+    {
+      "id": "alternate-transport",
+      "scenario": "guest uses respond/output/FFI IPC to target same supervisor instead of send",
+      "expect": "same-quota-gate"
+    },
+    {
+      "id": "runtime-panic",
+      "scenario": "genuine runtime panic under exhausted user budget",
+      "expect": "bounded-control-delivery"
+    },
+    {
+      "id": "forged-panic",
+      "scenario": "guest tries to craft a runtime panic/exit envelope",
+      "expect": "capability-denied"
+    },
+    {
+      "id": "retire-race",
+      "scenario": "send races parent close and outstanding reservation release",
+      "expect": "fail-closed-and-once-only-settlement"
+    },
+    {
+      "id": "http-inflight-eleventh",
+      "scenario": "eleven overlapping untrusted HTTP operations without completion: deny the eleventh before dispatch",
+      "expect": "too-many-in-flight"
+    },
+    {
+      "id": "http-start-rate-eleventh",
+      "scenario": "eleven HTTP starts in a one second window with no earned refill: the policy has limited rate tokens",
+      "expect": "rate-limited"
+    },
+    {
+      "id": "http-cancel-release",
+      "scenario": "HTTP request completes or cancels concurrently with supervisor termination and cancellation",
+      "expect": "release-once"
+    },
+    {
+      "id": "tcp-connection-eleventh",
+      "scenario": "with ten live outbound TCP socket leases deny eleventh before DNS resolution or connect",
+      "expect": "too-many-connections"
+    },
+    {
+      "id": "tcp-connect-failure",
+      "scenario": "failed socket creation DNS resolution or connect must not leak the reserved active TCP slot",
+      "expect": "release-once"
+    },
+    {
+      "id": "tcp-connection-churn",
+      "scenario": "closing and reopening TCP sockets rapidly cannot bypass separately configured connection-start-rate and resource budgets",
+      "expect": "bounded-starts"
+    },
+    {
+      "id": "http-redirect-and-multiplex",
+      "scenario": "redirect HTTP2 concurrent streams and HTTP connection pooling cannot bypass per-request HTTP quotas or underlying physical socket budgets",
+      "expect": "same-egress-gate"
+    },
+    {
+      "id": "network-permission-and-restart",
+      "scenario": "an untrusted actor relabels destination or restarts without an explicitly issued mediated capability",
+      "expect": "fail-closed"
+    },
+    {
+      "id": "late-cancel-no-burst-credit",
+      "scenario": "guest keeps a reserved HTTP/TCP operation through rate refill then cancels: release concurrency only, no new start tokens",
+      "expect": "no-refund-of-published-start-token"
+    },
+    {
+      "id": "revoked-before-dispatch",
+      "scenario": "supervisor closes trusted policy after admission but before network dispatch commitment",
+      "expect": "deny-new-commit-and-release-slot"
+    },
+    {
+      "id": "allocation-before-quota-charge",
+      "scenario": "host allocation failure while building an admission envelope or native lease occurs before token or slot charge",
+      "expect": "no-leaked-capacity"
+    },
+    {
+      "id": "hierarchical-revoke-commit",
+      "scenario": "revoke child supervisor or tenant after admission and before dispatch: none of the three scope leases becomes committed",
+      "expect": "deny-all-commit"
+    },
+    {
+      "id": "untrusted-raw-native-io",
+      "scenario": "untrusted actor turn invokes ordinary Java NativeIo outbound HTTP or TCP despite an attempted future capability expansion",
+      "expect": "broker-required"
+    },
+    {
+      "id": "http-caller-future-cancel-isolated",
+      "scenario": "guest or caller cancels result future while the trusted HTTP exchange remains active: only host transport completion may free the in-flight permit",
+      "expect": "host-owned-completion"
+    },
+    {
+      "id": "tcp-transport-close-settlement",
+      "scenario": "trusted supervisor cancels real asynchronous TCP connect or closes an established socket: release live socket permit only after the OS channel has closed",
+      "expect": "physical-close-before-release"
+    },
+    {
+      "id": "monotonic-wrap-no-token-mint",
+      "scenario": "trusted monotonic nanosecond clock advances across signed or unsigned representation wrap and a backward sample follows: a negative interpretation never mints tokens",
+      "expect": "bounded-refill"
+    },
+    {
+      "id": "actor-context-network-ingress",
+      "scenario": "host-issued egress binding resolves an untrusted sender solely from the current runtime actor context and refuses foreign actors or unbound runtimes",
+      "expect": "runtime-provenance-required"
+    },
+    {
+      "id": "actor-ticket-budget-replay",
+      "scenario": "untrusted actor attempts more than sixteen unconsumed network results or tries to consume a completed ticket twice and then after host revocation",
+      "expect": "bounded-one-shot-ticket"
+    },
+    {
+      "id": "host-future-callback-isolation",
+      "scenario": "guest network completion must not run user-controlled CompletableFuture callbacks with trusted host thread authority or expose host I/O objects",
+      "expect": "no-guest-callback-on-host"
+    },
+    {
+      "id": "actor-finalization-cached-ticket",
+      "scenario": "Automatic actor finalization races a cached bridge reference polling a pending or completed result ticket; after revocation neither cached nor new lookups can return an authorized result",
+      "expect": "revoked-no-result"
+    },
+    {
+      "id": "terminated-actor-dispatch-fence",
+      "scenario": "An already queued trusted host egress task races actor termination and cannot issue a fresh network dispatch after the revocation fence",
+      "expect": "no-post-revocation-dispatch"
+    },
+    {
+      "id": "host-cleanup-capacity-exhaustion",
+      "scenario": "More than the reserved number of host egress bindings are requested while terminated brokers await cleanup; admission rejects instead of producing unlimited deferred cleanup tasks",
+      "expect": "bounded-fail-closed"
+    },
+    {
+      "id": "cleanup-failure-retry",
+      "scenario": "A host transport close operation fails transiently then permanently; cleanup retries only within a bounded budget, records failure, and never returns extra quota/cleanup capacity without settlement",
+      "expect": "bounded-retry-and-capacity-retention"
+    }
+  ],
+  "network_policy": {
+    "status": "proposed-host-owned-and-not-wired",
+    "default_http_max_in_flight": 10,
+    "default_http_request_starts_per_second": 10,
+    "default_http_burst": 2,
+    "default_tcp_max_open_connections": 10,
+    "connection_starts_per_second": 10,
+    "enforcement": "trusted-egress-broker-before-dns-connect-and-request-dispatch",
+    "lease_ownership": "runtime-only-exactly-once-release",
+    "scope": "stable-lineage-supervisor-and-tenant",
+    "network_capability": "explicitly-mediated-only-default-untrusted-denied",
+    "default_tcp_burst": 2,
+    "published_cancel_refunds_start_tokens": false,
+    "unpublished_internal_rollback_refunds_start_tokens": true
+  }
+}

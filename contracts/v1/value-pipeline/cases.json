@@ -167,6 +167,43 @@
         ".forge",
         ".wasm"
       ]
+    },
+    {
+      "id": "scalar-named-first-argument",
+      "fixture": "scalar-named-first-argument.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 40
+      },
+      "candidate_implementations": [
+        ".llvm"
+      ],
+      "pending": [
+        ".java",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "reject-duplicate-forwarded-binding",
+      "fixture": "reject-duplicate-forwarded-binding.ores",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "duplicate-forwarded-binding",
+        "diagnostic_contains": {
+          ".llvm": "duplicate binding of parameter 'n'"
+        }
+      },
+      "candidate_implementations": [
+        ".llvm"
+      ],
+      "pending": [
+        ".java",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
     }
   ]
 }

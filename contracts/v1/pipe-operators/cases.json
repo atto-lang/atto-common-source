@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "contract": "pipe-operators-cross-integration",
+  "status": "pending-executable-source-conformance",
+  "targets": [
+    ".java",
+    ".llvm",
+    ".net",
+    ".forge",
+    ".wasm"
+  ],
+  "cases": [
+    {
+      "id": "mixed-actor-value-operators",
+      "fixture": "mixed-actor-and-value-pipes.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "stdout": "-5"
+      },
+      "candidate_implementations": [],
+      "pending": [
+        ".java",
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ],
+      "require_exact_source": true,
+      "require_authenticated_routing": true,
+      "require_guest_execution": true
+    }
+  ]
+}

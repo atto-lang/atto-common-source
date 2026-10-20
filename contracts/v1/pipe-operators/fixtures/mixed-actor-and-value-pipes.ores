@@ -1,0 +1,49 @@
+// Pending same-source cross-operator executable fixture.
+// Requires Java actor-source and value-pipe feature branches integrated.
+define actor Source as
+    receive(ActorMail<int> mail): void {
+        if mail.value > 0 then
+            self.forward(mail.value + 1);
+        else
+            stdio.stdout.write(mail.value);
+            self.end();
+        fi
+        return;
+    }
+end
+
+define actor Transform as
+    receive(ActorMail<int> mail): void {
+        if mail.value > 0 then
+            self.forward(mail.value + 1);
+        else
+            self.backward(mail.value - 1);
+            self.end();
+        fi
+        return;
+    }
+end
+
+define actor Sink as
+    receive(ActorMail<int> mail): void {
+        if mail.value > 0 then
+            self.backward(0 - mail.value - 1);
+            self.end();
+        else
+            self.end();
+        fi
+        return;
+    }
+end
+
+fnc fn1(): int { return 2; }
+fnc fn2(int n): int { return n + 1; }
+fnc fn3(int n): int { return n - 2; }
+
+pub async routine main(): void {
+    val stream = spawn Source() pipe spawn Transform() pipe spawn Sink();
+    val value = fn1() |> fn2() |> fn3();
+    stream.send(value);
+    await stream.get_done();
+    return;
+}
