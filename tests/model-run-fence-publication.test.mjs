@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { beginModelRun, nextGraphGeneration, commitModelRun, ModelFenceError } from "../experiments/model_run_fence.mjs";
+import { beginModelRun, nextGraphGeneration, commitModelRun, compiledPlanCacheKey, ModelFenceError } from "../experiments/model_run_fence.mjs";
 
 const A="a".repeat(64), B="b".repeat(64);
 const graph=(generation=7)=>({modelTypeId:"pkg.PriceEstimate",graphDigest:A,graphGeneration:generation});
@@ -19,4 +19,9 @@ test("published run identity is single commit",()=>{
   assert.deepEqual(ledger,["run-1"]);
   assert(Object.isFrozen(ledger));
   fails("MODEL_RUN_REPLAY",()=>commitModelRun(stamp,graph(),instance(),request(),ledger));
+});
+
+test("compiled plan cache binds graph and execution profile",()=>{
+  assert.notEqual(compiledPlanCacheKey(A,B),compiledPlanCacheKey(A,"c".repeat(64)));
+  assert.notEqual(compiledPlanCacheKey(A,B),compiledPlanCacheKey("d".repeat(64),B));
 });
