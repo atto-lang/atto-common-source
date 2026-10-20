@@ -65,3 +65,18 @@ The source-free HIR now carries canonical static operation arguments because rea
 A model can be freestanding, preallocated and deterministic without being hard-real-time-qualified. The reference intentionally emits no `hardRealtime` capability. Production hard-real-time admission must add target-specific WCET/bounded-loop evidence, scheduler/preemption/interrupt constraints, memory residency and backend code-generation proof.
 
 Proposed source fixtures now cover non-ML pricing/business and signal-processing models plus forward-only nondifferentiable inference, nonconstant static configuration rejection, effect rejection and recursive composition rejection. They remain **NOT_EXECUTED** until real Java and LLVM compilers consume them.
+
+
+## Compiler parser/HIR gate and portable identity update (2026-10-19)
+
+Real frontend work now exists, still behind deliberate non-executable gates:
+
+- Java/Graal draft PR **oreslang-source.java#1554** parses contextual `define model` into dedicated inert model AST nodes at top level/modules and then raises `MODEL_LOWERING_NOT_IMPLEMENTED` before ordinary type/runtime lowering.
+- LLVM/native draft PR **oreslang-source.llvm#690** mirrors that posture with parser-level model HIR and raises the same gate before ownership/codegen; its parser CTest target intentionally excludes LLVM codegen.
+- Shared `contracts/v1/model-graph/compiler-cases.json` now contains finance/pricing, DSP/signal, forward-only no-VJP and parser-negative cases so both compilers converge on non-ML behavior.
+- `MODEL_GRAPH_DIGEST_V1.md` plus `digest-v1-vectors.json` pins portable SHA-256 identity independently of temporary node labels while binding static constants, exact op ABI/implementation/provenance, ports and portable op profile.
+- `diagnostics-v1.json` pins diagnostic classes to syntax/lowering/admission/gradient/identity/implementation phases. Backend-specific wording/locations may vary; shared fixture classes may not.
+
+Source-organization Actions for Java #1554, LLVM #690 and common-source continue to show failed jobs with `steps=null`; no backend test pass is claimed. A source-free probe in `ores-stack/.github#3` also produced `steps=null` on push and pull-request events, so no private compiler source was mirrored there and the probe PR was closed.
+
+The next release gate is a compiler-owned resolved ModelGraph descriptor on both backends that passes the portable digest vectors and diagnostic registry before any model execution path is enabled.
