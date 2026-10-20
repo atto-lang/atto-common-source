@@ -132,8 +132,48 @@
       },
       "llvm_diagnostic": "MODEL_VALUE_STORAGE_UNSUPPORTED",
       "note": "Stored nominal model instances are implemented by Java but intentionally outside LLVM executable-v1."
+    },
+    {
+      "id": "default-positive-i64-overflow",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad(delta: int = 9223372036854775808) as\n  AddDelta(delta)\nend\n",
+      "diagnostic": "MODEL_CONST_OVERFLOW",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
+    },
+    {
+      "id": "default-negative-i64-overflow",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad(delta: int = -9223372036854775809) as\n  AddDelta(delta)\nend\n",
+      "diagnostic": "MODEL_CONST_OVERFLOW",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
+    },
+    {
+      "id": "static-positive-i64-overflow",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad as\n  AddDelta(9223372036854775808)\nend\n",
+      "diagnostic": "MODEL_CONST_OVERFLOW",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
+    },
+    {
+      "id": "static-negative-i64-overflow",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad as\n  AddDelta(-9223372036854775809)\nend\n",
+      "diagnostic": "MODEL_CONST_OVERFLOW",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.1"
+  "revision": "model-core-i64-v1.2026-10-20.2"
 }
