@@ -35,7 +35,7 @@ The abstract event graph records `emit(event, payload)`, `on/once/addListener(ev
 - `ORES-ZALGO-001`: callback containing a potential emitter event is published before the relevant listener is definitely registered, and timing can be inline/concurrent/unknown. Witness should show publisher, callback, emission, registration and any suspension.
 - `ORES-ZALGO-002`: no reliable ordering between publication and registration (branches, async/FFI boundaries, unresolved receiver or event).
 
-The experimental reference checker accepts *compiler-supplied* `callback_orderings` summaries for these warnings. Human-authored summaries do not prove that an implementation is safe. JSON schema permits `callback_orderings` as an **optional** extension to the experimental v0 fact envelope to avoid breaking prior corpus fixtures.
+The experimental reference checker accepts *compiler-supplied* `callback_orderings` summaries for these warnings. In addition to textual `order`, summaries carry `registration_completion=proved_sync_install|unproved`; `register_first` is considered safe only with verified synchronous installation. Even `deferred_after_turn` requires proved synchronous installation plus `same_uninterrupted_turn` registration. Unknown completion remains a warning. Human-authored summaries do not prove that an implementation is safe. JSON schema permits `callback_orderings` as an **optional** extension to the experimental v0 fact envelope to avoid breaking prior corpus fixtures.
 
 ## Borrow checker / effect integration
 
