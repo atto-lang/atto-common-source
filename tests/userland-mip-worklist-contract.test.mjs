@@ -23,14 +23,15 @@ function validatedObjective(problem,candidate,tol=1e-9){
       if(v.kind==="binary" && ![0,1].includes(Math.round(x)))fail("MIP_NOT_BINARY");
     }
   }
+  const normalized=candidate.map((x,i)=>problem.variables[i].kind==="continuous"?x:Math.round(x));
   for(const c of problem.constraints){
-    const lhs=c.coeff.reduce((sum,coeff,i)=>sum+coeff*candidate[i],0);
+    const lhs=c.coeff.reduce((sum,coeff,i)=>sum+coeff*normalized[i],0);
     finite(lhs);
     if(c.relation==="<=" && lhs>c.rhs+tol)fail("MIP_INFEASIBLE");
     if(c.relation===">=" && lhs<c.rhs-tol)fail("MIP_INFEASIBLE");
     if(c.relation==="=" && Math.abs(lhs-c.rhs)>tol)fail("MIP_INFEASIBLE");
   }
-  const score=problem.objective.reduce((sum,coeff,i)=>sum+coeff*candidate[i],0);
+  const score=problem.objective.reduce((sum,coeff,i)=>sum+coeff*normalized[i],0);
   finite(score);return score;
 }
 // The authority is a *host stub* for a trusted LP verifier. Its issuance is
@@ -52,6 +53,7 @@ class RelaxationAuthority{
 class MipWorklist{
   constructor({p=problem,authority=new RelaxationAuthority(),maxNodes=8}={}){
     if(!Number.isSafeInteger(maxNodes)||maxNodes<1)fail("MIP_BAD_QUOTA");
+    if(!p||!["min","max"].includes(p.sense))fail("MIP_INVALID_SENSE");
     this.state={p,authority,epoch:1,queue:["root"],inflight:new Map(),
       outbox:new Map(),seen:new Set(["root"]),done:new Set(),
       incumbent:null,maxNodes,closed:false};
@@ -125,7 +127,7 @@ class MipWorklist{
       return true;
     });
   }
-  completed(){
+  quiescent(){
     return this.critical(s=>!s.closed&&!s.queue.length&&!s.inflight.size&&!s.outbox.size);
   }
   status(){return this.critical(s=>Object.freeze({queued:s.queue.length,
@@ -141,7 +143,7 @@ test("feasible mixed-binary/integer incumbent verified against original constrai
   assert.throws(()=>w.finish(c,{candidate:[0,4]}),/MIP_VARIABLE_BOUND/);
   assert.equal(w.status().inflight,1);
   assert.equal(w.finish(c,{candidate:[0,3]}).incumbent,3);
-  assert.equal(w.completed(),true);
+  assert.equal(w.quiescent(),true);
 });
 test("unknown or forged LP bound cannot prune despite numeric plausibility",()=>{
   const oracle=new RelaxationAuthority(),w=new MipWorklist({authority:oracle});
@@ -157,21 +159,21 @@ test("a verified lower bound prunes minimization only after feasible incumbent e
   const oracle=new RelaxationAuthority(),w=new MipWorklist({authority:oracle});
   const c=w.claim("w");
   assert.equal(w.finish(c,{bound:oracle.issue("root",1,4,"min")}).status,"processed");
-  assert.equal(w.completed(),true); // no more work, but no proof of optimum
+  assert.equal(w.quiescent(),true); // no more work, but no proof of optimum
   assert.equal(w.status().incumbent,null);
 });
 test("published child stays in outbox until ACK; queue-empty is not quiescence",()=>{
   const w=new MipWorklist(),c=w.claim("w");
   const r=w.finish(c,{children:["node1"]});
-  assert.equal(w.completed(),false);
+  assert.equal(w.quiescent(),false);
   assert.deepEqual(w.status(),{queued:0,inflight:0,outbox:1,incumbent:null,done:1});
   const child=r.childReceipts[0];
   assert.throws(()=>w.ackChild({...child,token:Symbol("forged")}),/MIP_INVALID_CHILD_ACK/);
   assert.equal(w.ackChild(child),true);
-  assert.equal(w.completed(),false);
+  assert.equal(w.quiescent(),false);
   assert.throws(()=>w.ackChild(child),/MIP_INVALID_CHILD_ACK/);
   const next=w.claim("w2");w.finish(next,{candidate:[0,3]});
-  assert.equal(w.completed(),true);
+  assert.equal(w.quiescent(),true);
   assert.equal(w.status().incumbent,3);
 });
 test("duplicate child and capacity failures are atomic",()=>{
@@ -203,4 +205,16 @@ test("the worklist contains guest state solely in state and rejects loan escape"
   assert.throws(()=>w.critical(s=>s),/MIP_STATE_ESCAPE/);
   assert.throws(()=>w.critical(()=>w.critical(()=>1)),/MIP_STATE_REENTRANT/);
   assert.throws(()=>w.critical(()=>Promise.resolve(2)),/MIP_STATE_SUSPENDS/);
+});
+
+
+test("integer candidate is normalized before checking original inequalities",()=>{
+  const w=new MipWorklist(),c=w.claim("w");
+  // x is only approximately binary; rounded x=0 makes 2*x+y=2 infeasible.
+  assert.throws(()=>w.finish(c,{candidate:[0.0000000001,2]}),/MIP_INFEASIBLE/);
+  w.finish(c,{candidate:[0,3]});
+  assert.equal(w.status().incumbent,3);
+});
+test("invalid objective sense fails closed instead of reversing comparison",()=>{
+  assert.throws(()=>new MipWorklist({p:{...problem,sense:"?"}}),/MIP_INVALID_SENSE/);
 });
