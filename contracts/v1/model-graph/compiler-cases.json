@@ -10,7 +10,15 @@
       "domain": "finance",
       "syntax_expect": "accept",
       "typed_expect": "accept",
-      "gradient_requested": false
+      "gradient_requested": false,
+      "resolved_digest_vector": "base",
+      "default_config": {
+        "tax_bps": "1500"
+      },
+      "override_config": {
+        "tax_bps": "1501",
+        "expected_digest": "1dcfd1569621a30e53c969b9bf0e2add7fe94a04c2bf4474fae821555996d21b"
+      }
     },
     {
       "id": "dsp-forward",
