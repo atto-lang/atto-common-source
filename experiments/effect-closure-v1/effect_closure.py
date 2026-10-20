@@ -125,9 +125,20 @@ def analyze(graph, profiles):
         pending.extend(names[name]["calls"])
 
     parents = {name: [] for name in reachable}
+    indegree = {name: 0 for name in reachable}
     for caller in sorted(reachable):
         for callee in names[caller]["calls"]:
             parents[callee].append(caller)
+            indegree[callee] += 1
+    # Kahn elimination: any residual reachable SCC needs a termination proof.
+    ready = deque(sorted(name for name in reachable if indegree[name] == 0))
+    while ready:
+        current = ready.popleft()
+        for callee in names[current]["calls"]:
+            indegree[callee] -= 1
+            if indegree[callee] == 0:
+                ready.append(callee)
+    recursive = sorted(name for name, degree in indegree.items() if degree > 0)
 
     # Least fixed point in the finite four-level effect lattice, cycle-safe.
     merged = {name: dict(names[name]["effects"]) for name in reachable}
@@ -180,6 +191,12 @@ def analyze(graph, profiles):
                         shown = path if len(path) <= 32 else path[:16] + path[-16:]
                         issues.append({"symbol": name, "effect": effect, "level": value,
                                        "path": shown, "path_omitted_count": len(path) - len(shown)})
+        if profile == "hard_rt" and recursive:
+            issue_count += 1
+            if len(issues) < MAX_ISSUES:
+                issues.append({"symbol": recursive[0], "effect": "termination",
+                               "level": "unknown", "reason": "recursive_call_graph_requires_termination_proof",
+                               "path": [recursive[0]], "path_omitted_count": 0})
         assessments[profile] = {
             "compatible_with_declared_facts": issue_count == 0,
             "issues": issues, "omitted_issues": max(0, issue_count - MAX_ISSUES),
