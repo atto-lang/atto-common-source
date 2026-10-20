@@ -55,9 +55,27 @@ end
 fnc value(): int
     ...
 end
+
+fnc value(): int do
+    ...
+end
 ```
 
-The first body token must begin on a later source line than the completed return type. This rule provides a deterministic header/body boundary while leaving indentation non-semantic.
+Without an explicit body separator, the first body token must begin on a later source line than the completed return type. An optional semantics-free `do` may instead appear immediately after the **complete** `-> ReturnType`; when present it provides the header/body boundary and permits compact same-line bodies:
+
+```ores
+fnc identity(int x) -> int do return x; end
+```
+
+`do` is not part of the return type and does not create a `do ... done` control-flow block. This remains valid for higher-order return types:
+
+```ores
+fnc callback() -> () => void do
+    return || -> { return; };
+end
+```
+
+A colon-return callable does not gain this form: `: Type do ... end` remains invalid. These rules provide a deterministic header/body boundary while leaving indentation non-semantic.
 
 The existing braced forms remain source-compatible:
 
@@ -75,8 +93,8 @@ An omitted return annotation on the legacy braced form may retain the existing `
 
 ## Frontend normalization
 
-The body spelling is concrete syntax, not a semantic callable kind. After source
-admission, an end-delimited free/module callable should normalize to the same
+The body spelling and optional `do` separator are concrete syntax, not a semantic callable kind. After source
+admission, an end-delimited free/module callable—with or without `do`—should normalize to the same
 backend-neutral callable AST/HIR body as its equivalent braced declaration.
 Likewise, `tuple (T1, T2, ...)` must normalize to the existing finite tuple
 type representation. Optimizers and runtimes must not branch on which accepted
@@ -197,7 +215,7 @@ storage, initialization, ownership and reload semantics are implemented.
 Before claiming support, a backend must prove:
 
 1. the declaration domain is checked before body-form admission;
-2. nested `fi`/`end` ownership is deterministic;
+2. nested `fi`/`end` ownership is deterministic and callable `do` cannot be confused with a `done`-terminated block;
 3. complex return types are parsed through the ordinary type system;
 4. non-`void` fallthrough is rejected by CFG analysis;
 5. tuple arity/types are checked using the same canonical finite-tuple representation for every spelling, including aggregate return values;
@@ -217,8 +235,8 @@ parser/typechecker/codegen behavior against the same decisions.
 
 ## Current staged implementation status
 
-- Java/Graal current-main reconciliation: free/module end-delimited bodies, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
-- Static class callable-contract integration is being restacked as a narrow current-main child of Java #1634; the older `oreslang-source.java` PR #1612 is not current-main evidence and its class-static-field runtime scope is not implied by v1.
+- Java/Graal current-main reconciliation: free/module end-delimited bodies, optional semantics-free callable `do`, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
+- Static class callable-contract integration is staged as the narrow current-parent child `oreslang-source.java` PR #1642; the older #1612 is not current-main evidence and its class-static-field runtime scope is not implied by v1.
 - Canonical formatter support is staged in `oreslang-format` PR #81.
 - LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713 and must be reconciled onto current native main before promotion; the current native scalar frontend does not claim executable parity.
 
