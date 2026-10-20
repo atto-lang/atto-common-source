@@ -1,0 +1,93 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, "..");
+const corpus = JSON.parse(fs.readFileSync(
+  path.join(root, "contracts/v1/model-graph/executable-v1-conformance.json"), "utf8"));
+const diagnostics = JSON.parse(fs.readFileSync(
+  path.join(root, "contracts/v1/model-graph/diagnostics-v1.json"), "utf8"));
+const registered = new Set(diagnostics.diagnostics.map(x => x.code));
+
+const sha256 = text => crypto.createHash("sha256").update(text, "utf8").digest("hex");
+
+function graphDigest(defaultValue) {
+  const identity = corpus.shared_operation_identity.Identity;
+  const add = corpus.shared_operation_identity.AddDelta;
+  const canonical =
+    "ores-model-graph-v1|PriceAdjust|" +
+    `p:delta:int:i64:${defaultValue}|` +
+    `n0:Identity:${identity.abi}:${identity.implementation_digest}:|` +
+    `n1:AddDelta:${add.abi}:${add.implementation_digest}:param:delta:int,|`;
+  return sha256(canonical);
+}
+
+function configuredDigest(graph, value) {
+  return sha256(`ores-model-configured-v1|${graph}|delta=i64:${value}|`);
+}
+
+test("executable-v1 corpus has a stable portable i64 profile", () => {
+  assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.1");
+  assert.equal(corpus.portable_profile, "model-core-i64-v1");
+  assert.deepEqual(
+    corpus.profile_semantics.operation_expression_subset,
+    ["i64-literal","parameter-read","unary-negate","add","subtract","multiply"]);
+  assert.match(corpus.evidence_rule, /exact tested source tree/i);
+  assert.match(corpus.evidence_rule, /nonempty runner steps/i);
+});
+
+test("shared positive, negative and INT64_MIN identities recompute independently", () => {
+  const vectors = new Map([
+    ["price-adjust-default-positive", "2"],
+    ["price-adjust-default-negative", "-2"],
+    ["price-adjust-i64-minimum", "-9223372036854775808"]
+  ]);
+  for (const [id, value] of vectors) {
+    const item = corpus.cases.find(x => x.id === id);
+    assert(item, id);
+    const graph = graphDigest(value);
+    assert.equal(graph, item.graph_digest, id);
+    assert.equal(configuredDigest(graph, value), item.configured_graph_digest, id);
+  }
+});
+
+test("all executable-v1 rejection diagnostics are registered", () => {
+  for (const item of corpus.cases) {
+    if (item.expect === "reject") {
+      assert.match(item.diagnostic, /^MODEL_[A-Z0-9_]+$/, item.id);
+      assert(registered.has(item.diagnostic), item.diagnostic);
+    }
+    if (item.llvm_diagnostic) {
+      assert(registered.has(item.llvm_diagnostic), item.llvm_diagnostic);
+    }
+  }
+});
+
+test("portable cases require explicit backend execution modes", () => {
+  const ids = new Set();
+  for (const item of corpus.cases) {
+    assert(!ids.has(item.id), `duplicate case ${item.id}`);
+    ids.add(item.id);
+    assert(item.source.includes("define model"), item.id);
+    assert(["accept","reject","backend-specific"].includes(item.expect), item.id);
+    assert(["execute","compile_only","reject"].includes(item.backend_mode.java), item.id);
+    assert(["execute","compile_only","reject"].includes(item.backend_mode.llvm), item.id);
+    if (item.expect === "accept") {
+      assert.notEqual(item.backend_mode.java, "reject", item.id);
+      assert.notEqual(item.backend_mode.llvm, "reject", item.id);
+    }
+  }
+});
+
+test("backend-specific stored model values are not misrepresented as portable", () => {
+  const item = corpus.cases.find(x => x.id === "stored-model-value");
+  assert.equal(item.expect, "backend-specific");
+  assert.equal(item.backend_mode.java, "execute");
+  assert.equal(item.backend_mode.llvm, "reject");
+  assert.equal(item.llvm_diagnostic, "MODEL_VALUE_STORAGE_UNSUPPORTED");
+});
