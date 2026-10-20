@@ -48,11 +48,12 @@ def location(value, where):
 
 
 def validate(doc):
-    obj(doc, "facts", {"version", "unit", *LIMITS})
+    obj(doc, "facts", {"version", "unit", *LIMITS}, {"callback_orderings"})
     require(doc["version"] == VERSION, "unsupported version")
     ident(doc["unit"], "unit")
-    for key, cap in LIMITS.items():
-        require(type(doc[key]) is list and len(doc[key]) <= cap, f"{key}: invalid length")
+    for key, cap in {**LIMITS, "callback_orderings": 10000}.items():
+        values = doc.get(key, [])
+        require(type(values) is list and len(values) <= cap, f"{key}: invalid length")
     procedures = set()
     loops_by_proc = {}
     for p in doc["procedures"]:
@@ -84,6 +85,21 @@ def validate(doc):
             ident(edge["enclosing_loop"], "enclosing loop")
             require(edge["enclosing_loop"] in loops_by_proc[edge["from"]], "unknown enclosing loop")
         location(edge.get("location"), "edge location")
+    callbacks_seen = set()
+    for event in doc.get("callback_orderings", []):
+        obj(event, "callback ordering", {"id", "emitter", "event", "publisher",
+             "invocation_timing", "order", "registration_continuation"}, {"location"})
+        for field in ("id", "emitter", "publisher", "event"):
+            ident(event[field], "callback " + field)
+        require(event["id"] not in callbacks_seen, "duplicate callback ordering id")
+        callbacks_seen.add(event["id"])
+        require(event["invocation_timing"] in ("inline_only", "deferred_after_turn",
+             "concurrent", "mixed", "unknown"), "bad callback timing")
+        require(event["order"] in ("publish_first", "register_first", "unknown"),
+                "bad registration order")
+        require(event["registration_continuation"] in ("same_uninterrupted_turn",
+             "may_suspend", "unknown"), "bad registration continuation")
+        location(event.get("location"), "callback event location")
     for source in doc["taint_sources"]:
         obj(source, "taint source", {"id", "class"}, {"location"})
         ident(source["id"], "taint source id")
@@ -273,6 +289,23 @@ def analyze(doc):
             result.append(finding("ORES-SEC-001", "error", "potential",
                 f"{source_class} flow to {risk} sink without risk-specific validation",
                 sink.get("location"), path))
+    for event in doc.get("callback_orderings", []):
+        timing = event["invocation_timing"]
+        order = event["order"]
+        continuation = event["registration_continuation"]
+        if order == "register_first":
+            continue
+        # Deferred-after-current-turn is safe only if registration is
+        # guaranteed to complete without suspension/failure in that turn.
+        if (order == "publish_first" and timing == "deferred_after_turn"
+                and continuation == "same_uninterrupted_turn"):
+            continue
+        rule = "ORES-ZALGO-001" if order == "publish_first" else "ORES-ZALGO-002"
+        result.append(finding(rule, "warning", "potential",
+            f"{event['publisher']}: callback timing {timing} and registration order "
+            f"{order}; listener for {event['emitter']}.{event['event']} may miss emission",
+            event.get("location"),
+            [event["publisher"], event["emitter"] + "." + event["event"]]))
     for check in doc["permission_checks"]:
         unauthorized = sorted(set(check["requested"]) - set(check["ceiling"]))
         if unauthorized:
