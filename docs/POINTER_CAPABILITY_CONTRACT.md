@@ -29,6 +29,187 @@ A pointer is dropped exactly once at scope exit if not unwrapped, including exce
 
 The `rt deref mut` spelling requires parser/type/borrow-checker support before admission. The first release can support read-only `deref` and reject `deref mut` explicitly; it MUST NOT silently treat mutable access as permitted. Nested `rt ref` of a pointer and `rt ref` of an existing loan are initially rejected.
 
+## Trusted native raw-pointer escape hatch
+
+Safe `Pointer<T>` deliberately does **not** grow pointer arithmetic. Native and
+embedded targets instead expose a distinct compiler-owned `RawPointer<T>`
+capability for code that has been admitted to an unsafe native memory effect.
+This separation keeps ordinary affine ownership/borrowing sound while still
+allowing device drivers, allocators, intrusive data structures, FFI shims and
+memory-mapped I/O to express operations that require machine addresses.
+
+`RawPointer<T>` is non-owning address authority, not a lifetime extension. It
+MUST NOT be implicitly constructed from an integer, `Pointer<T>`, borrow,
+serialized value, actor message, reflection value or foreign callback. A raw
+pointer created from a managed/arena owner keeps an explicit lease/provenance
+edge to that owner. Native provenance identifies at least the owning region,
+its non-recycled generation/epoch, and the specific allocation/object within
+that region; an arena generation alone is not an allocation identity. A pointer
+created from an integer address must be resolved through a supervisor/platform
+memory grant. The integer carries no authority by itself; the resulting raw
+view is bounded by the grant and receives no allocation-provenance claim beyond
+that grant's target/ABI contract.
+
+### Admission gate
+
+Raw pointer formation, arithmetic, address conversion and dereference require
+**both**:
+
+1. a trusted execution domain (ordinary/private/shared native actor or trusted
+   top-level native code; never `UNTRUSTED`, sandboxed guest, or portable Wasm
+   source), and
+2. an explicit `unsafe.memory` effect/capability in the callable's transitive
+   effect summary.
+
+`unsafe.memory` is necessary but not sufficient for mutation. Forming
+`rt raw mut` additionally requires an exclusive owner/loan proof covering the
+entire raw lease. A caller cannot upgrade read-only raw authority merely by
+being in an `unsafe.memory` function.
+
+Backends MAY additionally require a target/profile flag such as an embedded or
+native-FFI build profile. Merely running in a trusted actor is not enough to
+silently acquire raw memory authority.
+
+### Raw operations
+
+The canonical semantic operations are:
+
+| Operation | Contract |
+| --- | --- |
+| `rt raw pointer` | Create a read-capable `RawPointer<T>` view from a stable, live `Pointer<T>`/arena place without consuming the owner. The owner/region cannot retire or move while the raw lease exists. |
+| `rt raw mut pointer` | Create exclusive mutable raw authority; requires no competing shared/mutable loans and blocks owner move/reallocation/retirement. |
+| `RawPointer<T>.from_addr(grant, uintptr)` | Trusted embedded/FFI/MMIO escape hatch for an externally supplied machine address. `grant` is a supervisor/platform-minted capability binding actor/runtime identity, address space, permitted byte range, generation/epoch and read/write rights. A naked integer is never sufficient. Null/zero policy, width truncation, range, alignment and target address-space mismatches are rejected according to the selected target profile. |
+| `p + n` / `p - n` | Element-wise offset by signed element count, scaled by `sizeof(T)`, with address-overflow checks. For bounded provenance, out-of-bounds results are rejected before dereference; one-past-end may exist only for comparison/difference, never load/store. |
+| `p.byte_offset(n)` | Byte-wise offset returning byte/raw storage authority; typed dereference requires an explicit aligned cast back to `RawPointer<U>`. |
+| `p - q` | Element distance only when both pointers have compatible element type/address space and the same bounded compiler provenance object. Integer-fabricated pointers have no such provenance, so subtraction is rejected even when two numeric addresses happen to be equal or derived from the same integer. |
+| `rt deref p` | Raw read. For bounded provenance, validate live generation, bounds and alignment before access. For integer-fabricated pointers this is explicitly unsafe and target-defined. |
+| `rt deref mut p` | Raw write through exclusive authority; same liveness/bounds/alignment checks when provenance exists. |
+| `p.addr()` | Expose `uintptr` only in `unsafe.memory` code. Integer address values are not pointers and do not retain provenance/lifetime. |
+
+Typed arithmetic uses element counts, not bytes. No implicit wraparound is
+permitted by the language contract even on targets whose machine arithmetic
+wraps; an explicit target-specific unchecked intrinsic, if ever added, must be
+separately named and remain outside safe `Pointer<T>`.
+
+### Casts, comparisons, nulls and address spaces
+
+* `p.cast<U>()` is an explicit unsafe typed reinterpretation. It preserves
+  provenance, generation, address space and read/write authority; it never
+  upgrades a read-only raw capability to mutable. The target address must meet
+  `alignof(U)`. For bounded provenance the byte offset and byte extent must be
+  representable in the new element type; otherwise the cast is rejected.
+* `p.byte_offset(n)` is the canonical way to perform byte arithmetic. Typed
+  `p + n` remains element arithmetic.
+* Capability equality compares address space, address and provenance/generation.
+  A separate unsafe address-equality operation may compare machine addresses,
+  but equal numeric addresses do not prove equal ownership because storage can
+  be retired and reused. Relational ordering and subtraction require common
+  provenance.
+* Safe `Pointer<T>` and safe-derived `RawPointer<T>` are non-null.
+  Nullable C/FFI pointers should surface as `Option<RawPointer<T>>` rather than
+  weakening every raw dereference. The default hosted address space treats
+  integer zero as null. An embedded target MAY declare bit-pattern/address zero
+  valid in an explicit non-default physical/address-space capability; that is a
+  target-profile exception and must not inherit hosted `nonnull` assumptions.
+* Data pointers and function pointers are distinct. Function addresses use a
+  separate typed `RawFnPointer<Signature>`; no pointer arithmetic is permitted
+  on function pointers and data/function reinterpretation is target-specific.
+* Pointer-to-integer-to-pointer round trips lose safe provenance. Recreating a
+  raw pointer from the integer yields integer-fabricated unsafe authority, not a
+  descendant safe loan, unless the backend carries an unforgeable side-table
+  provenance token through the round trip. Numeric equality is never accepted
+  as a substitute for provenance because allocator/address reuse would create
+  ABA-style false identity.
+* `unsafe.memory` is observationally/effectfully unsafe and is incompatible
+  with a `pure` callable unless a future effect system proves a strictly
+  non-observing operation that does not expose addresses or touch memory. The
+  default rule is fail closed: any raw formation, address exposure, arithmetic,
+  cast, read, write, volatile access, or atomic access is not `pure`.
+
+### LLVM/native optimizer contract
+
+Raw-pointer lowering must be conservative about optimizer facts. A compiler bug
+here can turn a runtime check into undefined behavior before the check executes.
+
+* Emit LLVM `getelementptr inbounds` only when the compiler has proved the
+  operation stays within the live provenance object under LLVM's rules.
+  Integer-fabricated addresses and target MMIO pointers must not receive
+  `inbounds` merely because Oreslang performed checked integer arithmetic.
+* Never infer LLVM `noalias` solely from `RawPointer<T>` or mutable access.
+  `noalias` requires a surviving exclusive safe-owner/borrow proof that also
+  excludes foreign/device aliases for the relevant lifetime.
+* Add `nonnull`, `dereferenceable(N)`, alignment, range, or alias-scope
+  metadata only from a proof that remains valid for the complete optimization
+  scope. Do not attach those attributes to arbitrary `from_addr`, MMIO, DMA,
+  stale-generation, or target-address-space pointers.
+* Reinterpret casts must not manufacture TBAA/type-based alias guarantees.
+  Conservative aliasing is required after raw byte/type punning unless a
+  stronger language proof exists.
+* Volatile is explicit and is not an atomicity guarantee. Atomics require a
+  separately typed operation with width/alignment support and an explicit
+  memory ordering. MMIO register access commonly needs volatile; inter-core
+  synchronization commonly needs atomics; DMA may additionally need
+  target-specific fences/cache maintenance. Do not conflate these.
+* A pointer derived from an actor arena may be tagged `dereferenceable` or
+  `noalias` only while the compiler can prove the arena generation is live,
+  pinned/non-moving as required, and no await/cancellation/reload boundary can
+  invalidate the proof.
+* Raw loads/stores through integer-fabricated addresses are never speculatable
+  across permission, lifetime, or target-device checks. The backend must avoid
+  optimizer attributes that authorize such motion.
+
+### Native/physical memory grants
+
+`unsafe.memory` does not mean unrestricted process or physical address-space
+access. Numeric-address construction requires a compiler/runtime capability
+whose immutable grant includes at least:
+
+* runtime/actor identity and trust domain;
+* target address space / physical-vs-virtual mapping policy;
+* allowed base + byte extent with overflow-checked bounds;
+* read vs write permission and MMIO/ordinary-memory class;
+* non-recycled grant generation/epoch;
+* platform policy for address zero, alignment, access widths and barriers.
+
+The compiler must reject a raw address helper hidden behind generics, aliases,
+callbacks, FFI wrappers or reflection when the caller lacks the same grant.
+Grant narrowing is allowed; widening, changing address spaces, or upgrading
+read-only to write authority is not. A board profile may mint a static grant
+for a documented device range so firmware can still use fixed physical
+register addresses without a runtime allocator.
+
+### Pinning, FFI and DMA
+
+A raw lease does not itself pin memory. Crossing an FFI call, asynchronous
+device operation, DMA submission, callback, or suspension point requires an
+explicit stable-region/pinning capability whose cleanup participates in
+unwind/cancellation and actor teardown. A pinned region blocks arena
+retirement/reallocation until all external operations and raw descendants have
+released it. Java/Graal FFM segments and LLVM native allocations must expose
+the same semantic lifetime even though their host mechanisms differ.
+
+### Actor, ownership and lifetime rules
+
+* `RawPointer<T>` is never `Send`, `Share`, `Serializable` or an actor
+  mailbox payload by default. Copying a raw handle inside the same admitted
+  native scope copies address authority but does not clone/own the pointee.
+* Converting a safe pointer/borrow to raw does not erase the original loan. The
+  compiler tracks the raw lease as a descendant of the same owner/provenance.
+  `rt unref`, owner move/drop, arena retirement, reallocating mutations and
+  hot reload are blocked until all descendant raw leases end.
+* Raw pointers may not cross `await`, `select`, `*_blocking`, callback,
+  generator, actor-turn, thread/isolate or reload boundaries without an
+  explicit pin/stable-region proof plus cancellation/drop cleanup.
+* Untrusted actors must fail at compile/admission time before executable code is
+  emitted, even if the address originated in a trusted caller.
+* FFI/MMIO accesses may require `volatile`, atomic ordering, address-space and
+  alignment qualifiers. Ordinary raw load/store MUST NOT be silently treated as
+  volatile or atomic.
+* Java/Graal may implement this escape hatch only through a reviewed native/FFM
+  bridge with stable-lifetime proof; a Java object reference or moving-GC object
+  address is never a valid `RawPointer<T>` merely because host code can inspect
+  it. LLVM/native backends are the first intended implementation target.
+
 ## Loan provenance and aliasing
 
 Borrow checker tracks a **place identity**, source pointer identity, loan mode, lexical region, concrete projection, generation and drop state through HIR/MIR, including returns, calls, closures, casts, Option/Result, collections and destructuring. Do not infer a fresh owner merely because a Java object is reachable.
@@ -39,7 +220,12 @@ Borrow checker tracks a **place identity**, source pointer identity, loan mode, 
 * Calls reserve all argument loans until the whole invocation completes, evaluated left-to-right. A later argument cannot move or unwrap a pointer already borrowed in an earlier argument.
 * No ordinary live pointer-derived borrow over `await`, `select` suspension, `*_blocking` suspend point, `rt cooperate`, generator yield, deferred callbacks or hot reload. A pinned stable owner plus resumable-frame outlives and cancellation proof is required before relaxing this prohibition.
 * No pointer escape to another actor, thread, isolate, channel, stream, Observable, Future, closure, FFI callback or serialization payload by default. Actor-local owner-domain fences and verified Send/freeze/shared-region designs are prerequisites.
-* Runtime generation counters reject stale handles/ABA and cross-region/cross-actor access. Stale or null pointers are not valid safe source states; if encountered at a dynamic trust boundary, trap deterministically as a safety failure, not as an untyped address read.
+* Runtime region + generation + allocation identities reject stale handles,
+  ABA, sibling allocations in the same actor arena, and cross-region/cross-actor
+  access. Generation/allocation counters must fail closed before wrap/reuse can
+  make an old capability equal to a new allocation. Stale or null pointers are
+  not valid safe source states; if encountered at a dynamic trust boundary,
+  trap deterministically as a safety failure, not as an untyped address read.
 
 `rt unref` is *not* a reference-count decrement, a borrow-release primitive, or a spelling of dereference. Lexical loans end automatically by proven scope/last use. A future explicit `rt end_borrow` must consume the loan token and all derived aliases, with no use afterward; do not overload `unref` for that purpose.
 
