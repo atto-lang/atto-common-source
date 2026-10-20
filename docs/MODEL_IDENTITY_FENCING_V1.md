@@ -82,6 +82,8 @@ Saved activations, backward envelopes, optimizer work, staged actor messages, ac
 
 ## Execution profile and compiled-plan cache
 
+The sole normative v1 derivation is `MODEL_EXECUTION_PROFILE_DIGEST_V1.md` and its golden vectors. Backends must derive this digest from validated execution semantics; callers do not supply an arbitrary cache identity.
+
 `ExecutionProfileDigest` binds semantics that can alter code/results/safety, including:
 
 - backend semantic version;
