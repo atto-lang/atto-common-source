@@ -1,6 +1,6 @@
 {
   "contract": "oreslang.model.graph.canonical.v1",
-  "status": "PROPOSED_BACKEND_GOLDEN",
+  "status": "COMPATIBILITY_VIEW",
   "scope": "common-i64-linear-model-subset",
   "source_model": "PriceAdjust",
   "canonical": {
@@ -29,5 +29,8 @@
     "llvm_pr": 708,
     "executed_cross_backend": false,
     "note": "Pinned canonical identity target. Matching literals/formulas are not a substitute for executing both compilers."
-  }
+  },
+  "superseded_by": "executable-v1-conformance.json",
+  "corpus_revision": "model-core-i64-v1.2026-10-20.4",
+  "note": "Keep this positive +2 vector for compatibility; executable-v1-conformance.json is the normative multi-case Java/LLVM corpus."
 }
