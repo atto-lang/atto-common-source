@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { beginModelRun, validateModelRunStamp, nextParameterVersion, ModelFenceError } from "../experiments/model_run_fence.mjs";
+import { beginModelRun, validateModelRunStamp, nextParameterVersion, nextGraphGeneration, commitModelRun, ModelFenceError } from "../experiments/model_run_fence.mjs";
 
 const A="a".repeat(64), B="b".repeat(64), C="c".repeat(64);
 const graph=(patch={})=>({modelTypeId:"pkg.PriceEstimate",graphDigest:A,graphGeneration:7,...patch});
