@@ -472,6 +472,12 @@
       "phase": "identity",
       "ordinal": 76,
       "meaning": "execution profile metadata is valid in shape but not in canonical v1 ordering/representation"
+    },
+    {
+      "code": "MODEL_NAMED_ARGUMENT_UNRESOLVED",
+      "phase": "lowering",
+      "ordinal": 77,
+      "meaning": "source static configuration uses a name the trusted op signature cannot resolve; labels may not be silently erased"
     }
   ]
 }
