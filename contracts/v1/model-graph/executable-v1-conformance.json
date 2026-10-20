@@ -1,0 +1,117 @@
+{
+  "contract": "oreslang.model.executable.conformance.v1",
+  "status": "PROPOSED_BACKEND_CONFORMANCE",
+  "portable_profile": "model-core-i64-v1",
+  "profile_semantics": {
+    "topology": "ordered-linear",
+    "port_type": "int",
+    "static_configuration": "canonical-i64-literals-or-model-formals",
+    "operation_expression_subset": [
+      "i64-literal",
+      "parameter-read",
+      "unary-negate",
+      "add",
+      "subtract",
+      "multiply"
+    ],
+    "forbidden": [
+      "calls-inside-ops",
+      "allocation",
+      "mutation",
+      "ambient-state",
+      "async-or-suspension",
+      "actor-effects",
+      "implicit-model-composition"
+    ]
+  },
+  "shared_operation_identity": {
+    "Identity": {
+      "abi": "ores-model-op-v1(int)->int",
+      "implementation_digest": "d1a687b328765fa99037eebc8cc08a3245b5b3e903f74535ffa0cad7da30cc32"
+    },
+    "AddDelta": {
+      "abi": "ores-model-op-v1(int,int)->int",
+      "implementation_digest": "61ca0d20c6c6a1a6bc88efb761fd767510ac676fcaa59f0cea2617a1af17fb63"
+    }
+  },
+  "cases": [
+    {
+      "id": "price-adjust-default-positive",
+      "expect": "accept",
+      "source": "fnc Identity(int input): int { return input; }\nfnc AddDelta(int delta, int input): int { return input + delta; }\npub define model PriceAdjust(delta: int = 2) as\n  Identity()\n  AddDelta(delta)\nend\npub fnc main(): int { return PriceAdjust().run(40); }\n",
+      "graph_digest": "a65fbdcab7c63eccdb5ec19409decb2da18ca9598d4c36a773f92e8b6521531d",
+      "configured_graph_digest": "4531d20945630eed7bb451d63ae73ca5637559c438f6e89be18bbcd96abe9473",
+      "semantic_result_i64": "42",
+      "backend_mode": { "java": "execute", "llvm": "execute" }
+    },
+    {
+      "id": "price-adjust-default-negative",
+      "expect": "accept",
+      "source": "fnc Identity(int input): int { return input; }\nfnc AddDelta(int delta, int input): int { return input + delta; }\npub define model PriceAdjust(delta: int = -2) as\n  Identity()\n  AddDelta(delta)\nend\npub fnc main(): int { return PriceAdjust().run(40); }\n",
+      "graph_digest": "dec8b5f587a47648fa8973f5901e9c25e049b08179a44dc682439ee0dab8f53e",
+      "configured_graph_digest": "e52dd64a55cdf48bbe33c2d50a7c3beb9685c6ad0aeb030a44dbac4796bb7f56",
+      "semantic_result_i64": "38",
+      "backend_mode": { "java": "execute", "llvm": "execute" }
+    },
+    {
+      "id": "price-adjust-i64-minimum",
+      "expect": "accept",
+      "source": "fnc Identity(int input): int { return input; }\nfnc AddDelta(int delta, int input): int { return input + delta; }\npub define model PriceAdjust(delta: int = -9223372036854775808) as\n  Identity()\n  AddDelta(delta)\nend\npub fnc main(): int { return PriceAdjust().run(0); }\n",
+      "graph_digest": "ff37639d560a799bc3a77d1b05789855a991b8d7e1fb6cac3e15d6d0331e707a",
+      "configured_graph_digest": "c71df957be7cee30a59acf586c719d36279a6ed027072cabcb58fa89527e7cf4",
+      "semantic_result_i64": "-9223372036854775808",
+      "backend_mode": {
+        "java": "execute",
+        "llvm": "compile_only",
+        "llvm_note": "Process exit status is not a lossless i64 result channel."
+      }
+    },
+    {
+      "id": "negative-static-literal",
+      "expect": "accept",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Fixed as\n  AddDelta(-2)\nend\npub fnc main(): int { return Fixed().run(5); }\n",
+      "semantic_result_i64": "3",
+      "backend_mode": { "java": "execute", "llvm": "execute" }
+    },
+    {
+      "id": "computed-static-expression",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad as\n  AddDelta(-(1 + 1))\nend\n",
+      "diagnostic": "MODEL_NONCONSTANT_CONFIG",
+      "backend_mode": { "java": "reject", "llvm": "reject" }
+    },
+    {
+      "id": "unknown-operation",
+      "expect": "reject",
+      "source": "define model Bad as\n  Missing()\nend\n",
+      "diagnostic": "MODEL_UNKNOWN_OP",
+      "backend_mode": { "java": "reject", "llvm": "reject" }
+    },
+    {
+      "id": "composition-disabled",
+      "expect": "reject",
+      "source": "fnc Identity(int input): int { return input; }\ndefine model Inner as\n  Identity()\nend\ndefine model Outer as\n  Inner()\nend\n",
+      "diagnostic": "MODEL_COMPOSITION_NOT_ENABLED",
+      "backend_mode": { "java": "reject", "llvm": "reject" }
+    },
+    {
+      "id": "run-arity-zero",
+      "expect": "reject",
+      "source": "fnc Identity(int input): int { return input; }\ndefine model M as\n  Identity()\nend\npub fnc main(): int { return M().run(); }\n",
+      "diagnostic": "MODEL_RUN_ARITY",
+      "backend_mode": { "java": "reject", "llvm": "reject" }
+    },
+    {
+      "id": "stored-model-value",
+      "expect": "backend-specific",
+      "source": "fnc Identity(int input): int { return input; }\ndefine model M as\n  Identity()\nend\npub fnc main(): int { val M m = M(); return m.run(1); }\n",
+      "backend_mode": {
+        "java": "execute",
+        "llvm": "reject"
+      },
+      "llvm_diagnostic": "MODEL_VALUE_STORAGE_UNSUPPORTED",
+      "note": "Stored nominal model instances are implemented by Java but intentionally outside LLVM executable-v1."
+    }
+  ],
+  "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance."
+}
