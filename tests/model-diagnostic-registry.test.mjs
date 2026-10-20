@@ -46,6 +46,7 @@ test("all model diagnostics used by shared executable contracts are registered",
     "tests/model-run-fence.test.mjs",
     "tests/model-graph-digest-v1.test.mjs",
     "contracts/v1/model-graph/compiler-cases.json",
+    "contracts/v1/model-graph/executable-v1-conformance.json",
     "contracts/v1/model-autodiff/cases.json"
   ].map(x => path.join(root, x));
   files.push(...collectFiles(path.join(root, "contracts/v1/model-graph/fixtures")));
@@ -86,6 +87,28 @@ test("forward-only missing VJP remains a phase distinction, not a declaration re
   assert.equal(entries.get(gradient.diagnostic_class).phase, "gradient");
 });
 
+
+test("active executable-v1 diagnostic phases stay stable", () => {
+  const lowering = [
+    "MODEL_AMBIGUOUS", "MODEL_AMBIGUOUS_OP", "MODEL_COMPOSITION_NOT_ENABLED",
+    "MODEL_CONFIG_ARITY", "MODEL_CONFIG_DEFAULT_ORDER", "MODEL_CONFIG_TYPE_ARGUMENTS",
+    "MODEL_CONFIG_TYPE_MISMATCH", "MODEL_DUPLICATE", "MODEL_DUPLICATE_PARAMETER",
+    "MODEL_INVALID_CONFIG_TYPE", "MODEL_INVALID_IDENTIFIER", "MODEL_INVALID_STATIC_ARG",
+    "MODEL_RUN_ARITY", "MODEL_TYPE_NAME_COLLISION", "MODEL_VALUE_NAME_COLLISION",
+    "MODEL_UNKNOWN_FORMAL"
+  ];
+  const admission = ["MODEL_BUDGET", "MODEL_CONFIG_BUDGET", "MODEL_STATIC_ARG_BUDGET"];
+  const identity = ["MODEL_CONFIG_SHAPE", "MODEL_MISSING_CONFIG", "MODEL_UNKNOWN_CONFIG"];
+  const implementation = [
+    "MODEL_CONFIG_NAMED_UNSUPPORTED",
+    "MODEL_VALUE_STORAGE_UNSUPPORTED",
+    "MODEL_ACTOR_TRANSFER_UNSUPPORTED"
+  ];
+  for (const code of lowering) assert.equal(entries.get(code)?.phase, "lowering", code);
+  for (const code of admission) assert.equal(entries.get(code)?.phase, "admission", code);
+  for (const code of identity) assert.equal(entries.get(code)?.phase, "identity", code);
+  for (const code of implementation) assert.equal(entries.get(code)?.phase, "implementation", code);
+});
 
 test("parser-independent Java/LLVM ModelGraph admission diagnostics are registered", () => {
   const lowering = [
