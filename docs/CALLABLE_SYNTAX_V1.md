@@ -1,0 +1,187 @@
+# Callable body and return-type syntax v1
+
+Status: shared source-language contract for staged backend adoption. This document does not by itself establish executable parity.
+
+## Goals
+
+Oreslang supports a keyword-delimited body for ordinary free/module callables without making indentation semantic or silently broadening class/actor method syntax.
+
+Canonical example:
+
+```ores
+fnc classify(int x) -> int
+    if x > 0 then
+        return 1
+    else
+        return 0
+    fi
+end
+```
+
+The closing delimiter for a conditional remains `fi`; the callable owns the outer `end`.
+
+## Admission matrix
+
+| Declaration domain | Braced implementation | `-> Type ... end` implementation | Signature `-> Type;` |
+| --- | --- | --- | --- |
+| file/root `fnc` / `routine` | yes | yes | n/a |
+| module `fnc` / `routine` | yes | yes | n/a |
+| class instance method | yes | no in v1 | n/a |
+| class `static fnc` implementation | yes | no in v1 | n/a |
+| actor callable/method | yes where otherwise supported | no in v1 | n/a |
+| instance interface/trait requirement | n/a | n/a | no; keep type-level `=>` |
+| module contract requirement | n/a | n/a | yes |
+| static-class contract requirement | n/a | n/a | yes |
+
+A backend must not infer permission from a shared AST shape. Declaration domain remains part of source admission.
+
+## End-delimited callable header
+
+The v1 form requires an explicit slim-arrow return type:
+
+```ores
+fnc log() -> void
+    stdio.out.write("hello\n")
+end
+```
+
+These are invalid v1 spellings:
+
+```ores
+fnc log()
+    ...
+end
+
+fnc value(): int
+    ...
+end
+```
+
+The first body token must begin on a later source line than the completed return type. This rule provides a deterministic header/body boundary while leaving indentation non-semantic.
+
+The existing braced forms remain source-compatible:
+
+```ores
+fnc value(): int {
+    return 1;
+}
+
+fnc value2() -> int {
+    return 2;
+}
+```
+
+An omitted return annotation on the legacy braced form may retain the existing `void` behavior where the reference frontend permits it. The keyword-delimited form never relies on that default.
+
+## Statements and layout
+
+Indentation is presentation only. Structural delimiters are authoritative:
+
+- `if ... then / elif ... then / else / fi`;
+- `match ... end`, `switch ... end`, and other independently delimited constructs;
+- outer callable `end`.
+
+Newlines may terminate statements only according to the ordinary Oreslang lexical statement-boundary rules. The callable feature does not create an indentation-sensitive grammar.
+
+A parser must recursively consume nested construct terminators before allowing the callable parser to consume its own `end`.
+
+## Return completeness
+
+For a declared non-`void` return type, every reachable normal completion path must execute an explicit return carrying a compatible value. Reaching the callable's closing `end` is a compile-time error.
+
+```ores
+fnc choose(bool flag) -> int
+    if flag then
+        return 1
+    else
+        return 2
+    fi
+end
+```
+
+For `void`, reaching the closing `end` is a valid normal return. An explicit bare `return` remains allowed.
+
+Return completeness is a control-flow property, not a textual "last statement must be return" rule. A backend must account for exhaustive branches and other proven non-fallthrough control flow.
+
+## Return type grammar
+
+The token after `->` is parsed with the ordinary recursive `type_ref` grammar. There is no special return-type scanner.
+
+Examples include:
+
+```ores
+fnc a() -> Result<Option<int>, Error>
+    ...
+end
+
+fnc b() -> tuple (int, int, string)
+    ...
+end
+
+fnc c() -> Result<Option<tuple (int, string)>, Error>
+    ...
+end
+```
+
+A backend must resolve the complete type before deciding where the body begins.
+
+## Contextual finite tuple type
+
+The explicit type spelling
+
+```ores
+tuple (int, int, string)
+```
+
+denotes the same finite positional tuple type as the backend's existing finite tuple TypeRef. It does not create a nominal `tuple` class, a second tuple runtime representation, or a dynamically sized product.
+
+Tuple values remain ordinary tuple expressions, for example:
+
+```ores
+return (1, x, "positive")
+```
+
+The v1 parser/proof bound is 64 slots. Source exceeding that bound must fail at compile time rather than silently truncate, widen, or switch representation.
+
+The word `tuple` is contextual: an ordinary value/function identifier named `tuple` remains legal outside the exact type-position shape `tuple (`.
+
+## Contracts and static namespaces
+
+Module contracts and static-class contracts describe namespace/static members rather than instance dispatch. Their callable requirements may therefore use the executable-style return separator:
+
+```ores
+define contract ModuleApi as
+    coordinates: tuple (int, int, string);
+    fnc classify(int x) -> tuple (int, int, string);
+end
+```
+
+A static-class contract may use the same signature/type surface when that contract feature is enabled by the frontend.
+
+Instance interfaces and traits continue to use the type-level callable signature separator `=>`. This v1 contract does not change instance method declaration syntax.
+
+Fields in module/static contracts use the same recursive `type_ref` grammar, including finite tuple types.
+
+## Safety and backend requirements
+
+Before claiming support, a backend must prove:
+
+1. the declaration domain is checked before body-form admission;
+2. nested `fi`/`end` ownership is deterministic;
+3. complex return types are parsed through the ordinary type system;
+4. non-`void` fallthrough is rejected by CFG analysis;
+5. tuple arity/types are checked, including aggregate return values;
+6. unsupported class/actor end bodies fail closed;
+7. optimizer/HIR reconstruction cannot erase the declaration-domain restriction;
+8. malformed or unsupported syntax emits no partial executable artifact.
+
+A backend without typed tuple/body parity should reject the new source form explicitly before code generation. Rejection parity is preferable to accepting a scalar or braced approximation.
+
+## Current staged implementation status
+
+- Java/Graal reference work: free/module end-delimited bodies, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1611.
+- Static module/class-contract integration is staged separately in `oreslang-source.java` PR #1612 so class static implementations remain brace-only.
+- Canonical formatter support is staged in `oreslang-format` PR #81.
+- LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713; the current native scalar frontend does not claim executable parity.
+
+These references describe staged work, not a release guarantee. Exact-head executable tests remain required before promotion.
