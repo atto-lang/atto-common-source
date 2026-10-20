@@ -1,6 +1,6 @@
 # Freestanding core and optional OTP standard library — contract v1
 
-**Status: normative layout and admission requirements only.** This document does **not** claim six Oreslang OTP modules have been implemented, compiled or executed. See [OTP behaviours proposal](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/65) in open RFC #65 for callback and runtime details (until merged).
+**Status: normative layout and admission requirements only.** This document does **not** claim eight Oreslang OTP modules have been implemented, compiled or executed. See [OTP behaviours proposal](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/65) in open RFC #65 for callback and runtime details (until merged).
 
 ## Decision
 
@@ -12,20 +12,20 @@
 
 The physical layout is `stdlib/otp/<module>.ores`, but the **proposed canonical import** is `otp/<module>` (for example `otp/gen_server`), *not* `std/otp/<module>`. The existing Java packaged resolver currently only accepts `std/*`, so this requires a new closed, compiler-owned `otp/*` resolver plus AOT resource registration. An optional hosted `std/otp/*` facade must not become a dependency of freestanding OTP. These canonical paths are a **proposal**, not currently accepted import syntax or an implementation claim. Consumers can choose a static fixed-capacity variant or pass an explicit allocator as necessary. A hosted OS adapter can provide clock/threads/IO, but OTP behaviour code itself must never call the host directly. Even a target that does not support actors must still compile `core`.
 
-`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the six OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated. The canonical six distribution paths are `stdlib/otp/*.ores`; the proposed logical import namespace is `otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to host/classpath resolution.
+`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the eight OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated. The canonical eight distribution paths are `stdlib/otp/*.ores`; the proposed logical import namespace is `otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to host/classpath resolution.
 
 ## Import namespace staging audit (2026-10-17)
 
 The future portable canonical import is **`otp/<module>`**. Java/Graal draft
 PR [#1216](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1216)
-currently admits **`std/otp/<module>`** for six pure source protocol/policy
+currently admits **`std/otp/<module>`** for the original six pure source protocol/policy
 slices. This is a transitional Java resolver spelling, **not** proof that
 `otp/*` works or that any GenServer/supervisor actor behaviour is complete.
 LLVM draft [#560](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/560)
 rejects OTP imports fail-closed until source module linking is implemented.
 
 Migration gate: implement a closed compiler-owned `otp/*` resolver with exact
-six-module resource mapping and stable unit identities, then run import,
+eight-module resource mapping and stable unit identities, then run import,
 typecheck and actual guest-source execution tests. Alias compatibility with
 `std/otp/*` is a separate explicit decision; never allow duplicate module
 instances, shadowed classpath sources, implicit hosted fallback or different
@@ -41,8 +41,10 @@ module identities for two spellings.
 | `stdlib/otp/application.ores` | `Application` | startup order, dependency DAG, rollback/stop, supervisor ownership |
 | `stdlib/otp/event_manager.ores` | `EventManager<Event>` | typed bounded subscriptions, admission/backpressure, handler failure policy |
 | `stdlib/otp/registry.ores` | `ActorRegistry<Name,Ref>` | scoped names, actor incarnation fencing, revocation/unregister |
+| `stdlib/otp/pg.ores` | `ProcessGroup<Message>` | named/scoped ActorGroup facade, bounded idempotent membership, incarnation fencing |
+| `stdlib/otp/ets.ores` | `Table<Key,Value>` family | runtime-owned typed table domain, bounded capacity, atomic operations, explicit access policy |
 
-`gen_event` is represented by `event_manager`, not a seventh independent primitive. Process groups (`pg`) build on `ActorGroup`; membership must **never** grant supervision authority. Release management, ETS and distributed stores are follow-on modules, not implicit dependencies of these six.
+`gen_event` is represented by `event_manager`, not a separate primitive. `pg` is discovery/membership over ActorGroup, never supervision or consensus; local membership is linearizable while a distributed provider may be explicitly eventually consistent. `ets` is shared runtime-owned table storage, never actor-private heap aliasing. Release management and durable/distributed stores remain separate follow-on facilities.
 
 ## Freestanding build and capability discipline
 
@@ -51,13 +53,13 @@ module identities for two spellings.
 3. **Bounded execution:** fixed slots, bounded mailboxes, bounded event-handler sets, finite restart budgets and eventual cancellation/teardown; no unbounded busy restart loops, hidden threads or invisible retries. Backend may require `alloc` for a chosen dynamic policy, but not by default for `core`.
 4. **Ownership and trust:** actor-owned state is sealed; refs and response capabilities are generation-fenced; no raw pointer/object/OS handle, live reply token or forged CONTROL passes via ordinary sendable payload. A `cast` receipt means *admission*, not processing or delivery.
 5. **No keyword proliferation:** behaviours are Oreslang-authored library modules over existing actor, channel/future and CONTROL intrinsics. No `gen_server`/ `supervisor` special compiler keyword is required.
-6. **Profile intent:** `freestanding-core` uses only `core`; `freestanding-actor` adds explicit actor runtime providers; `freestanding-otp` adds the six behaviours when their individual requirements exist; `hosted` may additionally grant OS adapters. These are contract profiles, **not** claims that the compiler supports these profile names or syntax today.
+6. **Profile intent:** `freestanding-core` uses only `core`; `freestanding-actor` adds explicit actor runtime providers; `freestanding-otp` adds the eight behaviours when their individual requirements exist; `hosted` may additionally grant OS adapters. These are contract profiles, **not** claims that the compiler supports these profile names or syntax today.
 7. **Build opt-out syntax:** Rust's `#![no_std]` is an analogy, not accepted Oreslang grammar. Until explicit attributes/effects are implemented, use a versioned target/import manifest for test/admission intent. A future source attribute requires its own syntax RFC and parser tests.
 
 ## Milestones / evidence
 
 - G0: canonical inventory + dependency/effect manifest, versioned conformance fixtures and static validation. G0 is **not** an executable OTP library.
-- G1: six concrete `.ores` source implementations (initially GenServer), admitted through the Oreslang stdlib module resolver; compile and run **real guest-source** tests on Java/Graal. The packaging registry must explicitly allow these modules; no classpath ambiguity.
+- G1: eight concrete `.ores` source implementations (initially GenServer), admitted through the Oreslang stdlib module resolver; compile and run **real guest-source** tests on Java/Graal. The packaging registry must explicitly allow these modules; no classpath ambiguity.
 - G2: Supervisor CONTROL, child specs and restart/teardown fault injection; then gen_statem, application, event_manager and registry. Each advertised module needs real handler-level execution and negative admission tests.
 - G3: LLVM/native parity (continuations, typed mailboxes, reply/cancel, CONTROL), plus separate tests proving that bare-metal `core` needs no OS/libc/allocator. A Cortex-M scalar AOT or C mailbox reference does **not** certify source-level OTP.
 - G4: execute constrained OTP on actual freestanding actor hardware/RTOS with fixed-capacity profiles; examine RAM/stack, restart exhaustion, power failure and stale incarnation tokens.
