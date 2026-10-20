@@ -25,3 +25,13 @@ test("compiled plan cache binds graph and execution profile",()=>{
   assert.notEqual(compiledPlanCacheKey(A,B),compiledPlanCacheKey(A,"c".repeat(64)));
   assert.notEqual(compiledPlanCacheKey(A,B),compiledPlanCacheKey("d".repeat(64),B));
 });
+
+test("accessor backed publication ledger is rejected without execution",()=>{
+  const stamp=beginModelRun(graph(),instance(),request());
+  let calls=0;
+  const ledger=[];
+  Object.defineProperty(ledger,"0",{enumerable:true,get(){calls++;return "run-x";}});
+  ledger.length=1;
+  fails("MODEL_INVALID_RUN_REQUEST",()=>commitModelRun(stamp,graph(),instance(),request(),ledger));
+  assert.equal(calls,0);
+});
