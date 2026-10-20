@@ -217,21 +217,28 @@ class VersionedStage {
         if (!record || record.pins < count) this.error("ML_PIN_LEDGER_CORRUPT");
       }
       const candidate = s.prepared.weights;
-      // Locally atomic publication: weights AND optimizer iteration.
-      s.versions.set(nextVersion, {value: candidate.value, pins: 0, frozen: true});
-      const previous = s.activeVersion;
-      s.activeVersion = nextVersion;
-      s.optimizer = Object.freeze({iteration: nextIteration});
+      // Stage ALL fallible map/set/record allocations before publication.
+      // No mutation of the old committed state occurs while building next.
+      const versions = new Map([...s.versions].map(([v, record]) =>
+        [v, {...record}]));
+      versions.set(nextVersion, {value: candidate.value, pins: 0, frozen: true});
       for (const [version, count] of pinReleases)
-        s.versions.get(version).pins -= count;
-      if (s.versions.get(previous).pins === 0) s.versions.delete(previous);
-      s.contexts.clear();
-      s.usedBytes = 0;
-      s.prepared = null;
-      s.committed.add(receipt.step);
-      while (s.committed.size > s.receiptLimit)
-        s.committed.delete(s.committed.values().next().value);
-      s.step = nextStep;
+        versions.get(version).pins -= count;
+      if (versions.get(s.activeVersion).pins === 0)
+        versions.delete(s.activeVersion);
+      const committed = new Set(s.committed);
+      committed.add(receipt.step);
+      while (committed.size > s.receiptLimit)
+        committed.delete(committed.values().next().value);
+      const successor = {
+        ...s, versions, activeVersion: nextVersion,
+        optimizer: Object.freeze({iteration: nextIteration}),
+        contexts: new Map(), usedBytes: 0, prepared: null,
+        committed, step: nextStep
+      };
+      // One actor-local publication point. Production requires the sealed
+      // runtime's state-root swap/transaction, not ordinary guest field access.
+      this.state = successor;
       return Object.freeze({step: receipt.step, version: nextVersion});
     });
   }
@@ -247,12 +254,16 @@ class VersionedStage {
         const record = s.versions.get(version);
         if (!record || record.pins < count) this.error("ML_PIN_LEDGER_CORRUPT");
       }
+      const versions = new Map([...s.versions].map(([v, record]) =>
+        [v, {...record}]));
       for (const [version, count] of refunds)
-        s.versions.get(version).pins -= count;
-      s.contexts.clear();
-      s.usedBytes = 0;
-      s.prepared = null;
-      s.cancelled = true;
+        versions.get(version).pins -= count;
+      // Cancellation publishes a single successor, including refunds and
+      // fencing; failure during staging cannot leak part of the old state.
+      this.state = {
+        ...s, versions, contexts: new Map(), usedBytes: 0,
+        prepared: null, cancelled: true
+      };
       return true;
     });
   }
@@ -495,4 +506,56 @@ test("recent commit receipts remain bounded while older steps are fenced by mono
   assert.equal(a.critical(s => s.committed.size), 2);
   assert.throws(() => a.forward({run:"run-A",epoch:4,graph:7,step:1,version:1,microbatch:1}),
     /ML_STEP_MISMATCH/);
+});
+
+test("optimizer publication replaces one state root; rejected commits never partially change it", () => {
+  const a = new VersionedStage();
+  const k = a.currentKey(1);
+  a.forward(k); a.backward(k, "left"); a.backward(k, "right");
+  const receipt = a.prepare(1, 1, 4.25);
+  const prior = a.state; // harness-only inspection, never guest Oreslang access
+  assert.throws(() => a.commit({...receipt}), /ML_UNRECOGNIZED_PREPARE/);
+  assert.equal(a.state, prior);
+  a.commit(receipt);
+  assert(a.state !== prior);
+  assert.equal(prior.activeVersion, 1);
+  assert.equal(prior.optimizer.iteration, 0);
+  assert.equal(a.state.activeVersion, 2);
+  assert.equal(a.state.optimizer.iteration, 1);
+});
+
+test("cancellation atomically swaps its root without mutating a prior pin ledger", () => {
+  const a = new VersionedStage();
+  const k = a.currentKey(1);
+  a.forward(k);
+  const prior = a.state;
+  assert.equal(prior.versions.get(1).pins, 1);
+  assert.equal(a.cancel(), true);
+  assert(a.state !== prior);
+  assert.equal(prior.versions.get(1).pins, 1);
+  assert.equal(a.state.versions.get(1).pins, 0);
+  assert.equal(a.status().active, 0);
+});
+
+test("deterministic interleaving stress: many planned steps and live snapshot leases", () => {
+  for (let seed = 1; seed <= 48; seed++) {
+    const a = new VersionedStage({plannedMicrobatches:[11, 12], receiptLimit:3});
+    for (let step = 1; step <= 5; step++) {
+      const lease = a.snapshot();
+      const order = (seed + step) % 2 ? [11,12] : [12,11];
+      for (const mb of order) a.forward(a.currentKey(mb));
+      for (const mb of [...order].reverse()) {
+        const key = a.currentKey(mb);
+        const edges = (seed * step + mb) % 2 ? ["left","right"] : ["right","left"];
+        for (const edge of edges) a.backward(key, edge);
+      }
+      const receipt = a.prepare(step, step, 5 - step * 0.2);
+      a.commit(receipt);
+      assert.equal(lease.version, step);
+      assert.deepEqual(a.status().weightVersions, [step, step+1]);
+      a.release(lease);
+      assert.deepEqual(a.status().weightVersions, [step+1]);
+      assert.equal(a.status().optimizerIteration, step);
+    }
+  }
 });
