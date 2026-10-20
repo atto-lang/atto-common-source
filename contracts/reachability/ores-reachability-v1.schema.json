@@ -17,21 +17,25 @@
     "buildKind": { "enum": ["executable", "library"] },
     "roots": {
       "type": "array",
+      "maxItems": 1000000,
       "items": { "$ref": "#/$defs/symbol" },
       "uniqueItems": true
     },
     "retainedSymbols": {
       "type": "array",
+      "maxItems": 1000000,
       "items": { "$ref": "#/$defs/symbol" },
       "uniqueItems": true
     },
     "removedSymbols": {
       "type": "array",
+      "maxItems": 1000000,
       "items": { "$ref": "#/$defs/symbol" },
       "uniqueItems": true
     },
     "compileTimeConstants": {
       "type": "object",
+      "maxProperties": 1000000,
       "propertyNames": { "$ref": "#/$defs/symbol" },
       "additionalProperties": {
         "type": ["string", "number", "boolean", "null"]
@@ -42,7 +46,8 @@
     "symbol": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 1024
+      "maxLength": 1024,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
     }
   }
 }
