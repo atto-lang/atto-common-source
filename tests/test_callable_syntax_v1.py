@@ -15,8 +15,16 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "fixtures" / "callable-syntax-v1.json"
 
 
-def expected_declaration(domain: str, body: str, separator: str) -> str:
+def expected_declaration(
+    domain: str,
+    body: str,
+    separator: str,
+    body_boundary: str | None = None,
+    body_separator_line: str | None = None,
+) -> str:
     if body == "end":
+        if body_boundary == "do" and body_separator_line != "header":
+            return "reject"
         return (
             "accept"
             if domain in {"root_function", "module_function"} and separator == "->"
@@ -61,7 +69,11 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
                 self.assertEqual(
                     case["expected"],
                     expected_declaration(
-                        case["domain"], case["body"], case["separator"]
+                        case["domain"],
+                        case["body"],
+                        case["separator"],
+                        case.get("body_boundary"),
+                        case.get("body_separator_line"),
                     ),
                 )
 
@@ -97,6 +109,11 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
         self.assertEqual(by_id["static-contract-arrow"]["expected"], "accept")
         self.assertEqual(by_id["root-end-arrow-do"]["expected"], "accept")
         self.assertEqual(by_id["root-end-arrow-do"]["body_boundary"], "do")
+        self.assertEqual(by_id["root-end-arrow-do"]["body_separator_line"], "header")
+        self.assertEqual(by_id["root-end-arrow-do-next-line"]["expected"], "reject")
+        self.assertEqual(by_id["root-end-arrow-do-next-line"]["body_separator_line"], "body")
+        self.assertEqual(by_id["root-end-arrow-leading-do-select"]["expected"], "accept")
+        self.assertEqual(by_id["root-end-arrow-leading-do-select"]["first_statement"], "do_select")
         self.assertEqual(by_id["root-end-colon-do"]["expected"], "reject")
 
 
