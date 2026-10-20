@@ -116,34 +116,54 @@
       "expected": "accept"
     },
     {
-      "id": "root-end-arrow-do",
+      "id": "root-end-arrow-as",
       "domain": "root_function",
       "body": "end",
       "separator": "->",
       "return_type": "int",
-      "body_boundary": "do",
-      "expected": "accept",
-      "body_separator_line": "header"
+      "body_boundary": "as",
+      "body_separator_line": "header",
+      "expected": "accept"
     },
     {
-      "id": "root-end-arrow-do-leading-do-select",
+      "id": "root-end-arrow-as-leading-do-select",
       "domain": "root_function",
       "body": "end",
       "separator": "->",
       "return_type": "void",
-      "body_boundary": "do",
+      "body_boundary": "as",
       "body_separator_line": "header",
       "first_statement": "do_select",
       "expected": "accept"
     },
     {
-      "id": "root-end-arrow-do-next-line",
+      "id": "root-end-arrow-as-next-line",
+      "domain": "root_function",
+      "body": "end",
+      "separator": "->",
+      "return_type": "int",
+      "body_boundary": "as",
+      "body_separator_line": "body",
+      "expected": "reject"
+    },
+    {
+      "id": "root-end-arrow-do-retired",
       "domain": "root_function",
       "body": "end",
       "separator": "->",
       "return_type": "int",
       "body_boundary": "do",
-      "body_separator_line": "body",
+      "body_separator_line": "header",
+      "expected": "reject"
+    },
+    {
+      "id": "root-end-colon-as",
+      "domain": "root_function",
+      "body": "end",
+      "separator": ":",
+      "return_type": "int",
+      "body_boundary": "as",
+      "body_separator_line": "header",
       "expected": "reject"
     },
     {
@@ -155,16 +175,6 @@
       "body_boundary": "newline",
       "first_statement": "do_select",
       "expected": "accept"
-    },
-    {
-      "id": "root-end-colon-do",
-      "domain": "root_function",
-      "body": "end",
-      "separator": ":",
-      "return_type": "int",
-      "body_boundary": "do",
-      "expected": "reject",
-      "body_separator_line": "header"
     }
   ],
   "return_flow": [
