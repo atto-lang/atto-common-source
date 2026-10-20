@@ -56,6 +56,14 @@ After the prefix/version:
 
 Temporary HIR node IDs are **not** hashed. Before encoding, map every admitted node ID to its zero-based canonical ordinal. Input references and graph outputs encode that `u32` ordinal. Therefore renaming `source/tax/round` to `n0/n1/n2` without changing topology does not alter the digest.
 
+### Ordered v1 external input boundary
+
+For the ordered source subset, a model may be unary at runtime without adding a fake source operator. The **first** resolved operation may have exactly one signature input port while its graph dependency list is empty; that unmatched signature slot is the model's external `run(input)` boundary. The port is already hashed as part of the operation signature. Subsequent ordered-v1 operations have one graph parent and one signature input. A zero-input first operation remains legal for generator/constant models.
+
+Do not infer arbitrary missing dependency slots in later nodes. General multi-input/named-input DAG source syntax requires an explicitly versioned extension.
+
+The `externalInput` golden vector demonstrates this rule.
+
 For each node encode, in this exact order:
 
 1. nominal operation ID string;
