@@ -103,3 +103,81 @@ Because current source-org Actions still report failed jobs with `steps=null`, n
 - Node 22: the run-fence reference logic executed canonical `@v1` and stateless cases successfully in an isolated direct test harness.
 
 These are component-level execution receipts, **not** full Maven/Gradle, Graal Context.eval, CMake/CTest, LLVM IR/native guest, Native Image, or end-to-end Oreslang model execution. The next promotion gate remains real source-to-resolved-graph-to-guest CPU execution using ordinary verified Oreslang operations, followed by cross-backend numerical/output parity.
+
+
+## Executable-v1 differential corpus and current-main integration — 2026-10-20
+
+A single shared executable conformance corpus now lives at
+`contracts/v1/model-graph/executable-v1-conformance.json`.
+Its current revision is `model-core-i64-v1.2026-10-20.4`.
+
+The portable profile is explicitly named `model-core-i64-v1` and is narrower than
+the Java interpreter surface. Portable operation expressions are limited to i64
+literal/parameter reads, unary negate, add, subtract and multiply in an ordered
+linear model. Java-only float/bool/string/Symbol and stored model-instance behavior
+are not silently advertised as LLVM-portable.
+
+The corpus now pins:
+
+- positive `delta=2` graph/configured identities;
+- negative `delta=-2` graph/configured identities;
+- the exact signed i64 minimum endpoint;
+- negative static literals;
+- symmetric signed overflow rejection around the one legal `-2^63` endpoint;
+- unknown operation, disabled model composition and run arity rejection;
+- unknown static formals as `MODEL_UNKNOWN_FORMAL`;
+- duplicate model parameters as `MODEL_DUPLICATE_PARAMETER`;
+- the deliberate stored-model-value capability split (Java execute, LLVM
+  `MODEL_VALUE_STORAGE_UNSUPPORTED`).
+
+Diagnostic hardening also found and removed a semantic class collision: LLVM had
+used `MODEL_UNKNOWN_CONFIG` for undeclared source formals while Java used that
+class for unexpected configured-instance keys. Source formals now use
+`MODEL_UNKNOWN_FORMAL`; `MODEL_UNKNOWN_CONFIG` is reserved for configured
+identity validation.
+
+The shared diagnostic registry has been expanded to cover the active executable
+backend surface. A source scan after the changes found all actual LLVM model
+diagnostics registered; Java's only unmatched `MODEL_...` strings were
+non-diagnostic constant identifiers plus the subsequently registered internal
+`MODEL_INVALID_PROGRAM` guard.
+
+### Signed-i64 hardening
+
+Java now accepts unary minus only over a direct numeric literal at the model
+constant boundary; it does not broaden static configuration to arbitrary constant
+expressions. Model-local integer overflow is normalized to
+`MODEL_CONST_OVERFLOW`.
+
+LLVM now parses the exact magnitude `9223372036854775808` after unary minus as
+`INT64_MIN`, while still rejecting positive `2^63` and values below
+`INT64_MIN`. Model defaults/static arguments use model-specific overflow
+diagnostics; generic non-model integer parsing remains unchanged.
+
+Independent local component oracles (not full compiler tests) passed:
+
+- SHA-256 recomputation for the shared +2, -2 and INT64_MIN graph/configured
+  vectors;
+- strict C++17 (`-Wall -Wextra -Wpedantic -Werror`) signed endpoint logic:
+  max positive accepted, INT64_MIN accepted, positive 2^63 and below-min rejected.
+
+### Current-main integration
+
+The active executable routes have been brought onto their current main branches
+without destructive rebases:
+
+- LLVM #708: a two-parent merge commit preserves the feature history and current
+  main, with the only overlapping file (`CMakeLists.txt`) integrated from the
+  exact three model-test hunks. After the merge the PR is 0 commits behind main
+  and mergeable.
+- Java #1574: GitHub reported the PR conflict-free. Its synthetic merge tree
+  against current main was reused to create a real two-parent feature-branch merge,
+  preserving both the exact feature head and all current-main edits. After the
+  merge the PR is 0 commits behind main and mergeable.
+
+Fresh exact-head source-org workflows still fail before runner allocation with
+`steps=null` on Java, LLVM and common-source. These are infrastructure results,
+not compiler failures. The previously identified private funded repository cannot
+be used for a private cross-organization source mirror through the available
+connector because that transfer is blocked by the connector safety boundary.
+No alternate-org compiler pass is claimed.
