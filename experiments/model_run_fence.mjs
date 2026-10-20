@@ -24,7 +24,7 @@ const denseStrings = x => Array.isArray(x) &&
     const d=Object.getOwnPropertyDescriptor(x,k);
     return d && Object.hasOwn(d,"value") && typeof d.value==="string";
   });
-const ID = /^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/;
+const ID = /^[A-Za-z][A-Za-z0-9_.:@-]{0,127}$/;
 const DIGEST = /^[0-9a-f]{64}$/;
 const id = (x, code) => { if (typeof x !== "string" || !ID.test(x)) fail(code); return x; };
 const digest = (x, code) => { if (typeof x !== "string" || !DIGEST.test(x)) fail(code); return x; };
