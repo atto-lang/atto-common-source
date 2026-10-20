@@ -104,3 +104,67 @@ test("ordered v1 external input boundary is hashed through the first signature",
   changed.nodes[0].signature.inputs[0].typeAbi = "finance.OtherPrice@v1";
   assert.notEqual(digestModelGraphV1(changed), vectors.externalInput.expected);
 });
+
+
+test("ordered v1 accepts unary external run(input), not missing later dependencies", () => {
+  assert.equal(digestModelGraphV1(vectors.externalInput.graph),
+    vectors.externalInput.expected);
+
+  const missingLater = clone(vectors.externalInput.graph);
+  missingLater.nodes[1].inputs = [];
+  err("MODEL_PORT_ARITY_MISMATCH", () => digestModelGraphV1(missingLater));
+
+  const missingFirst = clone(vectors.externalInput.graph);
+  missingFirst.nodes[0].signature.inputs.push(
+    clone(missingFirst.nodes[0].signature.inputs[0]));
+  err("MODEL_PORT_ARITY_MISMATCH", () => digestModelGraphV1(missingFirst));
+});
+
+test("wrong edge counts and foreign typed ports cannot acquire graph identity", () => {
+  const missing = clone(vectors.base.graph);
+  missing.nodes[1].inputs = [];
+  err("MODEL_PORT_ARITY_MISMATCH", () => digestModelGraphV1(missing));
+
+  const excess = clone(vectors.base.graph);
+  excess.nodes[1].inputs.push("source");
+  err("MODEL_PORT_ARITY_MISMATCH", () => digestModelGraphV1(excess));
+
+  const nominal = clone(vectors.base.graph);
+  nominal.nodes[1].signature.inputs[0].typeAbi = "finance.Weight@v1";
+  err("MODEL_PORT_TYPE_MISMATCH", () => digestModelGraphV1(nominal));
+
+  const bytes = clone(vectors.base.graph);
+  bytes.nodes[1].signature.inputs[0].bytes = 32;
+  err("MODEL_PORT_TYPE_MISMATCH", () => digestModelGraphV1(bytes));
+});
+
+test("typed buffer edges validate dtype, extents, units and canonical layout", () => {
+  const graph = clone(vectors.base.graph);
+  const numeric = (unit, shape, dtype = "f64") => ({dtype, shape, unit});
+  graph.nodes[0].signature.output = numeric("USD", [4]);
+  graph.nodes[1].signature.inputs[0] = numeric("USD", [4]);
+  graph.nodes[1].signature.output = numeric("USD", [4]);
+  graph.nodes[2].signature.inputs[0] = numeric("USD", [4]);
+  const validDigest = digestModelGraphV1(graph);
+  assert.equal(validDigest.length, 64);
+  graph.nodes[1].signature.inputs[0].layout = "contiguous";
+  assert.equal(digestModelGraphV1(graph), validDigest,
+    "implicit and explicit contiguous layouts have equal meaning");
+
+  for (const corrupt of [
+    p => {p.dtype = "f32";},
+    p => {p.shape = [5];},
+    p => {p.unit = "kg";},
+    p => {delete p.unit;}
+  ]) {
+    const invalid = clone(graph);
+    corrupt(invalid.nodes[1].signature.inputs[0]);
+    err("MODEL_PORT_TYPE_MISMATCH", () => digestModelGraphV1(invalid));
+  }
+
+  const impossible = clone(graph);
+  impossible.nodes[1].signature.inputs[0] =
+    {kind: "nominal", typeAbi: "finance.Price@v1", bytes: 16};
+  err("MODEL_PORT_TYPE_MISMATCH", () => digestModelGraphV1(impossible));
+});
+
