@@ -88,7 +88,7 @@ def validate(doc):
     callbacks_seen = set()
     for event in doc.get("callback_orderings", []):
         obj(event, "callback ordering", {"id", "emitter", "event", "publisher",
-             "invocation_timing", "order", "registration_continuation"}, {"location"})
+             "invocation_timing", "order", "registration_continuation", "registration_completion"}, {"location"})
         for field in ("id", "emitter", "publisher", "event"):
             ident(event[field], "callback " + field)
         require(event["id"] not in callbacks_seen, "duplicate callback ordering id")
@@ -99,6 +99,8 @@ def validate(doc):
                 "bad registration order")
         require(event["registration_continuation"] in ("same_uninterrupted_turn",
              "may_suspend", "unknown"), "bad registration continuation")
+        require(event["registration_completion"] in ("proved_sync_install", "unproved"),
+                "bad registration completion")
         location(event.get("location"), "callback event location")
     for source in doc["taint_sources"]:
         obj(source, "taint source", {"id", "class"}, {"location"})
@@ -293,12 +295,13 @@ def analyze(doc):
         timing = event["invocation_timing"]
         order = event["order"]
         continuation = event["registration_continuation"]
-        if order == "register_first":
+        install = event["registration_completion"] == "proved_sync_install"
+        if order == "register_first" and install:
             continue
         # Deferred-after-current-turn is safe only if registration is
         # guaranteed to complete without suspension/failure in that turn.
         if (order == "publish_first" and timing == "deferred_after_turn"
-                and continuation == "same_uninterrupted_turn"):
+                and continuation == "same_uninterrupted_turn" and install):
             continue
         rule = "ORES-ZALGO-001" if order == "publish_first" else "ORES-ZALGO-002"
         result.append(finding(rule, "warning", "potential",
