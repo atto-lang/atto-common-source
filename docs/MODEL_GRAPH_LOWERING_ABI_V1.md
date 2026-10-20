@@ -17,9 +17,14 @@ Native/FFI operators require a stronger trust tier than pure Oreslang operators.
 
 ## 2. Canonical lowering boundary
 
-A parameterized declaration is a blueprint until every model formal used by an operation has been resolved from an explicit construction argument or validated default. `GraphDigest` is emitted only for the concrete resolved graph. Unresolved formals never enter the portable hash as source text.
+A parameterized declaration has two distinct content identities and they must not be conflated:
 
-The frontend lowers a model declaration to an immutable compiler-owned graph descriptor. Guest-controlled HIR contains structural references only. Resolved semantic metadata is attached by the compiler/linker.
+1. **BlueprintGraphDigest** — declaration/public-ABI identity. It binds the nominal model, ordered topology, declared configuration formals (name/type/default-or-required), operation ABI + implementation identity, and whether each static argument is a literal or a reference to a declared model formal. It does **not** claim that a particular construction value has been bound.
+2. **ConfiguredGraphDigest** — concrete execution identity after every model formal used by the graph has been bound from an explicit constructor literal or validated default. This is the identity used for execution/run/cache fencing whenever configuration can affect computation.
+
+The fully resolved portable HIR `GraphDigest` defined by `MODEL_GRAPH_DIGEST_V1.md` corresponds to a concrete configured graph, not an unresolved source blueprint. A backend field historically named `graphDigest` may represent the blueprint only if its API/documentation says so explicitly and execution identity uses the configured digest instead.
+
+The frontend lowers a model declaration to an immutable compiler-owned graph descriptor. Guest-controlled HIR contains structural references only. Resolved semantic metadata is attached by the compiler/linker. Source formal names may occur in the **blueprint** descriptor as nominal configuration-slot identity; they are resolved to canonical typed constants before a concrete portable HIR graph digest is emitted.
 
 Each resolved node binds at least:
 
@@ -35,6 +40,8 @@ Each resolved node binds at least:
 
 The implementation/content digest is distinct from the ABI version. Two operators can have the same ABI and different semantics; caches and graph identity must not treat them as interchangeable.
 
+For verified Oreslang operations, implementation identity is **alpha-stable** with respect to formal parameter spelling. A formal reference is canonicalized by declaration ordinal (for example `arg:0`, `arg:1`), after duplicate formals are rejected. Comments, formatting and source locations are excluded. Operand order, literal values and static-argument order remain identity-sensitive unless a separately versioned equivalence/optimizer contract proves otherwise.
+
 No compiler pass may replace an operation with another implementation unless the selected optimization profile proves the required equivalence contract.
 
 ## 3. Identities are deliberately separate
@@ -42,7 +49,8 @@ No compiler pass may replace an operation with another implementation unless the
 Do not collapse these concepts into one integer or pointer:
 
 - **model type identity** — nominal declaration/package identity;
-- **graph digest** — content digest over canonical typed graph, resolved operation identities, implementation digests, ABI versions and static configuration;
+- **blueprint graph digest** — declaration/public-ABI content identity over formal configuration slots, topology and operation semantics;
+- **configured graph digest / concrete graph digest** — content digest after all execution-relevant static configuration is bound to canonical typed constants; this is the concrete graph identity used for runs and compiled-plan reuse;
 - **graph generation** — publication/hot-reload epoch for a live deployment;
 - **instance identity** — identity of independently owned mutable model state;
 - **parameter version** — monotonically advancing version of mutable parameters/state snapshots;
@@ -78,7 +86,7 @@ Stateless models use `parameter_version = none`. A parameter commit against a st
 A compiled plan/cache key must bind at least:
 
 ```text
-(graph_digest, execution_profile_digest)
+(configured_graph_digest, execution_profile_digest)
 ```
 
 The execution profile digest is derived exactly by `MODEL_EXECUTION_PROFILE_DIGEST_V1.md` and already binds backend/compiler semantic versions, target/data layout, numeric mode/features, allocation policy, freestanding selection and optional device ABI. Backend caches may additionally bind build/toolchain provenance, but must never omit either digest.
