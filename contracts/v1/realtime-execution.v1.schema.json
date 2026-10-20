@@ -44,8 +44,9 @@
     "scheduler": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["bounded_dispatch", "bounded_priority_inversion", "critical_worker_isolation", "os_realtime_policy"],
+      "required": ["workers_prestarted", "bounded_dispatch", "bounded_priority_inversion", "critical_worker_isolation", "os_realtime_policy"],
       "properties": {
+        "workers_prestarted": {"type": "boolean"},
         "bounded_dispatch": {"type": "boolean"},
         "bounded_priority_inversion": {"type": "boolean"},
         "critical_worker_isolation": {"type": "boolean"},
