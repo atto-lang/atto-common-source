@@ -143,7 +143,7 @@ function prepareRegistry(registry) {
       fail("MODEL_INVALID_OP_ID");
 
     exactFields(sig,
-      ["inputs", "output", "effect", "vjp", "scratchBytes", "abi", "constKinds", "profile"],
+      ["inputs", "output", "effect", "vjp", "scratchBytes", "abi", "implDigest", "provenance", "constKinds", "profile"],
       "MODEL_INVALID_OP_SIGNATURE");
 
     if (typeof sig.effect !== "string" || !EFFECTS.has(sig.effect))
@@ -178,6 +178,8 @@ function prepareRegistry(registry) {
       vjp: sig.vjp,
       effect: sig.effect,
       abi: sig.abi,
+      implDigest: sig.implDigest,
+      provenance: sig.provenance,
       constKinds: sig.constKinds,
       profile: sig.profile
     });
@@ -345,6 +347,7 @@ export function admitModelGraph(graph, registry, options = {}) {
       noDynamicAllocation,
       deterministic
     }),
+    implementationTrace: Object.freeze(normalized.map(x => `${x.op}@${x.sig.abi}#${x.sig.implDigest}:${x.sig.provenance}`)),
     executedGuest: false,
     executable: false
   });
