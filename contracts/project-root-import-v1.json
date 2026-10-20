@@ -116,7 +116,21 @@
     "explicit-root-override",
     "explicit-override-requires-manifest",
     "cwd-independent-link-identity",
-    "run-check-aot-equivalence"
+    "run-check-aot-equivalence",
+    "configured-project-root-subdirectory",
+    "explicit-relative-versus-dot-bare",
+    "source-roots-explicit-empty",
+    "ores-paths-search-precedence",
+    "nested-modern-and-legacy-package-boundary",
+    "nested-package-symlink-alias-denied",
+    "malformed-manifest-marker-fail-closed-before-fallback",
+    "nearest-vs-ancestor-manifest-precedence",
+    "nested-package-boundary-for-bare-and-relative-imports",
+    "physical-source-root-symlink-escape-denial",
+    "modern-configured-root-physical-containment",
+    "strict-manifest-known-field-types",
+    "dangling-nested-manifest-marker-rejection",
+    "strict-crlf-or-lf-modern-manifest-lines"
   ],
   "implementation_status_at_creation": {
     "java": "draft-pr-pending-CI",
@@ -184,7 +198,9 @@
         "oreslang-source.java#1050",
         "oreslang-source.llvm#448",
         "oreslang-common-source#51"
-      ]
+      ],
+      "normative_resolution": "The selected manifest directory anchors [project].root; +/ uses that configured project root.",
+      "status": "backend-alignment-pending"
     }
   ],
   "relative_source_cases": [
@@ -218,5 +234,324 @@
       "source_root": "src",
       "expect": "src/..backup/helper.ores"
     }
-  ]
+  ],
+  "namespace_parity_cases": [
+    {
+      "id": "project-root-field-subdir",
+      "manifest_project_root": "app",
+      "specifier": "+/src/helper",
+      "file": "app/src/helper.ores",
+      "expect": "app/src/helper.ores",
+      "goal": "resolve-link-execute"
+    },
+    {
+      "id": "project-root-field-manifest-sibling-denied",
+      "manifest_project_root": "app",
+      "specifier": "+/outside",
+      "file": "outside.ores",
+      "error": "not-found",
+      "goal": "reject-before-link"
+    },
+    {
+      "id": "importer-relative-dot-slash",
+      "specifier": "./local",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "file": "src/routes/rest/foo/bar/baz/local.ores",
+      "expect": "src/routes/rest/foo/bar/baz/local.ores"
+    },
+    {
+      "id": "importer-relative-parent",
+      "specifier": "../up",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "file": "src/routes/rest/foo/bar/up.ores",
+      "expect": "src/routes/rest/foo/bar/up.ores"
+    },
+    {
+      "id": "dot-prefixed-bare-search",
+      "specifier": ".hidden/helper",
+      "importer": "src/routes/rest/foo/bar/baz/delete.ores",
+      "source_roots": [
+        "src"
+      ],
+      "file": "src/.hidden/helper.ores",
+      "expect": "src/.hidden/helper.ores"
+    },
+    {
+      "id": "environment-precedence",
+      "specifier": "priority",
+      "source_roots": [
+        "src"
+      ],
+      "source_import_paths": [
+        "vendor"
+      ],
+      "ores_paths": [
+        "env"
+      ],
+      "oreslang_path": [
+        "legacy"
+      ],
+      "files": [
+        "src/priority.ores",
+        "vendor/priority.ores",
+        "env/priority.ores",
+        "legacy/priority.ores"
+      ],
+      "expect_order": [
+        "src/priority.ores",
+        "vendor/priority.ores",
+        "env/priority.ores",
+        "legacy/priority.ores"
+      ]
+    },
+    {
+      "id": "explicit-empty-roots",
+      "specifier": "only-here",
+      "source_roots": [],
+      "source_import_paths": [],
+      "file": "only-here.ores",
+      "error": "not-found",
+      "goal": "deny-implicit-root"
+    },
+    {
+      "id": "empty-ores-paths-component",
+      "specifier": "only-here",
+      "ores_paths": [
+        "",
+        "env",
+        ""
+      ],
+      "error": "empty-component-must-not-grant-cwd"
+    },
+    {
+      "id": "nested-modern-package",
+      "specifier": "+/child/secret",
+      "nested_manifest": "child/.ores.pkg.toml",
+      "file": "child/secret.ores",
+      "error": "nested-package-boundary"
+    },
+    {
+      "id": "nested-legacy-package",
+      "specifier": "+/child/secret",
+      "nested_manifest": "child/.oreslangc.cfg.toml",
+      "file": "child/secret.ores",
+      "error": "nested-package-boundary"
+    },
+    {
+      "id": "nested-package-symlink-alias",
+      "specifier": "+/alias",
+      "symlink_alias_to": "child/secret.ores",
+      "nested_manifest": "child/.ores.pkg.toml",
+      "error": "nested-package-boundary"
+    },
+    {
+      "id": "source-physical-identity",
+      "specifier": "+/alias",
+      "symlink_alias_to": "lib/helper.ores",
+      "file": "lib/helper.ores",
+      "expect": "canonical-physical-identity"
+    },
+    {
+      "id": "modern-directory-marker-shadows-valid-legacy",
+      "manifest": ".ores.pkg.toml",
+      "marker_kind": "directory",
+      "legacy_manifest": ".oreslangc.cfg.toml",
+      "legacy_valid": true,
+      "error": "invalid-modern-marker",
+      "goal": "reject-before-authority-selection"
+    },
+    {
+      "id": "modern-dangling-symlink-shadows-valid-legacy",
+      "manifest": ".ores.pkg.toml",
+      "marker_kind": "dangling-symlink",
+      "legacy_manifest": ".oreslangc.cfg.toml",
+      "legacy_valid": true,
+      "error": "invalid-modern-marker",
+      "goal": "reject-before-authority-selection"
+    },
+    {
+      "id": "modern-inside-root-symlink-shadows-valid-legacy",
+      "manifest": ".ores.pkg.toml",
+      "marker_kind": "symlink-to-in-root-legacy",
+      "legacy_manifest": ".oreslangc.cfg.toml",
+      "legacy_valid": true,
+      "error": "invalid-modern-marker",
+      "goal": "reject-before-authority-selection"
+    },
+    {
+      "id": "malformed-legacy-marker-not-manifestless",
+      "manifest": ".oreslangc.cfg.toml",
+      "marker_kind": "directory",
+      "modern_manifest_absent": true,
+      "error": "invalid-legacy-marker",
+      "goal": "reject-before-manifestless-fallback"
+    },
+    {
+      "id": "nearest-legacy-before-ancestor-modern",
+      "importer": "app/child/src/main.ores",
+      "manifests": [
+        "app/.ores.pkg.toml",
+        "app/child/.oreslangc.cfg.toml"
+      ],
+      "expect_manifest": "app/child/.oreslangc.cfg.toml",
+      "goal": "nearest-package-owns-imports"
+    },
+    {
+      "id": "modern-priority-only-at-same-directory",
+      "importer": "app/child/src/main.ores",
+      "manifests": [
+        "app/.ores.pkg.toml",
+        "app/child/.ores.pkg.toml",
+        "app/child/.oreslangc.cfg.toml"
+      ],
+      "expect_manifest": "app/child/.ores.pkg.toml",
+      "goal": "same-directory-modern-priority"
+    },
+    {
+      "id": "nearer-invalid-legacy-denies-ancestor-modern",
+      "importer": "app/child/src/main.ores",
+      "manifests": [
+        "app/.ores.pkg.toml"
+      ],
+      "invalid_marker": "app/child/.oreslangc.cfg.toml",
+      "marker_kind": "directory",
+      "error": "invalid-nearest-manifest",
+      "goal": "deny-fallback"
+    },
+    {
+      "id": "bare-import-denied-into-nested-modern-package",
+      "importer": "src/routes/main.ores",
+      "source_roots": [
+        "src"
+      ],
+      "specifier": "child/secret",
+      "nested_manifest": "src/child/.ores.pkg.toml",
+      "file": "src/child/secret.ores",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "relative-import-denied-into-nested-legacy-package",
+      "importer": "src/routes/main.ores",
+      "specifier": "./child/secret",
+      "nested_manifest": "src/routes/child/.oreslangc.cfg.toml",
+      "file": "src/routes/child/secret.ores",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "bare-import-symlink-escape-denied",
+      "importer": "src/main.ores",
+      "source_roots": [
+        "src"
+      ],
+      "specifier": "secret",
+      "symlink_alias_to": "../outside/secret.ores",
+      "error": "physical-project-root-escape",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "modern-project-root-absolute-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "/other/location",
+      "error": "invalid-modern-root",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-traversal-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "../sibling",
+      "error": "invalid-modern-root",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-noncanonical-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "app/./lib",
+      "error": "invalid-modern-root",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-nested-legacy-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "app/child",
+      "nested_manifest": "app/child/.oreslangc.cfg.toml",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-outside-symlink-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": "app-link",
+      "symlink_alias_to": "../external-project",
+      "error": "physical-package-root-escape",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "modern-project-root-wrong-toml-type-denied",
+      "manifest": ".ores.pkg.toml",
+      "project_root": 17,
+      "error": "manifest-known-field-type",
+      "goal": "deny-before-loading-source"
+    },
+    {
+      "id": "nested-legacy-dangling-marker-denied",
+      "specifier": "./child/secret",
+      "importer": "src/routes/main.ores",
+      "nested_manifest": "src/routes/child/.oreslangc.cfg.toml",
+      "marker_kind": "dangling-symlink",
+      "file": "src/routes/child/secret.ores",
+      "error": "nested-package-boundary",
+      "goal": "deny-before-link"
+    },
+    {
+      "id": "modern-manifest-bare-cr-hidden-root-denied",
+      "manifest": ".ores.pkg.toml",
+      "manifest_contents": "schema_version = \"1\" # visible comment\r[project]\rroot = \"../outside\"\n",
+      "marker_kind": "regular-file",
+      "error": "invalid-modern-manifest-line-ending",
+      "goal": "reject-before-source-resolution"
+    },
+    {
+      "id": "modern-manifest-bare-cr-at-eof-denied",
+      "manifest": ".ores.pkg.toml",
+      "manifest_contents": "schema_version = \"1\"\r",
+      "error": "invalid-modern-manifest-line-ending",
+      "goal": "reject-before-source-resolution"
+    },
+    {
+      "id": "modern-manifest-crlf-project-root-accepted",
+      "manifest": ".ores.pkg.toml",
+      "manifest_contents": "schema_version = \"1\"\r\n[project]\r\nroot = \"app\"\r\n",
+      "manifest_project_root": "app",
+      "specifier": "+/src/helper",
+      "file": "app/src/helper.ores",
+      "expect": "app/src/helper.ores",
+      "goal": "resolve-only-until-linked-proven"
+    }
+  ],
+  "parity_evidence_requirements": {
+    "status_values": [
+      "unsupported",
+      "admission-only",
+      "resolver-only",
+      "linked",
+      "executed"
+    ],
+    "native_execution_requires": [
+      "exact-candidate-git-tree",
+      "native-compiler-build",
+      "verified-resolved-source-graph",
+      "actual-linked-invocation",
+      "asserted-process-result"
+    ],
+    "wasm_imports_policy": "Reject before artifact publication until every transitive source identity is pinned and wasm32 linked. Source imports are not Wasm guest host imports.",
+    "capability_limitations": {
+      "java": "full canonical-root resolver and linked runtime must be executed",
+      "llvm": "host-only scalar source graph is not module/actor/wasm32 parity",
+      "net": "host resolver is not CIL/Native AOT binding",
+      "forge": "host resolver is not Forge IR module linking",
+      "wasm": "fail-closed rejection is not linked module parity"
+    }
+  }
 }

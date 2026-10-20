@@ -86,6 +86,23 @@ class ProjectRootImportContractTest(unittest.TestCase):
                 self.assertEqual(case["expect"], resolved)
                 self.assertIn(resolved, files)
 
+    def test_configured_root_extension_preserves_boundary_contract(self):
+        cases = self.contract["namespace_parity_cases"]
+        indexed = {case["id"]: case for case in cases}
+        self.assertEqual(len(cases), len(indexed))
+        self.assertEqual(len(cases), 32)
+        self.assertEqual(indexed["project-root-field-subdir"]["expect"],
+                         "app/src/helper.ores")
+        self.assertEqual(indexed["nearest-legacy-before-ancestor-modern"]["expect_manifest"],
+                         "app/child/.oreslangc.cfg.toml")
+        self.assertEqual(indexed["modern-manifest-bare-cr-hidden-root-denied"]["error"],
+                         "invalid-modern-manifest-line-ending")
+        self.assertEqual(len(self.contract["namespace_boundary_cases"]), 5)
+        self.assertEqual(len(self.contract["relative_source_cases"]), 4)
+        decision = self.contract["open_decisions"][0]
+        self.assertEqual(decision["status"], "backend-alignment-pending")
+        self.assertIn("[project].root", decision["normative_resolution"])
+
     def test_unresolved_root_authority_is_explicit(self):
         decisions = self.contract["open_decisions"]
         self.assertEqual([d["id"] for d in decisions], ["root-anchor-vs-project-root"])
