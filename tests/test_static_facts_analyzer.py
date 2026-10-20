@@ -2,7 +2,7 @@
 import copy
 import unittest
 
-from scripts.static_facts_analyzer import InvalidFacts, analyze, strongly_connected
+from scripts.static_facts_analyzer import InvalidFacts, analyze, strongly_connected, reject_duplicate_keys
 
 
 def facts():
@@ -159,6 +159,26 @@ class StaticFactsTests(unittest.TestCase):
         f["unrecognized_required_feature"] = "x"
         with self.assertRaises(InvalidFacts):
             analyze(f)
+
+    def test_duplicate_json_key_rejected(self):
+        with self.assertRaises(InvalidFacts):
+            reject_duplicate_keys([("version", "good"), ("version", "bad")])
+
+    def test_many_taint_sources_one_witness_per_sink(self):
+        f = facts()
+        f["taint_sources"] = [
+            {"id": "first", "class": "untrusted"},
+            {"id": "second", "class": "untrusted"},
+        ]
+        f["flows"] = [
+            {"from": "first", "to": "mid"},
+            {"from": "mid", "to": "exec"},
+            {"from": "second", "to": "exec"},
+        ]
+        f["sinks"] = [{"id": "exec", "risk": "shell"}]
+        result = analyze(f)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["witness"], ["second", "exec"])
 
     def test_diagnostics_are_stable(self):
         f = facts()
