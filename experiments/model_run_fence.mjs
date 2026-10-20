@@ -81,3 +81,17 @@ export function nextParameterVersion(stamp, graphIdentity, instanceIdentity, req
   if (stamp.parameterVersion === Number.MAX_SAFE_INTEGER) fail("MODEL_PARAMETER_VERSION_OVERFLOW");
   return stamp.parameterVersion + 1;
 }
+
+export function nextGraphGeneration(graphIdentity) {
+  const g = graph(graphIdentity);
+  if (g.graphGeneration === Number.MAX_SAFE_INTEGER) fail("MODEL_GRAPH_GENERATION_OVERFLOW");
+  return g.graphGeneration + 1;
+}
+export function commitModelRun(stamp, graphIdentity, instanceIdentity, request, committedRunIds = []) {
+  validateModelRunStamp(stamp, graphIdentity, instanceIdentity, request);
+  if (!Array.isArray(committedRunIds) ||
+      Object.keys(committedRunIds).length !== committedRunIds.length ||
+      committedRunIds.some(x => typeof x !== "string")) fail("MODEL_INVALID_RUN_REQUEST");
+  if (committedRunIds.includes(stamp.runId)) fail("MODEL_RUN_REPLAY");
+  return Object.freeze([...committedRunIds, stamp.runId]);
+}
