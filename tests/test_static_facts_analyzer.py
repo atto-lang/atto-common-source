@@ -165,7 +165,7 @@ class StaticFactsTests(unittest.TestCase):
         f["callback_orderings"] = [{
             "id": "example", "emitter": "randie", "event": "done",
             "publisher": "doMore", "invocation_timing": "mixed",
-            "order": "publish_first", "registration_continuation": "same_uninterrupted_turn",
+            "order": "publish_first", "registration_continuation": "same_uninterrupted_turn", "registration_completion": "proved_sync_install",
         }]
         self.assertEqual(rules(f), ["ORES-ZALGO-001"])
 
@@ -173,7 +173,7 @@ class StaticFactsTests(unittest.TestCase):
         f = facts()
         e = {"id": "example", "emitter": "randie", "event": "done",
              "publisher": "doMore", "invocation_timing": "mixed",
-             "order": "register_first", "registration_continuation": "same_uninterrupted_turn"}
+             "order": "register_first", "registration_continuation": "same_uninterrupted_turn", "registration_completion": "proved_sync_install"}
         f["callback_orderings"] = [e]
         self.assertEqual(rules(f), [])
         e["order"] = "publish_first"
@@ -182,11 +182,20 @@ class StaticFactsTests(unittest.TestCase):
         e["registration_continuation"] = "may_suspend"
         self.assertEqual(rules(f), ["ORES-ZALGO-001"])
 
+    def test_requested_registration_is_not_proven_installation(self):
+        f = facts()
+        e = {"id": "x", "emitter": "randie", "event": "done",
+             "publisher": "doMore", "invocation_timing": "mixed",
+             "order": "register_first", "registration_continuation": "same_uninterrupted_turn",
+             "registration_completion": "unproved"}
+        f["callback_orderings"] = [e]
+        self.assertEqual(rules(f), ["ORES-ZALGO-002"])
+
     def test_unknown_order_or_concurrent_callback_warns(self):
         f = facts()
         e = {"id": "example", "emitter": "stream", "event": "ready",
              "publisher": "start", "invocation_timing": "concurrent",
-             "order": "unknown", "registration_continuation": "unknown"}
+             "order": "unknown", "registration_continuation": "unknown", "registration_completion": "unproved"}
         f["callback_orderings"] = [e]
         self.assertEqual(rules(f), ["ORES-ZALGO-002"])
         e["order"] = "publish_first"
@@ -197,7 +206,7 @@ class StaticFactsTests(unittest.TestCase):
         f["callback_orderings"] = [{
             "id": "example", "emitter": "stream", "event": "ready",
             "publisher": "start", "invocation_timing": "definitely_safe",
-            "order": "publish_first", "registration_continuation": "unknown",
+            "order": "publish_first", "registration_continuation": "unknown", "registration_completion": "unproved",
         }]
         with self.assertRaises(InvalidFacts):
             analyze(f)
