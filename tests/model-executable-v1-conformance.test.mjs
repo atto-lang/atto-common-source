@@ -30,6 +30,49 @@ function configuredDigest(graph, value) {
   return sha256(`ores-model-configured-v1|${graph}|delta=i64:${value}|`);
 }
 
+function hexAscii(text) {
+  let out = "";
+  for (const ch of text) {
+    const code = ch.charCodeAt(0);
+    assert(code <= 0x7f, "projected source must remain ASCII");
+    out += code.toString(16).padStart(2, "0");
+  }
+  return out;
+}
+function field(value) {
+  return value === undefined || value === null || value === "" ? "-" : String(value);
+}
+function projectCorpus(value) {
+  const lines = [
+    "ORESLANG_MODEL_EXECUTABLE_CASES_V1",
+    `revision|${value.revision}`,
+    `profile|${value.portable_profile}`
+  ];
+  for (const item of value.cases) {
+    lines.push([
+      "case", item.id, item.expect, item.backend_mode?.java, item.backend_mode?.llvm,
+      field(item.diagnostic), field(item.llvm_diagnostic), field(item.graph_digest),
+      field(item.configured_graph_digest), field(item.semantic_result_i64),
+      hexAscii(item.source)
+    ].join("|"));
+  }
+  for (const item of value.identity_cases ?? []) {
+    lines.push([
+      "identity", item.id, String(item.expect_same_graph_digest),
+      field(item.expected_graph_digest), field(item.variant_operation_digest),
+      field(item.variant_graph_digest), hexAscii(item.baseline_source),
+      hexAscii(item.variant_source)
+    ].join("|"));
+  }
+  return lines.join("\n") + "\n";
+}
+
+test("line-oriented backend projection is generated exactly from normative JSON", () => {
+  const projected = fs.readFileSync(
+    path.join(root, "contracts/v1/model-graph/executable-v1-conformance.cases"), "utf8");
+  assert.equal(projected, projectCorpus(corpus));
+});
+
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
   assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.5");
