@@ -20,32 +20,7 @@ V1 therefore defines the following independent identities.
 
 None is interchangeable with another.
 
-## Canonical graph descriptor
-
-Java/Graal and LLVM must hash the same canonical logical descriptor rather than their in-memory object layout.
-
-The descriptor is an ordered, versioned sequence containing at minimum:
-
-1. descriptor format version;
-2. `ModelTypeId`;
-3. ordered model formals: name, nominal type ABI, canonical default/config value;
-4. ordered nodes with stable node IDs;
-5. exact operation nominal identity;
-6. operation ABI;
-7. trusted implementation/content digest;
-8. trusted provenance class;
-9. canonical typed static arguments, including argument labels/order;
-10. exact input/output port ABIs, shapes/extents, layout and units where applicable;
-11. conservative trusted effect/resource/profile facts that affect legality or generated semantics;
-12. exposed outputs.
-
-Canonical integers are signed decimal without leading zeroes except `0`. Floating configuration uses canonical IEEE bit encoding (for example `f64bits`) rather than locale/decimal reformatting. Strings and symbols use UTF-8 with explicit byte lengths. Maps are never hashed by host iteration order. No raw pointer, allocation address, object hash code, actor reference, timestamp or process-local registry handle enters the descriptor.
-
-`GraphDigest = SHA-256(canonical_descriptor_bytes)` for v1. A future digest algorithm requires a descriptor-version change; silently changing hashing is forbidden.
-
-Two graphs with the same op ABI but different trusted implementation digests have different `GraphDigest` values. Two graphs with different static arguments/defaults have different `GraphDigest` values even if their visible input/output types match.
-
-## Graph generation
+## Canonical graph descriptor\n\nThe sole normative v1 graph encoding and digest is `MODEL_GRAPH_DIGEST_V1.md` and its vectors in `contracts/v1/model-graph/digest-v1-vectors.json`. Java/Graal and LLVM must independently reproduce that binary byte stream and SHA-256 result; backend-private or second textual graph hashes are not conformance identities.\n\nThe portable graph digest binds nominal model identity, topology, typed static constants, operation ABI, trusted implementation digest/provenance, exact ports, effects/VJP capability, scratch bounds and the portable operation profile. Temporary HIR node labels are excluded after canonical ordinal mapping. Graph generation, instance identity, parameter version, run identity and execution-profile digest remain separate fences.\n\n## Graph generation
 
 `GraphGeneration` is not a substitute for `GraphDigest`. It is a checked monotonically increasing publication counter scoped to an owning runtime/session.
 
