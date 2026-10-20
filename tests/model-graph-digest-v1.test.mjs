@@ -94,3 +94,13 @@ test("graph generation, instance, parameters, run and backend profile are not gr
     err("MODEL_INVALID_RESOLVED_GRAPH", () => digestModelGraphV1(graph));
   }
 });
+
+test("ordered v1 external input boundary is hashed through the first signature", () => {
+  assert.equal(canonicalModelGraphV1Bytes(vectors.externalInput.graph).length,
+    vectors.externalInput.expectedBytes);
+  assert.equal(digestModelGraphV1(vectors.externalInput.graph),
+    vectors.externalInput.expected);
+  const changed = clone(vectors.externalInput.graph);
+  changed.nodes[0].signature.inputs[0].typeAbi = "finance.OtherPrice@v1";
+  assert.notEqual(digestModelGraphV1(changed), vectors.externalInput.expected);
+});
