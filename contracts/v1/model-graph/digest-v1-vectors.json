@@ -1,0 +1,136 @@
+{
+  "contract": "oreslang.model.graph.digest.v1",
+  "status": "PROPOSED",
+  "algorithm": "SHA-256",
+  "domain_separator": "ORESLANG-MODEL-GRAPH-V1\\u0000",
+  "base": {
+    "graph": {
+      "version": 1,
+      "modelTypeId": "finance.PriceEstimate@v1",
+      "nodes": [
+        {
+          "id": "source",
+          "op": "finance.PriceInput",
+          "inputs": [],
+          "constArgs": [],
+          "signature": {
+            "inputs": [],
+            "output": {
+              "kind": "nominal",
+              "typeAbi": "finance.Price@v1",
+              "bytes": 16
+            },
+            "effect": "pure",
+            "vjp": false,
+            "scratchBytes": 0,
+            "abi": "ores.model.op.v1",
+            "implDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+            "provenance": "verified-ores",
+            "constKinds": [],
+            "profile": {
+              "freestanding": true,
+              "allocation": "none",
+              "deterministic": true
+            }
+          }
+        },
+        {
+          "id": "tax",
+          "op": "finance.ApplyTaxBps",
+          "inputs": [
+            "source"
+          ],
+          "constArgs": [
+            {
+              "kind": "i64",
+              "value": "1500"
+            }
+          ],
+          "signature": {
+            "inputs": [
+              {
+                "kind": "nominal",
+                "typeAbi": "finance.Price@v1",
+                "bytes": 16
+              }
+            ],
+            "output": {
+              "kind": "nominal",
+              "typeAbi": "finance.Price@v1",
+              "bytes": 16
+            },
+            "effect": "pure",
+            "vjp": false,
+            "scratchBytes": 0,
+            "abi": "ores.model.op.v1",
+            "implDigest": "2222222222222222222222222222222222222222222222222222222222222222",
+            "provenance": "verified-ores",
+            "constKinds": [
+              "i64"
+            ],
+            "profile": {
+              "freestanding": true,
+              "allocation": "none",
+              "deterministic": true
+            }
+          }
+        },
+        {
+          "id": "round",
+          "op": "finance.RoundCents",
+          "inputs": [
+            "tax"
+          ],
+          "constArgs": [],
+          "signature": {
+            "inputs": [
+              {
+                "kind": "nominal",
+                "typeAbi": "finance.Price@v1",
+                "bytes": 16
+              }
+            ],
+            "output": {
+              "kind": "nominal",
+              "typeAbi": "finance.Price@v1",
+              "bytes": 16
+            },
+            "effect": "pure",
+            "vjp": false,
+            "scratchBytes": 0,
+            "abi": "ores.model.op.v1",
+            "implDigest": "3333333333333333333333333333333333333333333333333333333333333333",
+            "provenance": "verified-ores",
+            "constKinds": [],
+            "profile": {
+              "freestanding": true,
+              "allocation": "none",
+              "deterministic": true
+            }
+          }
+        }
+      ],
+      "outputs": [
+        "round"
+      ]
+    },
+    "expected": "e4b3337bd3e8b71d8f062afc7fcad5646fa8ad567bfe009e3d02f599b3ee833c"
+  },
+  "mutations": [
+    {
+      "id": "static-constant-change",
+      "change": "nodes[1].constArgs[0].value=1501",
+      "expected": "1dcfd1569621a30e53c969b9bf0e2add7fe94a04c2bf4474fae821555996d21b"
+    },
+    {
+      "id": "implementation-change",
+      "change": "nodes[1].signature.implDigest=4444444444444444444444444444444444444444444444444444444444444444",
+      "expected": "cdb96a21464b7fbeeaa3c7fade033780785c7849bf15a6033634b060b597e5ce"
+    },
+    {
+      "id": "temporary-node-id-rename",
+      "change": "source->a,tax->b,round->c and update refs",
+      "expected": "e4b3337bd3e8b71d8f062afc7fcad5646fa8ad567bfe009e3d02f599b3ee833c"
+    }
+  ]
+}
