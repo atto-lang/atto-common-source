@@ -14,7 +14,7 @@ import sys
 VERSION = "ores-callback-facts/v0"
 TIMINGS = {"inline", "deferred", "after_actor_turn", "mixed", "unknown"}
 LANES = {"same_continuation", "actor_lane", "other_worker", "unknown"}
-KINDS = {"noop", "subscribe", "unsubscribe", "publish", "launch", "await", "end_turn"}
+KINDS = {"noop", "subscribe", "unsubscribe", "publish", "launch", "await", "end_turn", "request_subscribe"}
 MULTIPLICITY = {"at_most_once", "many", "unknown"}
 MAX_BYTES = 8 * 1024 * 1024
 
@@ -61,14 +61,15 @@ def validate(doc):
                   len(set(node["next"])) == len(node["next"]), "invalid next")
             required = {"id", "kind", "next"}
             optional = set()
-            if node["kind"] in {"subscribe", "unsubscribe", "publish"}:
+            if node["kind"] in {"subscribe", "request_subscribe", "unsubscribe", "publish"}:
                 required |= {"emitter", "event"}
                 key({"emitter": node.get("emitter"), "event": node.get("event")})
             if node["kind"] == "launch":
                 required |= {"api", "timing", "publishes"}
-                optional |= {"lane", "invocations", "expected_invocations", "captures", "locks_held", "active_mutable_loans"}
+                optional |= {"lane", "serial_turn_proven", "invocations", "expected_invocations", "captures", "locks_held", "active_mutable_loans"}
                 check(ident(node.get("api")) and node.get("timing") in TIMINGS, "invalid callback API/timing")
                 check(node.get("lane", "unknown") in LANES, "invalid callback lane")
+                check(type(node.get("serial_turn_proven", False)) is bool, "invalid turn serialization proof")
                 check(node.get("invocations", "unknown") in MULTIPLICITY, "invalid invocation count")
                 check(node.get("expected_invocations", "many") in {"at_most_once", "many"}, "invalid callback expectation")
                 check(type(node.get("publishes")) is list and len(node["publishes"]) <= 128, "invalid publications")
@@ -101,6 +102,8 @@ def validate(doc):
 def transfer(subs, node):
     out = set(subs)
     if node["kind"] == "subscribe":
+        # Installed listener with compiler-verified synchronous completion;
+        # request_subscribe represents a call whose installation is unproven.
         out.add(key(node))
     if node["kind"] == "unsubscribe":
         # Unknown aliases invalidate all potentially matching guarantees.
@@ -155,7 +158,7 @@ def analyze(doc):
         nodes = {node["id"]: node for node in proc["nodes"]}
         # One path-insensitive set is used only to identify potentially intended
         # subscriptions. Definite registration uses intersection at CFG joins.
-        intended = [key(n) for n in nodes.values() if n["kind"] == "subscribe"]
+        intended = [key(n) for n in nodes.values() if n["kind"] in {"subscribe", "request_subscribe"}]
         in_sets = {proc["entry"]: frozenset()}
         queue = deque([proc["entry"]])
         while queue:
@@ -209,7 +212,8 @@ def analyze(doc):
                 if definitely_subscribed(in_sets[nid], ev):
                     continue
                 if (node["kind"] == "launch" and node["timing"] == "after_actor_turn"
-                    and node.get("lane") == "actor_lane" and same_turn_subscribed(nodes, node, ev)):
+                    and node.get("lane") == "actor_lane" and node.get("serial_turn_proven") is True
+                    and same_turn_subscribed(nodes, node, ev)):
                     continue
                 findings.append(finding("ORES-CB-002", proc, node,
                     "non-replaying event may publish before guaranteed subscription", ev))
