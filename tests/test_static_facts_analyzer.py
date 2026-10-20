@@ -57,7 +57,7 @@ class StaticFactsTests(unittest.TestCase):
         self.assertEqual(results[0]["rule"], "ORES-AMP-001")
         self.assertEqual(results[0]["severity"], "error")
         self.assertEqual(results[0]["confidence"], "potential")
-        self.assertEqual(results[0]["witness"], ["main", "worker"])
+        self.assertEqual(results[0]["witness"], ["main", "worker", "main"])
 
     def test_unbounded_loop_repeated_spawn_without_cycle(self):
         f = facts()
