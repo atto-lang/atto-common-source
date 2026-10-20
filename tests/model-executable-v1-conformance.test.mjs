@@ -32,7 +32,7 @@ function configuredDigest(graph, value) {
 
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
-  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.3");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.4");
   assert.equal(corpus.portable_profile, "model-core-i64-v1");
   assert.deepEqual(
     corpus.profile_semantics.operation_expression_subset,
@@ -81,6 +81,14 @@ test("undeclared static names are unknown formals, not generic nonconstants", ()
   assert(item);
   assert.equal(item.expect, "reject");
   assert.equal(item.diagnostic, "MODEL_UNKNOWN_FORMAL");
+  assert.equal(item.backend_mode.java, "reject");
+  assert.equal(item.backend_mode.llvm, "reject");
+});
+
+test("duplicate model parameters use one shared diagnostic class", () => {
+  const item = corpus.cases.find(x => x.id === "duplicate-model-parameter");
+  assert(item);
+  assert.equal(item.diagnostic, "MODEL_DUPLICATE_PARAMETER");
   assert.equal(item.backend_mode.java, "reject");
   assert.equal(item.backend_mode.llvm, "reject");
 });
