@@ -682,6 +682,12 @@
       "phase": "implementation",
       "ordinal": 111,
       "meaning": "the backend executable profile does not permit model values to cross an actor/message boundary"
+    },
+    {
+      "code": "MODEL_INVALID_PROGRAM",
+      "phase": "implementation",
+      "ordinal": 112,
+      "meaning": "compiler ModelGraph entrypoint received an invalid or missing program object rather than a checked source program"
     }
   ]
 }
