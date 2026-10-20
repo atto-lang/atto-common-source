@@ -8,7 +8,7 @@ from scripts.static_facts_analyzer import InvalidFacts, analyze, strongly_connec
 def facts():
     return {
         "version": "ores-static-facts/v0",
-        "unit": "test",
+        "unit": "sha256:" + "0"*64,
         "procedures": [
             {"id": "main", "loops": []},
             {"id": "worker", "loops": []},
@@ -33,6 +33,47 @@ def rules(doc):
 class StaticFactsTests(unittest.TestCase):
     def test_clean_program(self):
         self.assertEqual(analyze(facts()), [])
+
+    def test_schema_and_consumer_share_restricted_limits(self):
+        import json
+        from pathlib import Path
+        schema = json.loads((Path(__file__).resolve().parents[1] /
+            "contracts/analysis/static-facts.v0.schema.json").read_text())
+        self.assertEqual(schema["properties"]["procedures"]["maxItems"], 512)
+        self.assertEqual(schema["properties"]["edges"]["maxItems"], 8192)
+        self.assertEqual(schema["properties"]["procedures"]["items"]
+            ["properties"]["loops"]["maxItems"], 256)
+        self.assertEqual(schema["properties"]["unit"]["pattern"],
+            r"^sha256:[0-9a-f]{64}$")
+
+    def test_bad_source_hash_and_duplicate_call_edge_rejected(self):
+        f = facts()
+        f["unit"] = "free-form-unreviewed"
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
+        f["unit"] = "sha256:" + "A"*64
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
+        f["unit"] = "sha256:" + "0"*64
+        f["edges"] = [edge("main", "worker"), edge("main", "worker")]
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
+
+    def test_per_function_and_global_loop_budget_enforced(self):
+        f = facts()
+        f["procedures"][0]["loops"] = [
+            {"id": f"L{i}", "exit": "unknown", "safepoint": False}
+            for i in range(257)]
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
+        f = facts()
+        f["procedures"] = [
+            {"id": f"f{i}", "loops": [
+                {"id": f"L{j}", "exit": "unknown", "safepoint": False}
+                for j in range(256)]}
+            for i in range(17)]
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
 
     def test_unknown_loop_and_no_safepoint(self):
         f = facts()
