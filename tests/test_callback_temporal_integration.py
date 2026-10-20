@@ -11,9 +11,26 @@ class TemporalIntegrationTests(unittest.TestCase):
         nodes = doc['procedures'][0]['nodes']
         nodes[0]['lane'] = 'actor_lane'
         nodes[0]['serial_turn_proven'] = True
+        # A syntactic leaf is not a verified scheduler turn boundary.
+        self.assertIn('ORES-CB-002', [f['rule'] for f in analyze(doc)])
+        nodes[1]['next'] = ['complete']
+        nodes.append({'id': 'complete', 'kind': 'end_turn', 'next': []})
         self.assertEqual(analyze(doc), [])
+        # Await may be a no-op on an already-completed Future.
         nodes[0]['next'] = ['yield']
         nodes.append({'id': 'yield', 'kind': 'await', 'next': ['sub']})
+        self.assertIn('ORES-CB-002', [f['rule'] for f in analyze(doc)])
+
+    def test_deferred_turn_with_abrupt_path_fails_closed(self):
+        doc = example('after_actor_turn')
+        nodes = doc['procedures'][0]['nodes']
+        nodes[0].update(lane='actor_lane', serial_turn_proven=True)
+        nodes[0]['next'] = ['sub', 'abort']
+        nodes[1]['next'] = ['complete']
+        nodes.extend([
+            {'id': 'complete', 'kind': 'end_turn', 'next': []},
+            {'id': 'abort', 'kind': 'noop', 'next': []},
+        ])
         self.assertIn('ORES-CB-002', [f['rule'] for f in analyze(doc)])
 
     def test_deferred_not_equivalent_to_safe_registration(self):
