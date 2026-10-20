@@ -21,7 +21,11 @@ on:
       - "docs/MODEL_GRAPH_LOWERING_ABI_V1.md"
       - "tests/general-purpose-model-contract.test.mjs"
       - "tests/model-graph-admission-v2.test.mjs"
+      - "tests/model-run-fence.test.mjs"
+      - "tests/model-autodiff-contract.test.mjs"
       - "experiments/model_graph_admission.mjs"
+      - "experiments/model_run_fence.mjs"
+      - "contracts/v1/model-autodiff/**"
       - "contracts/v1/model-graph/**"
       - ".github/workflows/general-purpose-model-contract.yml"
   workflow_dispatch:
@@ -41,7 +45,7 @@ jobs:
           node --version
           node --check experiments/model_graph_admission.mjs
           node -e "JSON.parse(require('fs').readFileSync('contracts/v1/model-graph/graph.schema.json','utf8')); console.log('schema-json-parse=PASS')"
-      - name: Execute both host reference suites
+      - name: Execute host reference suites
         run: |
           node --test tests/general-purpose-model-contract.test.mjs tests/model-graph-admission-v2.test.mjs tests/model-run-fence.test.mjs tests/model-autodiff-contract.test.mjs
       - name: Evidence boundary
