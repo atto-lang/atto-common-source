@@ -63,3 +63,13 @@ test("syntax-negative fixtures use the two stable parser diagnostics", () => {
     new Set(["MODEL_EMPTY_BODY", "MODEL_NON_LAYER_EXPRESSION"])
   );
 });
+
+
+test("named static operation arguments fail closed until compiler-owned binding exists", () => {
+  const named = manifest.cases.find(x => x.id === "named-config-unresolved");
+  assert(named);
+  assert.equal(named.syntax_expect, "accept");
+  assert.equal(named.typed_expect, "reject");
+  assert.equal(named.diagnostic_class, "MODEL_NAMED_ARGUMENT_UNRESOLVED");
+  assert.match(fixture(named), /ApplyTaxBps\(tax_bps:\s*1500\)/);
+});
