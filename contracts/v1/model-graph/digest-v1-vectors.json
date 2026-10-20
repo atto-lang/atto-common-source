@@ -132,5 +132,126 @@
       "change": "source->a,tax->b,round->c and update refs",
       "expected": "e4b3337bd3e8b71d8f062afc7fcad5646fa8ad567bfe009e3d02f599b3ee833c"
     }
-  ]
+  ],
+  "externalInput": {
+    "graph": {
+      "version": 1,
+      "modelTypeId": "finance.PriceTransform@v1",
+      "nodes": [
+        {
+          "id": "validate",
+          "op": "finance.ValidatePrice",
+          "inputs": [],
+          "constArgs": [],
+          "signature": {
+            "inputs": [
+              {
+                "kind": "nominal",
+                "typeAbi": "finance.Price@v1",
+                "bytes": 16
+              }
+            ],
+            "output": {
+              "kind": "nominal",
+              "typeAbi": "finance.Price@v1",
+              "bytes": 16
+            },
+            "effect": "pure",
+            "vjp": false,
+            "scratchBytes": 0,
+            "abi": "ores.model.op.v1",
+            "implDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+            "provenance": "verified-ores",
+            "constKinds": [],
+            "profile": {
+              "freestanding": true,
+              "allocation": "none",
+              "deterministic": true
+            }
+          }
+        },
+        {
+          "id": "tax",
+          "op": "finance.ApplyTaxBps",
+          "inputs": [
+            "validate"
+          ],
+          "constArgs": [
+            {
+              "kind": "i64",
+              "value": "1500"
+            }
+          ],
+          "signature": {
+            "inputs": [
+              {
+                "kind": "nominal",
+                "typeAbi": "finance.Price@v1",
+                "bytes": 16
+              }
+            ],
+            "output": {
+              "kind": "nominal",
+              "typeAbi": "finance.Price@v1",
+              "bytes": 16
+            },
+            "effect": "pure",
+            "vjp": false,
+            "scratchBytes": 0,
+            "abi": "ores.model.op.v1",
+            "implDigest": "2222222222222222222222222222222222222222222222222222222222222222",
+            "provenance": "verified-ores",
+            "constKinds": [
+              "i64"
+            ],
+            "profile": {
+              "freestanding": true,
+              "allocation": "none",
+              "deterministic": true
+            }
+          }
+        },
+        {
+          "id": "round",
+          "op": "finance.RoundCents",
+          "inputs": [
+            "tax"
+          ],
+          "constArgs": [],
+          "signature": {
+            "inputs": [
+              {
+                "kind": "nominal",
+                "typeAbi": "finance.Price@v1",
+                "bytes": 16
+              }
+            ],
+            "output": {
+              "kind": "nominal",
+              "typeAbi": "finance.Price@v1",
+              "bytes": 16
+            },
+            "effect": "pure",
+            "vjp": false,
+            "scratchBytes": 0,
+            "abi": "ores.model.op.v1",
+            "implDigest": "3333333333333333333333333333333333333333333333333333333333333333",
+            "provenance": "verified-ores",
+            "constKinds": [],
+            "profile": {
+              "freestanding": true,
+              "allocation": "none",
+              "deterministic": true
+            }
+          }
+        }
+      ],
+      "outputs": [
+        "round"
+      ]
+    },
+    "expectedBytes": 577,
+    "expected": "069288245a672efe264581df42bfec4686192fdb210dca8ce7da7dda563ecac3",
+    "note": "Ordered v1 external run(input) boundary: first node has one signature input and no parent edge; the input port is bound by model invocation."
+  }
 }
