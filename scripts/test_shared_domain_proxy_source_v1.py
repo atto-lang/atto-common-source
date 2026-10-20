@@ -13,8 +13,8 @@ class SharedDomainProxySourceV1Test(unittest.TestCase):
     def test_canonical_validates(self):
         self.assertTrue(verify.validate(copy.deepcopy(CANONICAL)))
 
-    def test_case_inventory_is_35(self):
-        self.assertEqual(len(CANONICAL["cases"]), 35)
+    def test_case_inventory_is_38(self):
+        self.assertEqual(len(CANONICAL["cases"]), 38)
 
     def test_case_ids_are_unique(self):
         ids = [c["id"] for c in CANONICAL["cases"]]
@@ -41,10 +41,10 @@ class SharedDomainProxySourceV1Test(unittest.TestCase):
     def test_no_backend_claims_guest_support(self):
         self.assertNotIn("implemented", CANONICAL["backend_support"].values())
 
-    def test_llvm_is_host_candidate_only(self):
+    def test_llvm_is_source_admission_only(self):
         self.assertEqual(
             CANONICAL["backend_support"]["llvm"],
-            "host-runtime-candidate-no-guest-lowering")
+            "source-admission-no-executable-lowering")
 
     def test_unknown_root_field_rejected(self):
         mutated = copy.deepcopy(CANONICAL)
@@ -81,9 +81,9 @@ for _case_id, _expected in verify.EXPECTED_CASES.items():
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(SharedDomainProxySourceV1Test)
     result = unittest.TextTestRunner(verbosity=2).run(suite)
-    if result.testsRun != 46:
-        raise SystemExit(f"expected 46 tests, ran {result.testsRun}")
+    if result.testsRun != 49:
+        raise SystemExit(f"expected 49 tests, ran {result.testsRun}")
     if (not result.wasSuccessful() or result.skipped or result.expectedFailures
             or result.unexpectedSuccesses):
         raise SystemExit(1)
-    print("SHARED_DOMAIN_PROXY_SOURCE_TESTS=46")
+    print("SHARED_DOMAIN_PROXY_SOURCE_TESTS=49")
