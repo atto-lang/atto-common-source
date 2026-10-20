@@ -57,6 +57,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Architecture proposal](docs/ARCHITECTURE.md)
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
+- [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
