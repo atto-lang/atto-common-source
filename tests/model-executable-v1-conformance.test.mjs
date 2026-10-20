@@ -32,7 +32,7 @@ function configuredDigest(graph, value) {
 
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
-  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.2");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.3");
   assert.equal(corpus.portable_profile, "model-core-i64-v1");
   assert.deepEqual(
     corpus.profile_semantics.operation_expression_subset,
@@ -74,6 +74,15 @@ test("signed i64 overflow corpus is symmetric around the one legal minimum endpo
   const minimum = corpus.cases.find(x => x.id === "price-adjust-i64-minimum");
   assert.equal(minimum.expect, "accept");
   assert.equal(minimum.semantic_result_i64, "-9223372036854775808");
+});
+
+test("undeclared static names are unknown formals, not generic nonconstants", () => {
+  const item = corpus.cases.find(x => x.id === "unknown-static-formal");
+  assert(item);
+  assert.equal(item.expect, "reject");
+  assert.equal(item.diagnostic, "MODEL_UNKNOWN_FORMAL");
+  assert.equal(item.backend_mode.java, "reject");
+  assert.equal(item.backend_mode.llvm, "reject");
 });
 
 test("all executable-v1 rejection diagnostics are registered", () => {
