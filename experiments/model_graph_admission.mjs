@@ -86,14 +86,20 @@ function port(p) {
   return bytes;
 }
 
-function samePort(a, b) {
+function portMismatchCode(a, b) {
   if (a.kind === "nominal" || b.kind === "nominal") {
     return a.kind === "nominal" && b.kind === "nominal" &&
-      a.typeAbi === b.typeAbi && a.bytes === b.bytes;
+      a.typeAbi === b.typeAbi && a.bytes === b.bytes
+        ? null : "MODEL_PORT_TYPE_MISMATCH";
   }
-  return a.dtype === b.dtype && (a.layout ?? "") === (b.layout ?? "") &&
-    (a.unit ?? "") === (b.unit ?? "") &&
-    a.shape.length === b.shape.length && a.shape.every((n, i) => n === b.shape[i]);
+  if (a.dtype !== b.dtype) return "MODEL_PORT_DTYPE_MISMATCH";
+  if (a.shape.length !== b.shape.length || a.shape.some((n, i) => n !== b.shape[i]))
+    return "MODEL_PORT_SHAPE_MISMATCH";
+  const aLayout = a.layout ?? (a.shape.length === 0 ? "scalar" : "contiguous");
+  const bLayout = b.layout ?? (b.shape.length === 0 ? "scalar" : "contiguous");
+  if (aLayout !== bLayout) return "MODEL_PORT_LAYOUT_MISMATCH";
+  if ((a.unit ?? "") !== (b.unit ?? "")) return "MODEL_PORT_UNIT_MISMATCH";
+  return null;
 }
 
 function validateConstant(c, expectedKind) {
@@ -256,7 +262,8 @@ export function admitModelGraph(graph, registry, options = {}) {
       if (typeof parentId !== "string" || !found.has(parentId))
         fail("MODEL_FORWARD_OR_CYCLIC_EDGE");
       const parent = found.get(parentId);
-      if (!samePort(parent.sig.output, sig.inputs[i])) fail("MODEL_PORT_TYPE_MISMATCH");
+      const mismatch = portMismatchCode(parent.sig.output, sig.inputs[i]);
+      if (mismatch) fail(mismatch);
       parents.push(parentId);
       depth = parent.depth + 1n > depth ? parent.depth + 1n : depth;
     }
