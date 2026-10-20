@@ -478,6 +478,66 @@
       "phase": "lowering",
       "ordinal": 77,
       "meaning": "source static configuration uses a name the trusted op signature cannot resolve; labels may not be silently erased"
+    },
+    {
+      "code": "MODEL_FORMAL_DEFAULT_TYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 78,
+      "meaning": "model formal default literal kind conflicts with its declared type"
+    },
+    {
+      "code": "MODEL_FORMAL_BUDGET",
+      "phase": "admission",
+      "ordinal": 79,
+      "meaning": "model AST exceeds the maximum allowed declared formal count"
+    },
+    {
+      "code": "MODEL_DUPLICATE_FORMAL",
+      "phase": "lowering",
+      "ordinal": 80,
+      "meaning": "model contains repeated formal names even after direct AST construction"
+    },
+    {
+      "code": "MODEL_ARGUMENT_BUDGET",
+      "phase": "admission",
+      "ordinal": 81,
+      "meaning": "model operation has more static configuration arguments than the bounded frontend permits"
+    },
+    {
+      "code": "MODEL_INVALID_OP_ABI",
+      "phase": "lowering",
+      "ordinal": 82,
+      "meaning": "compiler-supplied resolved operation ABI identifier is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_IMPL_DIGEST",
+      "phase": "lowering",
+      "ordinal": 83,
+      "meaning": "compiler-supplied operation implementation hash is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_OP_PROVENANCE",
+      "phase": "lowering",
+      "ordinal": 84,
+      "meaning": "operation provenance does not match a trusted compiler-recognized category"
+    },
+    {
+      "code": "MODEL_UNKNOWN_FORMAL",
+      "phase": "lowering",
+      "ordinal": 85,
+      "meaning": "model argument or override references an undeclared formal name"
+    },
+    {
+      "code": "MODEL_GRAPH_BUDGET",
+      "phase": "admission",
+      "ordinal": 86,
+      "meaning": "resolved graph or output collection exceeds the portable identity size limit"
+    },
+    {
+      "code": "MODEL_PORT_ARITY_MISMATCH",
+      "phase": "admission",
+      "ordinal": 87,
+      "meaning": "resolved operation dependency count violates its typed input signature"
     }
   ]
 }
