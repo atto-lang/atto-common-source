@@ -466,6 +466,12 @@
       "phase": "identity",
       "ordinal": 75,
       "meaning": "a run identity has already committed or published and cannot commit again"
+    },
+    {
+      "code": "MODEL_NONCANONICAL_EXECUTION_PROFILE",
+      "phase": "identity",
+      "ordinal": 76,
+      "meaning": "execution profile metadata is valid in shape but not in canonical v1 ordering/representation"
     }
   ]
 }
