@@ -162,6 +162,36 @@ def strongly_connected(nodes, edges):
     return components
 
 
+def cycle_witness(edges):
+    """Produce a real directed cycle, prioritizing the high-fanout edge."""
+    ordered = sorted(edges, key=lambda e: (
+        0 if e["fanout"] == "unknown" or e["fanout"] > 1 else 1,
+        e["from"], e["to"], e["kind"]))
+    first = ordered[0]
+    adjacency = defaultdict(list)
+    for edge in edges:
+        adjacency[edge["from"]].append(edge["to"])
+    for key in adjacency:
+        adjacency[key] = sorted(set(adjacency[key]))
+    start, goal = first["to"], first["from"]
+    queue, parent = deque([start]), {start: None}
+    while queue and goal not in parent:
+        current = queue.popleft()
+        for nxt in adjacency[current]:
+            if nxt not in parent:
+                parent[nxt] = current
+                queue.append(nxt)
+    if goal not in parent:
+        raise InvalidFacts("inconsistent SCC witness")
+    path = []
+    current = goal
+    while current is not None:
+        path.append(current)
+        current = parent[current]
+    path.reverse()
+    return [goal] + path
+
+
 def analyze(doc):
     validate(doc)
     result = []
@@ -207,7 +237,7 @@ def analyze(doc):
         at = next((e["location"] for e in contained if "location" in e), None)
         result.append(finding(rule, "error" if amplified else "warning", "potential",
             f"Unbounded cycle can generate {label} ({qualifier}); a finite total-cycle bound is unproved",
-            at, comp))
+            at, cycle_witness(contained)))
     # One reproducible shortest witness per sink, using at most one
     # multi-source BFS per risk (not quadratic source x sink traversals).
     sinks_by_risk = defaultdict(list)
