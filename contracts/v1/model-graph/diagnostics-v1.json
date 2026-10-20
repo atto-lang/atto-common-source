@@ -538,6 +538,150 @@
       "phase": "admission",
       "ordinal": 87,
       "meaning": "resolved operation dependency count violates its typed input signature"
+    },
+    {
+      "code": "MODEL_AMBIGUOUS",
+      "phase": "lowering",
+      "ordinal": 88,
+      "meaning": "unqualified model lookup is ambiguous and requires an explicit module qualifier"
+    },
+    {
+      "code": "MODEL_AMBIGUOUS_OP",
+      "phase": "lowering",
+      "ordinal": 89,
+      "meaning": "operation resolution finds more than one candidate for the same executable arity"
+    },
+    {
+      "code": "MODEL_BUDGET",
+      "phase": "admission",
+      "ordinal": 90,
+      "meaning": "model declaration count exceeds the executable profile budget"
+    },
+    {
+      "code": "MODEL_COMPOSITION_NOT_ENABLED",
+      "phase": "lowering",
+      "ordinal": 91,
+      "meaning": "nonrecursive model composition is valid in the general architecture but not enabled in executable v1"
+    },
+    {
+      "code": "MODEL_CONFIG_ARITY",
+      "phase": "lowering",
+      "ordinal": 92,
+      "meaning": "model construction supplies too many values or omits a required configuration parameter"
+    },
+    {
+      "code": "MODEL_CONFIG_BUDGET",
+      "phase": "admission",
+      "ordinal": 93,
+      "meaning": "model configuration parameter count exceeds the executable profile budget"
+    },
+    {
+      "code": "MODEL_CONFIG_DEFAULT_ORDER",
+      "phase": "lowering",
+      "ordinal": 94,
+      "meaning": "a required model configuration parameter follows a defaulted parameter"
+    },
+    {
+      "code": "MODEL_CONFIG_NAMED_UNSUPPORTED",
+      "phase": "implementation",
+      "ordinal": 95,
+      "meaning": "the backend executable profile does not yet support named model-constructor configuration"
+    },
+    {
+      "code": "MODEL_CONFIG_SHAPE",
+      "phase": "identity",
+      "ordinal": 96,
+      "meaning": "a configured model identity does not bind exactly the declared configuration parameter set"
+    },
+    {
+      "code": "MODEL_CONFIG_TYPE_ARGUMENTS",
+      "phase": "lowering",
+      "ordinal": 97,
+      "meaning": "model construction attempts unsupported generic type arguments"
+    },
+    {
+      "code": "MODEL_CONFIG_TYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 98,
+      "meaning": "a model configuration value does not match the declared canonical configuration type"
+    },
+    {
+      "code": "MODEL_DUPLICATE",
+      "phase": "lowering",
+      "ordinal": 99,
+      "meaning": "the same nominal model is declared more than once in one ownership scope"
+    },
+    {
+      "code": "MODEL_DUPLICATE_PARAMETER",
+      "phase": "lowering",
+      "ordinal": 100,
+      "meaning": "a model declaration repeats a configuration parameter name"
+    },
+    {
+      "code": "MODEL_INVALID_CONFIG_TYPE",
+      "phase": "lowering",
+      "ordinal": 101,
+      "meaning": "a model configuration parameter uses a type outside the executable profile"
+    },
+    {
+      "code": "MODEL_INVALID_IDENTIFIER",
+      "phase": "lowering",
+      "ordinal": 102,
+      "meaning": "a model, operation, or configuration identifier is not canonical for portable executable v1"
+    },
+    {
+      "code": "MODEL_INVALID_STATIC_ARG",
+      "phase": "lowering",
+      "ordinal": 103,
+      "meaning": "the compiler-internal static argument descriptor is malformed"
+    },
+    {
+      "code": "MODEL_MISSING_CONFIG",
+      "phase": "identity",
+      "ordinal": 104,
+      "meaning": "configured model identity or execution is missing a declared configuration binding"
+    },
+    {
+      "code": "MODEL_RUN_ARITY",
+      "phase": "lowering",
+      "ordinal": 105,
+      "meaning": "model.run is invoked with the wrong number of dynamic inputs"
+    },
+    {
+      "code": "MODEL_STATIC_ARG_BUDGET",
+      "phase": "admission",
+      "ordinal": 106,
+      "meaning": "one operation or the whole model exceeds the executable static-argument budget"
+    },
+    {
+      "code": "MODEL_TYPE_NAME_COLLISION",
+      "phase": "lowering",
+      "ordinal": 107,
+      "meaning": "a model nominal type collides with another nominal declaration"
+    },
+    {
+      "code": "MODEL_UNKNOWN_CONFIG",
+      "phase": "identity",
+      "ordinal": 108,
+      "meaning": "configured model identity contains a configuration key that is not declared by the model"
+    },
+    {
+      "code": "MODEL_VALUE_NAME_COLLISION",
+      "phase": "lowering",
+      "ordinal": 109,
+      "meaning": "a model value constructor collides with another callable/value declaration"
+    },
+    {
+      "code": "MODEL_VALUE_STORAGE_UNSUPPORTED",
+      "phase": "implementation",
+      "ordinal": 110,
+      "meaning": "the backend executable profile does not yet support storing first-class model values"
+    },
+    {
+      "code": "MODEL_ACTOR_TRANSFER_UNSUPPORTED",
+      "phase": "implementation",
+      "ordinal": 111,
+      "meaning": "the backend executable profile does not permit model values to cross an actor/message boundary"
     }
   ]
 }
