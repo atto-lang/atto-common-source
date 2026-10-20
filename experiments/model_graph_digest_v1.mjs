@@ -145,6 +145,28 @@ function encodePort(out, p) {
   else { out.u8(1); out.string(p.unit); }
 }
 
+// Model ports are exact compiler-owned contracts, not structurally
+// convertible values. Compare canonical default layout and encoded extents,
+// not the host-language identity of a port metadata object.
+function samePort(a, b) {
+  if (!plain(a) || !plain(b)) return false;
+  if (a.kind === "nominal" || b.kind === "nominal") {
+    return a.kind === "nominal" && b.kind === "nominal" &&
+      a.typeAbi === b.typeAbi &&
+      u64Value(a.bytes, "MODEL_INVALID_PORT") === u64Value(b.bytes, "MODEL_INVALID_PORT");
+  }
+  if (a.dtype !== b.dtype || !denseArray(a.shape) || !denseArray(b.shape) ||
+      a.shape.length !== b.shape.length) return false;
+  const defaultLayout = p => p.layout ?? (p.shape.length === 0 ? "scalar" : "contiguous");
+  if (defaultLayout(a) !== defaultLayout(b)) return false;
+  if (a.unit !== b.unit) return false;
+  for (let i = 0; i < a.shape.length; i++) {
+    if (u64Value(a.shape[i], "MODEL_INVALID_PORT") !==
+        u64Value(b.shape[i], "MODEL_INVALID_PORT")) return false;
+  }
+  return true;
+}
+
 export function canonicalModelGraphV1Bytes(graph) {
   exact(graph, ["version","modelTypeId","nodes","outputs"], "MODEL_INVALID_RESOLVED_GRAPH");
   if (graph.version !== 1 || !denseArray(graph.nodes) || graph.nodes.length === 0 ||
@@ -192,10 +214,19 @@ export function canonicalModelGraphV1Bytes(graph) {
     out.u32(n.constArgs.length);
     for (const c of n.constArgs) encodeConstant(out, c);
 
+    // Ordered v1: the first node may consume one external run(input).
+    // No other unmatched ports are permitted; later nodes must name all parents.
+    const externalUnary = index === 0 && n.inputs.length === 0 && sig.inputs.length === 1;
+    if (!externalUnary && n.inputs.length !== sig.inputs.length)
+      fail("MODEL_PORT_ARITY_MISMATCH");
     out.u32(n.inputs.length);
-    for (const id of n.inputs) {
+    for (let edge = 0; edge < n.inputs.length; edge++) {
+      const id = n.inputs[edge];
       if (!ordinals.has(id) || ordinals.get(id) >= index)
         fail("MODEL_FORWARD_OR_CYCLIC_EDGE");
+      const upstream = graph.nodes[ordinals.get(id)].signature.output;
+      if (!samePort(upstream, sig.inputs[edge]))
+        fail("MODEL_PORT_TYPE_MISMATCH");
       out.u32(ordinals.get(id));
     }
 
