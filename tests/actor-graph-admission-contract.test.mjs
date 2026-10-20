@@ -27,6 +27,12 @@ function portShape(p) {
         p.shape.some(d => !Number.isSafeInteger(d) || d < 1 || d > MAX))
       fail("GRAPH_INVALID_TENSOR_SHAPE");
     if (p.layout !== "row-major") fail("GRAPH_INVALID_LAYOUT");
+    const elementBytes=p.dtype==="f64"?8:4;
+    let count=1;
+    for(const dim of p.shape) {
+      if(dim>Math.floor(MAX / elementBytes / count)) fail("GRAPH_TENSOR_BYTES_OVERFLOW");
+      count*=dim;
+    }
   } else {
     validId(p.type);
     if ("shape" in p || "dtype" in p || "layout" in p)
@@ -44,7 +50,7 @@ function canonicalAttrs(value, depth=0) {
     return value;
   }
   if (typeof value==="number") {
-    if(!Number.isFinite(value)) fail("GRAPH_INVALID_ATTR");
+    if(!Number.isFinite(value) || Object.is(value,-0)) fail("GRAPH_INVALID_ATTR");
     return value;
   }
   if (Array.isArray(value)) {
@@ -132,8 +138,8 @@ function validateGraph(input) {
       id:n.id, op:n.op, attrs:canonicalAttrs(n.attrs??{}),
       inputs:Object.fromEntries(Object.entries(n.inputs).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}])),
       outputs:Object.fromEntries(Object.entries(n.outputs).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>[k,{...v,...(v.shape?{shape:[...v.shape]}:{})}]))
-    })).sort((a,b)=>a.id.localeCompare(b.id)),
-    edges:input.edges.map(e=>({...e})).sort((a,b)=>a.id.localeCompare(b.id))
+    })).sort((a,b)=>a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    edges:input.edges.map(e=>({...e})).sort((a,b)=>a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
   };
   const digest=createHash("sha256").update(JSON.stringify(normal)).digest("hex");
   return deepFreeze({...normal,order,digest});
@@ -352,4 +358,11 @@ test("each edge capacity applies even when global credit remains",()=>{
   assert.throws(()=>l.admit({...m,delivery:"two"}),/GRAPH_EDGE_BACKPRESSURE/);
   l.ack(m,r.token);
   assert.equal(l.admit({...m,delivery:"two"}).status,"admitted");
+});
+
+test("tensor product byte lengths and signed-zero operator attributes fail closed",()=>{
+  const a=graph();a.nodes[1].inputs.input.shape=[2147483647,2147483647];
+  assert.throws(()=>validateGraph(a),/GRAPH_TENSOR_BYTES_OVERFLOW/);
+  const b=graph();b.nodes[1].attrs={scale:-0};
+  assert.throws(()=>validateGraph(b),/GRAPH_INVALID_ATTR/);
 });
