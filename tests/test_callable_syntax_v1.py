@@ -50,7 +50,6 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
 
     def test_schema_and_ids(self) -> None:
         self.assertEqual(self.data["schema"], "oreslang-callable-syntax-v1")
-        self.assertEqual(self.data["max_explicit_tuple_slots"], 64)
         ids: list[str] = []
         for group in ("cases", "return_flow", "tuple_types"):
             ids.extend(item["id"] for item in self.data[group])
@@ -77,12 +76,11 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
                     expected = "reject" if case.get("normal_fallthrough") else "accept"
                 self.assertEqual(case["expected"], expected)
 
-    def test_tuple_bound(self) -> None:
-        bound = self.data["max_explicit_tuple_slots"]
-        for case in self.data["tuple_types"]:
-            with self.subTest(case=case["id"]):
-                expected = "accept" if case["slots"] <= bound else "reject"
-                self.assertEqual(case["expected"], expected)
+    def test_tuple_spellings_preserve_existing_arity_policy(self) -> None:
+        by_id = {case["id"]: case for case in self.data["tuple_types"]}
+        self.assertEqual(by_id["tuple-large-65"]["expected"], "accept")
+        self.assertEqual(by_id["tuple-existing-large-65"]["expected"], "accept")
+        self.assertEqual(by_id["tuple-large-65"]["slots"], by_id["tuple-existing-large-65"]["slots"])
 
     def test_required_safety_edges_are_present(self) -> None:
         by_id = {case["id"]: case for case in self.data["cases"]}
