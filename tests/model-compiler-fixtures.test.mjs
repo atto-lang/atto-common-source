@@ -35,6 +35,11 @@ test("cross-domain forward fixtures are not ML-only aliases", () => {
   assert.equal(dsp.gradient_requested, false);
   assert.match(fixture(pricing), /ApplyTaxBps/);
   assert.match(fixture(dsp), /ScaleSamples/);
+  assert.equal(pricing.resolved_digest_vector, "base");
+  assert.deepEqual(pricing.default_config, { tax_bps: "1500" });
+  assert.equal(pricing.override_config.tax_bps, "1501");
+  assert.equal(pricing.override_config.expected_digest,
+    "1dcfd1569621a30e53c969b9bf0e2add7fe94a04c2bf4474fae821555996d21b");
 });
 
 test("one declaration can be forward-valid and gradient-invalid", () => {
