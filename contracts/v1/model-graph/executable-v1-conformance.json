@@ -134,7 +134,8 @@
         "llvm": "reject"
       },
       "llvm_diagnostic": "MODEL_VALUE_STORAGE_UNSUPPORTED",
-      "note": "Stored nominal model instances are implemented by Java but intentionally outside LLVM executable-v1."
+      "note": "Stored nominal model instances are implemented by Java but intentionally outside LLVM executable-v1.",
+      "semantic_result_i64": "1"
     },
     {
       "id": "default-positive-i64-overflow",
@@ -331,7 +332,7 @@
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.9",
+  "revision": "model-core-i64-v1.2026-10-20.10",
   "identity_properties": {
     "parameter_alpha_rename": "invariant",
     "whitespace_comments_source_locations": "invariant",
@@ -354,6 +355,22 @@
       "expect_same_graph_digest": false,
       "variant_operation_digest": "739dfcf2d1f6ce9eed795e879f7ec72e70defb2efc4520ad056681042bd0c926",
       "variant_graph_digest": "f87d8d1742d0915134a88e54bb8fb66e6cd65f156a753c1c1f3570614ec0a6ba"
+    },
+    {
+      "id": "operation-literal-value",
+      "baseline_source": "fnc Identity(int input): int { return input; }\nfnc AddOne(int input): int { return input + 1; }\ndefine model LiteralModel as\n  Identity()\n  AddOne()\nend\n",
+      "variant_source": "fnc Identity(int input): int { return input; }\nfnc AddOne(int input): int { return input + 2; }\ndefine model LiteralModel as\n  Identity()\n  AddOne()\nend\n",
+      "expect_same_graph_digest": false,
+      "variant_operation_digest": "e92ebd0a434837cb1a85718cf7eca2b6debdb315151ad6cc010da7b50a45420e",
+      "variant_graph_digest": "2c957c1ece751bc7a2d8c394b60da6709a95f8e0b2d736f47f0eea0d85eabdf4"
+    },
+    {
+      "id": "static-argument-order",
+      "baseline_source": "fnc Affine(int a, int b, int input): int { return input * a + b; }\ndefine model StaticOrder as\n  Affine(2, 3)\nend\n",
+      "variant_source": "fnc Affine(int a, int b, int input): int { return input * a + b; }\ndefine model StaticOrder as\n  Affine(3, 2)\nend\n",
+      "expect_same_graph_digest": false,
+      "variant_operation_digest": "6ac95ce048dccb8f6b0b70589b01589d669359133b834e29b22e97c52d324828",
+      "variant_graph_digest": "1dc064c853e7eeb3c59282d9ca2b3bd2eacac45d1b14ccead4b2435a790e0558"
     }
   ]
 }
