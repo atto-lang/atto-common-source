@@ -110,6 +110,8 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
         self.assertEqual(by_id["root-end-arrow-do"]["expected"], "accept")
         self.assertEqual(by_id["root-end-arrow-do"]["body_boundary"], "do")
         self.assertEqual(by_id["root-end-arrow-do"]["body_separator_line"], "header")
+        self.assertEqual(by_id["root-end-arrow-do-leading-do-select"]["expected"], "accept")
+        self.assertEqual(by_id["root-end-arrow-do-leading-do-select"]["first_statement"], "do_select")
         self.assertEqual(by_id["root-end-arrow-do-next-line"]["expected"], "reject")
         self.assertEqual(by_id["root-end-arrow-do-next-line"]["body_separator_line"], "body")
         self.assertEqual(by_id["root-end-arrow-leading-do-select"]["expected"], "accept")
