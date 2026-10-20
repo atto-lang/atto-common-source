@@ -53,7 +53,7 @@ function projectCorpus(value) {
       "case", item.id, item.expect, item.backend_mode?.java, item.backend_mode?.llvm,
       field(item.diagnostic), field(item.llvm_diagnostic), field(item.graph_digest),
       field(item.configured_graph_digest), field(item.semantic_result_i64),
-      hexAscii(item.source)
+      field(item.configuration_i64), hexAscii(item.source)
     ].join("|"));
   }
   for (const item of value.identity_cases ?? []) {
@@ -75,7 +75,7 @@ test("line-oriented backend projection is generated exactly from normative JSON"
 
 test("executable-v1 corpus has a stable portable i64 profile", () => {
   assert.equal(corpus.contract, "oreslang.model.executable.conformance.v1");
-  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.8");
+  assert.equal(corpus.revision, "model-core-i64-v1.2026-10-20.9");
   assert.equal(corpus.portable_profile, "model-core-i64-v1");
   assert.deepEqual(
     corpus.profile_semantics.operation_expression_subset,
