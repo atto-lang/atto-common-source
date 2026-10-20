@@ -95,3 +95,9 @@ export function commitModelRun(stamp, graphIdentity, instanceIdentity, request, 
   if (committedRunIds.includes(stamp.runId)) fail("MODEL_RUN_REPLAY");
   return Object.freeze([...committedRunIds, stamp.runId]);
 }
+
+export function compiledPlanCacheKey(graphDigest, executionProfileDigest) {
+  const g = digest(graphDigest, "MODEL_INVALID_GRAPH_DIGEST");
+  const p = digest(executionProfileDigest, "MODEL_INVALID_EXECUTION_PROFILE");
+  return "ores-model-plan-v1:" + g + ":" + p;
+}
