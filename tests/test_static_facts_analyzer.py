@@ -167,7 +167,7 @@ class StaticFactsTests(unittest.TestCase):
             "publisher": "doMore", "invocation_timing": "mixed",
             "order": "publish_first", "registration_continuation": "same_uninterrupted_turn", "registration_completion": "proved_sync_install",
         }]
-        self.assertEqual(rules(f), ["ORES-ZALGO-001"])
+        self.assertEqual(rules(f), ["ORES-CB-002"])
 
     def test_safe_registration_first_and_true_after_turn(self):
         f = facts()
@@ -180,7 +180,7 @@ class StaticFactsTests(unittest.TestCase):
         e["invocation_timing"] = "deferred_after_turn"
         self.assertEqual(rules(f), [])
         e["registration_continuation"] = "may_suspend"
-        self.assertEqual(rules(f), ["ORES-ZALGO-001"])
+        self.assertEqual(rules(f), ["ORES-CB-002"])
 
     def test_requested_registration_is_not_proven_installation(self):
         f = facts()
@@ -189,7 +189,7 @@ class StaticFactsTests(unittest.TestCase):
              "order": "register_first", "registration_continuation": "same_uninterrupted_turn",
              "registration_completion": "unproved"}
         f["callback_orderings"] = [e]
-        self.assertEqual(rules(f), ["ORES-ZALGO-002"])
+        self.assertEqual(rules(f), ["ORES-CB-006"])
 
     def test_unknown_order_or_concurrent_callback_warns(self):
         f = facts()
@@ -197,9 +197,9 @@ class StaticFactsTests(unittest.TestCase):
              "publisher": "start", "invocation_timing": "concurrent",
              "order": "unknown", "registration_continuation": "unknown", "registration_completion": "unproved"}
         f["callback_orderings"] = [e]
-        self.assertEqual(rules(f), ["ORES-ZALGO-002"])
+        self.assertEqual(rules(f), ["ORES-CB-002"])
         e["order"] = "publish_first"
-        self.assertEqual(rules(f), ["ORES-ZALGO-001"])
+        self.assertEqual(rules(f), ["ORES-CB-002"])
 
     def test_bad_callback_facts_fail_closed(self):
         f = facts()
