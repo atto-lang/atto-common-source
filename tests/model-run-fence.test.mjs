@@ -61,3 +61,17 @@ test("accessor metadata is rejected without execution",()=>{
   err("MODEL_INVALID_GRAPH_IDENTITY",()=>beginModelRun(g,instance(),request()));
   assert.equal(calls,0);
 });
+
+test("canonical @v1 model type ids and stateless stamps are admitted",()=>{
+  const g=graph({modelTypeId:"finance.PriceEstimate@v1"});
+  const i=instance({modelTypeId:"finance.PriceEstimate@v1",parameterVersion:null});
+  const s=beginModelRun(g,i,request({runId:"run-stateless"}));
+  assert.equal(s.modelTypeId,"finance.PriceEstimate@v1");
+  assert.equal(s.parameterVersion,null);
+  assert.equal(validateModelRunStamp(s,g,i,request({runId:"run-stateless"})),true);
+  err("MODEL_INVALID_MODEL_TYPE_ID",()=>beginModelRun(
+    graph({modelTypeId:" bad id "}),
+    instance({modelTypeId:" bad id "}),
+    request()
+  ));
+});
