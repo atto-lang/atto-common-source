@@ -454,6 +454,18 @@
       "phase": "implementation",
       "ordinal": 73,
       "meaning": "parser accepted the declaration but executable typed ModelGraph lowering is intentionally gated"
+    },
+    {
+      "code": "MODEL_GRAPH_GENERATION_OVERFLOW",
+      "phase": "identity",
+      "ordinal": 74,
+      "meaning": "graph publication generation would wrap"
+    },
+    {
+      "code": "MODEL_RUN_REPLAY",
+      "phase": "identity",
+      "ordinal": 75,
+      "meaning": "a run identity has already committed or published and cannot commit again"
     }
   ]
 }
