@@ -73,6 +73,15 @@ fnc value2() -> int {
 
 An omitted return annotation on the legacy braced form may retain the existing `void` behavior where the reference frontend permits it. The keyword-delimited form never relies on that default.
 
+## Frontend normalization
+
+The body spelling is concrete syntax, not a semantic callable kind. After source
+admission, an end-delimited free/module callable should normalize to the same
+backend-neutral callable AST/HIR body as its equivalent braced declaration.
+Likewise, `tuple (T1, T2, ...)` must normalize to the existing finite tuple
+type representation. Optimizers and runtimes must not branch on which accepted
+surface spelling the user wrote.
+
 ## Statements and layout
 
 Indentation is presentation only. Structural delimiters are authoritative:
