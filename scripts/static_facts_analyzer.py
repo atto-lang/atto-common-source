@@ -54,6 +54,7 @@ def validate(doc):
     for key, cap in LIMITS.items():
         require(type(doc[key]) is list and len(doc[key]) <= cap, f"{key}: invalid length")
     procedures = set()
+    loops_by_proc = {}
     for p in doc["procedures"]:
         obj(p, "procedure", {"id", "loops"})
         ident(p["id"], "procedure id")
@@ -69,14 +70,19 @@ def validate(doc):
             require(loop["exit"] in ("proved_terminates", "proved_no_exit", "unknown"), "bad loop exit")
             require(type(loop["safepoint"]) is bool, "bad loop safepoint")
             location(loop.get("location"), "loop location")
+        loops_by_proc[p["id"]] = loop_ids
     for edge in doc["edges"]:
-        obj(edge, "edge", {"from", "to", "kind", "fanout", "guard"}, {"location"})
+        obj(edge, "edge", {"from", "to", "kind", "fanout", "guard"}, {"location", "enclosing_loop"})
         ident(edge["from"], "edge from")
         ident(edge["to"], "edge to")
         require(edge["from"] in procedures and edge["to"] in procedures, "unknown procedure on edge")
         require(edge["kind"] in EDGE_KINDS, "unknown edge kind")
-        require(type(edge["fanout"]) is int and 1 <= edge["fanout"] <= 1000000, "bad fanout")
+        require(edge["fanout"] == "unknown" or
+                (type(edge["fanout"]) is int and 1 <= edge["fanout"] <= 1000000), "bad fanout")
         require(edge["guard"] in ("proved_bounded", "unproved"), "bad guard")
+        if "enclosing_loop" in edge:
+            ident(edge["enclosing_loop"], "enclosing loop")
+            require(edge["enclosing_loop"] in loops_by_proc[edge["from"]], "unknown enclosing loop")
         location(edge.get("location"), "edge location")
     for source in doc["taint_sources"]:
         obj(source, "taint source", {"id", "class"}, {"location"})
@@ -171,6 +177,16 @@ def analyze(doc):
             if loop["exit"] != "proved_terminates" and not loop["safepoint"]:
                 result.append(finding("ORES-TERM-003", "error", "potential",
                     f"{proc['id']}: loop {loop['id']} may monopolize a scheduler worker", at, [proc["id"], loop["id"]]))
+    loop_index = {(p["id"], loop["id"]): loop
+                  for p in doc["procedures"] for loop in p["loops"]}
+    for edge in doc["edges"]:
+        loop_id = edge.get("enclosing_loop")
+        if (loop_id is not None and
+                loop_index[(edge["from"], loop_id)]["exit"] != "proved_terminates" and
+                edge["kind"] in {"actor_spawn", "task_spawn", "message", "retry", "supervisor_restart"}):
+            result.append(finding("ORES-AMP-005", "warning", "potential",
+                f"{edge['from']}: repeatable {edge['kind']} inside loop {loop_id} with unproved finite bound",
+                edge.get("location"), [edge["from"], loop_id, edge["to"]]))
     open_edges = [e for e in doc["edges"] if e["guard"] == "unproved"]
     for comp in strongly_connected((p["id"] for p in doc["procedures"]), open_edges):
         members = set(comp)
@@ -178,7 +194,7 @@ def analyze(doc):
         if not contained or (len(comp) == 1 and not any(e["from"] == e["to"] for e in contained)):
             continue
         kinds = {e["kind"] for e in contained}
-        amplified = any(e["fanout"] > 1 for e in contained)
+        amplified = any(e["fanout"] == "unknown" or e["fanout"] > 1 for e in contained)
         if "actor_spawn" in kinds:
             rule, label = "ORES-AMP-001", "actor creation"
         elif "task_spawn" in kinds:
@@ -187,7 +203,7 @@ def analyze(doc):
             rule, label = "ORES-AMP-003", "asynchronous event/retry work"
         else:
             rule, label = "ORES-AMP-004", "synchronous recursion/callback work"
-        qualifier = "multiplicative fanout" if amplified else "repeated work"
+        qualifier = "unknown or multiplicative fanout" if amplified else "repeated work"
         at = next((e["location"] for e in contained if "location" in e), None)
         result.append(finding(rule, "error" if amplified else "warning", "potential",
             f"Unbounded cycle can generate {label} ({qualifier}); a finite total-cycle bound is unproved",
