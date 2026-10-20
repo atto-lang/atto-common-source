@@ -10,6 +10,7 @@ class TemporalIntegrationTests(unittest.TestCase):
         doc = example('after_actor_turn')
         nodes = doc['procedures'][0]['nodes']
         nodes[0]['lane'] = 'actor_lane'
+        nodes[0]['serial_turn_proven'] = True
         self.assertEqual(analyze(doc), [])
         nodes[0]['next'] = ['yield']
         nodes.append({'id': 'yield', 'kind': 'await', 'next': ['sub']})
@@ -41,6 +42,16 @@ class TemporalIntegrationTests(unittest.TestCase):
     def test_dynamic_alias_does_not_masquerade_as_proven_subscription(self):
         doc = example('deferred', True)
         doc['procedures'][0]['nodes'][0]['publishes'][0]['emitter'] = '*'
+        self.assertEqual([x['rule'] for x in analyze(doc)], ['ORES-CB-002'])
+
+    def test_nonserialized_actor_turn_cannot_prove_order(self):
+        doc = example('after_actor_turn')
+        doc['procedures'][0]['nodes'][0]['lane'] = 'actor_lane'
+        self.assertEqual([x['rule'] for x in analyze(doc)], ['ORES-CB-002'])
+
+    def test_requested_subscription_not_same_as_installed_listener(self):
+        doc = example('deferred', True)
+        doc['procedures'][0]['nodes'][1]['kind'] = 'request_subscribe'
         self.assertEqual([x['rule'] for x in analyze(doc)], ['ORES-CB-002'])
 
     def test_schema_unknown_fields_fail_closed(self):
