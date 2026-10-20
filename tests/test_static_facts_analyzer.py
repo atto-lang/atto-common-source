@@ -59,6 +59,23 @@ class StaticFactsTests(unittest.TestCase):
         self.assertEqual(results[0]["confidence"], "potential")
         self.assertEqual(results[0]["witness"], ["main", "worker"])
 
+    def test_unbounded_loop_repeated_spawn_without_cycle(self):
+        f = facts()
+        f["procedures"][0]["loops"] = [{"id": "retry_loop", "exit": "unknown", "safepoint": True}]
+        f["edges"] = [{**edge("main", "worker", "actor_spawn", 30), "enclosing_loop": "retry_loop"}]
+        self.assertEqual(rules(f), ["ORES-AMP-005", "ORES-TERM-002"])
+
+    def test_unknown_fanout_cycle(self):
+        f = facts()
+        f["edges"] = [edge("main", "worker", "actor_spawn", "unknown"), edge("worker", "main")]
+        self.assertEqual(rules(f), ["ORES-AMP-001"])
+
+    def test_invalid_enclosing_loop_rejected(self):
+        f = facts()
+        f["edges"] = [{**edge("main", "worker"), "enclosing_loop": "missing"}]
+        with self.assertRaises(InvalidFacts):
+            analyze(f)
+
     def test_single_spawn_without_cycle(self):
         f = facts()
         f["edges"] = [edge("main", "worker", "actor_spawn", 30)]
