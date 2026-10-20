@@ -165,11 +165,32 @@ define contract ModuleApi as
 end
 ```
 
-A static-class contract may use the same signature/type surface when that contract feature is enabled by the frontend.
+A static-class contract may use the same callable signature/type surface when that contract feature is enabled by the frontend:
+
+```ores
+define static contract Factory<T> as
+    fnc make(T value) -> T;
+end
+
+define class IntFactory implements static Factory<int> as
+    pub static fnc make(int value) -> int {
+        return value;
+    }
+end
+```
+
+The Java v1 admission is deliberately compile-time-only and callable-only:
+public local `static fnc` members satisfy static contracts. Instance methods,
+private static functions and inherited static functions do not. Generic
+contracts may be specialized by a non-generic class; generic-class static-side
+conformance remains fail-closed until its substitution rules are explicit.
 
 Instance interfaces and traits continue to use the type-level callable signature separator `=>`. This v1 contract does not change instance method declaration syntax.
 
-Fields in module/static contracts use the same recursive `type_ref` grammar, including finite tuple types.
+**Module contract fields remain supported** and use the same recursive
+`type_ref` grammar, including finite tuple types. **Static-class contract
+fields are not part of v1**: a frontend must reject them until class static
+storage, initialization, ownership and reload semantics are implemented.
 
 ## Safety and backend requirements
 
@@ -197,7 +218,7 @@ parser/typechecker/codegen behavior against the same decisions.
 ## Current staged implementation status
 
 - Java/Graal current-main reconciliation: free/module end-delimited bodies, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
-- Static module/class-contract integration remains a separate restack task; the older `oreslang-source.java` PR #1612 is not current-main evidence.
+- Static class callable-contract integration is being restacked as a narrow current-main child of Java #1634; the older `oreslang-source.java` PR #1612 is not current-main evidence and its class-static-field runtime scope is not implied by v1.
 - Canonical formatter support is staged in `oreslang-format` PR #81.
 - LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713 and must be reconciled onto current native main before promotion; the current native scalar frontend does not claim executable parity.
 
