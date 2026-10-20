@@ -172,8 +172,18 @@
         "java": "reject",
         "llvm": "reject"
       }
+    },
+    {
+      "id": "unknown-static-formal",
+      "expect": "reject",
+      "source": "fnc AddDelta(int delta, int input): int { return input + delta; }\ndefine model Bad as\n  AddDelta(missing)\nend\n",
+      "diagnostic": "MODEL_UNKNOWN_FORMAL",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.2"
+  "revision": "model-core-i64-v1.2026-10-20.3"
 }
