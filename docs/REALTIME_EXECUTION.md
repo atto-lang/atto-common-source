@@ -22,6 +22,7 @@ The compiler must reject a hard-real-time unit if any reachable operation has an
 Required transitive effects:
 
 - `allocates_managed`
+- `tracing_collector_can_pause`
 - `allocates_region`
 - `may_block`
 - `may_suspend`
@@ -36,7 +37,7 @@ Required transitive effects:
 - `uses_untrusted_code`
 - `requires_jit`
 
-Unknown effects fail closed in hard-real-time profiles.
+Unknown effects fail closed in hard-real-time profiles. A tracing collector may exist outside the certified domain only when the selected runtime establishes that it cannot suspend or otherwise interfere with the certified execution path.
 
 ## Memory rules
 
@@ -132,6 +133,7 @@ The shared semantic layer should reserve stable diagnostic categories:
 - `RT008_UNBOUNDED_LOOP`
 - `RT009_SCHEDULING_UNPROVEN`
 - `RT010_PAGE_FAULT_RISK`
+- `RT011_COLLECTOR_INTERFERENCE`
 
 Backends may provide more detail, but must normalize to these categories for cross-backend conformance.
 

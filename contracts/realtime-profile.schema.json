@@ -23,7 +23,10 @@
     "gc": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tracingCollectorAllowedOnCertifiedPath", "managedHeapAllowedOnCertifiedPath"],
+      "required": [
+        "tracingCollectorAllowedOnCertifiedPath",
+        "managedHeapAllowedOnCertifiedPath"
+      ],
       "properties": {
         "tracingCollectorAllowedOnCertifiedPath": { "type": "boolean" },
         "managedHeapAllowedOnCertifiedPath": { "type": "boolean" }
@@ -55,7 +58,12 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "profile": { "enum": ["native-hard-rt", "java-hard-rt"] } } },
+      "if": {
+        "properties": {
+          "profile": { "enum": ["native-hard-rt", "java-hard-rt"] }
+        },
+        "required": ["profile"]
+      },
       "then": {
         "properties": {
           "aot": {
@@ -65,18 +73,29 @@
               "jitAllowed": { "const": false }
             }
           },
-          "timing": { "properties": { "hardRealtime": { "const": true } } }
-        }
-      }
-    },
-    {
-      "if": { "properties": { "profile": { "const": "native-hard-rt" } } },
-      "then": {
-        "properties": {
           "gc": {
             "properties": {
               "tracingCollectorAllowedOnCertifiedPath": { "const": false },
               "managedHeapAllowedOnCertifiedPath": { "const": false }
+            }
+          },
+          "timing": {
+            "required": [
+              "hardRealtime",
+              "scheduler",
+              "deadlineNs",
+              "wcetNs",
+              "maxBlockingNs",
+              "maxJitterNs"
+            ],
+            "properties": {
+              "hardRealtime": { "const": true },
+              "scheduler": { "enum": ["fixed-priority", "edf"] }
+            }
+          },
+          "memory": {
+            "properties": {
+              "pageFaultsAllowedAfterStart": { "const": false }
             }
           }
         }
