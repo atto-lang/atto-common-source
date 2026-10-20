@@ -15,6 +15,15 @@ const exact = (x, fields, code) => {
     if (!d || !Object.hasOwn(d, "value") || !d.enumerable) fail(code);
   }
 };
+const denseStrings = x => Array.isArray(x) &&
+  Object.keys(x).length === x.length &&
+  Object.keys(x).every((k,i)=>k===String(i)) &&
+  Reflect.ownKeys(x).every(k=>k==="length" ||
+    (typeof k==="string" && /^(0|[1-9][0-9]*)$/.test(k) && Number(k)<x.length)) &&
+  Object.keys(x).every(k => {
+    const d=Object.getOwnPropertyDescriptor(x,k);
+    return d && Object.hasOwn(d,"value") && typeof d.value==="string";
+  });
 const ID = /^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/;
 const DIGEST = /^[0-9a-f]{64}$/;
 const id = (x, code) => { if (typeof x !== "string" || !ID.test(x)) fail(code); return x; };
@@ -89,9 +98,7 @@ export function nextGraphGeneration(graphIdentity) {
 }
 export function commitModelRun(stamp, graphIdentity, instanceIdentity, request, committedRunIds = []) {
   validateModelRunStamp(stamp, graphIdentity, instanceIdentity, request);
-  if (!Array.isArray(committedRunIds) ||
-      Object.keys(committedRunIds).length !== committedRunIds.length ||
-      committedRunIds.some(x => typeof x !== "string")) fail("MODEL_INVALID_RUN_REQUEST");
+  if (!denseStrings(committedRunIds)) fail("MODEL_INVALID_RUN_REQUEST");
   if (committedRunIds.includes(stamp.runId)) fail("MODEL_RUN_REPLAY");
   return Object.freeze([...committedRunIds, stamp.runId]);
 }
