@@ -168,3 +168,31 @@ test("typed buffer edges validate dtype, extents, units and canonical layout", (
   err("MODEL_PORT_TYPE_MISMATCH", () => digestModelGraphV1(impossible));
 });
 
+
+
+test("host digest refuses mismatched static-constant signatures", () => {
+  const wrongArity = clone(vectors.base.graph);
+  wrongArity.nodes[1].constArgs = [];
+  err("MODEL_CONST_ARITY_MISMATCH", () => digestModelGraphV1(wrongArity));
+
+  const wrongKind = clone(vectors.base.graph);
+  wrongKind.nodes[1].constArgs[0] = { kind: "bool", value: true };
+  err("MODEL_CONST_TYPE_MISMATCH", () => digestModelGraphV1(wrongKind));
+});
+
+test("host byte bounds agree with signed 64-bit backend limits", () => {
+  const huge = clone(vectors.base.graph);
+  huge.nodes[0].signature.output = { dtype: "f64", shape: [1n << 62n] };
+  err("MODEL_SIZE_OVERFLOW", () => canonicalModelGraphV1Bytes(huge));
+
+  const zero = clone(vectors.base.graph);
+  zero.nodes[0].signature.output = { dtype: "f64", shape: [1n << 62n, 0] };
+  zero.nodes[1].signature.inputs[0] = { dtype: "f64", shape: [1n << 62n, 0] };
+  assert.equal(digestModelGraphV1(zero).length, 64);
+
+  const invalidUnit = clone(vectors.base.graph);
+  invalidUnit.nodes[0].signature.output = {
+    dtype: "f64", shape: [1], unit: "incorrect unit"
+  };
+  err("MODEL_INVALID_PORT", () => digestModelGraphV1(invalidUnit));
+});
