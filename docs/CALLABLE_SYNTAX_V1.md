@@ -177,6 +177,14 @@ Before claiming support, a backend must prove:
 
 A backend without typed tuple/body parity should reject the new source form explicitly before code generation. Rejection parity is preferable to accepting a scalar or braced approximation.
 
+## Machine-readable conformance vectors
+
+`fixtures/callable-syntax-v1.json` pins the finite v1 declaration-domain,
+return-flow, and tuple-bound decisions. `tests/test_callable_syntax_v1.py`
+is a zero-dependency reference consistency check. It is intentionally not an
+Oreslang parser; backend suites should consume the fixture and prove their real
+parser/typechecker/codegen behavior against the same decisions.
+
 ## Current staged implementation status
 
 - Java/Graal reference work: free/module end-delimited bodies, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1611.
