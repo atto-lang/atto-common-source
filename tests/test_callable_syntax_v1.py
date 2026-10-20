@@ -95,6 +95,9 @@ class CallableSyntaxV1ContractTest(unittest.TestCase):
             self.assertEqual(by_id[case_id]["expected"], "reject")
         self.assertEqual(by_id["module-contract-arrow"]["expected"], "accept")
         self.assertEqual(by_id["static-contract-arrow"]["expected"], "accept")
+        self.assertEqual(by_id["root-end-arrow-do"]["expected"], "accept")
+        self.assertEqual(by_id["root-end-arrow-do"]["body_boundary"], "do")
+        self.assertEqual(by_id["root-end-colon-do"]["expected"], "reject")
 
 
 if __name__ == "__main__":
