@@ -314,10 +314,20 @@
         "java": "reject",
         "llvm": "reject"
       }
+    },
+    {
+      "id": "duplicate-operation-parameter",
+      "expect": "reject",
+      "source": "fnc BadOp(int x, int x): int { return x; }\ndefine model Bad as\n  BadOp(1)\nend\n",
+      "diagnostic": "MODEL_INVALID_OP_SIGNATURE",
+      "backend_mode": {
+        "java": "reject",
+        "llvm": "reject"
+      }
     }
   ],
   "evidence_rule": "A backend may claim conformance only when these cases execute on the exact tested source tree with nonempty runner steps. Matching literals or source inspection alone is not conformance.",
-  "revision": "model-core-i64-v1.2026-10-20.7",
+  "revision": "model-core-i64-v1.2026-10-20.8",
   "identity_properties": {
     "parameter_alpha_rename": "invariant",
     "whitespace_comments_source_locations": "invariant",
