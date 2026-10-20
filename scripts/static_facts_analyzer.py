@@ -66,7 +66,7 @@ def validate(doc):
             ident(loop["id"], "loop id")
             require(loop["id"] not in loop_ids, "duplicate loop id")
             loop_ids.add(loop["id"])
-            require(loop["exit"] in ("proved_exit", "proved_no_exit", "unknown"), "bad loop exit")
+            require(loop["exit"] in ("proved_terminates", "proved_no_exit", "unknown"), "bad loop exit")
             require(type(loop["safepoint"]) is bool, "bad loop safepoint")
             location(loop.get("location"), "loop location")
     for edge in doc["edges"]:
@@ -168,7 +168,7 @@ def analyze(doc):
             elif loop["exit"] == "unknown":
                 result.append(finding("ORES-TERM-002", "warning", "potential",
                     f"{proc['id']}: loop {loop['id']} termination not established", at, [proc["id"], loop["id"]]))
-            if loop["exit"] != "proved_exit" and not loop["safepoint"]:
+            if loop["exit"] != "proved_terminates" and not loop["safepoint"]:
                 result.append(finding("ORES-TERM-003", "error", "potential",
                     f"{proc['id']}: loop {loop['id']} may monopolize a scheduler worker", at, [proc["id"], loop["id"]]))
     open_edges = [e for e in doc["edges"] if e["guard"] == "unproved"]
