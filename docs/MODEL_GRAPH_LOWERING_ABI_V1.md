@@ -17,6 +17,8 @@ Native/FFI operators require a stronger trust tier than pure Oreslang operators.
 
 ## 2. Canonical lowering boundary
 
+A parameterized declaration is a blueprint until every model formal used by an operation has been resolved from an explicit construction argument or validated default. `GraphDigest` is emitted only for the concrete resolved graph. Unresolved formals never enter the portable hash as source text.
+
 The frontend lowers a model declaration to an immutable compiler-owned graph descriptor. Guest-controlled HIR contains structural references only. Resolved semantic metadata is attached by the compiler/linker.
 
 Each resolved node binds at least:
@@ -76,12 +78,10 @@ Stateless models use `parameter_version = none`. A parameter commit against a st
 A compiled plan/cache key must bind at least:
 
 ```text
-(graph_digest,
- execution_profile_digest,
- backend_semantic_version,
- target_triple,
- enabled_numeric_features)
+(graph_digest, execution_profile_digest)
 ```
+
+The execution profile digest is derived exactly by `MODEL_EXECUTION_PROFILE_DIGEST_V1.md` and already binds backend/compiler semantic versions, target/data layout, numeric mode/features, allocation policy, freestanding selection and optional device ABI. Backend caches may additionally bind build/toolchain provenance, but must never omit either digest.
 
 It must **not** use mutable instance ID or parameter version as code identity unless specialization explicitly embeds those values. If parameters are constant-folded, their content/version becomes part of the specialization key.
 
