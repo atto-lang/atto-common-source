@@ -161,6 +161,27 @@ test("operation identity is alpha-stable but operand-order sensitive", () => {
   assert.notEqual(order.variant_graph_digest, alpha.expected_graph_digest);
 });
 
+test("backend execution modes carry enough evidence to run without guessing", () => {
+  for (const item of corpus.cases) {
+    if (item.java_mode === "execute" || item.backend_mode?.java === "execute") {
+      assert.notEqual(item.semantic_result_i64, undefined, item.id);
+    }
+    if (item.backend_mode?.llvm === "execute") {
+      assert.notEqual(item.semantic_result_i64, undefined, item.id);
+      const result = Number(item.semantic_result_i64);
+      assert(Number.isInteger(result) && result >= 0 && result <= 255, item.id);
+    }
+    if (item.configured_graph_digest !== undefined) {
+      assert.notEqual(item.configuration_i64, undefined,
+        `${item.id}: configured digest requires concrete i64 binding`);
+    }
+    if (item.backend_mode?.java === "reject" || item.backend_mode?.llvm === "reject") {
+      assert(item.diagnostic || item.llvm_diagnostic,
+        `${item.id}: reject mode requires a diagnostic class`);
+    }
+  }
+});
+
 test("all executable-v1 rejection diagnostics are registered", () => {
   for (const item of corpus.cases) {
     if (item.expect === "reject") {
