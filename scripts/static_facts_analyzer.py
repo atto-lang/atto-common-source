@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict, deque
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -16,7 +17,7 @@ VERSION = "ores-static-facts/v0"
 EDGE_KINDS = {"call", "actor_spawn", "task_spawn", "message", "callback", "supervisor_restart", "retry"}
 RISKS = {"shell", "raw_sql", "file_path", "network_destination", "html", "ffi_pointer", "secret_log"}
 PERMISSIONS = {"read", "write", "net", "env", "run", "sys", "ffi", "import"}
-LIMITS = {"procedures": 10000, "edges": 50000, "taint_sources": 10000, "flows": 50000, "sinks": 10000, "permission_checks": 10000}
+LIMITS = {"procedures": 512, "edges": 8192, "taint_sources": 10000, "flows": 50000, "sinks": 10000, "permission_checks": 10000}
 MAX_INPUT_BYTES = 8 * 1024 * 1024
 
 
@@ -50,18 +51,22 @@ def location(value, where):
 def validate(doc):
     obj(doc, "facts", {"version", "unit", *LIMITS}, {"callback_orderings"})
     require(doc["version"] == VERSION, "unsupported version")
-    ident(doc["unit"], "unit")
+    require(type(doc["unit"]) is str and re.fullmatch(r"sha256:[0-9a-f]{64}", doc["unit"]) is not None,
+            "unit: expected exact lowercase sha256 source identity (not attestation)")
     for key, cap in {**LIMITS, "callback_orderings": 10000}.items():
         values = doc.get(key, [])
         require(type(values) is list and len(values) <= cap, f"{key}: invalid length")
     procedures = set()
     loops_by_proc = {}
+    total_loops = 0
     for p in doc["procedures"]:
         obj(p, "procedure", {"id", "loops"})
         ident(p["id"], "procedure id")
         require(p["id"] not in procedures, "duplicate procedure id")
         procedures.add(p["id"])
-        require(type(p["loops"]) is list and len(p["loops"]) <= 20000, "invalid loops")
+        require(type(p["loops"]) is list and len(p["loops"]) <= 256, "invalid loops")
+        total_loops += len(p["loops"])
+        require(total_loops <= 4096, "combined loop budget exceeded")
         loop_ids = set()
         for loop in p["loops"]:
             obj(loop, "loop", {"id", "exit", "safepoint"}, {"location"})
@@ -72,12 +77,17 @@ def validate(doc):
             require(type(loop["safepoint"]) is bool, "bad loop safepoint")
             location(loop.get("location"), "loop location")
         loops_by_proc[p["id"]] = loop_ids
+    seen_calls = set()
     for edge in doc["edges"]:
         obj(edge, "edge", {"from", "to", "kind", "fanout", "guard"}, {"location", "enclosing_loop"})
         ident(edge["from"], "edge from")
         ident(edge["to"], "edge to")
         require(edge["from"] in procedures and edge["to"] in procedures, "unknown procedure on edge")
         require(edge["kind"] in EDGE_KINDS, "unknown edge kind")
+        if edge["kind"] == "call":
+            pair = (edge["from"], edge["to"])
+            require(pair not in seen_calls, "duplicated call edge needs distinct callsite proof")
+            seen_calls.add(pair)
         require(edge["fanout"] == "unknown" or
                 (type(edge["fanout"]) is int and 1 <= edge["fanout"] <= 1000000), "bad fanout")
         require(edge["guard"] in ("proved_bounded", "unproved"), "bad guard")
