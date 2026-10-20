@@ -303,7 +303,10 @@ def analyze(doc):
         if (order == "publish_first" and timing == "deferred_after_turn"
                 and continuation == "same_uninterrupted_turn" and install):
             continue
-        rule = "ORES-ZALGO-001" if order == "publish_first" else "ORES-ZALGO-002"
+        # Canonical rule IDs belong to the CFG temporal analyzer.
+        # This legacy summary is illustrative and MUST NOT admit strict code.
+        rule = ("ORES-CB-006" if order == "register_first" and not install
+                else "ORES-CB-002")
         result.append(finding(rule, "warning", "potential",
             f"{event['publisher']}: callback timing {timing} and registration order "
             f"{order}; listener for {event['emitter']}.{event['event']} may miss emission",
