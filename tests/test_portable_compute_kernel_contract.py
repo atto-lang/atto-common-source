@@ -32,6 +32,8 @@ def test_cpu_reference_is_not_implicit_gpu_fallback():
     assert cpu["hardRealtimeClaim"] is False
     assert cpu["inputOutputAlias"] == "forbidden"
     assert cpu["floatingPointContraction"] == "forbidden-for-scale-bias-reference"
+    assert cpu["wholeKernelHostBufferLeaseRequired"] is True
+    assert cpu["concurrentHostMutation"] == "serialized-during-execution"
 
 def test_gpu_emission_is_not_execution_evidence():
     gpu = load()["gpuLowering"]
