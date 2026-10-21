@@ -133,9 +133,9 @@ Keys such as `"__proto__"` and `"constructor"` are ordinary strings because Ores
 
 A relaxed policy must be named and explicit. It cannot silently weaken the default typed decoder.
 
-## Immutable record update / extension
+## Immutable record/struct update / extension
 
-Readonly structural records support a compile-time-key update expression:
+Readonly structural records and owned plain structs support a compile-time-key update expression:
 
 ```ores
 const base = record { name: "Ada" };
@@ -154,7 +154,7 @@ typeof(extended) = record { String name, int age, bool active }
 
 Rules:
 
-1. The base must be an actual readonly structural **record**, not a struct, class, structural contract view, module namespace, or Map.
+1. The base must be an actual readonly structural **record** or an owned plain **struct**, not a class, structural contract view, module namespace, or Map. Record results remain readonly records; struct results remain plain structs.
 2. Update field names are compile-time static and unique within the update expression.
 3. Replacing an existing field may change that field's result type; adding a field widens the result row.
    Type computation is `RowOverride<Base, Patch>`: retain every base field not named by the patch, replace named base fields with the patch field type, then append newly introduced patch fields. The original binding never changes static type; the expression yields a distinct result value/type (and may consume the base under the ownership rule below).
@@ -211,7 +211,7 @@ A strict full-AOT profile may reject unresolved dynamic codec registration. User
 
 ## Required conformance before promotion
 
-- parser/type tests for record `with`: add, replace, type change, duplicate field rejection, non-record rejection, structural-view rejection and dynamic-key rejection;
+- parser/type tests for record/struct `with`: add, replace, type change, row/shape widening, duplicate field rejection, class/Map rejection, structural-view rejection and dynamic-key rejection;
 - ownership tests proving move-only bases are consumed and no writable alias is recovered;
 - evaluator/backend tests proving base-once and left-to-right evaluation and atomic failure;
 - Map indexed insert/replace parity with named `put` when added;
