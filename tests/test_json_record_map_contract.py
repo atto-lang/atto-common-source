@@ -64,8 +64,45 @@ class JsonRecordMapContractTest(unittest.TestCase):
         self.assertEqual("reject", safety["malformed_utf8"])
         self.assertEqual("reject", safety["nan_infinity"])
         self.assertEqual("reject", safety["integer_precision_loss"])
+        self.assertEqual("reject", safety["unpaired_surrogate_escape"])
+        self.assertEqual("reject", safety["unescaped_control_character"])
+        self.assertEqual("reject", safety["bom_default"])
+        self.assertEqual("reject", safety["comments_default"])
+        self.assertEqual("reject", safety["trailing_comma_default"])
+        self.assertTrue(safety["ignored_unknown_fields_count_toward_quotas"])
         self.assertTrue(safety["explicit_resource_quotas_required"])
         self.assertFalse(safety["guest_callbacks_under_internal_lock"])
+
+    def test_json_numbers_are_exact_until_target_conversion(self):
+        number = self.data["json_number"]
+        self.assertEqual("exact_before_target_conversion", number["representation"])
+        self.assertEqual("preserve", number["integer_over_2_pow_53"])
+        self.assertEqual("reject", number["non_finite"])
+        self.assertEqual("reject_by_default", number["float_overflow"])
+
+    def test_missing_null_and_codec_metadata_are_explicit(self):
+        codec = self.data["typed_codec"]
+        self.assertEqual("reject", codec["missing_required"])
+        self.assertEqual("reject", codec["null_required"])
+        self.assertEqual("None", codec["option_absent"])
+        self.assertEqual("None", codec["option_null"])
+        self.assertEqual("exact_case_sensitive", codec["field_match"])
+        self.assertEqual("reject", codec["rename_collision"])
+        self.assertFalse(codec["defaults_on_malformed_present_value"])
+        self.assertEqual(
+            "Map<String, JsonValue>",
+            codec["unknown_capture_type"],
+        )
+
+    def test_ordinary_json_does_not_serialize_cycles_or_capabilities(self):
+        encoding = self.data["encoding"]
+        self.assertEqual("reject", encoding["ordinary_json_cycle"])
+        self.assertEqual("reject", encoding["implicit_runtime_capabilities"])
+        self.assertTrue(encoding["deterministic_for_fixed_value"])
+        self.assertEqual(
+            "separate_profile",
+            encoding["cryptographic_canonicalization"],
+        )
 
 
 if __name__ == "__main__":
