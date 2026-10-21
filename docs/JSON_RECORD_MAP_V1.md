@@ -29,7 +29,13 @@ JsonValue =
 
 JSON object keys are **String only**. Oreslang `Symbol` is not silently coerced to String. A caller wanting `#ready -> "ready"` must request that conversion explicitly.
 
-`JsonNumber` must preserve exact JSON numeric information sufficiently to avoid a mandatory IEEE-754 round trip. In particular, decoding an integer larger than 2^53 must not silently lose precision. NaN and infinities are not JSON numbers.
+`JsonNumber` must preserve exact JSON numeric information without a mandatory IEEE-754 round trip. Dynamic parsing therefore keeps an exact integer/decimal representation (or an equivalent validated exact numeric lexeme) rather than eagerly converting every token to `float`. In particular, integers larger than 2^53 must not silently lose precision, exponent overflow must not become infinity, and a decimal must not be rounded unless the caller explicitly decodes it into a finite-width floating type. NaN and infinities are not JSON numbers.
+
+Numeric conversion is target-directed:
+- decoding into an integer type requires an integral JSON number in range;
+- decoding into a decimal/big-number type preserves exact value;
+- decoding into `float`/`f32`/`f64` may round according to that target's documented IEEE semantics, but overflow/non-finite results are errors by default;
+- encoding a non-finite guest float is an error, never `null` or an implementation-specific token.
 
 Dynamic object mutation uses the ordinary Map surface:
 
@@ -69,6 +75,25 @@ Class decoding must never poke private fields or bypass constructors/invariants.
 
 `Map<String, V>`, arrays/vectors, Option/Result-like explicitly supported codecs, enums/ADTs, records and structs may compose recursively once their ownership/runtime descriptors are supported. Map key types other than String require an explicit key codec and are not valid JSON object keys by default.
 
+### Missing fields, JSON null, and Option
+
+Oreslang does not gain a general-purpose `null` value merely because JSON has one.
+
+- a required non-Option field rejects both absence and JSON `null`;
+- an `Option<T>` field decodes either an absent member or JSON `null` as `None`, and a present non-null value as `Some(T)`;
+- code that must distinguish **missing** from **present null** uses an explicit presence wrapper/codec (or a nested optional representation once that contract is standardized), not hidden decoder state;
+- defaults are applied only when an explicit field/type codec declares them; malformed present values never fall back to defaults.
+
+### Field names and codec annotations
+
+Field matching is exact and case-sensitive by default. The compiler may support statically resolved annotations such as a JSON field rename, ignore, default, unknown-field policy, or explicit class factory, but annotations are compile-time metadata:
+
+- no runtime reflection lookup;
+- no duplicate encoded names after renaming;
+- no two source fields may decode from the same JSON member;
+- ignored/private class state is never populated implicitly;
+- unknown-field capture, when explicitly enabled, must target a compatible `Map<String, JsonValue>`-like field and remains subject to quotas.
+
 ## Typed encode
 
 `Json.encode(value)` / `Json.stringify(value)` uses compiler-generated static field traversal for typed records/structs/classes. It should stream directly into a bounded writer where possible instead of first constructing `JsonValue`.
@@ -80,11 +105,15 @@ Encoding a class follows the class's explicit public codec contract; private imp
 The default parser/decoder is strict:
 
 - reject duplicate object keys rather than choosing first-wins or last-wins;
-- reject malformed UTF-8, invalid escapes and invalid scalar values;
-- reject non-JSON numbers such as NaN/Infinity;
-- apply explicit maximum nesting depth, token count, string/key byte length, object entry count, array length and total decoded allocation budget;
+- reject malformed UTF-8, unescaped control characters, invalid escapes, unpaired UTF-16 surrogate escapes and invalid Unicode scalar values;
+- reject non-JSON numbers such as NaN/Infinity, excessively long numeric tokens and exponent forms that exceed configured limits;
+- do not treat a UTF-8 BOM, comments, trailing commas, single quotes, or bare identifiers as ordinary JSON unless an explicitly named relaxed mode is selected;
+- apply explicit maximum nesting depth, token count, numeric token length, string/key byte length, object entry count, array length and total decoded allocation budget;
+- count skipped/unknown fields toward parse and allocation/work quotas so "ignore unknown" cannot become a resource-bypass path;
 - fail atomically without publishing a partially decoded typed value or partially built dynamic object;
 - never invoke guest callbacks while internal JSON/Map storage locks or mutation fences are held.
+
+Keys such as `"__proto__"` and `"constructor"` are ordinary strings because Oreslang objects do not use JavaScript prototype mutation; they must not trigger host-object property semantics.
 
 A relaxed policy must be named and explicit. It cannot silently weaken the default typed decoder.
 
@@ -156,6 +185,10 @@ return Json.stringify(payload);
 
 Typed codecs are generated or specialized at compile time. No general runtime reflection registry is required. Reachability roots are explicit codec calls/derivations and exported boundaries. Unused codecs and unused JSON features remain tree-shakeable.
 
+Encoding must reject cyclic object graphs unless a separately named graph/reference codec is used; ordinary JSON is a tree. Runtime capabilities and process-local identities (actor refs, channels, mutex/guard handles, raw native handles, closures, module namespaces, allocator handles, etc.) are not implicitly serializable merely because they occur in a reachable field.
+
+Ordinary `Json.stringify` is deterministic for a fixed value and implementation contract but does not claim cryptographic canonical JSON. Records use their declared/source-stable field order and dynamic JSON objects use the canonical Map iteration order. A future canonical/signing mode must be a separately specified algorithm (for example an RFC-8785-compatible profile), including Unicode and numeric canonicalization.
+
 A strict full-AOT profile may reject unresolved dynamic codec registration. User-defined adapters must be explicit and statically reachable.
 
 ## Required conformance before promotion
@@ -165,8 +198,10 @@ A strict full-AOT profile may reject unresolved dynamic codec registration. User
 - evaluator/backend tests proving base-once and left-to-right evaluation and atomic failure;
 - Map indexed insert/replace parity with named `put` when added;
 - dynamic JSON object tests using the canonical Map runtime, including String/Symbol separation;
-- strict duplicate-key, UTF-8, numeric precision and quota adversarial vectors;
-- generated record/struct/class decode tests, including class invariant/factory enforcement and unknown/missing field policy;
+- strict duplicate-key, UTF-8/Unicode, control-character, BOM/extension rejection, exact-number and quota adversarial vectors;
+- missing-vs-null/Option fixtures, including malformed-present-value cases that must not silently default;
+- generated record/struct/class decode tests, including class invariant/factory enforcement, rename collisions, and unknown/missing field policy;
+- cycle/capability serialization rejection and deterministic ordinary-encoding order tests;
 - Java/Graal and LLVM must either implement the same source contract or reject unsupported JSON/record-update constructs before partial lowering.
 
 This contract does not by itself claim that `alloc/json`, recursive Map value descriptors, record `with`, or generated JSON codecs are already executable on every backend.
