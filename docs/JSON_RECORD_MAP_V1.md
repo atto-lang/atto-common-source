@@ -20,21 +20,35 @@ This split keeps JSON usable on bare metal in two forms:
 
 ### Stage-one source admission
 
-The canonical first source-visible type boundary is deliberately narrow:
+The canonical first source-visible boundary is deliberately narrow:
 
 ```ores
 import class JsonValue from "alloc/json";
+import class Json from "alloc/json";
 
 val Map<String, JsonValue> obj = new Map<String, JsonValue>();
+obj["name"] = Json.of("Ada");
+obj["active"] = Json.of(true);
+obj["none"] = Json.null;
+
+const JsonValue wrapped = Json.object(obj);
 ```
 
 `alloc/*` is a compiler-owned reserved namespace. A project manifest,
 `ORESLANG_PATH`, ambient classpath entry, or same-named project file must not
-shadow `alloc/json`. The imported `JsonValue` is an **opaque nominal type**:
-`new JsonValue()` is forbidden, and a user class coincidentally named
-`JsonValue` does not become the JSON descriptor. Stage one permits the type
-and empty canonical JSON Map construction only; `Json.*` factories, parsing,
-stringify/encode, scalar lifting and generated codecs are later slices.
+shadow `alloc/json`. `JsonValue` is an **opaque nominal type** and `Json`
+is a compiler-owned construction namespace: neither may be instantiated
+directly, including through an import alias. Named class aliases expose only
+their local alias and never leak the original source class name. An alias does
+not grant intrinsic JSON authority; the compiler recognizes the canonical
+unaliased imports above for `Map<String, JsonValue>` and `Json.*`.
+
+The current constructor slice consists of `Json.null`,
+`Json.of(bool|int|String)`, `Json.array(List<JsonValue>)`, and
+`Json.object(Map<String, JsonValue>)`. Floating/decimal `Json.of` input
+fails closed until the source runtime carries the required exact decimal
+carrier. Parsing, stringify/encode, and generated typed codecs remain later
+slices. Wildcard `alloc/json` imports are not part of this stage.
 
 For `Map<String, JsonValue>`, the key domain is exactly String and the runtime
 Map value domain is the compiler-owned JSON domain. `Map<Symbol, JsonValue>`
@@ -66,9 +80,9 @@ Numeric conversion is target-directed:
 - decoding into `float`/`f32`/`f64` may round according to that target's documented IEEE semantics, but overflow/non-finite results are errors by default;
 - encoding a non-finite guest float is an error, never `null` or an implementation-specific token.
 
-Dynamic object mutation uses the ordinary Map surface. Scalar auto-lifting
-shown below is part of the target `Json.*` construction slice, not the
-stage-one opaque-type implementation:
+Dynamic object mutation uses the ordinary Map surface. The current
+constructor slice makes explicit scalar lifting available through `Json.of`;
+implicit scalar-to-`JsonValue` coercion is still not part of this contract:
 
 ```ores
 val Map<String, JsonValue> obj = new Map<String, JsonValue>();
