@@ -240,6 +240,10 @@ class JsonRecordMapContractTest(unittest.TestCase):
             "OresKeyedMap.attemptOwnedPut_linear_one_shot_result",
             mp["move_only_internal_primitive"],
         )
+        self.assertEqual(
+            "compiler_owned_jsonvalue_only",
+            mp["recoverable_move_value_domain"],
+        )
 
     def test_record_update_returns_a_new_row_type_not_a_mutated_binding(self):
         update = self.data["record_update"]
