@@ -187,6 +187,21 @@ Class decoding must never poke private fields or bypass constructors/invariants.
 
 Decoder construction is two-phase: first parse/validate all admitted inputs into temporary decoder-owned state, then invoke the constructor/factory exactly once. No partially initialized class instance may escape on an unknown field, malformed value, quota error, constructor error, cancellation, or panic.
 
+For v1, the explicit class path is:
+
+```ores
+@JsonFactory("from_json")
+define class User as
+    ...
+    static fnc from_json(record{id: int, name: String} data) -> User {
+        ...
+    }
+end
+```
+
+The selected factory must be a statically resolvable synchronous static function with exactly one argument: a closed readonly record DTO. Its return type must be exactly the annotated class. The DTO field names/types define the JSON object schema for that class codec. The decoder constructs and validates the complete DTO first, then invokes the factory exactly once. Async/suspending factories, generic/unresolved factories, multiple overload candidates, class-field setters, and direct private-slot population are rejected in v1. A factory may internally call private constructors or enforce arbitrary invariants because that code executes under ordinary class semantics rather than decoder privilege.
+
+
 
 ### Maps and arrays
 
