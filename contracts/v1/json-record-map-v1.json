@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "feature": "json-record-map",
+  "library": {
+    "public_namespace": "alloc/json",
+    "requires_allocator": true,
+    "os_capabilities_required": [],
+    "core_allowed": false,
+    "hosted_std_required": false
+  },
+  "json_object": {
+    "key_type": "String",
+    "dynamic_storage": "Map<String, JsonValue>",
+    "symbol_key_implicit_coercion": false,
+    "duplicate_key_policy": "reject",
+    "unknown_typed_field_policy": "reject_by_default"
+  },
+  "map": {
+    "indexed_assignment": "insert_or_replace",
+    "named_put_previous_value": "Option<V>",
+    "recursive_json_value_descriptor_required": true,
+    "host_map_semantics_forbidden": true
+  },
+  "record_update": {
+    "syntax": "base with { field: value, ... }",
+    "base_kind": "readonly_structural_record_only",
+    "static_keys_only": true,
+    "duplicate_update_fields": "reject",
+    "existing_field": "replace_type_and_value",
+    "missing_field": "append_field_and_widen_row",
+    "dynamic_key_fallback": "Map",
+    "readonly_record_indexed_assignment": "reject",
+    "structural_view_update": "reject",
+    "evaluation": "base_once_then_updates_left_to_right",
+    "failure": "atomic_no_partial_publication",
+    "move_only_base": "consume_unless_checked_copy_or_share"
+  },
+  "typed_codec": {
+    "runtime_reflection": false,
+    "generation": "compile_time",
+    "class_private_field_poke": false,
+    "class_opt_in_required": true,
+    "direct_typed_decode_may_skip_dom": true
+  },
+  "safety": {
+    "malformed_utf8": "reject",
+    "nan_infinity": "reject",
+    "integer_precision_loss": "reject",
+    "explicit_resource_quotas_required": true,
+    "guest_callbacks_under_internal_lock": false
+  }
+}
