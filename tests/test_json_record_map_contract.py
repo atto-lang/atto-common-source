@@ -170,11 +170,11 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["compiler_exceptional_flow"],
         )
         self.assertEqual(
-            "gated_until_recursive_typechecker_and_production_ownership_gate",
+            "gated_until_recursive_typechecker_and_alloc_json_import",
             mp["source_move_only_map_visibility"],
         )
         self.assertEqual(
-            "commit_rejection_edges_implemented_test_gate_only",
+            "commit_rejection_edges_enabled_in_production_pass",
             mp["ownership_checker_staging"],
         )
         self.assertEqual(
@@ -186,7 +186,7 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["move_only_indexed_assignment_staging"],
         )
         self.assertEqual(
-            "direct_statement_only_until_linear_previous_result_lowering",
+            "direct_statement_or_direct_binding_until_nested_expression_throw_edges",
             mp["move_only_named_put_staging"],
         )
         self.assertEqual(
