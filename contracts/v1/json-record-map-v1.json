@@ -6,7 +6,17 @@
     "requires_allocator": true,
     "os_capabilities_required": [],
     "core_allowed": false,
-    "hosted_std_required": false
+    "hosted_std_required": false,
+    "core_json_contracts_allowed": true,
+    "owned_json_tree_in_core": false,
+    "ambient_allocator_allowed": false,
+    "allocator_provider": "explicit",
+    "core_contract_scope": [
+      "token_kinds",
+      "borrowed_input_cursor",
+      "caller_provided_encode_sink",
+      "static_codec_markers"
+    ]
   },
   "json_object": {
     "key_type": "String",
@@ -19,7 +29,10 @@
     "indexed_assignment": "insert_or_replace",
     "named_put_previous_value": "Option<V>",
     "recursive_json_value_descriptor_required": true,
-    "host_map_semantics_forbidden": true
+    "host_map_semantics_forbidden": true,
+    "indexed_assignment_requires": "direct_owned_mutable_map",
+    "indexed_assignment_evaluation": "receiver_once_then_key_once_then_value_once",
+    "replacement_atomicity": "validate_and_admit_new_before_publish_then_release_old"
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
@@ -33,7 +46,11 @@
     "structural_view_update": "reject",
     "evaluation": "base_once_then_updates_left_to_right",
     "failure": "atomic_no_partial_publication",
-    "move_only_base": "consume_unless_checked_copy_or_share"
+    "move_only_base": "consume_unless_checked_copy_or_share",
+    "result_type_rule": "row_override_existing_then_extend_missing",
+    "base_binding_type_mutation": "forbidden",
+    "runtime_key_row_change": "forbidden",
+    "literal_put_as_row_extension": false
   },
   "typed_codec": {
     "runtime_reflection": false,
@@ -48,7 +65,10 @@
     "field_match": "exact_case_sensitive",
     "rename_collision": "reject",
     "defaults_on_malformed_present_value": false,
-    "unknown_capture_type": "Map<String, JsonValue>"
+    "unknown_capture_type": "Map<String, JsonValue>",
+    "known_record_struct_decode": "generated_static_constructor",
+    "known_class_decode": "explicit_opt_in_constructor_or_factory",
+    "direct_decode_partial_publication": "forbidden"
   },
   "safety": {
     "malformed_utf8": "reject",
