@@ -18,6 +18,27 @@ This split keeps JSON usable on bare metal in two forms:
 1. **`core` streaming/fixed-buffer mode**: caller owns storage; JSON machinery only borrows input and emits into caller-provided sinks.
 2. **`alloc/json` owned mode**: explicit allocator enables `JsonValue`, dynamic objects/arrays, generated typed decode scratch space, and convenient parse/stringify APIs.
 
+### Stage-one source admission
+
+The canonical first source-visible type boundary is deliberately narrow:
+
+```ores
+import class JsonValue from "alloc/json";
+
+val Map<String, JsonValue> obj = new Map<String, JsonValue>();
+```
+
+`alloc/*` is a compiler-owned reserved namespace. A project manifest,
+`ORESLANG_PATH`, ambient classpath entry, or same-named project file must not
+shadow `alloc/json`. The imported `JsonValue` is an **opaque nominal type**:
+`new JsonValue()` is forbidden, and a user class coincidentally named
+`JsonValue` does not become the JSON descriptor. Stage one permits the type
+and empty canonical JSON Map construction only; `Json.*` factories, parsing,
+stringify/encode, scalar lifting and generated codecs are later slices.
+
+For `Map<String, JsonValue>`, the key domain is exactly String and the runtime
+Map value domain is the compiler-owned JSON domain. `Map<Symbol, JsonValue>`
+and `Map<String | Symbol, JsonValue>` are rejected rather than coercing keys.
 
 The implementation must not introduce a second host-language Map or reflection-based object model. Dynamic JSON objects use the canonical typed Oreslang Map runtime.
 
@@ -45,11 +66,13 @@ Numeric conversion is target-directed:
 - decoding into `float`/`f32`/`f64` may round according to that target's documented IEEE semantics, but overflow/non-finite results are errors by default;
 - encoding a non-finite guest float is an error, never `null` or an implementation-specific token.
 
-Dynamic object mutation uses the ordinary Map surface:
+Dynamic object mutation uses the ordinary Map surface. Scalar auto-lifting
+shown below is part of the target `Json.*` construction slice, not the
+stage-one opaque-type implementation:
 
 ```ores
 val Map<String, JsonValue> obj = new Map<String, JsonValue>();
-obj["name"] = "Ada";
+obj["name"] = Json.of("Ada");
 obj[key] = value;
 ```
 
@@ -108,20 +131,23 @@ move-only `Map<K,V>` value domain, must not inherit this proof merely because
 its values are affine. Such a domain needs its own runtime one-shot commit
 primitive and compiler admission contract first.
 
-The public closed Map surface nevertheless remains scalar/copy-safe until the
-TypeChecker admits the recursive `JsonValue` value domain through
-`alloc/json`. Move-only named `put` is ownership-lowered for a direct
-terminal expression statement or direct terminal binding of its linear
+The closed Map surface admits the recursive compiler-owned `JsonValue`
+descriptor only through the exact `alloc/json` import above. Scalar Map
+domains remain unchanged. Move-only named `put` is ownership-lowered for a
+direct terminal expression statement or direct terminal binding of its linear
 `Option<V>` previous result. Move-only indexed insertion remains
 statement-only because an assignment expression cannot return the transferred
 RHS as a second owner. Nested move-only `put` expressions remain fail-closed
 until expression-level post-commit throwing edges are tracked with the same
 precision.
 
-The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
+The indexed-write surface is available only when the expression resolves to a
+directly owned mutable Map reference. It is not dynamic property assignment on
+records, structs, classes, modules, or host objects.
 
-
-The first closed typed-Map implementation permits only a narrow scalar value domain. JSON requires a later compiler-owned **recursive value descriptor** for `JsonValue`; do not bypass that gate with `java.util.Map`, `Object`, host reflection, or an untyped `any`.
+Do not bypass the compiler-owned recursive descriptor with `java.util.Map`,
+`Object`, host reflection, an untyped `any`, or a user-declared
+`JsonValue` lookalike.
 
 ## Typed decode
 
