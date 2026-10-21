@@ -40,13 +40,39 @@
     "generation": "compile_time",
     "class_private_field_poke": false,
     "class_opt_in_required": true,
-    "direct_typed_decode_may_skip_dom": true
+    "direct_typed_decode_may_skip_dom": true,
+    "missing_required": "reject",
+    "null_required": "reject",
+    "option_absent": "None",
+    "option_null": "None",
+    "field_match": "exact_case_sensitive",
+    "rename_collision": "reject",
+    "defaults_on_malformed_present_value": false,
+    "unknown_capture_type": "Map<String, JsonValue>"
   },
   "safety": {
     "malformed_utf8": "reject",
     "nan_infinity": "reject",
     "integer_precision_loss": "reject",
     "explicit_resource_quotas_required": true,
-    "guest_callbacks_under_internal_lock": false
+    "guest_callbacks_under_internal_lock": false,
+    "unpaired_surrogate_escape": "reject",
+    "unescaped_control_character": "reject",
+    "bom_default": "reject",
+    "comments_default": "reject",
+    "trailing_comma_default": "reject",
+    "ignored_unknown_fields_count_toward_quotas": true
+  },
+  "json_number": {
+    "representation": "exact_before_target_conversion",
+    "integer_over_2_pow_53": "preserve",
+    "non_finite": "reject",
+    "float_overflow": "reject_by_default"
+  },
+  "encoding": {
+    "ordinary_json_cycle": "reject",
+    "implicit_runtime_capabilities": "reject",
+    "deterministic_for_fixed_value": true,
+    "cryptographic_canonicalization": "separate_profile"
   }
 }
