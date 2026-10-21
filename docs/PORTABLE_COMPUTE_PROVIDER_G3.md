@@ -102,3 +102,14 @@ Dropping a Future/operation handle therefore cannot release quota, events,
 programs or physical buffers and cannot make an in-flight command unreachable.
 The provider removes its active-operation reference only after exact host-fence
 terminalization and physical cleanup/recovery are complete.
+
+## Device loss ordering
+
+Device loss dominates an earlier cancellation request. If an exact submitted
+event reports device loss after cancellation was requested, the provider must
+not acknowledge the cancellation as quiescent and must not release quota,
+buffers, or the event. The operation transitions to device-loss recovery and
+retains the exact provider-owned event until reset/recovery proves that the
+queue can no longer access the allocations. Only after that proof may the event
+be released, the cancelled fence pair acknowledged, and physical resources
+reclaimed.
