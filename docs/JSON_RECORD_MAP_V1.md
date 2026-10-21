@@ -171,6 +171,13 @@ Field matching is exact and case-sensitive by default. The compiler may support 
 
 Encoding a class follows the class's explicit public codec contract; private implementation fields are not automatically serialized.
 
+For a mutable dynamic JSON object (`Map<String, JsonValue>`), stringify is a
+non-consuming scoped read. Complete-root validation and traversal must occur
+under one graph-stability boundary (or over one immutable validated snapshot);
+an implementation may not validate, release the mutation fence, and then walk
+the live graph. Output quotas are measured in UTF-8 bytes, not host UTF-16 code
+units. Dynamic object order follows the canonical Map insertion order.
+
 ## Duplicate keys, unknown fields, and parser limits
 
 The default parser/decoder is strict:
