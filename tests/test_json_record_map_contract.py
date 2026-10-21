@@ -29,6 +29,43 @@ class JsonRecordMapContractTest(unittest.TestCase):
         self.assertTrue(mp["recursive_json_value_descriptor_required"])
         self.assertTrue(mp["host_map_semantics_forbidden"])
 
+    def test_stage_one_alloc_json_source_surface_is_reserved_and_opaque(self):
+        lib = self.data["library"]
+        obj = self.data["json_object"]
+        mp = self.data["map"]
+        self.assertEqual(
+            'import class JsonValue from "alloc/json";',
+            lib["source_type_import"],
+        )
+        self.assertEqual(
+            "forbidden_project_manifest_or_ORESLANG_PATH_override",
+            lib["reserved_namespace_shadowing"],
+        )
+        self.assertEqual(
+            "opaque_JsonValue_type_and_empty_Map<String,JsonValue>_construction",
+            lib["stage_one_source_surface"],
+        )
+        self.assertEqual(
+            "forbidden_use_Json_static_factories_or_parser",
+            lib["direct_jsonvalue_construction"],
+        )
+        self.assertEqual("pending", lib["json_static_api_stage"])
+        self.assertEqual("compiler_owned_opaque_JsonValue", obj["source_value_type"])
+        self.assertEqual("JSON", obj["runtime_map_value_domain"])
+        self.assertEqual("String_only", obj["json_map_key_domain"])
+        self.assertFalse(obj["same_named_user_type_is_json_descriptor"])
+        self.assertEqual(
+            "enabled_only_for_exact_alloc_json_JsonValue_import",
+            mp["source_move_only_map_visibility"],
+        )
+        self.assertEqual(
+            "OresKeyedMap.ValueDomain.JSON",
+            mp["json_runtime_value_domain"],
+        )
+        self.assertEqual("String_only", mp["json_map_key_domain"])
+        self.assertFalse(mp["same_named_user_jsonvalue_unlocks_domain"])
+
+
     def test_map_index_write_and_put_have_one_semantic_contract(self):
         mp = self.data["map"]
         self.assertEqual("insert_or_replace", mp["indexed_assignment"])
@@ -203,7 +240,7 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["nested_write_recovery"],
         )
         self.assertEqual(
-            "gated_until_recursive_typechecker_and_alloc_json_import",
+            "enabled_only_for_exact_alloc_json_JsonValue_import",
             mp["source_move_only_map_visibility"],
         )
         self.assertEqual(
