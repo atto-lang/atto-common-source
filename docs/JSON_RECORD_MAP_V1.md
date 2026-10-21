@@ -102,6 +102,12 @@ terminal write commits, because later outer work may still throw. This avoids
 resurrecting ownership after a successful commit followed by defer/guard
 cleanup or another failure.
 
+Catch-side recovery is a property of the **compiler-owned `JsonValue` Map
+domain only**. A user class named `JsonValue`, or any future unrelated
+move-only `Map<K,V>` value domain, must not inherit this proof merely because
+its values are affine. Such a domain needs its own runtime one-shot commit
+primitive and compiler admission contract first.
+
 The public closed Map surface nevertheless remains scalar/copy-safe until the
 TypeChecker admits the recursive `JsonValue` value domain through
 `alloc/json`. Move-only named `put` is ownership-lowered for a direct
