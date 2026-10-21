@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "gate": "P3-provider-boundary",
+  "backend": "opencl-1.2",
+  "physicalExecutionClaim": false,
+  "providerDiscovery": "explicit-registration",
+  "driverBinding": "trusted-host-only",
+  "rawDriverHandlesSourceVisible": false,
+  "implicitCpuFallback": false,
+  "implicitTransfers": false,
+  "queue": {
+    "tenantBound": true,
+    "deviceBound": true,
+    "providerGenerationBound": true,
+    "queueGenerationNonzero": true,
+    "maximumInFlightRequired": true
+  },
+  "quota": {
+    "residentBytesBounded": true,
+    "transferBytesBounded": true,
+    "inFlightEventsBounded": true,
+    "reserveBeforeDriverSideEffect": true,
+    "releaseExactlyOnce": true
+  },
+  "dispatch": {
+    "fenceReservationPrecedesEnqueue": true,
+    "successfulEnqueueRequiresMarkSubmitted": true,
+    "failedPreEnqueueRequiresExactAbort": true,
+    "completionRequiresAuthenticatedEvent": true,
+    "eventTerminalityRequired": true,
+    "sourceEmissionIsNotExecutionEvidence": true
+  },
+  "cancellation": {
+    "requestIsNotQuiescence": true,
+    "opencl12KernelCancellationGuaranteed": false,
+    "retireOnlyAfterTerminalEventOrReset": true
+  },
+  "providerFailure": {
+    "noSilentRetryOfMutation": true,
+    "noSilentCpuFallback": true,
+    "deviceLossPoisonsAffectedWork": true
+  },
+  "promotion": {
+    "requiresRealOpenClLoader": true,
+    "requiresRealDeviceOrAdmittedSoftwareIcdExecution": true,
+    "requiresUploadKernelDownloadEvidence": true,
+    "requiresEventAndRetirementEvidence": true
+  }
+}
