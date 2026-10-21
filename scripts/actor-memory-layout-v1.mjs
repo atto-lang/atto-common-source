@@ -62,7 +62,7 @@ export class ActorArenaOracle {
     const bytes = new Uint8Array(size);
     const handle = Object.freeze({actor: this.#actor, incarnation: this.#incarnation,
       lifetime, turn: this.#turn});
-    this.#allocations.set(handle, {bytes, lifetime, turn: this.#turn, live: true});
+    this.#allocations.set(handle, {bytes, view: new DataView(bytes.buffer), lifetime, turn: this.#turn, live: true});
     this.#used += size;
     return handle;
   }
@@ -99,6 +99,21 @@ export class ActorArenaOracle {
   releaseLoan(lease) {
     if (!this.#loans.delete(lease)) fail('stale read lease');
     this.#tryReclaim();
+  }
+  readF64(handle, index) {
+    this.#active();
+    const record = this.#record(handle);
+    integer(index, 'cell index');
+    if (index >= Math.floor(record.bytes.length / 8)) fail('F64 out of bounds');
+    return record.view.getFloat64(index * 8, true);
+  }
+  writeF64(handle, index, value) {
+    this.ensureWritable(handle);
+    const record = this.#record(handle);
+    integer(index, 'cell index');
+    if (index >= Math.floor(record.bytes.length / 8)) fail('F64 out of bounds');
+    if (typeof value !== 'number' || !Number.isFinite(value)) fail('nonfinite F64');
+    record.view.setFloat64(index * 8, value, true);
   }
   ensureWritable(handle) {
     this.#active();
@@ -173,7 +188,6 @@ export class DenseRegionOracle {
   #capacity;
   #tile;
   #layout;
-  #storage;
   #backing;
   #rows = [];
   #identities = new Map();
@@ -195,7 +209,6 @@ export class DenseRegionOracle {
     this.#tile = tile;
     this.#layout = layout(physicalLayout);
     const allocated = this.#createStorage(this.#layout);
-    this.#storage = allocated.storage;
     this.#backing = allocated.backing;
   }
   get length() { return this.#rows.length; }
@@ -211,34 +224,22 @@ export class DenseRegionOracle {
   }
   #createStorage(kind) {
     const geom = this.#geometry(kind);
-    const backing = this.#arena.allocate(geom.bytes);
-    try {
-      const storage = kind === 'soa'
-        ? this.#fields.map(() => new Float64Array(this.#capacity))
-        : new Float64Array(geom.bytes / 8);
-      return {backing, storage};
-    } catch (error) {
-      this.#arena.free(backing);
-      throw error;
-    }
+    return {backing: this.#arena.allocate(geom.bytes)};
   }
   #index(row, field, kind = this.#layout) {
     const count = this.#fields.length;
     if (kind === 'aos') return row * count + field;
-    if (kind === 'soa') return row;
+    if (kind === 'soa') return field * this.#capacity + row;
     const group = Math.floor(row / this.#tile);
     const inGroup = row % this.#tile;
     return group * this.#tile * count +
       (kind === 'aosoa' ? field * this.#tile + inGroup : inGroup * count + field);
   }
-  #get(row, field, kind = this.#layout, storage = this.#storage) {
-    const index = this.#index(row, field, kind);
-    return kind === 'soa' ? storage[field][index] : storage[index];
+  #get(row, field, kind = this.#layout, backing = this.#backing) {
+    return this.#arena.readF64(backing, this.#index(row, field, kind));
   }
-  #put(row, field, value, kind = this.#layout, storage = this.#storage) {
-    const index = this.#index(row, field, kind);
-    if (kind === 'soa') storage[field][index] = value;
-    else storage[index] = value;
+  #put(row, field, value, kind = this.#layout, backing = this.#backing) {
+    this.#arena.writeF64(backing, this.#index(row, field, kind), value);
   }
   #rowIndex(id) {
     const index = this.#identities.get(id);
@@ -304,14 +305,13 @@ export class DenseRegionOracle {
     try {
       for (let row = 0; row < this.length; row++)
         for (let f = 0; f < this.#fields.length; f++)
-          this.#put(row, f, this.#get(row, f), to, next.storage);
+          this.#put(row, f, this.#get(row, f), to, next.backing);
       this.#arena.free(this.#backing); // May reject an outstanding read lease.
     } catch (error) {
       this.#arena.free(next.backing);
       throw error;
     }
     this.#backing = next.backing;
-    this.#storage = next.storage;
     this.#layout = to;
     this.#epoch++;
     return this.#epoch;
