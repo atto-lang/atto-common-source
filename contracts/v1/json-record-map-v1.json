@@ -35,7 +35,10 @@
     "named_put_evaluation": "receiver_and_authority_then_key_once_then_value_once",
     "replacement_atomicity": "validate_and_admit_new_before_publish_then_release_old",
     "move_only_fallible_insert": "runtime_attempt_returns_exact_uncommitted_value_on_rejection_then_compiler_commits_move_only_on_success",
-    "owned_put_guest_visibility": "internal_lowering_only"
+    "owned_put_guest_visibility": "internal_lowering_only",
+    "shared_commit_primitive": "OresKeyedMap.put",
+    "failed_commit_preserves_previous_mapping": true,
+    "failed_commit_must_not_lose_uncommitted_move_value": true
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
