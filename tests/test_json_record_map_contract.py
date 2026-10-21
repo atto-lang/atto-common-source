@@ -105,5 +105,60 @@ class JsonRecordMapContractTest(unittest.TestCase):
         )
 
 
+    def test_core_may_only_expose_allocation_free_json_contracts(self):
+        lib = self.data["library"]
+        self.assertTrue(lib["core_json_contracts_allowed"])
+        self.assertFalse(lib["owned_json_tree_in_core"])
+        self.assertFalse(lib["ambient_allocator_allowed"])
+        self.assertEqual("explicit", lib["allocator_provider"])
+        self.assertEqual(
+            [
+                "token_kinds",
+                "borrowed_input_cursor",
+                "caller_provided_encode_sink",
+                "static_codec_markers",
+            ],
+            lib["core_contract_scope"],
+        )
+
+    def test_map_index_assignment_is_single_eval_and_transactional(self):
+        mp = self.data["map"]
+        self.assertEqual("direct_owned_mutable_map", mp["indexed_assignment_requires"])
+        self.assertEqual(
+            "receiver_once_then_key_once_then_value_once",
+            mp["indexed_assignment_evaluation"],
+        )
+        self.assertEqual(
+            "validate_and_admit_new_before_publish_then_release_old",
+            mp["replacement_atomicity"],
+        )
+
+    def test_record_update_returns_a_new_row_type_not_a_mutated_binding(self):
+        update = self.data["record_update"]
+        self.assertEqual(
+            "row_override_existing_then_extend_missing",
+            update["result_type_rule"],
+        )
+        self.assertEqual("forbidden", update["base_binding_type_mutation"])
+        self.assertEqual("forbidden", update["runtime_key_row_change"])
+        self.assertFalse(update["literal_put_as_row_extension"])
+
+    def test_typed_decode_never_publishes_partial_nominal_values(self):
+        codec = self.data["typed_codec"]
+        self.assertEqual(
+            "generated_static_constructor",
+            codec["known_record_struct_decode"],
+        )
+        self.assertEqual(
+            "explicit_opt_in_constructor_or_factory",
+            codec["known_class_decode"],
+        )
+        self.assertEqual(
+            "forbidden",
+            codec["direct_decode_partial_publication"],
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()
