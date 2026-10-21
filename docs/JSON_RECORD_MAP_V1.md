@@ -57,7 +57,16 @@ Indexed assignment is insert-or-replace on an owned mutable Map. A named `put(ke
 
 For `m[key] = value`, Oreslang preserves its general **RHS-first assignment** rule: mutation authority for a directly named Map is preflighted without running guest code, then the RHS value is evaluated once, then the target receiver and key are evaluated once. A named `m.put(key, value)` is an ordinary member call instead: receiver/authority first, then key and value arguments left-to-right. Both forms commit through the same Map storage/quota primitive; sharing that primitive does not erase their distinct language-level evaluation order.
 
-Replacement is transactional with respect to the Map itself: key/value domains, recursive JSON-graph admission, policy and quotas must pass **before** publishing the new entry, and only after publication may the displaced value be released/dropped. The current closed Map surface therefore remains scalar/copy-safe. A move-only recursive value such as future `JsonValue` must stay fail-closed until insertion lowering either commits the move only after successful admission or returns the uncommitted value on failure; the compiler must not irreversibly consume a move-only source merely because a fallible insertion was attempted.
+Replacement is transactional with respect to the Map itself: key/value domains, recursive JSON-graph admission, policy and quotas must pass **before** publishing the new entry, and only after publication may the displaced value be released/dropped.
+
+The selected move-only protocol is now explicit. The runtime owns an internal fallible insertion primitive equivalent to `attemptOwnedPut(key, value)` with two disjoint outcomes:
+
+- **committed**: storage has published the offered value and the result carries only the previous mapping;
+- **rejected**: storage is unchanged and the result carries the **exact offered value by identity** plus an internal rejection.
+
+That result is compiler/runtime machinery, not a guest method. Source lowering evaluates a move-only RHS into a temporary without committing the source move, calls the internal attempt, commits the ownership move only on the committed branch, and restores/retains the source owner on the rejected branch before mapping the internal rejection to the source error surface. In particular, a caught failed insertion must see the pre-write ownership state. Eagerly moving the source and attempting to reconstruct ownership from an exception is forbidden.
+
+The currently exposed closed Map surface remains scalar/copy-safe until the typechecker/evaluator lower source `JsonValue` through this protocol end to end.
 
 The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
 
