@@ -82,12 +82,20 @@ branch, and restores/retains the source owner on the rejected branch before
 mapping the internal rejection to the source error surface. Eagerly moving the
 source and attempting to reconstruct ownership from an exception is forbidden.
 
-The currently exposed closed Map surface remains scalar/copy-safe until the
-ownership checker/evaluator model the insertion's explicit committed versus
-rejected control-flow edges. In particular, the existing conservative
-`try/catch` ownership rule cannot simply be bypassed: a successful insertion
-followed by a later throwing operation must still leave the source moved on the
-catch edge.
+The Java staging stack now models those control-flow edges without widening
+the public source surface. The evaluator consumes the linear runtime result
+directly: it recovers the exact candidate before rethrowing rejection and takes
+the previous mapping exactly once on commit. A test-only ownership-checker gate
+tracks a successful fallible insert as a normal-edge move, restores the
+candidate on that operation's rejection edge, and promotes earlier committed
+moves to a catch edge before any later potentially throwing statement.
+
+The public closed Map surface nevertheless remains scalar/copy-safe until the
+TypeChecker admits the recursive `JsonValue` value domain and the normal
+compiler pipeline enables this ownership mode. During staging, move-only
+indexed insertion and move-only named `put` are direct-statement-only; indexed
+assignment cannot expose an alias to a transferred candidate, and linear
+previous-value result lowering has not yet been enabled for expression use.
 
 The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
 
