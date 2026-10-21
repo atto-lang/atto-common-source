@@ -93,3 +93,12 @@ artifact ABI requirement against the authenticated device: ABI version,
 required address width, f32 support, canonical little-endian interpretation,
 required bytes, and both global NDRange dimensions. Matching generated source
 alone is never compatibility or execution evidence.
+
+## Provider-owned operation lifetime
+
+Once physical submission may exist, the provider retains authoritative
+ownership of the operation record independently of any caller-visible handle.
+Dropping a Future/operation handle therefore cannot release quota, events,
+programs or physical buffers and cannot make an in-flight command unreachable.
+The provider removes its active-operation reference only after exact host-fence
+terminalization and physical cleanup/recovery are complete.
