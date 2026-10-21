@@ -19,9 +19,22 @@
     ],
     "source_type_import": "import class JsonValue from \"alloc/json\";",
     "reserved_namespace_shadowing": "forbidden_project_manifest_or_ORESLANG_PATH_override",
-    "stage_one_source_surface": "opaque_JsonValue_type_and_empty_Map<String,JsonValue>_construction",
+    "stage_one_source_surface": "opaque_JsonValue_plus_Json_null_of_array_object_and_Map<String,JsonValue>",
     "direct_jsonvalue_construction": "forbidden_use_Json_static_factories_or_parser",
-    "json_static_api_stage": "pending"
+    "json_static_api_stage": "constructors_only_parse_stringify_typed_codecs_pending",
+    "source_factory_import": "import class Json from \"alloc/json\";",
+    "json_factory_surface": [
+      "Json.null",
+      "Json.of",
+      "Json.array",
+      "Json.object"
+    ],
+    "json_factory_exact_scalar_stage": "bool_int_String_only_float_decimal_fail_closed",
+    "class_alias_binding_semantics": "local_alias_only_no_original_source_name_leak",
+    "jsonvalue_alias_intrinsic_authority": false,
+    "json_factory_alias_intrinsic_authority": false,
+    "alloc_json_placeholder_construction": "forbidden_for_canonical_and_aliased_bindings",
+    "alloc_json_wildcard_import_stage": "reject"
   },
   "json_object": {
     "key_type": "String",
