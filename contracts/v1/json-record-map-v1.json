@@ -40,9 +40,11 @@
     "compiler_exceptional_flow": "source_moved_on_commit_normal_edge_restored_on_admission_failure_catch_edge",
     "source_move_only_map_visibility": "gated_until_exceptional_flow_lowering",
     "owned_put_guest_visibility": "internal_lowering_only",
-    "shared_commit_primitive": "OresKeyedMap.put",
+    "shared_commit_primitive": "canonical_checked_map_put_path",
     "failed_commit_preserves_previous_mapping": true,
-    "failed_commit_must_not_lose_uncommitted_move_value": true
+    "failed_commit_must_not_lose_uncommitted_move_value": true,
+    "scalar_v1_current_primitive": "OresKeyedMap.put",
+    "move_only_internal_primitive": "attemptOwnedPut_returns_offered_value_on_rejection"
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
