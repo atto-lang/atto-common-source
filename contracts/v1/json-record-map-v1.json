@@ -116,7 +116,13 @@
     "unknown_capture_type": "Map<String, JsonValue>",
     "known_record_struct_decode": "generated_static_constructor",
     "known_class_decode": "explicit_opt_in_constructor_or_factory",
-    "direct_decode_partial_publication": "forbidden"
+    "direct_decode_partial_publication": "forbidden",
+    "class_factory_annotation": "@JsonFactory(\"method\")",
+    "class_factory_signature": "static_sync_one_closed_record_arg_returns_exact_class",
+    "class_factory_input_validation": "complete_before_invocation",
+    "class_factory_invocation_count": "exactly_once",
+    "class_factory_async": "forbidden_v1",
+    "class_direct_field_population": "forbidden"
   },
   "safety": {
     "malformed_utf8": "reject",
