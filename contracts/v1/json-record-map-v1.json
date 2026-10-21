@@ -117,6 +117,12 @@
     "ordinary_json_cycle": "reject",
     "implicit_runtime_capabilities": "reject",
     "deterministic_for_fixed_value": true,
-    "cryptographic_canonicalization": "separate_profile"
+    "cryptographic_canonicalization": "separate_profile",
+    "dynamic_object_stringify": "graph_stable_complete_root_validation_and_traversal",
+    "dynamic_object_input": "Map<String, JsonValue>",
+    "dynamic_object_read_semantics": "non_consuming_scoped_read",
+    "output_quota_unit": "utf8_bytes",
+    "dynamic_object_order": "canonical_map_insertion_order",
+    "validate_then_unlock_then_traverse": false
   }
 }
