@@ -130,8 +130,9 @@ The default parser/decoder is strict:
 - count skipped/unknown fields toward parse and allocation/work quotas so "ignore unknown" cannot become a resource-bypass path;
 - fail atomically without publishing a partially decoded typed value or partially built dynamic object;
 - never invoke guest callbacks while internal JSON/Map storage locks or mutation fences are held;
-- serialize JSON edge-creating mutations through an internal graph-stability gate and reject any cycle before publication;
-- because a retained alias to a nested mutable JSON object can later make an older root deeper/larger, revalidate complete-root depth/node quotas under the same graph-stability gate immediately before recursive encoding, freezing, transport, or other externalization.
+- serialize **all** JSON-object mutations through an internal graph-stability gate before the individual object monitor; edge creation additionally rejects any cycle before publication;
+- because a retained alias to a nested mutable JSON object can later make an older root deeper/larger, revalidate complete-root depth/node quotas under that same graph-stability gate immediately before recursive encoding, freezing, transport, or other externalization;
+- validation and recursive traversal must occur in one guarded operation (or traverse an immutable validated snapshot), so concurrent remove/clear cannot produce a torn externalization view.
 
 Keys such as `"__proto__"` and `"constructor"` are ordinary strings because Oreslang objects do not use JavaScript prototype mutation; they must not trigger host-object property semantics.
 
