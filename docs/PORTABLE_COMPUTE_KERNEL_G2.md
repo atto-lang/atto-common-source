@@ -52,3 +52,15 @@ device rather than silently reinterpret uploaded bytes.
 
 These fields are descriptive admission requirements, not device authority and
 not evidence that any hardware work executed.
+
+## CPU reference concurrency
+
+The deterministic CPU reference provider holds a whole-kernel execution lease
+over both input and output host buffers. Host reads or writes using those same
+buffer authorities serialize with execution; they cannot interleave
+element-by-element with a running reference kernel.
+
+When two buffers are involved, implementations acquire execution ownership in a
+stable order so reversed concurrent launches cannot deadlock. This is a
+conformance/runtime safety rule, not permission for arbitrary shared mutable
+guest aliases.
