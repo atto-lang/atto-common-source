@@ -15,6 +15,11 @@ const bytesFor = (...parts) => {
 };
 
 /** An actor identity, an incarnation, and its own bounded persistent/scratch memory. */
+const MAX_LIVE_HANDLES = 4096;
+const MAX_LIVE_LOANS = 4096;
+const MAX_LIVE_PINS = 4096;
+const MAX_LIVE_TASKS = 4096;
+
 export class ActorArenaOracle {
   #actor;
   #incarnation;
@@ -59,6 +64,7 @@ export class ActorArenaOracle {
     integer(size, 'allocation bytes', 1);
     if (!['persistent', 'scratch'].includes(lifetime)) fail('unknown lifetime');
     if (size > this.#quota - this.#used) fail('actor quota exceeded');
+    if (this.#allocations.size >= MAX_LIVE_HANDLES) fail('live allocation handle limit');
     const bytes = new Uint8Array(size);
     const handle = Object.freeze({actor: this.#actor, incarnation: this.#incarnation,
       lifetime, turn: this.#turn});
@@ -84,6 +90,7 @@ export class ActorArenaOracle {
   borrowRead(handle) {
     this.#active();
     this.#record(handle);
+    if (this.#loans.size >= MAX_LIVE_LOANS) fail('active read loan limit');
     const lease = Object.freeze({kind: 'read-only'});
     this.#loans.set(lease, {handle, turn: this.#turn});
     return lease;
@@ -141,6 +148,7 @@ export class ActorArenaOracle {
   }
   pinExternal() {
     this.#active();
+    if (this.#pins.size >= MAX_LIVE_PINS) fail('external pin limit');
     const pin = Object.freeze({kind: 'lifetime-only'});
     this.#pins.add(pin);
     return pin;
@@ -151,6 +159,7 @@ export class ActorArenaOracle {
   }
   beginTask() {
     this.#active();
+    if (this.#tasks.size >= MAX_LIVE_TASKS) fail('outstanding task limit');
     const token = Object.freeze({kind: 'task-lifetime'});
     this.#tasks.add(token);
     return token;
@@ -194,6 +203,7 @@ export class DenseRegionOracle {
   #nextId = 0;
   #epoch = 0;
   #closed = false;
+  #admitting = false;
 
   constructor(arena, fields, capacity, physicalLayout = 'aos', tile = 8) {
     if (!(arena instanceof ActorArenaOracle)) fail('actor arena required');
@@ -215,7 +225,10 @@ export class DenseRegionOracle {
   get epoch() { return this.#epoch; }
   get physicalLayout() { return this.#layout; }
   get fields() { return this.#fields; }
-  #live() { if (this.#closed || this.#arena.sealed) fail('region closed'); }
+  #live() {
+    if (this.#closed || this.#arena.sealed) fail('region closed');
+    if (this.#admitting) fail('reentrant region operation during input snapshot');
+  }
   #geometry(kind) {
     const padded = Math.ceil(this.#capacity / this.#tile) * this.#tile;
     const cells = bytesFor(kind === 'aos' || kind === 'soa' ? this.#capacity : padded,
@@ -251,6 +264,8 @@ export class DenseRegionOracle {
     // read the caller's array again after mutation starts. Proxies are not a
     // security boundary: their descriptor traps execute in the trusted host.
     if (!Array.isArray(values)) fail('component values must be a dense array');
+    if (this.#admitting) fail('reentrant component admission');
+    this.#admitting = true;
     const snapshot = [];
     try {
       const size = Reflect.getOwnPropertyDescriptor(values, 'length');
@@ -264,6 +279,8 @@ export class DenseRegionOracle {
       }
     } catch (error) {
       fail('untrusted component descriptor');
+    } finally {
+      this.#admitting = false;
     }
     if (!snapshot.every(v => typeof v === 'number' && Number.isFinite(v)))
       fail('component values must be finite F64 numbers');
