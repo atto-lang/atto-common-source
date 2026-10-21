@@ -247,19 +247,37 @@ export class DenseRegionOracle {
     return index;
   }
   #values(values) {
-    if (!Array.isArray(values) || values.length !== this.#fields.length ||
-        !values.every(v => typeof v === 'number' && Number.isFinite(v)))
-      fail('component values must be finite numbers matching schema');
+    // Snapshot only own DATA descriptors; never execute a component getter or
+    // read the caller's array again after mutation starts. Proxies are not a
+    // security boundary: their descriptor traps execute in the trusted host.
+    if (!Array.isArray(values)) fail('component values must be a dense array');
+    const snapshot = [];
+    try {
+      const size = Reflect.getOwnPropertyDescriptor(values, 'length');
+      if (!size || size.value !== this.#fields.length)
+        fail('component count does not match schema');
+      for (let field = 0; field < this.#fields.length; field++) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(values, String(field));
+        if (!descriptor || !Object.hasOwn(descriptor, 'value'))
+          fail('component must be an own data value (no getter or hole)');
+        snapshot.push(descriptor.value);
+      }
+    } catch (error) {
+      fail('untrusted component descriptor');
+    }
+    if (!snapshot.every(v => typeof v === 'number' && Number.isFinite(v)))
+      fail('component values must be finite F64 numbers');
+    return snapshot;
   }
   insert(values) {
     this.#live();
-    this.#values(values);
+    const stable = this.#values(values);
     if (this.length >= this.#capacity) fail('region capacity exceeded');
     this.#arena.ensureWritable(this.#backing);
     if (this.#nextId === Number.MAX_SAFE_INTEGER) fail('entity generation exhausted');
     const id = Object.freeze({entity: ++this.#nextId});
     const row = this.length;
-    for (let field = 0; field < values.length; field++) this.#put(row, field, values[field]);
+    for (let field = 0; field < stable.length; field++) this.#put(row, field, stable[field]);
     this.#rows.push(id);
     this.#identities.set(id, row);
     return id;
@@ -272,9 +290,9 @@ export class DenseRegionOracle {
   write(id, values) {
     this.#live();
     const row = this.#rowIndex(id);
-    this.#values(values);
+    const stable = this.#values(values);
     this.#arena.ensureWritable(this.#backing);
-    for (let field = 0; field < values.length; field++) this.#put(row, field, values[field]);
+    for (let field = 0; field < stable.length; field++) this.#put(row, field, stable[field]);
   }
   eraseSwap(id) {
     this.#live();
@@ -301,6 +319,9 @@ export class DenseRegionOracle {
     layout(to);
     if (to === this.#layout) return this.#epoch;
     if (this.#epoch === Number.MAX_SAFE_INTEGER) fail('layout epoch overflow');
+    // A borrowed region is never eligible for copy/reconciliation: reject
+    // BEFORE allocating a second physical backing or modifying the epoch.
+    this.#arena.ensureWritable(this.#backing);
     const next = this.#createStorage(to);
     try {
       for (let row = 0; row < this.length; row++)
