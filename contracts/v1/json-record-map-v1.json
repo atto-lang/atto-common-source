@@ -86,6 +86,7 @@
     "trailing_comma_default": "reject",
     "ignored_unknown_fields_count_toward_quotas": true,
     "mutable_json_cycle_invariant": "edge_creation_serialized_and_cycle_checked",
+    "graph_stability_mutations": "all_json_object_mutations_share_global_guard_before_object_monitor",
     "whole_tree_quota_boundary": "revalidate_depth_and_nodes_under_graph_stability_guard_before_recursive_externalization"
   },
   "json_number": {
