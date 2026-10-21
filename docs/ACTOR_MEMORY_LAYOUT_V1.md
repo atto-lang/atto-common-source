@@ -6,8 +6,9 @@
 
 - Normative cases: [actor-memory-layout-v1.json](../contracts/v1/actor-memory-layout-v1.json)
 - Model: [actor-memory-layout-v1.mjs](../scripts/actor-memory-layout-v1.mjs)
-- Tests: [actor-memory-layout-v1.test.mjs](../tests/actor-memory-layout-v1.test.mjs)
-- Run locally on Node 22+: **node --test tests/actor-memory-layout-v1.test.mjs**
+- Baseline tests: [actor-memory-layout-v1.test.mjs](../tests/actor-memory-layout-v1.test.mjs)
+- Adversarial tests: [actor-memory-layout-hardening.test.mjs](../tests/actor-memory-layout-hardening.test.mjs)
+- Run locally on Node 22.16.0: **node --test tests/actor-memory-layout-v1.test.mjs tests/actor-memory-layout-hardening.test.mjs**
 
 **ActorArenaOracle** models bounded persistent and turn-scoped scratch allocations, issued opaque capability identity, actor incarnation, read-only loans, deterministic scrub/free, and physical retirement gated on active loans, tasks, and external callback pins. An ActorRef is NOT memory authority. Every actor kind, including SHARED, owns its ordinary mutable memory. Explicit shared arenas have their own semantics; see [SHARED_DOMAIN_ARENAS_V1](../contracts/v1/SHARED_DOMAIN_ARENAS_V1.md).
 
@@ -20,9 +21,9 @@ For row r, field f, total field count F, and tile width T:
 - AoS: row-major, index = r * F + f
 - SoA: field-major, columns[f][r]
 - AoSoA: tile/field/lane, index = floor(r/T)*(T*F) + f*T + (r%T)
-- SoAoS (serialized identifier soaos): tile/row/field, index = floor(r/T)*(T*F) + (r%T)*F + f
+- SoAoS (serialized identifier soaos): tile/field-group/row/small-struct-field. Fixed field-group width G=2 for this F64 reference. Let first=2*floor(f/2), width=min(2,F-first). Index = floor(r/T)*(T*F) + first*T + (r%T)*width + (f-first).
 
-SoAoS and AoSoA are not aliases. Both tiled layouts account for padded capacity, but padding is never exposed as logical guest rows. The reference restricts values to finite F64 fields; it does not establish full numeric semantics, generic type layouts, real cache locality, SIMD, GPU execution, or native allocation patterns.
+SoAoS and AoSoA are not aliases. Unlike the earlier tile/row/field formula (which accidentally reproduced AoS), SoAoS now groups pairs of fields before laying out small row structs. For a schema with three or more fields, all three modes produce distinct physical index permutations. With a single two-field group, SoAoS and AoS may coincide, which is permitted. Both tiled layouts account for padded capacity, but padding is never exposed as logical guest rows. The reference restricts values to finite F64 fields; it does not establish full numeric semantics, generic type layouts, real cache locality, SIMD, GPU execution, or native allocation patterns. Incoming row values are detached using own data property descriptors, and sparse/accessor-backed or reentrant input is denied before state mutation. A borrowed backing rejects re-layout before any temporary allocation. Each of the four classes of live authority (allocations, read loans, lifetime pins, tasks) is bounded to 4096. Payload bytes are charged to actor memory, but JS Map/handle metadata is **not** counted toward the byte quota; this is a source-free reference, not a production allocation-accounting proof.
 
 ## Five-backend implementation gates
 
