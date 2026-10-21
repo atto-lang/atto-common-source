@@ -4,6 +4,14 @@
 
 ## Strict nonblocking host-I/O invariant
 
+A strict profile must also enforce the source naming boundary:
+
+- Bare synchronous I/O spellings are not compatibility aliases; they are compile-time/binding errors.
+- A backend may reject a canonical `*_blocking` operation entirely until it has verified implicit continuation-suspension lowering over the same nonblocking provider used by its async form.
+- Shipping `*_blocking` early by calling a blocking host API, or by offloading that call to a worker, is forbidden.
+- Async operations may use `*_async` or another explicitly Future/awaitable API shape, but they must never expose a synchronous host operation behind an async-looking name.
+
+
 This invariant applies to the standard library and every runtime adapter reachable from it.
 
 - No stdlib operation may call a known blocking filesystem, socket, DNS, HTTP, terminal, pipe, or process-I/O API.
