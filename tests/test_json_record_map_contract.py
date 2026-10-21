@@ -42,14 +42,40 @@ class JsonRecordMapContractTest(unittest.TestCase):
             lib["reserved_namespace_shadowing"],
         )
         self.assertEqual(
-            "opaque_JsonValue_type_and_empty_Map<String,JsonValue>_construction",
+            'import class Json from "alloc/json";',
+            lib["source_factory_import"],
+        )
+        self.assertEqual(
+            "opaque_JsonValue_plus_Json_null_of_array_object_and_Map<String,JsonValue>",
             lib["stage_one_source_surface"],
         )
         self.assertEqual(
             "forbidden_use_Json_static_factories_or_parser",
             lib["direct_jsonvalue_construction"],
         )
-        self.assertEqual("pending", lib["json_static_api_stage"])
+        self.assertEqual(
+            "constructors_only_parse_stringify_typed_codecs_pending",
+            lib["json_static_api_stage"],
+        )
+        self.assertEqual(
+            ["Json.null", "Json.of", "Json.array", "Json.object"],
+            lib["json_factory_surface"],
+        )
+        self.assertEqual(
+            "bool_int_String_only_float_decimal_fail_closed",
+            lib["json_factory_exact_scalar_stage"],
+        )
+        self.assertEqual(
+            "local_alias_only_no_original_source_name_leak",
+            lib["class_alias_binding_semantics"],
+        )
+        self.assertFalse(lib["jsonvalue_alias_intrinsic_authority"])
+        self.assertFalse(lib["json_factory_alias_intrinsic_authority"])
+        self.assertEqual(
+            "forbidden_for_canonical_and_aliased_bindings",
+            lib["alloc_json_placeholder_construction"],
+        )
+        self.assertEqual("reject", lib["alloc_json_wildcard_import_stage"])
         self.assertEqual("compiler_owned_opaque_JsonValue", obj["source_value_type"])
         self.assertEqual("JSON", obj["runtime_map_value_domain"])
         self.assertEqual("String_only", obj["json_map_key_domain"])
