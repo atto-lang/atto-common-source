@@ -24,6 +24,9 @@ def test_transfers_fail_closed():
     assert t["staleGenerationForbidden"] is True
     assert t["cancellationImpliesQuiescence"] is False
     assert t["reclaimRequiresVerifiedQuiescence"] is True
+    assert t["preEnqueueAbortRequiresExactFence"] is True
+    assert t["preEnqueueAbortRestoresIdle"] is True
+    assert t["preEnqueueAbortForbiddenAfterSubmission"] is True
 
 def test_numeric_metadata_never_recreates_authority():
     a = load()["authorityRules"]
