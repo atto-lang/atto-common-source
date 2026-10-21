@@ -40,3 +40,7 @@ def test_gpu_emission_is_not_execution_evidence():
     assert gpu["providerAuthenticationRequired"] is True
     assert gpu["physicalBufferProvenanceRequired"] is True
     assert gpu["deviceEventEvidenceRequired"] is True
+    assert gpu["javaEmitterImplemented"] is True
+    assert gpu["nativeEmitterImplemented"] is True
+    assert gpu["exactArtifactParityRequired"] is True
+    assert load()["promotion"]["requiresJavaNativeOpenClArtifactParity"] is True

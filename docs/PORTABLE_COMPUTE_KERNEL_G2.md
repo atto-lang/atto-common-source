@@ -30,7 +30,7 @@ It executes the same physical layout offsets as the device lowering. Input/outpu
 
 ## GPU artifact
 
-The first device artifact remains OpenCL C 1.2. Emitting syntactically valid OpenCL is not evidence of GPU execution. A real provider still must authenticate the physical device, buffer provenance, quotas and completion event before G3 can claim actual device execution.
+The first device artifact remains OpenCL C 1.2. Java/Graal and LLVM/native both emit this artifact from the same G2 kernel semantics, and exact cross-backend artifact parity is a promotion gate for the admitted subset. Emitting syntactically valid OpenCL is still not evidence of GPU execution. A real provider must authenticate the physical device, buffer provenance, quotas and completion event before G3 can claim actual device execution.
 
 ## Promotion criteria
 
