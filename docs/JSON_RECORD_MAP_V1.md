@@ -65,15 +65,15 @@ result:
 
 - **committed**: storage has published the offered value and
   `takePrevious()` transfers the displaced mapping exactly once;
-- **rejected**: storage is unchanged and `takeUncommittedValue()` transfers
+- **rejected**: storage is unchanged and `takeRejectedValue()` transfers
   the **exact offered value by identity** exactly once.
 
-A rejection is not exposed as ordinary data before ownership recovery.
-`rethrowAfterRecovery()` may propagate the original admission failure only
-after the rejected candidate has been taken back. The runtime performs every
-recoverable domain/graph/quota/policy check before the publication commit
-point; a failure after publication must never be translated into a rejected
-result that returns candidate ownership.
+A rejection is not exposed as ordinary source data before ownership recovery.
+Lowering must first call `takeRejectedValue()`, verify/recover that exact
+candidate, and only then rethrow the original `rejection()`. The runtime
+performs every recoverable domain/graph/quota/policy check before the
+publication commit point; a failure after publication must never be translated
+into a rejected result that returns candidate ownership.
 
 That result is compiler/runtime machinery, not a guest method. Source lowering
 evaluates a move-only RHS into a temporary without committing the source move,
@@ -90,9 +90,9 @@ and takes the previous mapping exactly once on commit.
 Catch-side ownership recovery is deliberately narrower than a general
 "conditional move" heuristic. The current Java proof admits it only when the
 commit-aware write is the **direct final statement** of that lexical try body
-(or a direct final binding of named `put`'s linear `Option<V>` previous
-result), with **no top-level `defer` and no live `MutexGuard`** at the write
-point. Under that proof, the operation's own admission rejection restores the
+(indexed assignment or named `put` expression), or a direct final binding of
+named `put`'s linear `Option<V>` previous result, with **no top-level
+`defer` and no live `MutexGuard`** at the write point. Under that proof, the operation's own admission rejection restores the
 candidate before throwing, while the normal edge records the source as moved.
 
 Any nested/branch write, any write followed by another try-body statement, or
