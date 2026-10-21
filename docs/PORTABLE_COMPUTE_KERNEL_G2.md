@@ -37,3 +37,18 @@ The first device artifact remains OpenCL C 1.2. Java/Graal and LLVM/native both 
 G2 requires Java and native CPU execution of the same kernel cases, matching layout byte offsets, matching output bit patterns for finite conformance vectors, negative validation coverage, and continued fail-closed source parser behavior.
 
 The next gate after this contract is a trusted OpenCL provider with explicit allocation/upload/enqueue/event/download/release state, not parser enablement.
+
+## Artifact ABI requirements
+
+Every emitted OpenCL artifact carries portable artifact ABI version 1 and
+declares that the provider must validate 64-bit device addressing, IEEE-754
+f32 support, little-endian scalar byte interpretation, exact required byte
+capacity, and both global NDRange dimensions before enqueue.
+
+The little-endian requirement is explicit because Java host reference buffers
+use a canonical little-endian f32 byte representation and the current native
+host path rejects big-endian hosts. A provider must reject an incompatible
+device rather than silently reinterpret uploaded bytes.
+
+These fields are descriptive admission requirements, not device authority and
+not evidence that any hardware work executed.

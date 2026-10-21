@@ -43,4 +43,13 @@ def test_gpu_emission_is_not_execution_evidence():
     assert gpu["javaEmitterImplemented"] is True
     assert gpu["nativeEmitterImplemented"] is True
     assert gpu["exactArtifactParityRequired"] is True
+    abi = gpu["artifactAbi"]
+    assert abi["version"] == 1
+    assert abi["requiredAddressBits"] == 64
+    assert abi["requiredFloat32"] is True
+    assert abi["requiredLittleEndian"] is True
+    assert set(abi["providerMustValidate"]) == {
+        "requiredBytes", "globalRows", "globalFields",
+        "requiredAddressBits", "requiredFloat32", "requiredLittleEndian",
+    }
     assert load()["promotion"]["requiresJavaNativeOpenClArtifactParity"] is True
