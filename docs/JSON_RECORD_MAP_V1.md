@@ -11,6 +11,14 @@ JSON is **OS-independent but allocation-dependent**. Therefore the public JSON A
 - hosted `std/io`, `std/fs`, `std/net`, HTTP, etc. may feed bytes to or consume bytes from `alloc/json`, but JSON itself must not depend on those capabilities.
 - `freestanding-alloc` targets may therefore use JSON when they provide an allocator and sufficient quotas.
 
+A small **allocation-free contract surface may live in `core`**, but it must stay representation-neutral. Examples are token-kind enums, borrowed-input cursor interfaces, caller-provided encode sinks/writers, and static codec marker traits. Those contracts may be used by a fixed-buffer/freestanding parser or encoder, but they must not own `String`, `Vector`, `Map`, a JSON DOM/tree, growable scratch space, or an ambient allocator. The moment an API returns an owned `JsonValue` tree or dynamically sized decoded value, it is an `alloc/json` API.
+
+This split keeps JSON usable on bare metal in two forms:
+
+1. **`core` streaming/fixed-buffer mode**: caller owns storage; JSON machinery only borrows input and emits into caller-provided sinks.
+2. **`alloc/json` owned mode**: explicit allocator enables `JsonValue`, dynamic objects/arrays, generated typed decode scratch space, and convenient parse/stringify APIs.
+
+
 The implementation must not introduce a second host-language Map or reflection-based object model. Dynamic JSON objects use the canonical typed Oreslang Map runtime.
 
 ## Dynamic JSON value model
@@ -47,6 +55,11 @@ obj[key] = value;
 
 Indexed assignment is insert-or-replace on an owned mutable Map. A named `put(key, value)` API may expose the previous value as `Option<V>`; it must use the same ownership, key-domain, quota, and atomicity rules as `m[key] = value`.
 
+For `m[key] = value`, the receiver is evaluated once, then the key once, then the value once. Replacement is transactional from the guest program's point of view: validate key/value domains, ownership transfer, recursive JSON-tree admission, and quotas **before** publishing the new entry; only after publication may the displaced value be released/dropped. A failed insertion/replacement leaves the previous mapping intact and must not consume a caller-owned value unless ownership transfer was successfully committed.
+
+The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
+
+
 The first closed typed-Map implementation permits only a narrow scalar value domain. JSON requires a later compiler-owned **recursive value descriptor** for `JsonValue`; do not bypass that gate with `java.util.Map`, `Object`, host reflection, or an untyped `any`.
 
 ## Typed decode
@@ -70,6 +83,9 @@ A struct decoder populates only fields in the declared closed struct shape and m
 ### Classes
 
 Class decoding must never poke private fields or bypass constructors/invariants. A class must explicitly opt in through a compiler-generated codec or an explicit factory/decoder. The generated path must call an admitted constructor/factory shape; it may not allocate an instance and mutate hidden storage behind the class API.
+
+Decoder construction is two-phase: first parse/validate all admitted inputs into temporary decoder-owned state, then invoke the constructor/factory exactly once. No partially initialized class instance may escape on an unknown field, malformed value, quota error, constructor error, cancellation, or panic.
+
 
 ### Maps and arrays
 
@@ -141,11 +157,13 @@ Rules:
 1. The base must be an actual readonly structural **record**, not a struct, class, structural contract view, module namespace, or Map.
 2. Update field names are compile-time static and unique within the update expression.
 3. Replacing an existing field may change that field's result type; adding a field widens the result row.
+   Type computation is `RowOverride<Base, Patch>`: retain every base field not named by the patch, replace named base fields with the patch field type, then append newly introduced patch fields. The original binding never changes static type; the expression yields a distinct result value/type (and may consume the base under the ownership rule below).
 4. Existing-field order is retained; newly added fields append in source order. Field order is deterministic but structural assignability remains name/type based.
 5. The base expression is evaluated exactly once; update values are evaluated left-to-right.
 6. Failure while evaluating an update leaves the original value logically unchanged and publishes no partial result.
 7. Ownership is not faked by shallow aliasing. If the base record contains move-only state, the update consumes the base unless a checked copy/share operation has explicitly made duplication legal. A backend may structurally share only values proved immutable/share-safe.
 8. A runtime-computed field name cannot change a static record type. Use `Map<String, V>` / `JsonObject` for dynamic keys.
+   Even `record.put("literal", value)` is not v1 row-extension syntax: method-looking APIs are reserved for ordinary values/containers. `with { field: value }` is the single canonical shape-changing record operation, which keeps shape changes explicit to the parser/type checker.
 9. `r["field"] = value` remains illegal for readonly records; `with` is construction of a new value, not mutation.
 
 No row update may reveal hidden fields from a structural class/contract projection. V1 therefore rejects `with` on structural views rather than copying a runtime object's undisclosed shape.
