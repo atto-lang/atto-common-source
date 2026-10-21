@@ -85,20 +85,32 @@ source and attempting to reconstruct ownership from an exception is forbidden.
 The Java compiler/runtime stack now models those control-flow edges without
 widening the public type surface. The evaluator consumes the linear runtime
 result directly: it recovers the exact candidate before rethrowing rejection
-and takes the previous mapping exactly once on commit. The **production**
-ownership pass tracks a successful fallible insert as a normal-edge move,
-restores the candidate on that operation's rejection edge, and promotes earlier
-committed moves to a catch edge before any later potentially throwing
-statement.
+and takes the previous mapping exactly once on commit.
+
+Catch-side ownership recovery is deliberately narrower than a general
+"conditional move" heuristic. The current Java proof admits it only when the
+commit-aware write is the **direct final statement** of that lexical try body
+(or a direct final binding of named `put`'s linear `Option<V>` previous
+result), with **no top-level `defer` and no live `MutexGuard`** at the write
+point. Under that proof, the operation's own admission rejection restores the
+candidate before throwing, while the normal edge records the source as moved.
+
+Any nested/branch write, any write followed by another try-body statement, or
+any write with pending lexical cleanup stays conservative: the catch edge sees
+the candidate as moved. Outer catches are also conservative when an inner
+terminal write commits, because later outer work may still throw. This avoids
+resurrecting ownership after a successful commit followed by defer/guard
+cleanup or another failure.
 
 The public closed Map surface nevertheless remains scalar/copy-safe until the
 TypeChecker admits the recursive `JsonValue` value domain through
-`alloc/json`. Move-only named `put` is already ownership-lowered for a
-direct expression statement or direct binding of its linear `Option<V>`
-previous result. Move-only indexed insertion remains statement-only because an
-assignment expression cannot return the transferred RHS as a second owner.
-Nested move-only `put` expressions remain fail-closed until expression-level
-post-commit throwing edges are tracked with the same precision.
+`alloc/json`. Move-only named `put` is ownership-lowered for a direct
+terminal expression statement or direct terminal binding of its linear
+`Option<V>` previous result. Move-only indexed insertion remains
+statement-only because an assignment expression cannot return the transferred
+RHS as a second owner. Nested move-only `put` expressions remain fail-closed
+until expression-level post-commit throwing edges are tracked with the same
+precision.
 
 The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
 
