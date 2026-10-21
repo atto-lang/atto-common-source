@@ -40,7 +40,7 @@ JSON object keys are **String only**. Oreslang `Symbol` is not silently coerced 
 `JsonNumber` must preserve exact JSON numeric information without a mandatory IEEE-754 round trip. Dynamic parsing therefore keeps an exact integer/decimal representation (or an equivalent validated exact numeric lexeme) rather than eagerly converting every token to `float`. In particular, integers larger than 2^53 must not silently lose precision, exponent overflow must not become infinity, and a decimal must not be rounded unless the caller explicitly decodes it into a finite-width floating type. NaN and infinities are not JSON numbers.
 
 Numeric conversion is target-directed:
-- decoding into an integer type requires an integral JSON number in range;
+- decoding into an integer type requires a mathematically integral JSON number in range; lexical decimal/exponent spellings such as `1.0`, `1e0`, and `100e-2` are valid when their exact value is integral;
 - decoding into a decimal/big-number type preserves exact value;
 - decoding into `float`/`f32`/`f64` may round according to that target's documented IEEE semantics, but overflow/non-finite results are errors by default;
 - encoding a non-finite guest float is an error, never `null` or an implementation-specific token.
@@ -55,7 +55,9 @@ obj[key] = value;
 
 Indexed assignment is insert-or-replace on an owned mutable Map. A named `put(key, value)` API may expose the previous value as `Option<V>`; it must use the same ownership, key-domain, quota, and atomicity rules as `m[key] = value`.
 
-For `m[key] = value`, the receiver is evaluated once, then the key once, then the value once. Replacement is transactional from the guest program's point of view: validate key/value domains, ownership transfer, recursive JSON-tree admission, and quotas **before** publishing the new entry; only after publication may the displaced value be released/dropped. A failed insertion/replacement leaves the previous mapping intact and must not consume a caller-owned value unless ownership transfer was successfully committed.
+For `m[key] = value`, Oreslang preserves its general **RHS-first assignment** rule: mutation authority for a directly named Map is preflighted without running guest code, then the RHS value is evaluated once, then the target receiver and key are evaluated once. A named `m.put(key, value)` is an ordinary member call instead: receiver/authority first, then key and value arguments left-to-right. Both forms commit through the same Map storage/quota primitive; sharing that primitive does not erase their distinct language-level evaluation order.
+
+Replacement is transactional with respect to the Map itself: key/value domains, recursive JSON-graph admission, policy and quotas must pass **before** publishing the new entry, and only after publication may the displaced value be released/dropped. The current closed Map surface therefore remains scalar/copy-safe. A move-only recursive value such as future `JsonValue` must stay fail-closed until insertion lowering either commits the move only after successful admission or returns the uncommitted value on failure; the compiler must not irreversibly consume a move-only source merely because a fallible insertion was attempted.
 
 The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
 
@@ -127,7 +129,9 @@ The default parser/decoder is strict:
 - apply explicit maximum nesting depth, token count, numeric token length, string/key byte length, object entry count, array length and total decoded allocation budget;
 - count skipped/unknown fields toward parse and allocation/work quotas so "ignore unknown" cannot become a resource-bypass path;
 - fail atomically without publishing a partially decoded typed value or partially built dynamic object;
-- never invoke guest callbacks while internal JSON/Map storage locks or mutation fences are held.
+- never invoke guest callbacks while internal JSON/Map storage locks or mutation fences are held;
+- serialize JSON edge-creating mutations through an internal graph-stability gate and reject any cycle before publication;
+- because a retained alias to a nested mutable JSON object can later make an older root deeper/larger, revalidate complete-root depth/node quotas under the same graph-stability gate immediately before recursive encoding, freezing, transport, or other externalization.
 
 Keys such as `"__proto__"` and `"constructor"` are ordinary strings because Oreslang objects do not use JavaScript prototype mutation; they must not trigger host-object property semantics.
 
@@ -203,7 +207,7 @@ return Json.stringify(payload);
 
 Typed codecs are generated or specialized at compile time. No general runtime reflection registry is required. Reachability roots are explicit codec calls/derivations and exported boundaries. Unused codecs and unused JSON features remain tree-shakeable.
 
-Encoding must reject cyclic object graphs unless a separately named graph/reference codec is used; ordinary JSON is a tree. Runtime capabilities and process-local identities (actor refs, channels, mutex/guard handles, raw native handles, closures, module namespaces, allocator handles, etc.) are not implicitly serializable merely because they occur in a reachable field.
+Encoding must reject cyclic object graphs unless a separately named graph/reference codec is used; ordinary JSON has value-tree wire semantics even if an internal acyclic runtime graph temporarily shares subvalues. Cycle prevention is an always-on mutation invariant, while complete-root depth/node quotas are rechecked under a graph-stable boundary immediately before recursive encoding. Runtime capabilities and process-local identities (actor refs, channels, mutex/guard handles, raw native handles, closures, module namespaces, allocator handles, etc.) are not implicitly serializable merely because they occur in a reachable field.
 
 Ordinary `Json.stringify` is deterministic for a fixed value and implementation contract but does not claim cryptographic canonical JSON. Records use their declared/source-stable field order and dynamic JSON objects use the canonical Map iteration order. A future canonical/signing mode must be a separately specified algorithm (for example an RFC-8785-compatible profile), including Unicode and numeric canonicalization.
 
@@ -214,7 +218,8 @@ A strict full-AOT profile may reject unresolved dynamic codec registration. User
 - parser/type tests for record/struct `with`: add, replace, type change, row/shape widening, duplicate field rejection, class/Map rejection, structural-view rejection and dynamic-key rejection;
 - ownership tests proving move-only bases are consumed and no writable alias is recovered;
 - evaluator/backend tests proving base-once and left-to-right evaluation and atomic failure;
-- Map indexed insert/replace parity with named `put` when added;
+- Map indexed insert/replace storage parity with named `put`, while separately pinning RHS-first assignment order versus member-call argument order;
+- move-only fallible-insert tests proving a rejected recursive/quota write either leaves the source ownership uncommitted or returns the uncommitted value;
 - dynamic JSON object tests using the canonical Map runtime, including String/Symbol separation;
 - strict duplicate-key, UTF-8/Unicode, control-character, BOM/extension rejection, exact-number and quota adversarial vectors;
 - missing-vs-null/Option fixtures, including malformed-present-value cases that must not silently default;
