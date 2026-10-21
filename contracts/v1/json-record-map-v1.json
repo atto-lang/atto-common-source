@@ -34,7 +34,8 @@
     "indexed_assignment_evaluation": "authority_preflight_then_rhs_once_then_receiver_once_then_key_once",
     "named_put_evaluation": "receiver_and_authority_then_key_once_then_value_once",
     "replacement_atomicity": "validate_and_admit_new_before_publish_then_release_old",
-    "move_only_fallible_insert": "gated_until_commit_aware_move_or_value_return_on_error"
+    "move_only_fallible_insert": "runtime_attempt_returns_exact_uncommitted_value_on_rejection_then_compiler_commits_move_only_on_success",
+    "owned_put_guest_visibility": "internal_lowering_only"
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
