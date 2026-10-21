@@ -52,7 +52,10 @@
     "timeoutDoesNotFreeDeviceMemory": true,
     "preEnqueueCleanupFailureRetainsRecoveryAuthority": true,
     "preEnqueueCleanupRetryRequired": true,
-    "programReleaseFailureRetainsPreparedAuthority": true
+    "programReleaseFailureRetainsPreparedAuthority": true,
+    "deviceLossDoesNotImplyQuiescence": true,
+    "deviceLossRecoveryRequiresProviderProof": true,
+    "deviceLossRetainsQuotaUntilRecovery": true
   },
   "transfers": {
     "uploadExplicit": true,
@@ -70,7 +73,9 @@
     "realGpuExecutionEvidenceRequiresDeviceEvent": true,
     "preEnqueueReleaseFailureRecoveryRequired": true,
     "programReleaseRetryRequired": true,
-    "queueAuthorityForgeryRequired": true
+    "queueAuthorityForgeryRequired": true,
+    "deviceLossRecoveryFailureRetainsResources": true,
+    "deviceLossRecoverySuccessRequired": true
   },
   "promotion": {
     "requiresJavaProviderStateParity": true,
@@ -81,6 +86,7 @@
     "requiresSourceSyntaxToRemainFailClosed": true,
     "requiresArtifactAbiProviderValidation": true,
     "requiresRecoverablePreEnqueueCleanup": true,
-    "requiresOpaqueJavaQueueAuthority": true
+    "requiresOpaqueJavaQueueAuthority": true,
+    "requiresDeviceLossQuiescenceProof": true
   }
 }
