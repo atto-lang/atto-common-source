@@ -20,6 +20,8 @@ States are `idle -> in-flight -> idle|poisoned`, with `poisoned -> retired` only
 
 Completion validates the exact receipt. Cancellation changes the buffer to `poisoned` but does **not** prove quiescence. Reclamation remains forbidden until the backend acknowledges that the cancelled operation is physically quiescent.
 
+If provider admission has claimed the fence but physical enqueue has **not** happened, an exact-ticket pre-enqueue abort may restore the allocation to `idle`. This path is valid only before submission; once hardware may have observed the command, providers must use cancellation/completion and verified quiescence instead. A stale, foreign, or already-terminal fence cannot abort a newer operation.
+
 No transfer may silently migrate devices or fall back to CPU.
 
 ## Promotion
