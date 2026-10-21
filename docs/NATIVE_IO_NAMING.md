@@ -2,6 +2,17 @@
 
 **Status:** normative language/API and scheduling decision; the Java/Graal feature branch implements canonical native `_blocking` entry points with an opt-in strict compiler naming gate, but default enforcement and versioned release are **pending**. LLVM does not yet implement native I/O or continuation lowering: its compiler must fail closed. This document does not claim full cross-backend conformance or production readiness.
 
+## Strict nonblocking host-I/O invariant
+
+This invariant applies to the standard library and every runtime adapter reachable from it.
+
+- No stdlib operation may call a known blocking filesystem, socket, DNS, HTTP, terminal, pipe, or process-I/O API.
+- Moving a blocking call onto a virtual thread or bounded worker pool does **not** make it compliant.
+- Synchronous-looking `*_blocking` source APIs are allowed only as continuation-suspending sugar over a truly nonblocking backend; the suffix describes source sequencing, not a host blocking operation.
+- Async APIs must complete from readiness/completion notification. They must not use `Future.get/join`, monitor waits, blocking queues, thread sleeps, or spin-wait polling to emulate completion.
+- Targets without a compliant provider must report the capability as unsupported. Silent fallback to blocking I/O is forbidden.
+- Release CI must statically scan backend stdlib adapters for forbidden blocking primitives and also execute progress/cancellation/backpressure tests against the nonblocking provider.
+
 ## Rule
 
 Every **source-visible, logically synchronous I/O operation** must have an identifier ending in `_blocking`. This name means the *actor* waits for the result, **not** that the actor carrier may block. Async I/O operations **may** end in `_async`, but that suffix is **not required**. This is an API and scheduler contract, not a new operator, parser keyword, or declaration syntax.
@@ -12,7 +23,7 @@ Every **source-visible, logically synchronous I/O operation** must have an ident
 | Async I/O | `_async` suffix optional | `await fs.read_text_async(path)`; alternatively an explicitly async API without that suffix |
 | Pure/local computation | No I/O suffix required | `calculate_hash(data)`, `parse_header(data)` |
 
-A `_blocking` I/O operation is sequential from the source actor's point of view. At runtime it **must submit I/O to a non-carrier execution mechanism, suspend the actor continuation without parking an OS scheduler carrier, and resume the continuation on its owning scheduler**. This applies to filesystem metadata, terminal/stdin/stdout, sockets, DNS, networking and I/O usually expected to complete quickly. An implementation may use an OS asynchronous API, completion queue, bounded virtual-thread I/O worker, or another independently scheduled I/O engine. A blocking host syscall on a separate bounded/virtual I/O worker is a portability fallback; it may pin an I/O worker but never the actor carrier.
+A `_blocking` I/O operation is sequential from the source actor's point of view. At runtime it **must submit I/O to a non-carrier execution mechanism, suspend the actor continuation without parking an OS scheduler carrier, and resume the continuation on its owning scheduler**. This applies to filesystem metadata, terminal/stdin/stdout, sockets, DNS, networking and I/O usually expected to complete quickly. An implementation must use an actually asynchronous/nonblocking host mechanism: an OS async API, readiness/completion queue, io_uring/IOCP/kqueue-style integration, or an equivalent runtime provider whose public operation completes by notification rather than by parking a thread. **Blocking host syscalls are forbidden even on dedicated, pooled, platform, or virtual I/O workers.** Worker offload is not a compliant portability fallback. If a target cannot provide a nonblocking implementation for an operation, that operation must fail closed as unsupported for that target/profile.
 
 The name alone is not proof of a safe implementation. A function named `*_async` is not asynchronous merely because of the suffix; it must expose an async/future execution contract and must not block the actor carrier while performing I/O. Conversely, `*_blocking` is an API requirement for a synchronous-looking result, **not permission to call blocking host I/O on an actor carrier**, nor permission to bypass capability checks. It must not call `Future.join()`, `Future.get()` or a spin loop on the actor carrier.
 
@@ -40,7 +51,7 @@ The examples describe the **target** API, not a claim that all names above are a
 
 1. **Classify by semantic effect and execution behavior.** The native built-in/FFI registry must record I/O kind (`io` versus non-I/O), result shape (`T` for `_blocking`; `Future<T>` for async) and suspension requirements. A name-only regex over arbitrary functions is not sufficient. Calls to `_blocking` must be lowered as suspension points even inside ordinary (non-async) source routines.
 2. **Reject missing suffixes.** Whenever a native I/O import, builtin or generated binding is resolved, an entry marked synchronous-looking I/O without `_blocking` must produce a stable compiler/binding diagnostic. The check must also cover methods and aliases. Do not infer the effect solely from the suffix.
-3. **Both forms release the carrier.** An async I/O entry must have the correct future/awaitable contract and submit without blocking the actor carrier; `_async` is merely conventional. A `_blocking` entry must return `T` in source but be lowered into the same continuation-suspending completion path, without requiring an explicit `await`. Reject/flag a falsely annotated binding.
+3. **Both forms are backed by strictly nonblocking host I/O.** An async I/O entry must have the correct future/awaitable contract and submit through a completion/readiness mechanism that does not park an actor carrier **or any dedicated I/O worker thread**; `_async` is merely conventional. A `_blocking` entry may return `T` in source, but it must be compiler/runtime sugar for the same continuation-suspending nonblocking completion path, without requiring an explicit `await`. Reject/flag a falsely annotated binding and reject thread-offloaded blocking fallbacks.
 4. **Isolation and permissions remain in force.** Both variants require the same relevant capability authorization. Async cancellation/completion and memory ownership need separate validation. Neither spelling grants privileges.
 5. **Uniform source contract across backends.** LLVM AOT, Java/Graal JIT, and hybrid execution must expose consistent compliant source names when the relevant capability is implemented. An unsupported capability still fails closed.
 
@@ -63,7 +74,7 @@ The Java/Graal runtime currently documents bare synchronous names (including `fs
 | Blocking method or alias hides a bare synchronous I/O entry | Rejected; aliases cannot bypass the check |
 | Registered async I/O API named `*_async` | Admitted when its async execution and future contract are valid |
 | Registered async I/O API without `_async` | Admitted when declared and implemented as async |
-| `_blocking` or fake `*_async` API that blocks the carrier | Rejected at binding validation or caught by single-carrier concurrency integration test |
+| `_blocking` or fake `*_async` API that performs a blocking host syscall on any actor/carrier/I/O worker thread | Rejected at binding validation/static audit or caught by runtime integration test |
 | Pure function without either suffix | Admitted |
 | Unknown/unsupported I/O builtin or capability | Fails closed; no silent host fallback |
 
