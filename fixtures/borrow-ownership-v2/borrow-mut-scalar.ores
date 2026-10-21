@@ -7,6 +7,6 @@ fnc set_value(borrow mut Cell cell): void {
 }
 pub fnc main(): int {
   let mut Cell cell = new Cell();
-  set_value(rt borrow mut cell);
+  set_value(rt mut borrow cell);
   return cell.value;
 }
