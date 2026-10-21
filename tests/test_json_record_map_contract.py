@@ -78,6 +78,10 @@ class JsonRecordMapContractTest(unittest.TestCase):
             safety["mutable_json_cycle_invariant"],
         )
         self.assertEqual(
+            "all_json_object_mutations_share_global_guard_before_object_monitor",
+            safety["graph_stability_mutations"],
+        )
+        self.assertEqual(
             "revalidate_depth_and_nodes_under_graph_stability_guard_before_recursive_externalization",
             safety["whole_tree_quota_boundary"],
         )
