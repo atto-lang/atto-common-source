@@ -82,20 +82,23 @@ branch, and restores/retains the source owner on the rejected branch before
 mapping the internal rejection to the source error surface. Eagerly moving the
 source and attempting to reconstruct ownership from an exception is forbidden.
 
-The Java staging stack now models those control-flow edges without widening
-the public source surface. The evaluator consumes the linear runtime result
-directly: it recovers the exact candidate before rethrowing rejection and takes
-the previous mapping exactly once on commit. A test-only ownership-checker gate
-tracks a successful fallible insert as a normal-edge move, restores the
-candidate on that operation's rejection edge, and promotes earlier committed
-moves to a catch edge before any later potentially throwing statement.
+The Java compiler/runtime stack now models those control-flow edges without
+widening the public type surface. The evaluator consumes the linear runtime
+result directly: it recovers the exact candidate before rethrowing rejection
+and takes the previous mapping exactly once on commit. The **production**
+ownership pass tracks a successful fallible insert as a normal-edge move,
+restores the candidate on that operation's rejection edge, and promotes earlier
+committed moves to a catch edge before any later potentially throwing
+statement.
 
 The public closed Map surface nevertheless remains scalar/copy-safe until the
-TypeChecker admits the recursive `JsonValue` value domain and the normal
-compiler pipeline enables this ownership mode. During staging, move-only
-indexed insertion and move-only named `put` are direct-statement-only; indexed
-assignment cannot expose an alias to a transferred candidate, and linear
-previous-value result lowering has not yet been enabled for expression use.
+TypeChecker admits the recursive `JsonValue` value domain through
+`alloc/json`. Move-only named `put` is already ownership-lowered for a
+direct expression statement or direct binding of its linear `Option<V>`
+previous result. Move-only indexed insertion remains statement-only because an
+assignment expression cannot return the transferred RHS as a second owner.
+Nested move-only `put` expressions remain fail-closed until expression-level
+post-commit throwing edges are tracked with the same precision.
 
 The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
 
