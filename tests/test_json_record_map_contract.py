@@ -170,8 +170,24 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["compiler_exceptional_flow"],
         )
         self.assertEqual(
-            "gated_until_exceptional_flow_lowering",
+            "gated_until_recursive_typechecker_and_production_ownership_gate",
             mp["source_move_only_map_visibility"],
+        )
+        self.assertEqual(
+            "commit_rejection_edges_implemented_test_gate_only",
+            mp["ownership_checker_staging"],
+        )
+        self.assertEqual(
+            "recover_candidate_before_rethrow_take_previous_on_commit",
+            mp["evaluator_owned_put_lowering"],
+        )
+        self.assertEqual(
+            "direct_statement_only_until_linear_assignment_result_defined",
+            mp["move_only_indexed_assignment_staging"],
+        )
+        self.assertEqual(
+            "direct_statement_only_until_linear_previous_result_lowering",
+            mp["move_only_named_put_staging"],
         )
         self.assertEqual(
             "internal_lowering_only",
