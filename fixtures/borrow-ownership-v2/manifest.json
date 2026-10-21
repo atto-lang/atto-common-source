@@ -6,7 +6,7 @@
     {
       "id": "borrow-mut-scalar",
       "path": "fixtures/borrow-ownership-v2/borrow-mut-scalar.ores",
-      "sha256": "360e5cd946d1a9a55abe5db711b723b96ddb6e64fc303efe7a7ed71505ba0c2d",
+      "sha256": "37d42b06e761543111a12cfbbd8c4811dd66c5e447fc76b5fabd1512219b8cca",
       "expectation": {
         "kind": "return",
         "exit_code": 42
@@ -20,7 +20,7 @@
     {
       "id": "borrow-overlap-reject",
       "path": "fixtures/borrow-ownership-v2/borrow-overlap-reject.ores",
-      "sha256": "ddc2d0088d95390a7df4ec35a7feb3c81003c55fe335714780ef99ac7aa6e7e1",
+      "sha256": "b36f1f0a49c02364a008f3a383602a1cf25d25e8f1d74105e7d6fbbe619d05be",
       "expectation": {
         "kind": "reject",
         "category": "conflicting-loan",
