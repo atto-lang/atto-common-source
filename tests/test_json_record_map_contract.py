@@ -187,19 +187,19 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["owned_put_previous_value"],
         )
         self.assertEqual(
-            "source_moved_on_commit_normal_edge_restored_on_admission_failure_catch_edge",
+            "required_before_move_only_map_source_visibility",
             mp["compiler_exceptional_flow"],
         )
         self.assertEqual(
-            "direct_terminal_write_or_named_put_binding_no_top_level_defer_no_live_mutex_guard",
+            "not_yet_source_executable_jsonvalue_remains_gated",
             mp["java_current_catch_recovery_proof"],
         )
         self.assertEqual(
-            "any_possible_later_throw_keeps_source_moved_on_catch_edge",
+            "required_for_future_source_lowering",
             mp["post_commit_throw_rule"],
         )
         self.assertEqual(
-            "conservative_moved_on_catch_edge",
+            "future_source_lowering_must_remain_conservative",
             mp["nested_write_recovery"],
         )
         self.assertEqual(
@@ -207,11 +207,11 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["source_move_only_map_visibility"],
         )
         self.assertEqual(
-            "commit_rejection_edges_enabled_in_production_pass",
+            "pending_commit_rejection_edge_model_before_recursive_map_source_visibility",
             mp["ownership_checker_staging"],
         )
         self.assertEqual(
-            "recover_candidate_before_rethrow_take_previous_on_commit",
+            "implemented_recover_candidate_before_rethrow_take_previous_on_commit",
             mp["evaluator_owned_put_lowering"],
         )
         self.assertEqual(
