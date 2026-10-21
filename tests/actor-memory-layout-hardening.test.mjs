@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {ActorArenaOracle, DenseRegionOracle, LAYOUTS} from '../scripts/actor-memory-layout-v1.mjs';
 
 const rejects = (f) => assert.throws(f, /^Error: ACTOR_MEMORY_V1:/);
@@ -56,12 +57,16 @@ test('borrowed conversion never temporarily consumes actor allocation quota', ()
   const lease = r.borrowRead();
   const used = a.used;
   const epoch = r.epoch;
+  const allocate = a.allocate.bind(a);
+  let transientAllocations = 0;
+  a.allocate = (...args) => { transientAllocations++; return allocate(...args); };
   for (const target of LAYOUTS.filter(x => x!=='aosoa')) {
     rejects(() => r.changeLayout(target));
     assert.equal(a.used, used);
     assert.equal(r.epoch,epoch);
     assert.equal(r.physicalLayout,'aosoa');
   }
+  assert.equal(transientAllocations,0);
   r.releaseRead(lease);
   r.changeLayout('soa');
   assert.deepEqual(r.read(h),[17,19]);
@@ -120,4 +125,16 @@ test('SoAoS field-group geometry differs from both AoS and AoSoA at 3 fields',()
     r.close();
   }
   assert.equal(a.used,0);
+});
+
+test('normative manifest has source-free evidence and all adversarial vectors',()=>{
+  const m=JSON.parse(readFileSync(new URL('../contracts/v1/actor-memory-layout-v1.json',import.meta.url)));
+  assert.equal(m.evidence,'SOURCE_FREE_ORACLE_ONLY');
+  assert.equal(m.promotion_gate.zero_step_ci,'NOT_EXECUTED');
+  assert.equal(m.cases.length,41);
+  const ids=new Set(m.cases.map(x=>x.id));
+  for(const id of ['accessor-backed-row-input','sparse-or-inherited-component-input',
+                   'reentrant-descriptor-side-effect','borrowed-layout-conversion-no-temporary-allocation',
+                   'live-allocation-authority-limit','live-read-loan-limit','live-external-pin-limit',
+                   'live-task-lifetime-limit','soaos-field-group-address-nonalias']) assert.ok(ids.has(id));
 });
