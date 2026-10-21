@@ -16,14 +16,23 @@
       "borrowed_input_cursor",
       "caller_provided_encode_sink",
       "static_codec_markers"
-    ]
+    ],
+    "source_type_import": "import class JsonValue from \"alloc/json\";",
+    "reserved_namespace_shadowing": "forbidden_project_manifest_or_ORESLANG_PATH_override",
+    "stage_one_source_surface": "opaque_JsonValue_type_and_empty_Map<String,JsonValue>_construction",
+    "direct_jsonvalue_construction": "forbidden_use_Json_static_factories_or_parser",
+    "json_static_api_stage": "pending"
   },
   "json_object": {
     "key_type": "String",
     "dynamic_storage": "Map<String, JsonValue>",
     "symbol_key_implicit_coercion": false,
     "duplicate_key_policy": "reject",
-    "unknown_typed_field_policy": "reject_by_default"
+    "unknown_typed_field_policy": "reject_by_default",
+    "source_value_type": "compiler_owned_opaque_JsonValue",
+    "runtime_map_value_domain": "JSON",
+    "json_map_key_domain": "String_only",
+    "same_named_user_type_is_json_descriptor": false
   },
   "map": {
     "indexed_assignment": "insert_or_replace",
@@ -41,7 +50,7 @@
     "java_current_catch_recovery_proof": "terminal_direct_indexed_or_named_put_no_top_level_defer_no_live_mutex_guard",
     "post_commit_throw_rule": "any_possible_later_throw_keeps_source_moved_on_catch_edge",
     "nested_write_recovery": "conservative_moved_on_catch_edge",
-    "source_move_only_map_visibility": "gated_until_recursive_typechecker_and_alloc_json_import",
+    "source_move_only_map_visibility": "enabled_only_for_exact_alloc_json_JsonValue_import",
     "ownership_checker_staging": "terminal_commit_rejection_edges_enabled_in_production_pass",
     "evaluator_owned_put_lowering": "implemented_recover_candidate_before_rethrow_take_previous_on_commit",
     "move_only_indexed_assignment_staging": "direct_statement_only_until_linear_assignment_result_defined",
@@ -52,7 +61,10 @@
     "failed_commit_must_not_lose_uncommitted_move_value": true,
     "scalar_v1_current_primitive": "OresKeyedMap.put",
     "move_only_internal_primitive": "OresKeyedMap.attemptOwnedPut_linear_one_shot_result",
-    "recoverable_move_value_domain": "compiler_owned_jsonvalue_only"
+    "recoverable_move_value_domain": "compiler_owned_jsonvalue_only",
+    "json_runtime_value_domain": "OresKeyedMap.ValueDomain.JSON",
+    "json_map_key_domain": "String_only",
+    "same_named_user_jsonvalue_unlocks_domain": false
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
