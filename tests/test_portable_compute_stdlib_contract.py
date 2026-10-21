@@ -36,3 +36,11 @@ def test_cancellation_never_fakes_device_completion():
     c = load_contract()
     assert c["cancellationImpliesQuiescence"] is False
     assert c["actorIsolationPreserved"] is True
+
+
+def test_descriptor_integer_domain_and_authority_boundary_are_fail_closed():
+    c = load_contract()
+    assert c["descriptorIntegerDomain"] == "signed-i64"
+    assert c["descriptorValidationScope"] == "portable-structural"
+    assert c["providerValidationMayBeStricter"] is True
+    assert c["checkedByteArithmeticBeforeAllocationOrTransfer"] is True
