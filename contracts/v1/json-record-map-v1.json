@@ -31,8 +31,10 @@
     "recursive_json_value_descriptor_required": true,
     "host_map_semantics_forbidden": true,
     "indexed_assignment_requires": "direct_owned_mutable_map",
-    "indexed_assignment_evaluation": "receiver_once_then_key_once_then_value_once",
-    "replacement_atomicity": "validate_and_admit_new_before_publish_then_release_old"
+    "indexed_assignment_evaluation": "authority_preflight_then_rhs_once_then_receiver_once_then_key_once",
+    "named_put_evaluation": "receiver_and_authority_then_key_once_then_value_once",
+    "replacement_atomicity": "validate_and_admit_new_before_publish_then_release_old",
+    "move_only_fallible_insert": "gated_until_commit_aware_move_or_value_return_on_error"
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
@@ -82,13 +84,16 @@
     "bom_default": "reject",
     "comments_default": "reject",
     "trailing_comma_default": "reject",
-    "ignored_unknown_fields_count_toward_quotas": true
+    "ignored_unknown_fields_count_toward_quotas": true,
+    "mutable_json_cycle_invariant": "edge_creation_serialized_and_cycle_checked",
+    "whole_tree_quota_boundary": "revalidate_depth_and_nodes_under_graph_stability_guard_before_recursive_externalization"
   },
   "json_number": {
     "representation": "exact_before_target_conversion",
     "integer_over_2_pow_53": "preserve",
     "non_finite": "reject",
-    "float_overflow": "reject_by_default"
+    "float_overflow": "reject_by_default",
+    "integer_target_acceptance": "mathematically_integral_in_range_including_decimal_or_exponent_spelling"
   },
   "encoding": {
     "ordinary_json_cycle": "reject",
