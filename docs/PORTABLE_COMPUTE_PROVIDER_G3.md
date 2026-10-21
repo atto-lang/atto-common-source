@@ -36,8 +36,13 @@ reclamation. A cancelled or timed-out operation retains allocation/event quota
 until the provider establishes physical quiescence or performs an authenticated
 device reset/loss transition.
 
-Device loss poisons outstanding allocation authority. A late event from a lost
-device generation cannot revive or complete a new allocation generation.
+Device loss poisons outstanding allocation authority, but device loss by itself
+is **not** proof of physical quiescence. The provider retains quota, physical
+handles and submitted fence authority until an explicit provider recovery/reset
+operation proves that the lost device/queue can no longer touch the allocations.
+Only then may it acknowledge the poisoned fence pair and release physical
+resources. A late event from a lost device generation cannot revive or complete
+a new allocation generation.
 
 ## Quotas
 
