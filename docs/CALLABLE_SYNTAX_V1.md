@@ -280,9 +280,9 @@ parser/typechecker/codegen behavior against the same decisions.
 
 ## Current staged implementation status
 
-- Java/Graal current-main reconciliation: free/module end-delimited bodies, optional same-line semantics-free callable `as`, retired-header-`do` rejection, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1634. The older #1611 branch is superseded for verification purposes.
-- Static class callable-contract integration is staged as the narrow current-parent child `oreslang-source.java` PR #1642; the older #1612 is not current-main evidence and its class-static-field runtime scope is not implied by v1.
-- Canonical formatter support is staged in `oreslang-format` PR #81.
-- LLVM/native rejection parity is staged in `oreslang-source.llvm` PR #713 and must be reconciled onto current native main before promotion; the current native scalar frontend does not claim executable parity.
+- Java/Graal current-main reconciliation: free/module end-delimited bodies, optional same-line semantics-free callable `as`, retired-header-`do` rejection, contextual tuple return type, module-contract arrow signature, and focused type/parser regressions are staged in `oreslang-source.java` PR #1776. It supersedes stale #1634/#1611 for verification purposes.
+- Static class callable-contract integration is restacked as the narrow child `oreslang-source.java` PR #1778 on top of #1776; stale #1642/#1612 are not current-parent evidence. V1 remains callable-only and does not imply class-static-field runtime storage.
+- Canonical formatter support from `oreslang-format` PR #81 is on formatter `main`; its round-trip fixture is byte-identical to the Java corpus Git blob `c91a244cb99c1aaa74b3abadf9b99d8e1f3aea86`.
+- LLVM/native rejection parity is restacked on current native main in `oreslang-source.llvm` PR #786. It carries the same `c91a244cb99c1aaa74b3abadf9b99d8e1f3aea86` corpus as an explicit no-partial-IR rejection fixture and does not claim executable parity.
 
 These references describe staged work, not a release guarantee. Exact-head executable tests remain required before promotion.
