@@ -111,6 +111,27 @@ class JsonRecordMapContractTest(unittest.TestCase):
             codec["unknown_capture_type"],
         )
 
+    def test_dynamic_stringify_is_graph_stable_and_utf8_bounded(self):
+        encoding = self.data["encoding"]
+        self.assertEqual(
+            "graph_stable_complete_root_validation_and_traversal",
+            encoding["dynamic_object_stringify"],
+        )
+        self.assertEqual(
+            "Map<String, JsonValue>",
+            encoding["dynamic_object_input"],
+        )
+        self.assertEqual(
+            "non_consuming_scoped_read",
+            encoding["dynamic_object_read_semantics"],
+        )
+        self.assertEqual("utf8_bytes", encoding["output_quota_unit"])
+        self.assertEqual(
+            "canonical_map_insertion_order",
+            encoding["dynamic_object_order"],
+        )
+        self.assertFalse(encoding["validate_then_unlock_then_traverse"])
+
     def test_ordinary_json_does_not_serialize_cycles_or_capabilities(self):
         encoding = self.data["encoding"]
         self.assertEqual("reject", encoding["ordinary_json_cycle"])
