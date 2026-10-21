@@ -1,0 +1,327 @@
+// Source-free Oreslang reference model. NOT a compiler, sandbox, or backend proof.
+const fail = (reason) => { throw new Error('ACTOR_MEMORY_V1: ' + reason); };
+const integer = (n, name, min = 0) => {
+  if (!Number.isSafeInteger(n) || n < min) fail(name + ' must be a safe integer >= ' + min);
+  return n;
+};
+const bytesFor = (...parts) => {
+  let product = 1;
+  for (const part of parts) {
+    integer(part, 'extent');
+    if (part && product > Number.MAX_SAFE_INTEGER / part) fail('byte arithmetic overflow');
+    product *= part;
+  }
+  return product;
+};
+
+/** An actor identity, an incarnation, and its own bounded persistent/scratch memory. */
+export class ActorArenaOracle {
+  #actor;
+  #incarnation;
+  #quota;
+  #used = 0;
+  #turn = 0;
+  #sealed = false;
+  #reclaimed = false;
+  #allocations = new Map();
+  #loans = new Map();
+  #pins = new Set();
+  #tasks = new Set();
+
+  constructor(actor, incarnation, quota = 1048576) {
+    if (typeof actor !== 'string' || !actor || actor.length > 128 ||
+        !Number.isSafeInteger(incarnation) || incarnation < 1) fail('invalid actor identity');
+    integer(quota, 'quota', 1);
+    if (quota > 16777216) fail('reference oracle quota ceiling exceeded');
+    this.#actor = actor;
+    this.#incarnation = incarnation;
+    this.#quota = quota;
+  }
+  get used() { return this.#used; }
+  get turn() { return this.#turn; }
+  get sealed() { return this.#sealed; }
+  get reclaimed() { return this.#reclaimed; }
+  get actor() { return this.#actor; }
+  get incarnation() { return this.#incarnation; }
+
+  #active() { if (this.#sealed) fail('actor retired'); }
+  #record(handle) {
+    const record = this.#allocations.get(handle);
+    if (!record || !record.live) fail('foreign, forged, or stale allocation handle');
+    return record;
+  }
+  #range(record, offset) {
+    integer(offset, 'offset');
+    if (offset >= record.bytes.length) fail('out of bounds');
+  }
+  allocate(size, lifetime = 'persistent') {
+    this.#active();
+    integer(size, 'allocation bytes', 1);
+    if (!['persistent', 'scratch'].includes(lifetime)) fail('unknown lifetime');
+    if (size > this.#quota - this.#used) fail('actor quota exceeded');
+    const bytes = new Uint8Array(size);
+    const handle = Object.freeze({actor: this.#actor, incarnation: this.#incarnation,
+      lifetime, turn: this.#turn});
+    this.#allocations.set(handle, {bytes, lifetime, turn: this.#turn, live: true});
+    this.#used += size;
+    return handle;
+  }
+  read(handle, offset) {
+    this.#active();
+    const record = this.#record(handle);
+    this.#range(record, offset);
+    return record.bytes[offset];
+  }
+  write(handle, offset, value) {
+    this.#active();
+    const record = this.#record(handle);
+    this.#range(record, offset);
+    integer(value, 'byte');
+    if (value > 255) fail('byte out of range');
+    if ([...this.#loans.values()].some(loan => loan.handle === handle)) fail('active loan forbids mutation');
+    record.bytes[offset] = value;
+  }
+  borrowRead(handle) {
+    this.#active();
+    this.#record(handle);
+    const lease = Object.freeze({kind: 'read-only'});
+    this.#loans.set(lease, {handle, turn: this.#turn});
+    return lease;
+  }
+  readLoan(lease, offset) {
+    const loan = this.#loans.get(lease);
+    if (!loan) fail('stale read lease');
+    this.#active();
+    const record = this.#record(loan.handle);
+    this.#range(record, offset);
+    return record.bytes[offset];
+  }
+  releaseLoan(lease) {
+    if (!this.#loans.delete(lease)) fail('stale read lease');
+    this.#tryReclaim();
+  }
+  ensureWritable(handle) {
+    this.#active();
+    this.#record(handle);
+    if ([...this.#loans.values()].some(loan => loan.handle === handle)) fail('borrowed allocation');
+  }
+  free(handle) {
+    this.ensureWritable(handle);
+    this.#drop(handle, this.#record(handle));
+  }
+  #drop(handle, record) {
+    record.bytes.fill(0);
+    record.live = false;
+    this.#used -= record.bytes.length;
+    this.#allocations.delete(handle);
+  }
+  nextTurn() {
+    this.#active();
+    if (this.#loans.size) fail('read loan cannot cross actor turn');
+    if (this.#turn === Number.MAX_SAFE_INTEGER) fail('turn overflow');
+    for (const [handle, record] of this.#allocations) {
+      if (record.lifetime === 'scratch') this.#drop(handle, record);
+    }
+    this.#turn++;
+  }
+  pinExternal() {
+    this.#active();
+    const pin = Object.freeze({kind: 'lifetime-only'});
+    this.#pins.add(pin);
+    return pin;
+  }
+  releasePin(pin) {
+    if (!this.#pins.delete(pin)) fail('stale external pin');
+    this.#tryReclaim();
+  }
+  beginTask() {
+    this.#active();
+    const token = Object.freeze({kind: 'task-lifetime'});
+    this.#tasks.add(token);
+    return token;
+  }
+  finishTask(token) {
+    if (!this.#tasks.delete(token)) fail('stale task completion');
+    this.#tryReclaim();
+  }
+  retire() {
+    this.#sealed = true;
+    return this.#tryReclaim();
+  }
+  #tryReclaim() {
+    if (!this.#sealed || this.#reclaimed) return this.#reclaimed;
+    if (this.#loans.size || this.#pins.size || this.#tasks.size) return false;
+    for (const [handle, record] of this.#allocations) this.#drop(handle, record);
+    this.#reclaimed = true;
+    return true;
+  }
+}
+
+export const LAYOUTS = Object.freeze(['aos', 'soa', 'aosoa', 'soaos']);
+const layout = (value) => {
+  if (!LAYOUTS.includes(value)) fail('unrecognized physical layout');
+  return value;
+};
+/**
+ * All four layouts hold the same rows but use different physical indexing:
+ * AoS: row-major, SoA: column-major, AoSoA: tile/field/row,
+ * SoAoS: tile/row/field. Padding is inaccessible to guest row operations.
+ */
+export class DenseRegionOracle {
+  #arena;
+  #fields;
+  #capacity;
+  #tile;
+  #layout;
+  #storage;
+  #backing;
+  #rows = [];
+  #identities = new Map();
+  #nextId = 0;
+  #epoch = 0;
+  #closed = false;
+
+  constructor(arena, fields, capacity, physicalLayout = 'aos', tile = 8) {
+    if (!(arena instanceof ActorArenaOracle)) fail('actor arena required');
+    if (!Array.isArray(fields) || fields.length === 0 || fields.length > 32 ||
+        fields.some(f => typeof f !== 'string' || !/^[a-z][a-z0-9_]*$/.test(f)) ||
+        new Set(fields).size !== fields.length) fail('invalid component fields');
+    integer(capacity, 'capacity', 1);
+    integer(tile, 'tile', 1);
+    if (tile > 1024 || capacity > 65536) fail('reference layout limits exceeded');
+    this.#arena = arena;
+    this.#fields = Object.freeze([...fields]);
+    this.#capacity = capacity;
+    this.#tile = tile;
+    this.#layout = layout(physicalLayout);
+    const allocated = this.#createStorage(this.#layout);
+    this.#storage = allocated.storage;
+    this.#backing = allocated.backing;
+  }
+  get length() { return this.#rows.length; }
+  get epoch() { return this.#epoch; }
+  get physicalLayout() { return this.#layout; }
+  get fields() { return this.#fields; }
+  #live() { if (this.#closed || this.#arena.sealed) fail('region closed'); }
+  #geometry(kind) {
+    const padded = Math.ceil(this.#capacity / this.#tile) * this.#tile;
+    const cells = bytesFor(kind === 'aos' || kind === 'soa' ? this.#capacity : padded,
+      this.#fields.length);
+    return {padded, bytes: bytesFor(cells, 8)};
+  }
+  #createStorage(kind) {
+    const geom = this.#geometry(kind);
+    const backing = this.#arena.allocate(geom.bytes);
+    try {
+      const storage = kind === 'soa'
+        ? this.#fields.map(() => new Float64Array(this.#capacity))
+        : new Float64Array(geom.bytes / 8);
+      return {backing, storage};
+    } catch (error) {
+      this.#arena.free(backing);
+      throw error;
+    }
+  }
+  #index(row, field, kind = this.#layout) {
+    const count = this.#fields.length;
+    if (kind === 'aos') return row * count + field;
+    if (kind === 'soa') return row;
+    const group = Math.floor(row / this.#tile);
+    const inGroup = row % this.#tile;
+    return group * this.#tile * count +
+      (kind === 'aosoa' ? field * this.#tile + inGroup : inGroup * count + field);
+  }
+  #get(row, field, kind = this.#layout, storage = this.#storage) {
+    const index = this.#index(row, field, kind);
+    return kind === 'soa' ? storage[field][index] : storage[index];
+  }
+  #put(row, field, value, kind = this.#layout, storage = this.#storage) {
+    const index = this.#index(row, field, kind);
+    if (kind === 'soa') storage[field][index] = value;
+    else storage[index] = value;
+  }
+  #rowIndex(id) {
+    const index = this.#identities.get(id);
+    if (index === undefined) fail('foreign or stale entity handle');
+    return index;
+  }
+  #values(values) {
+    if (!Array.isArray(values) || values.length !== this.#fields.length ||
+        !values.every(v => typeof v === 'number' && Number.isFinite(v)))
+      fail('component values must be finite numbers matching schema');
+  }
+  insert(values) {
+    this.#live();
+    this.#values(values);
+    if (this.length >= this.#capacity) fail('region capacity exceeded');
+    this.#arena.ensureWritable(this.#backing);
+    if (this.#nextId === Number.MAX_SAFE_INTEGER) fail('entity generation exhausted');
+    const id = Object.freeze({entity: ++this.#nextId});
+    const row = this.length;
+    for (let field = 0; field < values.length; field++) this.#put(row, field, values[field]);
+    this.#rows.push(id);
+    this.#identities.set(id, row);
+    return id;
+  }
+  read(id) {
+    this.#live();
+    const row = this.#rowIndex(id);
+    return this.#fields.map((_, field) => this.#get(row, field));
+  }
+  write(id, values) {
+    this.#live();
+    const row = this.#rowIndex(id);
+    this.#values(values);
+    this.#arena.ensureWritable(this.#backing);
+    for (let field = 0; field < values.length; field++) this.#put(row, field, values[field]);
+  }
+  eraseSwap(id) {
+    this.#live();
+    const row = this.#rowIndex(id);
+    this.#arena.ensureWritable(this.#backing);
+    const last = this.length - 1;
+    const trailing = this.#rows[last];
+    if (row !== last) {
+      for (let f = 0; f < this.#fields.length; f++) this.#put(row, f, this.#get(last, f));
+      this.#rows[row] = trailing;
+      this.#identities.set(trailing, row);
+    }
+    for (let f = 0; f < this.#fields.length; f++) this.#put(last, f, 0);
+    this.#rows.pop();
+    this.#identities.delete(id);
+  }
+  borrowRead() {
+    this.#live();
+    return this.#arena.borrowRead(this.#backing);
+  }
+  releaseRead(lease) { this.#arena.releaseLoan(lease); }
+  changeLayout(to) {
+    this.#live();
+    layout(to);
+    if (to === this.#layout) return this.#epoch;
+    if (this.#epoch === Number.MAX_SAFE_INTEGER) fail('layout epoch overflow');
+    const next = this.#createStorage(to);
+    try {
+      for (let row = 0; row < this.length; row++)
+        for (let f = 0; f < this.#fields.length; f++)
+          this.#put(row, f, this.#get(row, f), to, next.storage);
+      this.#arena.free(this.#backing); // May reject an outstanding read lease.
+    } catch (error) {
+      this.#arena.free(next.backing);
+      throw error;
+    }
+    this.#backing = next.backing;
+    this.#storage = next.storage;
+    this.#layout = to;
+    this.#epoch++;
+    return this.#epoch;
+  }
+  close() {
+    if (this.#closed) return;
+    this.#live();
+    this.#arena.free(this.#backing); // Transactional: does not close if leased.
+    this.#identities.clear();
+    this.#rows.length = 0;
+    this.#closed = true;
+  }
+}
