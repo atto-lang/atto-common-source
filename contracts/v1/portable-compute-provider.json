@@ -55,7 +55,9 @@
     "programReleaseFailureRetainsPreparedAuthority": true,
     "deviceLossDoesNotImplyQuiescence": true,
     "deviceLossRecoveryRequiresProviderProof": true,
-    "deviceLossRetainsQuotaUntilRecovery": true
+    "deviceLossRetainsQuotaUntilRecovery": true,
+    "providerRetainsSubmittedOperationAuthority": true,
+    "callerHandleDropCannotReleasePhysicalResources": true
   },
   "transfers": {
     "uploadExplicit": true,
@@ -75,7 +77,8 @@
     "programReleaseRetryRequired": true,
     "queueAuthorityForgeryRequired": true,
     "deviceLossRecoveryFailureRetainsResources": true,
-    "deviceLossRecoverySuccessRequired": true
+    "deviceLossRecoverySuccessRequired": true,
+    "callerHandleDropRetentionRequired": true
   },
   "promotion": {
     "requiresJavaProviderStateParity": true,
@@ -87,6 +90,7 @@
     "requiresArtifactAbiProviderValidation": true,
     "requiresRecoverablePreEnqueueCleanup": true,
     "requiresOpaqueJavaQueueAuthority": true,
-    "requiresDeviceLossQuiescenceProof": true
+    "requiresDeviceLossQuiescenceProof": true,
+    "requiresProviderOwnedActiveOperationRegistry": true
   }
 }
