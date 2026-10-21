@@ -44,7 +44,7 @@
     "failed_commit_preserves_previous_mapping": true,
     "failed_commit_must_not_lose_uncommitted_move_value": true,
     "scalar_v1_current_primitive": "OresKeyedMap.put",
-    "move_only_internal_primitive": "attemptOwnedPut_returns_offered_value_on_rejection"
+    "move_only_internal_primitive": "OresKeyedMap.attemptOwnedPut_linear_one_shot_result"
   },
   "record_update": {
     "syntax": "base with { field: value, ... }",
