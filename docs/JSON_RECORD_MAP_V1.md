@@ -59,14 +59,35 @@ For `m[key] = value`, Oreslang preserves its general **RHS-first assignment** ru
 
 Replacement is transactional with respect to the Map itself: key/value domains, recursive JSON-graph admission, policy and quotas must pass **before** publishing the new entry, and only after publication may the displaced value be released/dropped.
 
-The selected move-only protocol is now explicit. The runtime owns an internal fallible insertion primitive equivalent to `attemptOwnedPut(key, value)` with two disjoint outcomes:
+The selected move-only protocol is now explicit. The runtime owns the internal
+`OresKeyedMap.attemptOwnedPut(key, value)` primitive with a **linear one-shot**
+result:
 
-- **committed**: storage has published the offered value and the result carries only the previous mapping;
-- **rejected**: storage is unchanged and the result carries the **exact offered value by identity** plus an internal rejection.
+- **committed**: storage has published the offered value and
+  `takePrevious()` transfers the displaced mapping exactly once;
+- **rejected**: storage is unchanged and `takeUncommittedValue()` transfers
+  the **exact offered value by identity** exactly once.
 
-That result is compiler/runtime machinery, not a guest method. Source lowering evaluates a move-only RHS into a temporary without committing the source move, calls the internal attempt, commits the ownership move only on the committed branch, and restores/retains the source owner on the rejected branch before mapping the internal rejection to the source error surface. In particular, a caught failed insertion must see the pre-write ownership state. Eagerly moving the source and attempting to reconstruct ownership from an exception is forbidden.
+A rejection is not exposed as ordinary data before ownership recovery.
+`rethrowAfterRecovery()` may propagate the original admission failure only
+after the rejected candidate has been taken back. The runtime performs every
+recoverable domain/graph/quota/policy check before the publication commit
+point; a failure after publication must never be translated into a rejected
+result that returns candidate ownership.
 
-The currently exposed closed Map surface remains scalar/copy-safe until the typechecker/evaluator lower source `JsonValue` through this protocol end to end.
+That result is compiler/runtime machinery, not a guest method. Source lowering
+evaluates a move-only RHS into a temporary without committing the source move,
+calls the internal attempt, commits the ownership move only on the committed
+branch, and restores/retains the source owner on the rejected branch before
+mapping the internal rejection to the source error surface. Eagerly moving the
+source and attempting to reconstruct ownership from an exception is forbidden.
+
+The currently exposed closed Map surface remains scalar/copy-safe until the
+ownership checker/evaluator model the insertion's explicit committed versus
+rejected control-flow edges. In particular, the existing conservative
+`try/catch` ownership rule cannot simply be bypassed: a successful insertion
+followed by a later throwing operation must still leave the source moved on the
+catch edge.
 
 The indexed-write surface is available only when the expression resolves to a directly owned mutable Map reference. It is not dynamic property assignment on records, structs, classes, modules, or host objects.
 
