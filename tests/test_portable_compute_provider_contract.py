@@ -30,6 +30,9 @@ def test_submission_and_quiescence_rules_fail_closed():
     assert s["releaseRequiresQuiescence"] is True
     assert s["timeoutDoesNotFreeDeviceMemory"] is True
     assert s["deviceLossPoisonsOutstandingAllocations"] is True
+    assert s["deviceLossDoesNotImplyQuiescence"] is True
+    assert s["deviceLossRecoveryRequiresProviderProof"] is True
+    assert s["deviceLossRetainsQuotaUntilRecovery"] is True
 
 def test_provider_quotas_are_physical_not_fence_metadata():
     q = load()["quotas"]
@@ -67,6 +70,8 @@ def test_provider_recovery_and_queue_authority_are_fail_closed():
     assert t["preEnqueueReleaseFailureRecoveryRequired"] is True
     assert t["programReleaseRetryRequired"] is True
     assert t["queueAuthorityForgeryRequired"] is True
+    assert t["deviceLossRecoveryFailureRetainsResources"] is True
+    assert t["deviceLossRecoverySuccessRequired"] is True
 
     promotion = c["promotion"]
     assert promotion["requiresArtifactAbiProviderValidation"] is True
