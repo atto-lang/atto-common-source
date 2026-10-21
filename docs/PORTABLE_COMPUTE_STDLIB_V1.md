@@ -38,6 +38,19 @@ The portable source module owns immutable, forgeable *descriptors* only:
 These are ordinary values and may be constructed by source code for planning,
 validation and tests. They are not authority to touch a device.
 
+All source-visible integer fields in these descriptors use the Oreslang signed
+64-bit integer domain. A backend bridge MUST reject negative values where the
+field is semantically non-negative; it MUST NOT reinterpret a negative source
+integer through an unsigned native type. Portable descriptor helpers perform
+structural semantic validation only. Trusted provider bootstrap may impose
+stricter backend/device identifier grammar and metadata-size limits.
+
+Buffer byte counts used for actual allocation or transfer require checked exact
+arithmetic before authority is exercised. Structural descriptor validation is
+not proof that `element_bytes * length` is representable or equal to an
+allocation request; the compiler/runtime/provider boundary must verify the
+exact byte count without overflow before allocation, upload or download.
+
 Opaque runtime handles are intentionally different. A source-created object with
 fields that resemble a device id, allocation generation or fence sequence MUST
 NOT be accepted as a runtime handle.
