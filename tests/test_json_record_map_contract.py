@@ -170,6 +170,18 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["compiler_exceptional_flow"],
         )
         self.assertEqual(
+            "direct_terminal_write_or_named_put_binding_no_top_level_defer_no_live_mutex_guard",
+            mp["java_current_catch_recovery_proof"],
+        )
+        self.assertEqual(
+            "any_possible_later_throw_keeps_source_moved_on_catch_edge",
+            mp["post_commit_throw_rule"],
+        )
+        self.assertEqual(
+            "conservative_moved_on_catch_edge",
+            mp["nested_write_recovery"],
+        )
+        self.assertEqual(
             "gated_until_recursive_typechecker_and_alloc_json_import",
             mp["source_move_only_map_visibility"],
         )
@@ -194,22 +206,6 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["owned_put_guest_visibility"],
         )
         self.assertEqual(
-            "one_shot_take_before_failure_rethrow",
-            mp["owned_put_rejected_candidate"],
-        )
-        self.assertEqual(
-            "one_shot_take_after_commit",
-            mp["owned_put_previous_value"],
-        )
-        self.assertEqual(
-            "source_moved_on_commit_normal_edge_restored_on_admission_failure_catch_edge",
-            mp["compiler_exceptional_flow"],
-        )
-        self.assertEqual(
-            "gated_until_exceptional_flow_lowering",
-            mp["source_move_only_map_visibility"],
-        )
-        self.assertEqual(
             "canonical_checked_map_put_path",
             mp["shared_commit_primitive"],
         )
@@ -219,13 +215,6 @@ class JsonRecordMapContractTest(unittest.TestCase):
             "OresKeyedMap.put",
             mp["scalar_v1_current_primitive"],
         )
-        self.assertEqual(
-            "attemptOwnedPut_returns_offered_value_on_rejection",
-            mp["move_only_internal_primitive"],
-        )
-        self.assertTrue(mp["failed_commit_preserves_previous_mapping"])
-        self.assertTrue(mp["failed_commit_must_not_lose_uncommitted_move_value"])
-        self.assertEqual("OresKeyedMap.put", mp["scalar_v1_current_primitive"])
         self.assertEqual(
             "OresKeyedMap.attemptOwnedPut_linear_one_shot_result",
             mp["move_only_internal_primitive"],
