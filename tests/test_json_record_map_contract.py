@@ -36,13 +36,14 @@ class JsonRecordMapContractTest(unittest.TestCase):
 
     def test_record_update_is_static_atomic_and_ownership_aware(self):
         update = self.data["record_update"]
-        self.assertEqual("readonly_structural_record_only", update["base_kind"])
+        self.assertEqual("readonly_record_or_plain_struct", update["base_kind"])
         self.assertTrue(update["static_keys_only"])
         self.assertEqual("reject", update["duplicate_update_fields"])
         self.assertEqual("replace_type_and_value", update["existing_field"])
         self.assertEqual("append_field_and_widen_row", update["missing_field"])
         self.assertEqual("Map", update["dynamic_key_fallback"])
         self.assertEqual("reject", update["readonly_record_indexed_assignment"])
+        self.assertEqual("plain_struct", update["plain_struct_result_kind"])
         self.assertEqual("reject", update["structural_view_update"])
         self.assertEqual("base_once_then_updates_left_to_right", update["evaluation"])
         self.assertEqual("atomic_no_partial_publication", update["failure"])
