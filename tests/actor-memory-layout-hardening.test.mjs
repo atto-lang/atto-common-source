@@ -101,3 +101,23 @@ test('signed zero and fractional finite F64 values survive every layout roundtri
   }
   r.close();
 });
+
+test('SoAoS field-group geometry differs from both AoS and AoSoA at 3 fields',()=>{
+  const a=new ActorArenaOracle('a',1,8192);
+  const names=['x','y','z'];
+  const aos=new DenseRegionOracle(a,names,4,'aos',2);
+  const aosoa=new DenseRegionOracle(a,names,4,'aosoa',2);
+  const soaos=new DenseRegionOracle(a,names,4,'soaos',2);
+  assert.equal(aos.physicalIndexOf(1,0),3);
+  assert.equal(aosoa.physicalIndexOf(1,0),1);
+  assert.equal(soaos.physicalIndexOf(1,0),2);
+  assert.equal(soaos.physicalIndexOf(0,2),4);
+  for (const r of [aos,aosoa,soaos]) {
+    const indices=new Set();
+    for(let row=0;row<4;row++)for(let f=0;f<3;f++)indices.add(r.physicalIndexOf(row,f));
+    assert.equal(indices.size,12);
+    rejects(()=>r.physicalIndexOf(4,0));
+    r.close();
+  }
+  assert.equal(a.used,0);
+});
