@@ -245,8 +245,23 @@ export class DenseRegionOracle {
     if (kind === 'soa') return field * this.#capacity + row;
     const group = Math.floor(row / this.#tile);
     const inGroup = row % this.#tile;
-    return group * this.#tile * count +
-      (kind === 'aosoa' ? field * this.#tile + inGroup : inGroup * count + field);
+    if (kind === 'aosoa')
+      return group * this.#tile * count + field * this.#tile + inGroup;
+    // SoAoS = field-group major, each group holds an array of small AoS
+    // records. A group is 2 fields here; for 3+ fields the physical order is
+    // distinct from both plain AoS and AoSoA. Last group may be partial.
+    const firstField = Math.floor(field / 2) * 2;
+    const groupFields = Math.min(2, count - firstField);
+    return group * this.#tile * count + firstField * this.#tile +
+      inGroup * groupFields + (field - firstField);
+  }
+  physicalIndexOf(row, field) {
+    this.#live();
+    integer(row, 'row index');
+    integer(field, 'field index');
+    if (row >= this.#capacity || field >= this.#fields.length)
+      fail('physical cell is out of region capacity');
+    return this.#index(row, field);
   }
   #get(row, field, kind = this.#layout, backing = this.#backing) {
     return this.#arena.readF64(backing, this.#index(row, field, kind));
