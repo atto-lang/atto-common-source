@@ -158,8 +158,31 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["move_only_fallible_insert"],
         )
         self.assertEqual(
+            "one_shot_take_before_failure_rethrow",
+            mp["owned_put_rejected_candidate"],
+        )
+        self.assertEqual(
+            "one_shot_take_after_commit",
+            mp["owned_put_previous_value"],
+        )
+        self.assertEqual(
+            "source_moved_on_commit_normal_edge_restored_on_admission_failure_catch_edge",
+            mp["compiler_exceptional_flow"],
+        )
+        self.assertEqual(
+            "gated_until_exceptional_flow_lowering",
+            mp["source_move_only_map_visibility"],
+        )
+        self.assertEqual(
             "internal_lowering_only",
             mp["owned_put_guest_visibility"],
+        )
+        self.assertTrue(mp["failed_commit_preserves_previous_mapping"])
+        self.assertTrue(mp["failed_commit_must_not_lose_uncommitted_move_value"])
+        self.assertEqual("OresKeyedMap.put", mp["scalar_v1_current_primitive"])
+        self.assertEqual(
+            "OresKeyedMap.attemptOwnedPut_linear_one_shot_result",
+            mp["move_only_internal_primitive"],
         )
 
     def test_record_update_returns_a_new_row_type_not_a_mutated_binding(self):
