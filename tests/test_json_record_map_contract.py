@@ -177,6 +177,36 @@ class JsonRecordMapContractTest(unittest.TestCase):
             "internal_lowering_only",
             mp["owned_put_guest_visibility"],
         )
+        self.assertEqual(
+            "one_shot_take_before_failure_rethrow",
+            mp["owned_put_rejected_candidate"],
+        )
+        self.assertEqual(
+            "one_shot_take_after_commit",
+            mp["owned_put_previous_value"],
+        )
+        self.assertEqual(
+            "source_moved_on_commit_normal_edge_restored_on_admission_failure_catch_edge",
+            mp["compiler_exceptional_flow"],
+        )
+        self.assertEqual(
+            "gated_until_exceptional_flow_lowering",
+            mp["source_move_only_map_visibility"],
+        )
+        self.assertEqual(
+            "canonical_checked_map_put_path",
+            mp["shared_commit_primitive"],
+        )
+        self.assertTrue(mp["failed_commit_preserves_previous_mapping"])
+        self.assertTrue(mp["failed_commit_must_not_lose_uncommitted_move_value"])
+        self.assertEqual(
+            "OresKeyedMap.put",
+            mp["scalar_v1_current_primitive"],
+        )
+        self.assertEqual(
+            "attemptOwnedPut_returns_offered_value_on_rejection",
+            mp["move_only_internal_primitive"],
+        )
         self.assertTrue(mp["failed_commit_preserves_previous_mapping"])
         self.assertTrue(mp["failed_commit_must_not_lose_uncommitted_move_value"])
         self.assertEqual("OresKeyedMap.put", mp["scalar_v1_current_primitive"])
