@@ -1,0 +1,45 @@
+# Actor-local memory and data-oriented layouts v1
+
+**Evidence boundary:** This is a source-free executable *reference oracle*. It is not an Oreslang parser/compiler, production runtime, shared-domain arena, OS sandbox, or proof that any of the five backends executes the cases. Source-free CI must not promote reference-model passes to guest/compiler parity.
+
+## Files
+
+- Normative cases: [actor-memory-layout-v1.json](../contracts/v1/actor-memory-layout-v1.json)
+- Model: [actor-memory-layout-v1.mjs](../scripts/actor-memory-layout-v1.mjs)
+- Tests: [actor-memory-layout-v1.test.mjs](../tests/actor-memory-layout-v1.test.mjs)
+- Run locally on Node 22+: **node --test tests/actor-memory-layout-v1.test.mjs**
+
+**ActorArenaOracle** models bounded persistent and turn-scoped scratch allocations, issued opaque capability identity, actor incarnation, read-only loans, deterministic scrub/free, and physical retirement gated on active loans, tasks, and external callback pins. An ActorRef is NOT memory authority. Every actor kind, including SHARED, owns its ordinary mutable memory. Explicit shared arenas have their own semantics; see [SHARED_DOMAIN_ARENAS_V1](../contracts/v1/SHARED_DOMAIN_ARENAS_V1.md).
+
+**DenseRegionOracle** models F64 dense regions, one authoritative mutable layout per epoch, transactional copy-on-conversion with checked budgets, stable opaque entity identity, and swap-delete. The model does not secretly maintain four simultaneously mutable layouts.
+
+## Physical indexing
+
+For row r, field f, total field count F, and tile width T:
+
+- AoS: row-major, index = r * F + f
+- SoA: field-major, columns[f][r]
+- AoSoA: tile/field/lane, index = floor(r/T)*(T*F) + f*T + (r%T)
+- SoAoS (serialized identifier soaos): tile/row/field, index = floor(r/T)*(T*F) + (r%T)*F + f
+
+SoAoS and AoSoA are not aliases. Both tiled layouts account for padded capacity, but padding is never exposed as logical guest rows. The reference restricts values to finite F64 fields; it does not establish full numeric semantics, generic type layouts, real cache locality, SIMD, GPU execution, or native allocation patterns.
+
+## Five-backend implementation gates
+
+1. **Java/Graal:** actual guest object, actor state, lexical and continuation allocations routed to native arenas, then Truffle JIT and Native Image tests. Extend [java #1822](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1822).
+2. **LLVM:** real source-compiled actors with owned native heaps and typed SoA columns; execute compiler/native sanitizer tests. Extend [llvm #657](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/657).
+3. **.NET:** per-actor **unmanaged** arenas with issued checked handles and Native AOT source execution. CLR managed GC remains for runtime objects; Server GC heaps are not actor-private. Reconcile [net #63](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/63) / [net #90](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/90).
+4. **Wasm:** actor-owned private linear memories or verified disjoint bounded regions; source actor lowering and host lifecycle tests. Extend [wasm #34](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/34).
+5. **JS:** source actors executing in Web Workers with ownership-aware transferable buffers; workers alone are not an OS hostile-code sandbox.
+
+Each backend must also prove the single state schema and verified critical state loans, capability-checked messaging, and stable layout/ECS semantics using **executed guest source**.
+
+## Evidence and security
+
+A backend result requires exact source/tree/compiler/toolchain/fixture/artifact identities, nonzero executed CI steps, actual compiled guest runtime behavior, and independent provenance review. A job with zero executed steps is NOT_EXECUTED, not compiler success or failure. Unsupported is UNSUPPORTED, not passed. The source-free reference tests alone must never promote any backend.
+
+Private source transfer to another GitHub organization requires explicit reviewed destination authorization, verified repository identity, and protected provenance gates. No code in this PR performs private-source transfer.
+
+## Non-goals
+
+This first slice does not implement a frontend, actor schedule, a true actor-private OS process, native guest GC elimination, SIMD, NUMA, affinity, or GPU kernels. It gives those implementations a deterministic semantic reference and adversarial test contract.
