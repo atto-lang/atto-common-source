@@ -54,7 +54,7 @@
     "host_map_semantics_forbidden": true,
     "indexed_assignment_requires": "direct_owned_mutable_map",
     "indexed_assignment_evaluation": "authority_preflight_then_rhs_once_then_receiver_once_then_key_once",
-    "named_put_evaluation": "receiver_authority_then_key_once_then_value_once",
+    "named_put_evaluation": "receiver_and_authority_then_key_once_then_value_once",
     "replacement_atomicity": "validate_and_admit_new_before_publish_then_release_old",
     "move_only_fallible_insert": "runtime_attempt_returns_exact_uncommitted_value_on_rejection_then_compiler_commits_move_only_on_success",
     "owned_put_rejected_candidate": "one_shot_take_before_failure_rethrow",
