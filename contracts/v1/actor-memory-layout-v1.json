@@ -19,7 +19,7 @@
     "aos": "row * fields + field",
     "soa": "columns[field][row]",
     "aosoa": "tile * tile_width * fields + field * tile_width + lane",
-    "soaos": "tile * tile_width * fields + lane * fields + field"
+    "soaos": "tile * tile_width * fields + first_field * tile_width + lane * group_fields + (field - first_field); first_field = floor(field/2)*2, group_fields = min(2, fields - first_field)"
   },
   "rules": {
     "guest_allocation": "actor-owned by default, for all actor kinds including shared",
@@ -33,7 +33,10 @@
     "retirement": "seal authority immediately; scrub/reclaim after all tasks, pins and loans retire",
     "layout": "one authoritative mutable physical backing per epoch; transactional conversions",
     "ecs": "stable opaque entity handles, generation fenced, swap-delete preserves surviving identity",
-    "isolation": "ownership and independent collectors/OS sandboxes are different claims"
+    "isolation": "ownership and independent collectors/OS sandboxes are different claims",
+    "input_snapshot": "own dense F64 DATA descriptors copied before any row write; accessor or reentrant mutation rejected",
+    "authority_quotas": "max 4096 simultaneously live allocation handles, read loans, external pins, and tasks, independently",
+    "host_metadata": "JS reference model charges guest payload bytes but not all host Map/handle bookkeeping; no production memory accounting claim"
   },
   "cases": [
     {
@@ -163,6 +166,42 @@
     {
       "id": "tile-padding-not-guest-rows",
       "expect": "allow"
+    },
+    {
+      "id": "accessor-backed-row-input",
+      "expect": "deny"
+    },
+    {
+      "id": "sparse-or-inherited-component-input",
+      "expect": "deny"
+    },
+    {
+      "id": "reentrant-descriptor-side-effect",
+      "expect": "deny"
+    },
+    {
+      "id": "borrowed-layout-conversion-no-temporary-allocation",
+      "expect": "deny"
+    },
+    {
+      "id": "live-allocation-authority-limit",
+      "expect": "deny"
+    },
+    {
+      "id": "live-read-loan-limit",
+      "expect": "deny"
+    },
+    {
+      "id": "live-external-pin-limit",
+      "expect": "deny"
+    },
+    {
+      "id": "live-task-lifetime-limit",
+      "expect": "deny"
+    },
+    {
+      "id": "soaos-field-group-address-nonalias",
+      "expect": "equal"
     }
   ],
   "promotion_gate": {
