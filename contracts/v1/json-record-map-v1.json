@@ -19,22 +19,24 @@
     ],
     "source_type_import": "import class JsonValue from \"alloc/json\";",
     "reserved_namespace_shadowing": "forbidden_project_manifest_or_ORESLANG_PATH_override",
-    "stage_one_source_surface": "opaque_JsonValue_plus_Json_null_of_array_object_and_Map<String,JsonValue>",
+    "stage_one_source_surface": "opaque_JsonValue_plus_Json_null_of_array_object_stringify_and_Map<String,JsonValue>",
     "direct_jsonvalue_construction": "forbidden_use_Json_static_factories_or_parser",
-    "json_static_api_stage": "constructors_only_parse_stringify_typed_codecs_pending",
+    "json_static_api_stage": "constructors_plus_stringify_parse_and_typed_codecs_pending",
     "source_factory_import": "import class Json from \"alloc/json\";",
     "json_factory_surface": [
       "Json.null",
       "Json.of",
       "Json.array",
-      "Json.object"
+      "Json.object",
+      "Json.stringify"
     ],
     "json_factory_exact_scalar_stage": "bool_int_String_only_float_decimal_fail_closed",
     "class_alias_binding_semantics": "local_alias_only_no_original_source_name_leak",
     "jsonvalue_alias_intrinsic_authority": false,
     "json_factory_alias_intrinsic_authority": false,
     "alloc_json_placeholder_construction": "forbidden_for_canonical_and_aliased_bindings",
-    "alloc_json_wildcard_import_stage": "reject"
+    "alloc_json_wildcard_import_stage": "reject",
+    "json_runtime_binary_float_input": "reject_until_exact_decimal_carrier"
   },
   "json_object": {
     "key_type": "String",
@@ -146,7 +148,8 @@
     "integer_over_2_pow_53": "preserve",
     "non_finite": "reject",
     "float_overflow": "reject_by_default",
-    "integer_target_acceptance": "mathematically_integral_in_range_including_decimal_or_exponent_spelling"
+    "integer_target_acceptance": "mathematically_integral_in_range_including_decimal_or_exponent_spelling",
+    "runtime_binary_float_input": "reject_until_exact_decimal_carrier"
   },
   "encoding": {
     "ordinary_json_cycle": "reject",
