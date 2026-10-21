@@ -1,0 +1,175 @@
+{
+  "schema": "oreslang.actor-memory-layout.v1",
+  "evidence": "SOURCE_FREE_ORACLE_ONLY",
+  "scope": "Per-actor mutable arenas and stable, layout-independent dense entity semantics",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "wasm",
+    "js"
+  ],
+  "layouts": [
+    "aos",
+    "soa",
+    "aosoa",
+    "soaos"
+  ],
+  "physical_index": {
+    "aos": "row * fields + field",
+    "soa": "columns[field][row]",
+    "aosoa": "tile * tile_width * fields + field * tile_width + lane",
+    "soaos": "tile * tile_width * fields + lane * fields + field"
+  },
+  "rules": {
+    "guest_allocation": "actor-owned by default, for all actor kinds including shared",
+    "handles": "opaque issued capability identity, actor-incarnation and lifetime fenced",
+    "state": "one state schema; state access only under validated critical state loan",
+    "persistent": "lives through successive actor turns until freed or retired",
+    "scratch": "scrubbed and revoked at end of actor turn",
+    "borrows": "no mutation, compaction, re-layout or turn transition with live read lease",
+    "message": "actor-owned mutable arena references never cross actor boundaries",
+    "shared": "explicit separate immutable lease or validated synchronized shared capability",
+    "retirement": "seal authority immediately; scrub/reclaim after all tasks, pins and loans retire",
+    "layout": "one authoritative mutable physical backing per epoch; transactional conversions",
+    "ecs": "stable opaque entity handles, generation fenced, swap-delete preserves surviving identity",
+    "isolation": "ownership and independent collectors/OS sandboxes are different claims"
+  },
+  "cases": [
+    {
+      "id": "foreign-owner-handle",
+      "expect": "deny"
+    },
+    {
+      "id": "forged-coordinate-handle",
+      "expect": "deny"
+    },
+    {
+      "id": "stale-incarnation-handle",
+      "expect": "deny"
+    },
+    {
+      "id": "stale-dropped-allocation",
+      "expect": "deny"
+    },
+    {
+      "id": "double-release",
+      "expect": "deny"
+    },
+    {
+      "id": "quota-exceeded-before-allocation",
+      "expect": "deny"
+    },
+    {
+      "id": "integer-overflow-preflight",
+      "expect": "deny"
+    },
+    {
+      "id": "negative-index",
+      "expect": "deny"
+    },
+    {
+      "id": "out-of-bounds-index",
+      "expect": "deny"
+    },
+    {
+      "id": "byte-write-overflow",
+      "expect": "deny"
+    },
+    {
+      "id": "persistent-survives-turn",
+      "expect": "allow"
+    },
+    {
+      "id": "scratch-revoked-after-turn",
+      "expect": "deny"
+    },
+    {
+      "id": "readonly-loan-read",
+      "expect": "allow"
+    },
+    {
+      "id": "readonly-loan-blocks-mutation",
+      "expect": "deny"
+    },
+    {
+      "id": "readonly-loan-blocks-turn",
+      "expect": "deny"
+    },
+    {
+      "id": "stale-loan-access",
+      "expect": "deny"
+    },
+    {
+      "id": "retire-seals-allocation",
+      "expect": "deny"
+    },
+    {
+      "id": "task-delays-reclaim",
+      "expect": "defer"
+    },
+    {
+      "id": "external-pin-delays-reclaim",
+      "expect": "defer"
+    },
+    {
+      "id": "read-loan-delays-reclaim",
+      "expect": "defer"
+    },
+    {
+      "id": "retire-idempotent",
+      "expect": "allow"
+    },
+    {
+      "id": "four-layout-roundtrip",
+      "expect": "equal"
+    },
+    {
+      "id": "layout-epoch-monotonic",
+      "expect": "allow"
+    },
+    {
+      "id": "conversion-with-active-lease",
+      "expect": "deny"
+    },
+    {
+      "id": "conversion-over-budget-atomic",
+      "expect": "deny"
+    },
+    {
+      "id": "stable-entity-after-layout-swap",
+      "expect": "equal"
+    },
+    {
+      "id": "stable-surviving-entity-after-swap-delete",
+      "expect": "equal"
+    },
+    {
+      "id": "deleted-entity-rejected",
+      "expect": "deny"
+    },
+    {
+      "id": "forged-entity-handle",
+      "expect": "deny"
+    },
+    {
+      "id": "duplicate-column-names",
+      "expect": "deny"
+    },
+    {
+      "id": "nonfinite-component",
+      "expect": "deny"
+    },
+    {
+      "id": "tile-padding-not-guest-rows",
+      "expect": "allow"
+    }
+  ],
+  "promotion_gate": {
+    "source_free_reference": "NON_CERTIFYING",
+    "per_backend": "real Oreslang guest compiler + runtime, source/tree/toolchain pins, executed steps, independent review",
+    "unsupported": "UNSUPPORTED_NOT_PASS",
+    "zero_step_ci": "NOT_EXECUTED",
+    "cross_org_private_source_copy": "DENIED_UNLESS_APPROVED_DESTINATION_AND_PROVENANCE"
+  }
+}
