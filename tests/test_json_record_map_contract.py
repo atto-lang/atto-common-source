@@ -154,8 +154,12 @@ class JsonRecordMapContractTest(unittest.TestCase):
             mp["replacement_atomicity"],
         )
         self.assertEqual(
-            "gated_until_commit_aware_move_or_value_return_on_error",
+            "runtime_attempt_returns_exact_uncommitted_value_on_rejection_then_compiler_commits_move_only_on_success",
             mp["move_only_fallible_insert"],
+        )
+        self.assertEqual(
+            "internal_lowering_only",
+            mp["owned_put_guest_visibility"],
         )
 
     def test_record_update_returns_a_new_row_type_not_a_mutated_binding(self):
