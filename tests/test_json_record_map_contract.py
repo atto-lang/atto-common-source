@@ -73,6 +73,14 @@ class JsonRecordMapContractTest(unittest.TestCase):
         self.assertTrue(safety["ignored_unknown_fields_count_toward_quotas"])
         self.assertTrue(safety["explicit_resource_quotas_required"])
         self.assertFalse(safety["guest_callbacks_under_internal_lock"])
+        self.assertEqual(
+            "edge_creation_serialized_and_cycle_checked",
+            safety["mutable_json_cycle_invariant"],
+        )
+        self.assertEqual(
+            "revalidate_depth_and_nodes_under_graph_stability_guard_before_recursive_externalization",
+            safety["whole_tree_quota_boundary"],
+        )
 
     def test_json_numbers_are_exact_until_target_conversion(self):
         number = self.data["json_number"]
@@ -80,6 +88,10 @@ class JsonRecordMapContractTest(unittest.TestCase):
         self.assertEqual("preserve", number["integer_over_2_pow_53"])
         self.assertEqual("reject", number["non_finite"])
         self.assertEqual("reject_by_default", number["float_overflow"])
+        self.assertEqual(
+            "mathematically_integral_in_range_including_decimal_or_exponent_spelling",
+            number["integer_target_acceptance"],
+        )
 
     def test_missing_null_and_codec_metadata_are_explicit(self):
         codec = self.data["typed_codec"]
@@ -126,12 +138,20 @@ class JsonRecordMapContractTest(unittest.TestCase):
         mp = self.data["map"]
         self.assertEqual("direct_owned_mutable_map", mp["indexed_assignment_requires"])
         self.assertEqual(
-            "receiver_once_then_key_once_then_value_once",
+            "authority_preflight_then_rhs_once_then_receiver_once_then_key_once",
             mp["indexed_assignment_evaluation"],
+        )
+        self.assertEqual(
+            "receiver_and_authority_then_key_once_then_value_once",
+            mp["named_put_evaluation"],
         )
         self.assertEqual(
             "validate_and_admit_new_before_publish_then_release_old",
             mp["replacement_atomicity"],
+        )
+        self.assertEqual(
+            "gated_until_commit_aware_move_or_value_return_on_error",
+            mp["move_only_fallible_insert"],
         )
 
     def test_record_update_returns_a_new_row_type_not_a_mutated_binding(self):
