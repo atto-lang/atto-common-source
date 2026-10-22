@@ -25,13 +25,16 @@ fn parse_issue(row: &str) -> Option<String> {
     }
     let link = link.strip_prefix(ISSUE_PREFIX)?;
     let (repo, suffix) = link.split_once("/issues/")?;
-    if repo.is_empty() || !repo.bytes().all(|b|
-        b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-')
-    ) {
+    if repo.is_empty()
+        || !repo
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+    {
         return None;
     }
     let (number, next) = suffix.split_once("). Next: ")?;
-    if number.is_empty() || number.starts_with('0')
+    if number.is_empty()
+        || number.starts_with('0')
         || !number.bytes().all(|b| b.is_ascii_digit())
         || next.trim().is_empty()
         || next.contains('\n')
@@ -43,7 +46,11 @@ fn parse_issue(row: &str) -> Option<String> {
 
 fn verify_register(document: &str) -> Vec<String> {
     let mut problems = Vec::new();
-    if !document.lines().next().is_some_and(|line| line.contains("October 6–15, 2026")) {
+    if !document
+        .lines()
+        .next()
+        .is_some_and(|line| line.contains("October 6–15, 2026"))
+    {
         problems.push("register heading must describe the October 6–15 window".into());
     }
     if document.matches("\n## ").count() < SECTIONS.len() {
@@ -72,7 +79,10 @@ fn verify_register(document: &str) -> Vec<String> {
             })
             .collect();
         if rows.len() != 10 {
-            problems.push(format!("{heading}: expected 10 open issue rows, found {}", rows.len()));
+            problems.push(format!(
+                "{heading}: expected 10 open issue rows, found {}",
+                rows.len()
+            ));
         }
         total_rows += rows.len();
         for row in rows {
@@ -83,16 +93,24 @@ fn verify_register(document: &str) -> Vec<String> {
                     }
                 }
                 None => {
-                    problems.push(format!("{heading}: invalid/open-task row: {}", row.chars().take(120).collect::<String>()));
+                    problems.push(format!(
+                        "{heading}: invalid/open-task row: {}",
+                        row.chars().take(120).collect::<String>()
+                    ));
                 }
             }
         }
     }
     if total_rows != 50 {
-        problems.push(format!("expected exactly 50 checklist rows, found {total_rows}"));
+        problems.push(format!(
+            "expected exactly 50 checklist rows, found {total_rows}"
+        ));
     }
     if ids.len() != 50 {
-        problems.push(format!("expected 50 unique GitHub issue references, found {}", ids.len()));
+        problems.push(format!(
+            "expected 50 unique GitHub issue references, found {}",
+            ids.len()
+        ));
     }
     problems
 }
@@ -157,12 +175,16 @@ mod tests {
     #[test]
     fn rejects_duplicate_and_case_aliased_ids() {
         let duplicated = fixture().replace("repo/issues/1011", "repo/issues/1010");
-        assert!(verify_register(&duplicated).iter().any(|e| e.contains("duplicate issue")));
+        assert!(verify_register(&duplicated)
+            .iter()
+            .any(|e| e.contains("duplicate issue")));
         let aliased = fixture().replace(
             "github.com/ores-truffle-oreslang/repo/issues/1011",
-            "github.com/ores-truffle-oreslang/REPO/issues/1010"
+            "github.com/ores-truffle-oreslang/REPO/issues/1010",
         );
-        assert!(verify_register(&aliased).iter().any(|e| e.contains("duplicate issue")));
+        assert!(verify_register(&aliased)
+            .iter()
+            .any(|e| e.contains("duplicate issue")));
     }
 
     #[test]
@@ -188,14 +210,22 @@ mod tests {
     fn rejects_empty_action_and_extra_trailing_text() {
         let no_action = fixture().replace(
             "repo/issues/1000). Next: Require an exact-head executable proof.",
-            "repo/issues/1000). Next: "
+            "repo/issues/1000). Next: ",
         );
         assert!(!verify_register(&no_action).is_empty());
-        assert_eq!(parse_issue("- [ ] **x** — [a](https://github.com/ores-truffle-oreslang/r/issues/0). Next: y"), None);
+        assert_eq!(
+            parse_issue(
+                "- [ ] **x** — [a](https://github.com/ores-truffle-oreslang/r/issues/0). Next: y"
+            ),
+            None
+        );
     }
 
     #[test]
     fn actual_checked_in_recovery_register_still_matches() {
-        assert!(verify_register(include_str!("../../../docs/UNFINISHED_WORK_RECOVERY_2026-10-15.md")).is_empty());
+        assert!(verify_register(include_str!(
+            "../../../docs/UNFINISHED_WORK_RECOVERY_2026-10-15.md"
+        ))
+        .is_empty());
     }
 }
