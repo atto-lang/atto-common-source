@@ -6,6 +6,8 @@ on:
       - 'tests/verify_scalar_subset.test.mjs'
       - 'tests/verify_scalar_controlflow.test.mjs'
       - 'tests/core-math-i64-contract.test.mjs'
+      - 'scripts/verify_core_math_execution.py'
+      - 'tests/test_core_math_execution_evidence.py'
       - 'contracts/library/v1/core-math-i64.json'
       - 'tests/verify_scalar_subset_integration.test.mjs'
       - 'tests/fixtures/stdlib-core-reviewed.ores'
@@ -41,6 +43,7 @@ jobs:
           node --test tests/verify_scalar_subset.test.mjs
           node --test tests/verify_scalar_controlflow.test.mjs
           node --test tests/core-math-i64-contract.test.mjs
+          python3 -m unittest discover -s tests -p test_core_math_execution_evidence.py -v
           node --test tests/verify_scalar_subset_integration.test.mjs
       - name: Prove actual imported source subset (not typed compiler IR)
         run: |
