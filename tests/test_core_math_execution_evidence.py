@@ -39,6 +39,7 @@ class OfflineParityEvidenceTests(unittest.TestCase):
         checker.CONTRACT_GIT_BLOB = hashlib.sha1(
             f"blob {len(self.contract)}\0".encode() + self.contract).hexdigest()
         self.java={"contractGitBlob":checker.CONTRACT_GIT_BLOB,
+                   "guestSourceGitBlob":checker.JAVA_GUEST_GIT_BLOB,
                    "executedCases":24,
                    "results":[{"id":c["id"],"observed":c["expected"]} for c in cases],
                    "evidenceKind":"captured-guest-stdout-not-authenticated-run"}
@@ -112,6 +113,14 @@ class OfflineParityEvidenceTests(unittest.TestCase):
                 with self.assertRaises(checker.EvidenceError):
                     checker.compare(self.contract,java,llvm,self.java_run,
                                     self.java_jobs,self.llvm_run,self.llvm_jobs)
+
+    def test_missing_or_wrong_java_guest_source_blob_rejects(self):
+        original=self.java["guestSourceGitBlob"]
+        self.java["guestSourceGitBlob"]="0"*40
+        with self.assertRaises(checker.EvidenceError):self.check()
+        del self.java["guestSourceGitBlob"]
+        with self.assertRaises(checker.EvidenceError):self.check()
+        self.java["guestSourceGitBlob"]=original
 
     def test_wrong_repository_or_workflow_identity_rejects(self):
         for field, new_value in (("name","Impostor run"),
