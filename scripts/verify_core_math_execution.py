@@ -20,6 +20,14 @@ SHA = re.compile(r"[0-9a-f]{40}")
 DECIMAL = re.compile(r"(?:0|-?[1-9][0-9]*)")
 MIN, MAX = -(1 << 63), (1 << 63) - 1
 FUNCTIONS = {"min_int": 2, "max_int": 2, "clamp_int": 3}
+RUN_IDENTITY = {
+    "graal": ("ores-truffle-oreslang/oreslang-source.java",
+              ".github/workflows/typed-scalar-smt.yml",
+              "Typed Oreslang AST to SMT core proof"),
+    "llvm": ("ores-truffle-oreslang/oreslang-source.llvm",
+             ".github/workflows/native-checked-scalar-smt.yml",
+             "Native checked scalar SMT pilot"),
+}
 JOBS = {
     "graal": ("graal-guest-core-math",
               ("Require exact reviewed source and contract snapshots",
@@ -165,6 +173,14 @@ def validate_run(backend, run, jobs):
             "invalid run identity")
     require(run.get("status") == "completed" and run.get("conclusion") == "success",
             "GitHub workflow not successful")
+    repository, workflow_path, workflow_name = RUN_IDENTITY[backend]
+    require(type(run.get("repository")) is dict and
+            run["repository"].get("full_name") == repository and
+            type(run.get("head_repository")) is dict and
+            run["head_repository"].get("full_name") == repository and
+            run.get("name") == workflow_name and run.get("path") == workflow_path and
+            run.get("event") in ("pull_request", "workflow_dispatch"),
+            "wrong GitHub repository, workflow or event")
     target_name, required_steps = JOBS[backend]
     matching = [j for j in jobs["jobs"] if type(j) is dict and j.get("name") == target_name]
     require(len(matching) == 1, "missing/duplicate actual job: " + target_name)
