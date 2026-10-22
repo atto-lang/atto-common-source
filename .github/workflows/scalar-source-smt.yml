@@ -18,11 +18,11 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-          ref: {{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Require exact reviewed private Java core blob
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "{{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           test "$(git hash-object tests/fixtures/stdlib-core-reviewed.ores)" = "d2cd9b8e0cd3e3bb3ee6a5f9cebf9ab3312c44f4"
       - name: Install Z3 only
         run: |
