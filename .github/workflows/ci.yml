@@ -25,3 +25,11 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Compile Python contract tools
         run: python3 -m py_compile scripts/*.py
+      - name: Format and lint Rust recovery register gate
+        run: |
+          cargo fmt --manifest-path tools/recovery-register/Cargo.toml -- --check
+          cargo clippy --offline --manifest-path tools/recovery-register/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust recovery register integrity gate
+        run: cargo test --offline --manifest-path tools/recovery-register/Cargo.toml
+      - name: Check fifty-item recovery register integrity (not live issues)
+        run: cargo run --offline --manifest-path tools/recovery-register/Cargo.toml
