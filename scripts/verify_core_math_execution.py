@@ -109,9 +109,10 @@ def contract_cases(data, raw):
 
 def validate_java(result, cases):
     require(type(result) is dict and set(result) ==
-            {"contractGitBlob","executedCases","results","evidenceKind"},
+            {"contractGitBlob","guestSourceGitBlob","executedCases","results","evidenceKind"},
             "unrecognized Graal result format")
     require(result["contractGitBlob"] == CONTRACT_GIT_BLOB and
+            result["guestSourceGitBlob"] == JAVA_GUEST_GIT_BLOB and
             result["evidenceKind"] == "captured-guest-stdout-not-authenticated-run",
             "Graal contract or evidence type mismatch")
     require(type(result["executedCases"]) is int and
