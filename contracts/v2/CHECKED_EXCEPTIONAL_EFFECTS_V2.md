@@ -205,3 +205,25 @@ call propagation slice: no source throw/raise/panic execution, no verified
 method/higher-order/async effect propagation, and no Error-only nominal
 proof. LLVM does not have executable guest exceptional effects. This
 document does not claim those gates are met.
+
+
+### October 22 implementation boundary
+
+Java [#1290](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1290)
+parses and checks a restricted subset of direct and method signature effects.
+The stacked draft
+[Java #1900](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1900)
+adds immutable, resolved effects to internal `Function` types, conservative
+exact-category effect subtyping, and checking for synchronous indirect
+function-value calls. Generic substitution, receiver substitution, and
+module/class contract projections must not erase metadata. No source spelling
+for function-*type* effects has been admitted yet: an ordinary source
+`Fnc<T>` remains an **empty-effect** contract, not a wildcard contract.
+Effectful lambdas, typed interfaces, async function values and unknown
+external targets remain blocked until their complete effect contracts are
+representable and verifiable.
+
+Neither draft has established successful exact-head Java/Graal CI as of this
+update. The shared conformance JSON now has 37 cases, including type-only
+model and pending nominal-Error cases; it is not an executable guest test
+report. No runtime `throw`/`raise`/`panic` handling or LLVM parity is claimed.
