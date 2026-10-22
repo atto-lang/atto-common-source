@@ -37,6 +37,6 @@ test("incorrect clamp reversed-bound source fails against actual Z3",()=>{
   assert.equal(p.error,undefined);
   assert.equal(p.status,0);
   assert.equal(p.stderr,"");
-  assert.equal(p.stdout.trim(),"sat\n\nsat");
-  assert.throws(()=>checkWithZ3(smt),/proof\\/mutant expected/);
+  assert.equal(p.stdout.trim(),"sat\nsat");
+  assert.throws(()=>checkWithZ3(smt),/proof\/mutant expected/);
 });
