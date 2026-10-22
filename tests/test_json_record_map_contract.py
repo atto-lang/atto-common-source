@@ -46,7 +46,7 @@ class JsonRecordMapContractTest(unittest.TestCase):
             lib["source_factory_import"],
         )
         self.assertEqual(
-            "opaque_JsonValue_plus_Json_null_of_array_object_and_Map<String,JsonValue>",
+            "opaque_JsonValue_plus_Json_null_of_array_object_stringify_and_Map<String,JsonValue>",
             lib["stage_one_source_surface"],
         )
         self.assertEqual(
@@ -54,16 +54,20 @@ class JsonRecordMapContractTest(unittest.TestCase):
             lib["direct_jsonvalue_construction"],
         )
         self.assertEqual(
-            "constructors_only_parse_stringify_typed_codecs_pending",
+            "constructors_plus_stringify_parse_and_typed_codecs_pending",
             lib["json_static_api_stage"],
         )
         self.assertEqual(
-            ["Json.null", "Json.of", "Json.array", "Json.object"],
+            ["Json.null", "Json.of", "Json.array", "Json.object", "Json.stringify"],
             lib["json_factory_surface"],
         )
         self.assertEqual(
             "bool_int_String_only_float_decimal_fail_closed",
             lib["json_factory_exact_scalar_stage"],
+        )
+        self.assertEqual(
+            "reject_until_exact_decimal_carrier",
+            lib["json_runtime_binary_float_input"],
         )
         self.assertEqual(
             "local_alias_only_no_original_source_name_leak",
@@ -155,6 +159,10 @@ class JsonRecordMapContractTest(unittest.TestCase):
         self.assertEqual("preserve", number["integer_over_2_pow_53"])
         self.assertEqual("reject", number["non_finite"])
         self.assertEqual("reject_by_default", number["float_overflow"])
+        self.assertEqual(
+            "reject_until_exact_decimal_carrier",
+            number["runtime_binary_float_input"],
+        )
         self.assertEqual(
             "mathematically_integral_in_range_including_decimal_or_exponent_spelling",
             number["integer_target_acceptance"],

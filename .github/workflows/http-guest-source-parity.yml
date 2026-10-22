@@ -12,6 +12,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+      - name: Format and lint Rust guest fixture identity gate
+        run: |
+          cargo fmt --manifest-path tools/http-fixture-identity/Cargo.toml -- --check
+          cargo clippy --manifest-path tools/http-fixture-identity/Cargo.toml --all-targets -- -D warnings
       - name: Test Rust guest fixture identity gate
         run: cargo test --manifest-path tools/http-fixture-identity/Cargo.toml
       - name: Verify canonical guest source blob

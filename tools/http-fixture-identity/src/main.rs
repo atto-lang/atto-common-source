@@ -31,7 +31,10 @@ fn verify(root: &Path) -> Result<String, String> {
         .map_err(|e| format!("{}: {e}", fixture.display()))?
         .file_type();
     if file_type.is_symlink() || !file_type.is_file() {
-        return Err(format!("fixture must be a regular file: {}", fixture.display()));
+        return Err(format!(
+            "fixture must be a regular file: {}",
+            fixture.display()
+        ));
     }
     let source = fs::read(&fixture).map_err(|e| format!("{}: {e}", fixture.display()))?;
     verify_bytes(&source)
@@ -56,7 +59,9 @@ fn main() {
     match verify(&root) {
         Ok(actual) => {
             println!("PARITY_FIXTURE_IDENTICAL sha={actual} expected_llvm_and_graal=true");
-            println!("NOTE: identity alone does not certify source compilation or runtime behavior");
+            println!(
+                "NOTE: identity alone does not certify source compilation or runtime behavior"
+            );
         }
         Err(error) => {
             eprintln!("{error}");
@@ -68,8 +73,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const CANONICAL: &[u8] =
-        include_bytes!("../../../fixtures/http-guest-counter-handler.ores");
+    const CANONICAL: &[u8] = include_bytes!("../../../fixtures/http-guest-counter-handler.ores");
 
     #[test]
     fn canonical_fixture_matches_pinned_git_blob() {
@@ -80,7 +84,9 @@ mod tests {
     fn mutation_rejects_even_if_source_remains_well_formed() {
         let mut modified = CANONICAL.to_vec();
         modified.push(b'\n');
-        assert!(verify_bytes(&modified).unwrap_err().contains("PARITY_FIXTURE_MISMATCH"));
+        assert!(verify_bytes(&modified)
+            .unwrap_err()
+            .contains("PARITY_FIXTURE_MISMATCH"));
     }
 
     #[test]
