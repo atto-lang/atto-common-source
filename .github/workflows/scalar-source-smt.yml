@@ -4,6 +4,7 @@ on:
     paths:
       - 'scripts/verify_scalar_subset.mjs'
       - 'tests/verify_scalar_subset.test.mjs'
+      - 'tests/verify_scalar_subset_integration.test.mjs'
       - 'tests/fixtures/stdlib-core-reviewed.ores'
       - 'formal/scalar-refinement/**'
       - '.github/workflows/scalar-source-smt.yml'
@@ -35,6 +36,7 @@ jobs:
           set -euo pipefail
           node --version
           node --test tests/verify_scalar_subset.test.mjs
+          node --test tests/verify_scalar_subset_integration.test.mjs
       - name: Prove actual imported source subset (not typed compiler IR)
         run: |
           set -euo pipefail
