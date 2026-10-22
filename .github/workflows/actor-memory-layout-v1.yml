@@ -1,0 +1,43 @@
+name: Source-free actor memory and DOD oracle (not backend parity)
+on:
+  push:
+    paths:
+      - '.github/workflows/actor-memory-layout-v1.yml'
+      - 'scripts/actor-memory-layout-v1.mjs'
+      - 'tests/actor-memory-layout-v1.test.mjs'
+      - 'tests/actor-memory-layout-hardening.test.mjs'
+      - 'contracts/v1/actor-memory-layout-v1.json'
+  pull_request:
+    paths:
+      - '.github/workflows/actor-memory-layout-v1.yml'
+      - 'scripts/actor-memory-layout-v1.mjs'
+      - 'tests/actor-memory-layout-v1.test.mjs'
+      - 'tests/actor-memory-layout-hardening.test.mjs'
+      - 'contracts/v1/actor-memory-layout-v1.json'
+permissions:
+  contents: read
+jobs:
+  source-free-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact checked-out head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "Source-free oracle SHA: $EXPECTED_HEAD"
+          echo "Source-free oracle tree: $(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Source-free actor memory + adversarial hardening
+        run: node --test tests/actor-memory-layout-v1.test.mjs tests/actor-memory-layout-hardening.test.mjs
