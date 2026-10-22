@@ -6,7 +6,8 @@ import {pathToFileURL} from "node:url";
 
 const OPS = {"<":"bvslt","<=":"bvsle",">":"bvsgt",">=":"bvsge"};
 const WORD = /^[A-Za-z_][A-Za-z_0-9]*$/;
-const NAME = /^(min_int|max_int)$/;
+const NAME = /^(min_int|max_int|clamp_int)$/;
+const ARITY = {min_int: 2, max_int: 2, clamp_int: 3};
 
 function assert(ok, message) { if (!ok) throw Error(message); }
 function lex(source) {
@@ -26,23 +27,56 @@ function lex(source) {
   return tokens;
 }
 function parse(tokens, name) {
-  let i=0;
-  const pop=()=>{assert(i<tokens.length,"unexpected end of function");return tokens[i++];};
-  const need=x=>assert(pop()===x,"expected token: "+x);
-  need("pub");need("fnc");need(name);need("(");need("int");
-  const a=pop();need(",");need("int");const b=pop();
-  assert(WORD.test(a)&&WORD.test(b)&&a!==b,"invalid parameter names");
+  let i=0, depth=0;
+  const params=[];
+  const peek=()=>tokens[i];
+  const read=()=>{assert(i<tokens.length,"unexpected end");return tokens[i++];};
+  const need=x=>assert(read()===x,"expected "+x);
+  need("pub");need("fnc");need(name);need("(");
+  for(let k=0;k<ARITY[name];k++){
+    if(k)need(",");
+    need("int");
+    const arg=read();
+    assert(WORD.test(arg)&&!params.includes(arg),"invalid or duplicate parameter");
+    params.push(arg);
+  }
   need(")");need(":");need("int");need("{");
-  need("if");const lhs=pop(),op=pop(),rhs=pop();
-  assert([a,b].includes(lhs)&&[a,b].includes(rhs)&&lhs!==rhs,
-    "condition must compare distinct parameters");
-  assert(Object.hasOwn(OPS,op),"unsupported comparison");
-  need(";");need("do");need("return");const yes=pop();need(";");
-  need("else");need("return");const no=pop();need(";");
-  assert([a,b].includes(yes)&&[a,b].includes(no),"return must be a parameter");
-  need("fi");need("}");
-  assert(i===tokens.length,"trailing or unsupported statements");
-  return {a,b,lhs,op,rhs,yes,no};
+  const sequence=stop=>{
+    depth++;
+    assert(depth<=16,"excessive branch depth");
+    const stmts=[];
+    while(!stop.includes(peek())){
+      assert(i<tokens.length,"unterminated body");
+      if(peek()==="return"){
+        read();
+        const arg=read();
+        assert(params.includes(arg),"return expression must be a parameter");
+        need(";");
+        stmts.push({tag:"return",arg});
+        assert(stop.includes(peek()),"unreachable statement after return");
+      } else if(peek()==="if"){
+        read();
+        const l=read(),op=read(),r=read();
+        assert(params.includes(l)&&params.includes(r)&&Object.hasOwn(OPS,op),
+          "unsupported comparison");
+        need(";");need("do");
+        const yes=sequence(["else","fi"]);
+        let no=[];
+        if(peek()==="else"){read();no=sequence(["fi"]);}
+        need("fi");
+        stmts.push({tag:"if",l,op,r,yes,no});
+      } else {
+        throw Error("unsupported statement: "+peek());
+      }
+    }
+    depth--;
+    return stmts;
+  };
+  const statements=sequence(["}"]);
+  need("}");
+  assert(i===tokens.length,"trailing tokens");
+  assert(statements.length>0,"empty function");
+  return {name,params,statements};
 }
 export function extractScalar(source,name) {
   assert(NAME.test(name),"unsupported verified function");
@@ -66,29 +100,56 @@ export function extractScalar(source,name) {
   assert(end!==-1,"unclosed function");
   return parse(lex(noComments.slice(start,end)),name);
 }
-const bvName=x=>{ assert(["arg0","arg1"].includes(x),"unbound symbol");return x; };
+function lower(parsed) {
+  const arg=x=>{
+    const i=parsed.params.indexOf(x);
+    assert(i>=0,"unknown typed parameter");
+    return "arg"+i;
+  };
+  const seq=(steps,continuation)=>{
+    let next=continuation;
+    for(let i=steps.length-1;i>=0;i--){
+      const s=steps[i];
+      if(s.tag==="return"){
+        next=arg(s.arg);
+      } else {
+        assert(s.tag==="if"&&Object.hasOwn(OPS,s.op),"unsupported branch node");
+        const cond="("+OPS[s.op]+" "+arg(s.l)+" "+arg(s.r)+")";
+        const yes=seq(s.yes,next),no=seq(s.no,next);
+        assert(yes!==null&&no!==null,"not all control-flow paths return");
+        next="(ite "+cond+" "+yes+" "+no+")";
+      }
+    }
+    return next;
+  };
+  const result=seq(parsed.statements,null);
+  assert(result!==null,"not all paths return");
+  return result;
+}
+const CONTRACT={
+  min_int:"(ite (bvsle arg0 arg1) arg0 arg1)",
+  max_int:"(ite (bvsge arg0 arg1) arg0 arg1)",
+  clamp_int:"(ite (bvsgt arg1 arg2) arg1 (ite (bvslt arg0 arg1) arg1 (ite (bvsgt arg0 arg2) arg2 arg0)))"
+};
+const MUTANT={
+  min_int:"(ite (bvsgt x y) x y)",
+  max_int:"(ite (bvslt x y) x y)",
+  clamp_int:"(ite (bvsgt y z) y (ite (bvslt x y) y x))"
+};
 export function renderSmt(parsed,name) {
-  assert(NAME.test(name),"unsupported verified function");
-  const map=x=>bvName(x===parsed.a?"arg0":x===parsed.b?"arg1":"invalid");
-  assert(Object.hasOwn(OPS,parsed.op),"unsupported operator");
-  const body="(ite ("+OPS[parsed.op]+" "+map(parsed.lhs)+" "+map(parsed.rhs)+
-    ") "+map(parsed.yes)+" "+map(parsed.no)+")";
-  const expected=name==="min_int"?
-    "(ite (bvsle arg0 arg1) arg0 arg1)":
-    "(ite (bvsge arg0 arg1) arg0 arg1)";
-  const mutant=name==="min_int"?
-    "(ite (bvsgt arg0 arg1) arg0 arg1)":
-    "(ite (bvslt arg0 arg1) arg0 arg1)";
+  assert(parsed.name===name&&Object.hasOwn(ARITY,name),"invalid function identity");
+  assert(parsed.params.length===ARITY[name],"invalid parameter arity");
+  const signature=parsed.params.map((_,i)=>"(arg"+i+" (_ BitVec 64))").join(" ");
+  const symbols=["x","y","z"].slice(0,parsed.params.length);
+  const call=fn=>"("+fn+" "+symbols.join(" ")+")";
   return [
     "(set-logic QF_BV)",
-    "(define-fun implementation ((arg0 (_ BitVec 64)) (arg1 (_ BitVec 64))) (_ BitVec 64) "+body+")",
-    "(define-fun contract ((arg0 (_ BitVec 64)) (arg1 (_ BitVec 64))) (_ BitVec 64) "+expected+")",
-    "(declare-const x (_ BitVec 64))",
-    "(declare-const y (_ BitVec 64))",
-    "(push 1)","(assert (distinct (implementation x y) (contract x y)))",
+    "(define-fun implementation ("+signature+") (_ BitVec 64) "+lower(parsed)+")",
+    "(define-fun contract ("+signature+") (_ BitVec 64) "+CONTRACT[name]+")",
+    ...symbols.map(x=>"(declare-const "+x+" (_ BitVec 64))"),
+    "(push 1)","(assert (distinct "+call("implementation")+" "+call("contract")+"))",
     "(check-sat)","(pop 1)",
-    "(push 1)",
-    "(assert (distinct "+mutant.replaceAll("arg0","x").replaceAll("arg1","y")+" (contract x y)))",
+    "(push 1)","(assert (distinct "+MUTANT[name]+" "+call("contract")+"))",
     "(check-sat)","(pop 1)",""
   ].join("\n");
 }
@@ -106,7 +167,7 @@ export function checkWithZ3(smt,spawn=spawnSync) {
 function main(args) {
   const checking=args[0]==="--check";
   if(checking) args=args.slice(1);
-  assert(args.length===2&&NAME.test(args[0]),"usage: [--check] min_int|max_int source.ores");
+  assert(args.length===2&&NAME.test(args[0]),"usage: [--check] min_int|max_int|clamp_int source.ores");
   const [name,path]=args;
   const input=readFileSync(path,"utf8");
   const smt=renderSmt(extractScalar(input,name),name);
