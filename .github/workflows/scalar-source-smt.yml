@@ -5,6 +5,8 @@ on:
       - 'scripts/verify_scalar_subset.mjs'
       - 'tests/verify_scalar_subset.test.mjs'
       - 'tests/verify_scalar_controlflow.test.mjs'
+      - 'tests/core-math-i64-contract.test.mjs'
+      - 'contracts/library/v1/core-math-i64.json'
       - 'tests/verify_scalar_subset_integration.test.mjs'
       - 'tests/fixtures/stdlib-core-reviewed.ores'
       - 'formal/scalar-refinement/**'
@@ -38,6 +40,7 @@ jobs:
           node --version
           node --test tests/verify_scalar_subset.test.mjs
           node --test tests/verify_scalar_controlflow.test.mjs
+          node --test tests/core-math-i64-contract.test.mjs
           node --test tests/verify_scalar_subset_integration.test.mjs
       - name: Prove actual imported source subset (not typed compiler IR)
         run: |
