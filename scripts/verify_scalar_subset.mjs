@@ -17,7 +17,7 @@ function lex(source) {
     re.lastIndex=pos;
     const m=re.exec(source);
     if (!m) {
-      assert(!/^\s*$/.test(source.slice(pos)), "unsupported source token at byte "+pos);
+      assert(/^\s*$/.test(source.slice(pos)), "unsupported source token at byte "+pos);
       break;
     }
     tokens.push(m[1]); pos=re.lastIndex;
