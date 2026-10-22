@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "feature": "immutable-aggregate-spread",
+  "status": "proposed-not-executable",
+  "spec": "contracts/v1/IMMUTABLE_AGGREGATE_SPREAD_V1.md",
+  "runner_status": "no compiler execution or parity claimed; wire to exact-source tests",
+  "type_expectations": "source-level inferred fields not nominal ABI",
+  "tests": [
+    {
+      "id": "s01_struct_extend",
+      "source": "const base = infer struct{foo: 5};\nconst next = infer struct{...base, bar: \"foo\"};",
+      "expected": "accept",
+      "kind": "INFERRED_STRUCT",
+      "members": {
+        "foo": "int",
+        "bar": "String"
+      }
+    },
+    {
+      "id": "s02_record_extend",
+      "source": "const base = infer record{foo: 5};\nconst next = record{...base, bar: \"foo\"};",
+      "expected": "accept",
+      "kind": "RECORD",
+      "members": {
+        "foo": "int",
+        "bar": "String"
+      }
+    },
+    {
+      "id": "s03_struct_to_record",
+      "source": "const base = infer struct{foo: 5};\nconst next = record{...base, bar: \"foo\"};",
+      "expected": "accept",
+      "kind": "RECORD",
+      "members": {
+        "foo": "int",
+        "bar": "String"
+      }
+    },
+    {
+      "id": "s04_record_to_struct",
+      "source": "const base = record{foo: 5};\nconst next = infer struct{...base, bar: \"foo\"};",
+      "expected": "accept",
+      "kind": "INFERRED_STRUCT",
+      "members": {
+        "foo": "int",
+        "bar": "String"
+      }
+    },
+    {
+      "id": "s05_override_type",
+      "source": "const base = record{foo: 5};\nconst next = record{...base, foo: \"retyped\"};",
+      "expected": "accept",
+      "kind": "RECORD",
+      "members": {
+        "foo": "String"
+      }
+    },
+    {
+      "id": "s06_multi_spread",
+      "source": "const a = record{x: 1, y: 2};\nconst b = record{y: \"two\", z: true};\nconst next = record{...a, ...b, x: 5};",
+      "expected": "accept",
+      "kind": "RECORD",
+      "members": {
+        "x": "int",
+        "y": "String",
+        "z": "bool"
+      }
+    },
+    {
+      "id": "s07_empty",
+      "source": "const empty = record{};\nconst next = record{...empty, foo: 5};",
+      "expected": "accept",
+      "kind": "RECORD",
+      "members": {
+        "foo": "int"
+      }
+    },
+    {
+      "id": "s08_short_alias",
+      "source": "const base = infer struct{foo: 5};\nconst T2 v = infer struct{...base, bar: \"foo\"};",
+      "expected": "accept",
+      "kind": "INFERRED_STRUCT",
+      "members": {
+        "foo": "int",
+        "bar": "String"
+      }
+    },
+    {
+      "id": "s09_record_alias",
+      "source": "const base = infer struct{foo: 5};\nconst T3 w = infer record{...base, bar: \"foo\"};",
+      "expected": "accept",
+      "kind": "INFERRED_RECORD",
+      "members": {
+        "foo": "int",
+        "bar": "String"
+      }
+    },
+    {
+      "id": "e01_duplicate",
+      "source": "const base = record{foo: 5};\nconst next = record{foo: 3, ...base, foo: 4};",
+      "expected": "reject",
+      "reason": "duplicate explicitly named field"
+    },
+    {
+      "id": "e02_nonaggregate",
+      "source": "const next = record{...42};",
+      "expected": "reject",
+      "reason": "nonaggregate operand"
+    },
+    {
+      "id": "e03_unknown",
+      "source": "const next = infer struct{...absent, bar: 5};",
+      "expected": "reject",
+      "reason": "unresolved spread source"
+    },
+    {
+      "id": "e04_wrong_type",
+      "source": "const base = record{foo: \"wrong\"};\nconst next = struct{foo: int}{...base};",
+      "expected": "reject",
+      "reason": "explicit type mismatch"
+    },
+    {
+      "id": "e05_extra",
+      "source": "const base = record{foo: 5, bar: true};\nconst next = struct{foo: int}{...base};",
+      "expected": "reject",
+      "reason": "undeclared explicit struct field"
+    },
+    {
+      "id": "e06_missing",
+      "source": "const base = record{foo: 5};\nconst next = struct{foo: int, bar: bool}{...base};",
+      "expected": "reject",
+      "reason": "missing explicit struct field"
+    },
+    {
+      "id": "e07_unknown_annotation",
+      "source": "const base = infer struct{foo: 5};\nconst UnknownType v = record{...base};",
+      "expected": "reject",
+      "reason": "unknown named type is not implicitly declared"
+    },
+    {
+      "id": "e08_computed",
+      "source": "const base = record{foo: 5};\nconst next = record{...base, `bar`: 2};",
+      "expected": "reject",
+      "reason": "computed/dynamic key"
+    },
+    {
+      "id": "e09_borrow",
+      "source": "let mut int count = 4;\nconst base = record{foo: rt mut borrow count};\nconst next = record{...base};",
+      "expected": "reject",
+      "reason": "borrowed value cannot be stored in owned record"
+    }
+  ]
+}
