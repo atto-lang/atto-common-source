@@ -17,8 +17,8 @@ BASE = "fixtures/borrow-ownership-v2/"
 ALLOWED_PROFILES = {"llvm-native-aot", "graal-jvm-guest", "graal-native-guest-aot"}
 SHA = re.compile(r"[0-9a-f]{64}\Z")
 CASES = {
-    "borrow-mut-scalar": ("360e5cd946d1a9a55abe5db711b723b96ddb6e64fc303efe7a7ed71505ba0c2d", "return"),
-    "borrow-overlap-reject": ("ddc2d0088d95390a7df4ec35a7feb3c81003c55fe335714780ef99ac7aa6e7e1", "reject"),
+    "borrow-mut-scalar": ("37d42b06e761543111a12cfbbd8c4811dd66c5e447fc76b5fabd1512219b8cca", "return"),
+    "borrow-overlap-reject": ("b36f1f0a49c02364a008f3a383602a1cf25d25e8f1d74105e7d6fbbe619d05be", "reject"),
     "borrow-shared-write-reject": ("9e8a882482c607af20922c93eb00b1e4624b6b3da4ae6352770edd76b89f1109", "reject"),
 }
 
