@@ -54,6 +54,12 @@ class OfflineParityEvidenceTests(unittest.TestCase):
                        "status":"completed","conclusion":"success"}
         self.llvm_run={"id":200,"run_attempt":1,"head_sha":"b"*40,
                        "status":"completed","conclusion":"success"}
+        for backend, run in (("graal", self.java_run), ("llvm", self.llvm_run)):
+            repository, workflow_path, workflow_name = checker.RUN_IDENTITY[backend]
+            run.update({"repository":{"full_name":repository},
+                        "head_repository":{"full_name":repository},
+                        "path":workflow_path,"name":workflow_name,
+                        "event":"pull_request"})
         self.java_jobs={"jobs":[self.make_job("graal",self.java_run,101)]}
         self.llvm_jobs={"jobs":[self.make_job("llvm",self.llvm_run,201)]}
 
@@ -106,6 +112,20 @@ class OfflineParityEvidenceTests(unittest.TestCase):
                 with self.assertRaises(checker.EvidenceError):
                     checker.compare(self.contract,java,llvm,self.java_run,
                                     self.java_jobs,self.llvm_run,self.llvm_jobs)
+
+    def test_wrong_repository_or_workflow_identity_rejects(self):
+        for field, new_value in (("name","Impostor run"),
+                                 ("path",".github/workflows/other.yml"),
+                                 ("event","schedule")):
+            prior=self.java_run[field]
+            self.java_run[field]=new_value
+            with self.subTest(field=field):
+                with self.assertRaises(checker.EvidenceError):self.check()
+            self.java_run[field]=prior
+        repo=self.llvm_run["repository"]
+        self.llvm_run["repository"]={"full_name":"other/other"}
+        with self.assertRaises(checker.EvidenceError):self.check()
+        self.llvm_run["repository"]=repo
 
     def test_bool_ids_duplicate_json_and_tampered_manifest_reject(self):
         self.llvm_run["id"]=True
