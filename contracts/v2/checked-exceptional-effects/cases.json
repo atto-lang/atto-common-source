@@ -1,0 +1,152 @@
+{
+  "schema": "oreslang.checked-exceptional-effects.v2",
+  "status": "normative-design-not-admitted",
+  "note": "These are admission criteria rather than assertions of current Java/LLVM runtime support. Source snippets with typed catch and error constructors are intended future grammar until backend parity is proven.",
+  "cases": [
+    {
+      "id": "checked.direct-panic-missing",
+      "phase": "semantic",
+      "source": "fnc bad(): int { panic new InvariantError(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.direct-panic-declared",
+      "phase": "semantic",
+      "source": "fnc intended(): int panics InvariantError { panic new InvariantError(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.direct-throw-missing",
+      "phase": "semantic",
+      "source": "fnc bad(): int { throw new ParseError(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_THROW"
+    },
+    {
+      "id": "checked.direct-raise-missing",
+      "phase": "semantic",
+      "source": "fnc bad(): int { raise new AuthError(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_RAISE"
+    },
+    {
+      "id": "checked.transitive-panic-missing",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): int { return leaf(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.transitive-panic-pass",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc good(): int panics InvariantError { return leaf(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.try-does-not-catch-panic",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): int { try { return leaf(); } catch (e) { return 0; } }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.trap-does-not-catch-panic",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): int { val outcome = trap leaf(); return 0; }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.try-does-not-catch-raise",
+      "phase": "semantic",
+      "source": "fnc leaf(): int raises AuthError { return 1; }\nfnc bad(): int { try { return leaf(); } catch (e) { return 0; } }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_RAISE"
+    },
+    {
+      "id": "checked.throw-caught-typed",
+      "phase": "semantic",
+      "source": "fnc leaf(): int throws ParseError { return 1; }\nfnc handled(): int { try { return leaf(); } catch (ParseError e) { return 0; } }\n",
+      "expected": "accept-after-typed-catch-admission"
+    },
+    {
+      "id": "checked.throw-partially-caught",
+      "phase": "semantic",
+      "source": "fnc leaf(): int throws ParseError, NetworkError { return 1; }\nfnc bad(): int { try { return leaf(); } catch (ParseError e) { return 0; } }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_THROW"
+    },
+    {
+      "id": "checked.cross-category-is-not-coverage",
+      "phase": "semantic",
+      "source": "fnc leaf(): int raises AuthError { return 1; }\nfnc bad(): int throws AuthError { return leaf(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_RAISE"
+    },
+    {
+      "id": "checked.instance-method-panic",
+      "phase": "semantic",
+      "source": "define class Service as\n    handle(): int panics InvariantError { panic new InvariantError(); }\nend\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.routine-panic",
+      "phase": "semantic",
+      "source": "routine cleanup(): void panics InvariantError { panic new InvariantError(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.override-widen-panic",
+      "phase": "semantic",
+      "source": "// A subclass method may not add panics not declared by its interface.\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_OVERRIDE_WIDENS",
+      "requires": "executable interface fixture after canonical syntax stabilized"
+    },
+    {
+      "id": "checked.higher-order-erase",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): void { val callback = leaf; return; }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.dynamic-unknown",
+      "phase": "semantic",
+      "source": "// External callback effects unresolved: strict compilation must fail closed.\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNKNOWN_CALLEE",
+      "requires": "verified FFI declaration grammar"
+    },
+    {
+      "id": "checked.future-panic",
+      "phase": "semantic",
+      "source": "// A Future carrying Panics<InvariantError> may not be awaited in an unannotated caller.\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC",
+      "requires": "future effect type grammar"
+    },
+    {
+      "id": "checked.supervisor-receipt-once",
+      "phase": "runtime",
+      "source": "// Supervised actor's panic cannot be locally consumed; deliver one CONTROL receipt.\n",
+      "expected": "supervisor-control-exactly-once",
+      "requires": "actor fault source lowering"
+    },
+    {
+      "id": "checked.recover-never-consumes-panic",
+      "phase": "runtime",
+      "source": "// Even inside direct defer, recover must not consume panic.\n",
+      "expected": "panic-unrecoverable",
+      "requires": "defer/recover source lowering"
+    },
+    {
+      "id": "checked.root-declaration",
+      "phase": "boundary",
+      "source": "fnc main(): int panics InvariantError { panic new InvariantError(); }\n",
+      "expected": "accept-only-with-explicit-fatal-process-policy",
+      "requires": "process boundary panic ABI"
+    }
+  ]
+}
