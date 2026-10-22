@@ -20,7 +20,7 @@ fn parse_issue(row: &str) -> Option<String> {
         return None;
     }
     let (caption, link) = link.split_once("](")?;
-    if caption.is_empty() || caption.contains([']', '\n']) {
+    if caption.is_empty() || caption.contains(']') || caption.contains('\n') {
         return None;
     }
     let link = link.strip_prefix(ISSUE_PREFIX)?;
@@ -54,11 +54,11 @@ fn verify_register(document: &str) -> Vec<String> {
     let mut previous = None;
     for heading in SECTIONS {
         let marker = format!("\n## {heading}\n");
-        if document.matches(&marker).count() != 1 {
+        if document.matches(marker.as_str()).count() != 1 {
             problems.push(format!("missing or repeated section: {heading}"));
             continue;
         }
-        let start = document.find(&marker).unwrap();
+        let start = document.find(marker.as_str()).unwrap();
         if previous.is_some_and(|p| start <= p) {
             problems.push(format!("incorrect section order: {heading}"));
         }
