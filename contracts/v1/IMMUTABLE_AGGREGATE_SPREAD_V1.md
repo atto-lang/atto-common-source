@@ -18,7 +18,7 @@ Existing record update syntax (base with { field: value, ... }) remains canonica
 ## Grammar and static field identity
 
     aggregate_element ::= static_field ":" expression | "..." expression
-    aggregate_elements ::= (aggregate_element ("," aggregate_element)* ","?)?
+    aggregate_elements ::= (aggregate_element ("," aggregate_element)*)?
     static_field ::= identifier | quoted_static_string_key
 
 The lexer already recognizes ELLIPSIS for call-site tuple expansion; context distinguishes the two operations. Aggregate spread expressions must have a statically known, closed field schema whose public/accessible fields may be copied/moved into the constructor. A dynamic Map, unknown value, structural callable-only view, arbitrary class, actor, mutable capability, partial/uninitialized aggregate, runtime key expression, or open/dynamic row must fail closed. No reflection, runtime prototype enumeration, host-property injection, or string-based fallback.
