@@ -194,6 +194,26 @@
       "source": "define class Parent as pub work(): int { return 1; } end\ndefine class Child extends Parent as pub work(): int panics InvariantError { return 2; } end\n",
       "expected": "reject-after-admission",
       "diagnostic": "E_EFFECT_OVERRIDE_WIDENS"
+    },
+    {
+      "id": "checked.lambda-capture-does-not-inherit-panic",
+      "phase": "semantic",
+      "source": "fnc risky(): int panics InvariantError { return 1; }\nfnc outer(): int panics InvariantError { val cb = || -> { return risky(); }; return 0; }\n",
+      "expected": "reject-until-function-type-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.lambda-expected-function-effect-erasure",
+      "phase": "semantic",
+      "source": "fnc risky(): int panics InvariantError { return 1; }\nfnc use(cb: Fnc<int>): int { return cb(); }\nfnc outer(): int panics InvariantError { return use(|| -> { return risky(); }); }\n",
+      "expected": "reject-until-function-type-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.lambda-pure-preserved",
+      "phase": "semantic",
+      "source": "fnc safe(): int { return 1; }\nfnc outer(): int panics InvariantError { val cb = || -> { return safe(); }; return 0; }\n",
+      "expected": "accept-after-nominal-error-admission"
     }
   ]
 }
