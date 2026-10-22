@@ -1,84 +1,173 @@
 # Native Oreslang I/O naming and execution contract
 
-**Status:** normative language/API and scheduling decision; the Java/Graal feature branch implements canonical native `_blocking` entry points with an opt-in strict compiler naming gate, but default enforcement and versioned release are **pending**. LLVM does not yet implement native I/O or continuation lowering: its compiler must fail closed. This document does not claim full cross-backend conformance or production readiness.
+**Status:** normative language/API, scheduler, and backend conformance rule.
 
-## Rule
+This contract applies to every Oreslang standard-library I/O operation and to
+every runtime adapter reachable from that stdlib surface. A backend may expose
+less functionality by failing closed; it may not satisfy missing functionality
+with blocking host I/O.
 
-Every **source-visible, logically synchronous I/O operation** must have an identifier ending in `_blocking`. This name means the *actor* waits for the result, **not** that the actor carrier may block. Async I/O operations **may** end in `_async`, but that suffix is **not required**. This is an API and scheduler contract, not a new operator, parser keyword, or declaration syntax.
+## Strict nonblocking host-I/O invariant
 
-| Kind | Rule | Examples |
-| --- | --- | --- |
-| Synchronous-looking, continuation-suspending I/O | `_blocking` suffix required | `fs.read_text_blocking(path)`, `fs.list_dir_blocking(path)`, `http.get_text_blocking(url)`, `stdio.println_blocking(value)` |
-| Async I/O | `_async` suffix optional | `await fs.read_text_async(path)`; alternatively an explicitly async API without that suffix |
-| Pure/local computation | No I/O suffix required | `calculate_hash(data)`, `parse_header(data)` |
+A strict profile must enforce both execution and naming boundaries:
 
-A `_blocking` I/O operation is sequential from the source actor's point of view. At runtime it **must submit I/O to a non-carrier execution mechanism, suspend the actor continuation without parking an OS scheduler carrier, and resume the continuation on its owning scheduler**. This applies to filesystem metadata, terminal/stdin/stdout, sockets, DNS, networking and I/O usually expected to complete quickly. An implementation may use an OS asynchronous API, completion queue, bounded virtual-thread I/O worker, or another independently scheduled I/O engine. A blocking host syscall on a separate bounded/virtual I/O worker is a portability fallback; it may pin an I/O worker but never the actor carrier.
+- Bare synchronous I/O spellings are not compatibility aliases; they are compile-time/binding errors.
+- A backend may reject a canonical `*_blocking` operation entirely until it has verified implicit continuation-suspension lowering over the same nonblocking provider used by its async form.
+- Shipping `*_blocking` early by calling a blocking host API, or by offloading that call to a worker, is forbidden.
+- Async operations may use `*_async` or another explicitly Future/awaitable API shape, but they must never expose a synchronous host operation behind an async-looking name.
+- No stdlib operation may call a known blocking filesystem, socket, DNS, HTTP,
+  terminal, pipe, or process-I/O data-plane API.
+- Moving a blocking call onto a platform thread, virtual thread, bounded pool,
+  or dedicated worker does **not** make it compliant.
+- Blocking data-plane syscalls are forbidden on actor/root carriers and on every
+  per-operation I/O worker.
+- A single multiplexing reactor may sleep in a readiness/completion wait such
+  as `epoll_wait`, `kevent`, or an IOCP wait. The reactor wait multiplexes
+  operations; it is not a blocking implementation of an individual operation.
+- Worker offload is not a compliant portability fallback.
+- If a target lacks a compliant provider, the operation must fail closed as unsupported.
 
-The name alone is not proof of a safe implementation. A function named `*_async` is not asynchronous merely because of the suffix; it must expose an async/future execution contract and must not block the actor carrier while performing I/O. Conversely, `*_blocking` is an API requirement for a synchronous-looking result, **not permission to call blocking host I/O on an actor carrier**, nor permission to bypass capability checks. It must not call `Future.join()`, `Future.get()` or a spin loop on the actor carrier.
+## Source naming rule
 
-The rule applies to exported Oreslang standard-library/native I/O functions, module functions, object methods and user-defined I/O wrappers that directly expose a blocking I/O operation. It does **not** rename host C/C++/Rust functions, ordinary compute functions, or every higher-level workflow routine that happens to *call* an I/O function; language entrypoints such as `main` keep their specified names.
+Every source-visible, logically synchronous I/O operation must end in
+`_blocking`.
 
-## Examples
+The suffix means that the **source continuation waits for the result**. It never
+means that an OS thread may block. A valid `*_blocking` call is compiler/runtime
+sugar for:
+
+1. submit the operation to the same nonblocking readiness/completion provider
+   used by the async form;
+2. suspend the current Oreslang continuation;
+3. release its actor/root carrier;
+4. resume through the owning scheduler when completion arrives.
+
+Async I/O may end in `_async`; the suffix is optional only when the
+Future/awaitable contract is otherwise explicit and unambiguous.
+
+Examples of target API shapes:
 
 ```ores
-// Synchronous to this actor: continuation yields; its OS carrier stays available.
-val String text = fs.read_text_blocking(path);
+val Future<String> pending = fs.read_text_async(path);
+val String first = await pending;
 
-// Async call: the actor can suspend and let its carrier do other work.
-val String text = await fs.read_text_async(path);
-
-// Async names may omit the suffix only when the async signature and behavior
-// are explicit and unambiguous; e.g. a future stdlib contract.
-val String text = await fs.read_text(path); // only if declared async
-
-val int sum = add(1, 2); // ordinary computation, no suffix
+// Only on a backend that implements verified implicit suspension:
+val String second = fs.read_text_blocking(path);
 ```
 
-The examples describe the **target** API, not a claim that all names above are accepted by today's compiler/runtime.
+A backend that has async support but lacks implicit-suspension lowering must
+admit the async form and reject the `*_blocking` form. It must not implement
+`*_blocking` with `Future.get`, `join`, a spin loop, or a worker-blocking
+shim.
 
-## Semantic requirements
+## Provider requirements
 
-1. **Classify by semantic effect and execution behavior.** The native built-in/FFI registry must record I/O kind (`io` versus non-I/O), result shape (`T` for `_blocking`; `Future<T>` for async) and suspension requirements. A name-only regex over arbitrary functions is not sufficient. Calls to `_blocking` must be lowered as suspension points even inside ordinary (non-async) source routines.
-2. **Reject missing suffixes.** Whenever a native I/O import, builtin or generated binding is resolved, an entry marked synchronous-looking I/O without `_blocking` must produce a stable compiler/binding diagnostic. The check must also cover methods and aliases. Do not infer the effect solely from the suffix.
-3. **Both forms release the carrier.** An async I/O entry must have the correct future/awaitable contract and submit without blocking the actor carrier; `_async` is merely conventional. A `_blocking` entry must return `T` in source but be lowered into the same continuation-suspending completion path, without requiring an explicit `await`. Reject/flag a falsely annotated binding.
-4. **Isolation and permissions remain in force.** Both variants require the same relevant capability authorization. Async cancellation/completion and memory ownership need separate validation. Neither spelling grants privileges.
-5. **Uniform source contract across backends.** LLVM AOT, Java/Graal JIT, and hybrid execution must expose consistent compliant source names when the relevant capability is implemented. An unsupported capability still fails closed.
+### Filesystem
 
-## Migration and compatibility
+Regular-file and metadata I/O requires a target-specific asynchronous
+completion provider. Ordinary blocking file operations on a worker are not a
+fallback. A platform without a compliant provider reports the capability as
+unsupported.
 
-The Java/Graal runtime currently documents bare synchronous names (including `fs.list_dir`, `fs.is_dir`, `fs.is_symlink`, `fs.write_text_atomic`, and `stdio.println`). They are **existing implementation behavior, not compliant canonical names**. The LLVM compiler currently lacks general filesystem/network stdlib I/O.
+### TCP, UDP, sockets, and pipes
 
-- Add canonical `*_blocking` declarations to builtins and generated bindings, and update documentation, compiler fixtures and downstream code.
-- Migrate uses in CLI/code generators and validate each affected code path with real execution tests before removing bare aliases.
-- Do not silently reclassify the old blocking calls as async. If a temporary legacy mode is necessary for compatibility, gate it explicitly and emit a migration diagnostic; do not advertise legacy names as compliant native APIs.
-- Version/pin API contracts so a released toolchain and its generated sources agree on names. Roll back the canonical-name switch via a versioned compatibility gate rather than invisible aliasing.
-- Before production enforcement, add positive and negative regression cases (below) to each backend supporting I/O. Reconcile actual Java/Graal and LLVM compiler support separately.
+Descriptors must be nonblocking and integrated with readiness/completion.
+Connect, accept, read, write, close/drain, and backpressure may not park one
+thread per guest operation.
 
-## Acceptance tests
+### DNS
 
-| Scenario | Expected |
+Name resolution must use an asynchronous resolver integration. Blocking
+`getaddrinfo` or equivalent worker offload is noncompliant.
+
+### HTTP and TLS
+
+HTTP/TLS must be built on compliant nonblocking network primitives and
+state machines. A synchronous HTTP client/server moved to virtual threads or a
+pool is not a stdlib backend.
+
+### stdin, stdout, stderr, terminals
+
+Terminal and pipe operations require nonblocking descriptor/reactor integration
+or an explicitly nonblocking host sink. Targets that cannot prove this remain
+unsupported.
+
+## Compiler and binding requirements
+
+The native builtin/FFI registry must record semantic effect and execution shape;
+name-only inference is insufficient.
+
+The compiler/binder must:
+
+1. reject registered synchronous-looking I/O without `_blocking`;
+2. reject aliases or methods that hide such an entry;
+3. reject bare legacy compatibility names in strict stdlib;
+4. type async entries as Future/awaitable operations;
+5. treat implemented `*_blocking` entries as suspension points, including
+   inside otherwise ordinary source routines;
+6. reject `*_blocking` entirely when that lowering/provider is absent;
+7. preserve the same capability/permission checks for both API shapes.
+
+No released strict stdlib compatibility mode may silently or explicitly
+re-enable blocking host I/O. If old blocking adapters are retained for migration
+or reference tests, they must live outside the strict stdlib reachability graph.
+
+## Runtime and scheduler requirements
+
+- Guest callbacks never execute on the I/O reactor.
+- No per-operation thread is held waiting for I/O completion.
+- Admissions and buffers are bounded.
+- Cancellation, timeout, shutdown, EOF, backpressure, and stale completion are
+  explicit state-machine transitions.
+- Completion resumes the owning Oreslang continuation through the scheduler.
+- Actor cancellation or teardown cannot turn a pending I/O operation into an
+  unbounded host wait.
+- A reactor may block only in its multiplexed readiness/completion wait.
+
+## Unsupported capabilities
+
+Unsupported I/O must be deterministic and fail closed before host I/O occurs.
+An async form returns/settles a failed Future as appropriate to the backend
+contract. A synchronous-looking form is rejected unless proper
+continuation-suspension lowering exists.
+
+“Not implemented” is safer and more conformant than a hidden blocking fallback.
+
+## Host tooling boundary
+
+Compiler input reads, build artifact publication, launcher diagnostics, and
+other host tooling are not guest stdlib APIs. They may have separate execution
+contracts, but they must never be reused as a guest stdlib provider without
+satisfying this document.
+
+## Acceptance and release gates
+
+A backend that claims functional strict I/O support must provide executable
+evidence for all applicable cases:
+
+| Scenario | Required result |
 | --- | --- |
-| Registered synchronous-looking FS/HTTP/TCP/stdio I/O API ending in `_blocking` | Admitted only when compiled to async-backed continuation suspension, subject to capability grants |
-| Registered blocking I/O API called or exported without `_blocking` | Rejected with an explicit blocking-I/O naming diagnostic |
-| Blocking method or alias hides a bare synchronous I/O entry | Rejected; aliases cannot bypass the check |
-| Registered async I/O API named `*_async` | Admitted when its async execution and future contract are valid |
-| Registered async I/O API without `_async` | Admitted when declared and implemented as async |
-| `_blocking` or fake `*_async` API that blocks the carrier | Rejected at binding validation or caught by single-carrier concurrency integration test |
-| Pure function without either suffix | Admitted |
-| Unknown/unsupported I/O builtin or capability | Fails closed; no silent host fallback |
+| Bare synchronous I/O name | Compiler/binding rejection |
+| Async I/O name/signature | Future/awaitable type and completion-driven implementation |
+| `*_blocking` | Admitted only with verified implicit continuation suspension over same provider |
+| Unsupported target/provider | Fail closed before host I/O |
+| Blocking worker fallback | Rejected |
+| Single actor/root carrier with slow I/O | Another runnable continuation makes progress before I/O completes |
+| Backpressure | Bounded admission; no unbounded queue/thread creation |
+| Cancellation/timeout | No parked per-operation thread and no stale completion corruption |
+| EOF/close/shutdown | Exactly-once terminal completion semantics |
+| Capability denial | Fails before host I/O and without authority laundering |
 
-Testing the naming validator alone is insufficient to establish non-blocking scheduling, fault isolation, secure path resolution or cancellation safety. The mandatory test launches two actors on **one** scheduler carrier; actor A performs slow `_blocking` I/O while actor B must make progress before I/O completion. Verify error propagation, timeouts, backpressure, actor cancellation, shutdown, and that no guest callback runs on an I/O worker. Each backend must additionally execute blocking and async operations under concurrency and denied-capability cases.
+Static source scans are required but are not sufficient. Exact-head executable
+tests must prove progress and lifecycle behavior. A workflow that fails before
+executing job steps is `NOT_EXECUTED`, not evidence for or against the code.
 
-## Evidence and responsibility
+## Cross-backend responsibility
 
-The common source repository owns this contract. The separate LLVM and Java/Graal repositories own compiler/builtin/runtime implementation and executable tests for now; do not merge their sources just to adopt this rule. Record versioned conformance evidence and a migration/rollback status for each backend before declaring completion.
+The common-source repository owns this semantic contract. Each backend owns its
+provider implementation and executable conformance tests. A backend with no
+guest stdlib I/O surface remains conformant by rejecting I/O rather than
+introducing a blocking fallback.
 
-## Implementation and verification receipts (2026-10-09)
-
-| Component | Executable evidence | Release limitation |
-| --- | --- | --- |
-| Java/Graal [PR #522](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/522) | [GraalVM/JDK 25 run #38005034460](https://github.com/athlet-o/athleto-e2e/actions/runs/38005034460): 20 JUnit cases plus 4 real CLI command tests, all passed; single-carrier actor progress, deny-all authority, strict naming, first-class `_blocking` alias refusal and nested tail-call continuations covered | Strict naming is opt-in; legacy bare entry points remain available pending versioned client migration; broader compiler matrix and distribution tests remain |
-| Native Oreslang Stack CLI [PR #12](https://github.com/ores-truffle-oreslang/oreslang-stack-cli/pull/12) | 69 source-level native I/O sites migrated; the exact CLI source passed strict typechecking and actual init/check/routes/deploy-denial runtime checks in the same GraalVM run | Cannot merge until the compiler dependency is released and pinned; deployment/hot reload and self-contained build artifacts are separate features |
-| LLVM [PR #29](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/29) | [LLVM 18 CTest run #38005361640](https://github.com/athlet-o/athleto-e2e/actions/runs/38005361640): both bare and suffixed unimplemented I/O calls rejected with no IR emission | No native I/O registry, async ABI, typed continuation lowering or runtime I/O semantics exist; negative tests are not implementation parity |
-
-**Mandatory production cutover:** pin a shared contract version in generators and compilers; migrate remaining bare stdlib users; enable strict naming by default for that version with a separately versioned legacy compatibility mode; run actor isolation, cancellation, backpressure, timeouts, context teardown and full backend conformance. Do not enable LLVM native I/O by spelling alone or silently park an actor carrier.
+Current implementation status is tracked separately in
+`STRICT_NONBLOCKING_IO_BACKEND_AUDIT_2026-10-21.md`.
