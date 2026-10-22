@@ -32,6 +32,8 @@ def test_cpu_reference_is_not_implicit_gpu_fallback():
     assert cpu["hardRealtimeClaim"] is False
     assert cpu["inputOutputAlias"] == "forbidden"
     assert cpu["floatingPointContraction"] == "forbidden-for-scale-bias-reference"
+    assert cpu["wholeKernelHostBufferLeaseRequired"] is True
+    assert cpu["concurrentHostMutation"] == "serialized-during-execution"
 
 def test_gpu_emission_is_not_execution_evidence():
     gpu = load()["gpuLowering"]
@@ -40,3 +42,16 @@ def test_gpu_emission_is_not_execution_evidence():
     assert gpu["providerAuthenticationRequired"] is True
     assert gpu["physicalBufferProvenanceRequired"] is True
     assert gpu["deviceEventEvidenceRequired"] is True
+    assert gpu["javaEmitterImplemented"] is True
+    assert gpu["nativeEmitterImplemented"] is True
+    assert gpu["exactArtifactParityRequired"] is True
+    abi = gpu["artifactAbi"]
+    assert abi["version"] == 1
+    assert abi["requiredAddressBits"] == 64
+    assert abi["requiredFloat32"] is True
+    assert abi["requiredLittleEndian"] is True
+    assert set(abi["providerMustValidate"]) == {
+        "requiredBytes", "globalRows", "globalFields",
+        "requiredAddressBits", "requiredFloat32", "requiredLittleEndian",
+    }
+    assert load()["promotion"]["requiresJavaNativeOpenClArtifactParity"] is True

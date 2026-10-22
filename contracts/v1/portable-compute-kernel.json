@@ -5,9 +5,19 @@
   "sourceNeutralKernelIR": true,
   "sourceSyntaxEnabled": false,
   "sourceSyntaxGate": "fail-closed-until-typed-effects-and-lowering",
-  "elementTypes": ["f32"],
-  "operations": ["scale", "bias", "scale-bias"],
-  "layouts": ["aos", "soa", "aosoa"],
+  "elementTypes": [
+    "f32"
+  ],
+  "operations": [
+    "scale",
+    "bias",
+    "scale-bias"
+  ],
+  "layouts": [
+    "aos",
+    "soa",
+    "aosoa"
+  ],
   "layoutRules": {
     "scalarBytes": 4,
     "alignmentPowerOfTwo": true,
@@ -38,19 +48,39 @@
     "hardRealtimeClaim": false,
     "layoutAware": true,
     "inputOutputAlias": "forbidden",
-    "floatingPointContraction": "forbidden-for-scale-bias-reference"
+    "floatingPointContraction": "forbidden-for-scale-bias-reference",
+    "wholeKernelHostBufferLeaseRequired": true,
+    "concurrentHostMutation": "serialized-during-execution"
   },
   "gpuLowering": {
     "firstPortableArtifact": "opencl-c-1.2",
     "emissionIsExecutionEvidence": false,
     "providerAuthenticationRequired": true,
     "physicalBufferProvenanceRequired": true,
-    "deviceEventEvidenceRequired": true
+    "deviceEventEvidenceRequired": true,
+    "javaEmitterImplemented": true,
+    "nativeEmitterImplemented": true,
+    "exactArtifactParityRequired": true,
+    "artifactAbi": {
+      "version": 1,
+      "requiredAddressBits": 64,
+      "requiredFloat32": true,
+      "requiredLittleEndian": true,
+      "providerMustValidate": [
+        "requiredBytes",
+        "globalRows",
+        "globalFields",
+        "requiredAddressBits",
+        "requiredFloat32",
+        "requiredLittleEndian"
+      ]
+    }
   },
   "promotion": {
     "requiresJavaCpuReferenceExecution": true,
     "requiresNativeCpuReferenceExecution": true,
     "requiresJavaNativeResultParity": true,
-    "requiresSourceSyntaxToRemainFailClosed": true
+    "requiresSourceSyntaxToRemainFailClosed": true,
+    "requiresJavaNativeOpenClArtifactParity": true
   }
 }

@@ -1,0 +1,258 @@
+{
+  "schema": "oreslang.checked-exceptional-effects.v2",
+  "status": "normative-design-not-admitted",
+  "note": "These are admission criteria rather than assertions of current Java/LLVM runtime support. Source snippets with typed catch and error constructors are intended future grammar until backend parity is proven.",
+  "cases": [
+    {
+      "id": "checked.direct-panic-missing",
+      "phase": "semantic",
+      "source": "fnc bad(): int { panic new InvariantError(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.direct-panic-declared",
+      "phase": "semantic",
+      "source": "fnc intended(): int panics InvariantError { panic new InvariantError(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.direct-throw-missing",
+      "phase": "semantic",
+      "source": "fnc bad(): int { throw new ParseError(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_THROW"
+    },
+    {
+      "id": "checked.direct-raise-missing",
+      "phase": "semantic",
+      "source": "fnc bad(): int { raise new AuthError(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_RAISE"
+    },
+    {
+      "id": "checked.transitive-panic-missing",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): int { return leaf(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.transitive-panic-pass",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc good(): int panics InvariantError { return leaf(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.try-does-not-catch-panic",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): int { try { return leaf(); } catch (e) { return 0; } }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.trap-does-not-catch-panic",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): int { val outcome = trap leaf(); return 0; }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC"
+    },
+    {
+      "id": "checked.try-does-not-catch-raise",
+      "phase": "semantic",
+      "source": "fnc leaf(): int raises AuthError { return 1; }\nfnc bad(): int { try { return leaf(); } catch (e) { return 0; } }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_RAISE"
+    },
+    {
+      "id": "checked.throw-caught-typed",
+      "phase": "semantic",
+      "source": "fnc leaf(): int throws ParseError { return 1; }\nfnc handled(): int { try { return leaf(); } catch (ParseError e) { return 0; } }\n",
+      "expected": "accept-after-typed-catch-admission"
+    },
+    {
+      "id": "checked.throw-partially-caught",
+      "phase": "semantic",
+      "source": "fnc leaf(): int throws ParseError, NetworkError { return 1; }\nfnc bad(): int { try { return leaf(); } catch (ParseError e) { return 0; } }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_THROW"
+    },
+    {
+      "id": "checked.cross-category-is-not-coverage",
+      "phase": "semantic",
+      "source": "fnc leaf(): int raises AuthError { return 1; }\nfnc bad(): int throws AuthError { return leaf(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_RAISE"
+    },
+    {
+      "id": "checked.instance-method-panic",
+      "phase": "semantic",
+      "source": "define class Service as\n    handle(): int panics InvariantError { panic new InvariantError(); }\nend\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.routine-panic",
+      "phase": "semantic",
+      "source": "routine cleanup(): void panics InvariantError { panic new InvariantError(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "checked.override-widen-panic",
+      "phase": "semantic",
+      "source": "// A subclass method may not add panics not declared by its interface.\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_OVERRIDE_WIDENS",
+      "requires": "executable interface fixture after canonical syntax stabilized"
+    },
+    {
+      "id": "checked.higher-order-erase",
+      "phase": "semantic",
+      "source": "fnc leaf(): int panics InvariantError { return 1; }\nfnc bad(): void { val callback = leaf; return; }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.dynamic-unknown",
+      "phase": "semantic",
+      "source": "// External callback effects unresolved: strict compilation must fail closed.\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNKNOWN_CALLEE",
+      "requires": "verified FFI declaration grammar"
+    },
+    {
+      "id": "checked.future-panic",
+      "phase": "semantic",
+      "source": "// A Future carrying Panics<InvariantError> may not be awaited in an unannotated caller.\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_UNDECLARED_PANIC",
+      "requires": "future effect type grammar"
+    },
+    {
+      "id": "checked.supervisor-receipt-once",
+      "phase": "runtime",
+      "source": "// Supervised actor's panic cannot be locally consumed; deliver one CONTROL receipt.\n",
+      "expected": "supervisor-control-exactly-once",
+      "requires": "actor fault source lowering"
+    },
+    {
+      "id": "checked.recover-never-consumes-panic",
+      "phase": "runtime",
+      "source": "// Even inside direct defer, recover must not consume panic.\n",
+      "expected": "panic-unrecoverable",
+      "requires": "defer/recover source lowering"
+    },
+    {
+      "id": "checked.root-declaration",
+      "phase": "boundary",
+      "source": "fnc main(): int panics InvariantError { panic new InvariantError(); }\n",
+      "expected": "accept-only-with-explicit-fatal-process-policy",
+      "requires": "process boundary panic ABI"
+    },
+    {
+      "id": "checked.interface-signature-preserved",
+      "phase": "parser",
+      "source": "define interface Service as fnc handle(): int throws ParseError raises AuthError panics InvariantError; end\n",
+      "expected": "accept-parser-only-until-effectful-contract-admission"
+    },
+    {
+      "id": "checked.interface-shape-erasure",
+      "phase": "semantic",
+      "source": "define interface Service as fnc handle(): int panics InvariantError; end\n",
+      "expected": "reject-until-function-contract-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.interface-duplicate-effects",
+      "phase": "parser",
+      "source": "define interface Service as fnc handle(): int raises AuthError raises AuthError; end\n",
+      "expected": "reject",
+      "diagnostic": "duplicate-effect-annotation"
+    },
+    {
+      "id": "checked.interface-empty-effect",
+      "phase": "parser",
+      "source": "define interface Service as fnc handle(): int panics; end\n",
+      "expected": "reject",
+      "diagnostic": "empty-effect-types"
+    },
+    {
+      "id": "checked.static-callback-erasure",
+      "phase": "semantic",
+      "source": "define class Work as static fnc risky(): int panics InvariantError { return 1; } end\nfnc store(): void panics InvariantError { val callback = Work.risky; return; }\n",
+      "expected": "reject-until-function-type-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.override-narrowing",
+      "phase": "semantic",
+      "source": "define class Parent as pub work(): int panics InvariantError { return 1; } end\ndefine class Child extends Parent as pub work(): int { return 2; } end\n",
+      "expected": "accept-static-effect-check-after-nominal-error-admission"
+    },
+    {
+      "id": "checked.override-widening",
+      "phase": "semantic",
+      "source": "define class Parent as pub work(): int { return 1; } end\ndefine class Child extends Parent as pub work(): int panics InvariantError { return 2; } end\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_OVERRIDE_WIDENS"
+    },
+    {
+      "id": "checked.lambda-capture-does-not-inherit-panic",
+      "phase": "semantic",
+      "source": "fnc risky(): int panics InvariantError { return 1; }\nfnc outer(): int panics InvariantError { val cb = || -> { return risky(); }; return 0; }\n",
+      "expected": "reject-until-function-type-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.lambda-expected-function-effect-erasure",
+      "phase": "semantic",
+      "source": "fnc risky(): int panics InvariantError { return 1; }\nfnc use(cb: Fnc<int>): int { return cb(); }\nfnc outer(): int panics InvariantError { return use(|| -> { return risky(); }); }\n",
+      "expected": "reject-until-function-type-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.lambda-pure-preserved",
+      "phase": "semantic",
+      "source": "fnc safe(): int { return 1; }\nfnc outer(): int panics InvariantError { val cb = || -> { return safe(); }; return 0; }\n",
+      "expected": "accept-after-nominal-error-admission"
+    },
+    {
+      "id": "checked.fnvalue-indirect-propagates-throws",
+      "phase": "semantic",
+      "source": "fnc risky(): int throws ParseError { return 1; }\nfnc wrapper(): int throws ParseError { val f = risky; return f(); }\n",
+      "expected": "accept-after-nominal-error-admission"
+    },
+    {
+      "id": "checked.fnvalue-indirect-missing-panics",
+      "phase": "semantic",
+      "source": "fnc risky(): int panics InvariantError { return 1; }\nfnc wrapper(): int { val f = risky; return f(); }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_MISSING"
+    },
+    {
+      "id": "checked.fnvalue-pure-assignment-erasure",
+      "phase": "semantic",
+      "source": "fnc risky(): int panics InvariantError { return 1; }\nfnc wrapper(): Fnc<int> panics InvariantError { return risky; }\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.fnvalue-variance-narrowing",
+      "phase": "type",
+      "source": "Function<[], int, throws ParseError> is assignable to Function<[], int, throws ParseError raises DomainError>; inverse is forbidden",
+      "expected": "accept-typing-contract-only"
+    },
+    {
+      "id": "checked.fnvalue-categories-not-interchangeable",
+      "phase": "type",
+      "source": "Function<[], int, panics InvariantError> is not assignable to Function<[], int, throws InvariantError>",
+      "expected": "reject-typing-contract-only",
+      "diagnostic": "E_EFFECT_CATEGORY"
+    },
+    {
+      "id": "checked.fnvalue-static-qualified-retains-panics",
+      "phase": "semantic",
+      "source": "define class Work as static fnc risky(): int panics InvariantError { return 1; } end\nfnc wrapper(): int panics InvariantError { val f = Work.risky; return f(); }\n",
+      "expected": "accept-after-nominal-error-admission"
+    }
+  ]
+}

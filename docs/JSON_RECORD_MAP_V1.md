@@ -43,11 +43,14 @@ their local alias and never leak the original source class name. An alias does
 not grant intrinsic JSON authority; the compiler recognizes the canonical
 unaliased imports above for `Map<String, JsonValue>` and `Json.*`.
 
-The current constructor slice consists of `Json.null`,
-`Json.of(bool|int|String)`, `Json.array(List<JsonValue>)`, and
-`Json.object(Map<String, JsonValue>)`. Floating/decimal `Json.of` input
-fails closed until the source runtime carries the required exact decimal
-carrier. Parsing, stringify/encode, and generated typed codecs remain later
+The current source slice consists of `Json.null`,
+`Json.of(bool|int|String)`, `Json.array(List<JsonValue>)`,
+`Json.object(Map<String, JsonValue>)`, and bounded non-consuming
+`Json.stringify(JsonValue|Map<String, JsonValue>)`. Floating/decimal
+`Json.of` input fails closed until the source runtime carries the required
+exact decimal carrier, and the runtime carrier itself also rejects binary
+floating-point construction rather than manufacturing a decimal through a
+double spelling. Strict parsing and generated typed codecs remain later
 slices. Wildcard `alloc/json` imports are not part of this stage.
 
 For `Map<String, JsonValue>`, the key domain is exactly String and the runtime
