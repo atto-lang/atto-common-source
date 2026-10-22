@@ -98,7 +98,9 @@ export function extractScalar(source,name) {
     assert(depth>=0,"invalid brace nesting");
   }
   assert(end!==-1,"unclosed function");
-  return parse(lex(noComments.slice(start,end)),name);
+  const parsed=parse(lex(noComments.slice(start,end)),name);
+  lower(parsed); // fail closed even when callers inspect the imported AST only
+  return parsed;
 }
 function lower(parsed) {
   const arg=x=>{
