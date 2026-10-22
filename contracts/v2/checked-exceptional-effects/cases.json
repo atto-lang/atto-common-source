@@ -147,6 +147,53 @@
       "source": "fnc main(): int panics InvariantError { panic new InvariantError(); }\n",
       "expected": "accept-only-with-explicit-fatal-process-policy",
       "requires": "process boundary panic ABI"
+    },
+    {
+      "id": "checked.interface-signature-preserved",
+      "phase": "parser",
+      "source": "define interface Service as fnc handle(): int throws ParseError raises AuthError panics InvariantError; end\n",
+      "expected": "accept-parser-only-until-effectful-contract-admission"
+    },
+    {
+      "id": "checked.interface-shape-erasure",
+      "phase": "semantic",
+      "source": "define interface Service as fnc handle(): int panics InvariantError; end\n",
+      "expected": "reject-until-function-contract-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.interface-duplicate-effects",
+      "phase": "parser",
+      "source": "define interface Service as fnc handle(): int raises AuthError raises AuthError; end\n",
+      "expected": "reject",
+      "diagnostic": "duplicate-effect-annotation"
+    },
+    {
+      "id": "checked.interface-empty-effect",
+      "phase": "parser",
+      "source": "define interface Service as fnc handle(): int panics; end\n",
+      "expected": "reject",
+      "diagnostic": "empty-effect-types"
+    },
+    {
+      "id": "checked.static-callback-erasure",
+      "phase": "semantic",
+      "source": "define class Work as static fnc risky(): int panics InvariantError { return 1; } end\nfnc store(): void panics InvariantError { val callback = Work.risky; return; }\n",
+      "expected": "reject-until-function-type-carries-effects",
+      "diagnostic": "E_EFFECT_ERASURE"
+    },
+    {
+      "id": "checked.override-narrowing",
+      "phase": "semantic",
+      "source": "define class Parent as pub work(): int panics InvariantError { return 1; } end\ndefine class Child extends Parent as pub work(): int { return 2; } end\n",
+      "expected": "accept-static-effect-check-after-nominal-error-admission"
+    },
+    {
+      "id": "checked.override-widening",
+      "phase": "semantic",
+      "source": "define class Parent as pub work(): int { return 1; } end\ndefine class Child extends Parent as pub work(): int panics InvariantError { return 2; } end\n",
+      "expected": "reject-after-admission",
+      "diagnostic": "E_EFFECT_OVERRIDE_WIDENS"
     }
   ]
 }
