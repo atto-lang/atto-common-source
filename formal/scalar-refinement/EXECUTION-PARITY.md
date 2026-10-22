@@ -9,7 +9,8 @@ The existing Java/Graal and LLVM draft proof pipelines now produce
 - Java/Graal [#1885](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1885)
   writes `target/formal-typed-scalar/guest/observed-results.json` after
   checking actual guest stdout. This has all 24 full signed-i64 observations
-  and the exact shared contract blob.
+  and both the exact shared contract blob and the checked guest Oreslang
+  source blob (`2d12b8632ad77c8dee34235ecfacfca6a0fa553f`).
 - LLVM [#857](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/857)
   writes `build/core-math-execution/aot-core-math-execution.json`
   after compiling and executing each case at both Clang `-O0` and `-O2`.
@@ -21,7 +22,7 @@ The existing Java/Graal and LLVM draft proof pipelines now produce
 `scripts/verify_core_math_execution.py` is a **strict offline record
 consistency gate** over those artifacts and independently retrieved GitHub
 workflow-run and jobs JSON. It rejects contract drift, duplicate case ids,
-non-canonical/out-of-range decimals, incorrect Java numeric results, missing
+non-canonical/out-of-range decimals, wrong Java source identity, incorrect Java numeric results, missing
 or nonzero LLVM optimization statuses, missing LLVM negative controls,
 stale/failed workflow heads, zero runner IDs, missing job steps and missing
 successful required steps. Both jobs must be from their distinct expected
