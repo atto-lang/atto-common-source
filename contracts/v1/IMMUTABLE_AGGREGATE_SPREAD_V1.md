@@ -1,6 +1,6 @@
 # Immutable aggregate spread v1 — draft portable contract
 
-Status: **PROPOSED / NOT EXECUTABLE PARITY** (2026-10-21). This document defines source and safety semantics for forthcoming compilers; no backend is claimed to parse, typecheck, lower or execute these aggregate spreads. Existing call-argument tuple spread is a different feature.
+Status: **PROPOSED / NO VERIFIED EXECUTABLE PARITY** (2026-10-22). Java parser, scalar-only type/ownership checks, interpreted lowering and a typed static construction plan are under implementation in draft PRs #1880 and #1882, but no successful exact-head JDK/Graal execution has yet been established. General ownership-safe spread, explicit-struct spread and non-Java backend parity remain unimplemented/unverified. Existing call-argument tuple spread is a different feature.
 
 ## Scope and canonical source
 
@@ -40,6 +40,10 @@ Allocate/validate the new aggregate transactionally before publication. On throw
 ## Lowering and ABI
 
 Frontend creates ordered AggregateElement(StaticField(name, expression) | Spread(expression)) with source spans and an immutable checked projection plan; do not encode spread as a fake field name, a sentinel string or a runtime Map. Each checked spread operand must have a statically established field/type schema and authority proof. Evaluation follows source indices while storage may use canonical field IDs, aligned AoS, SoA or AoSoA representation. An optimizer can elide proven dead copies, select borrowed immutable references, scalar-replace or fuse constructors, but must preserve effects/ownership/exception ordering. Never reinterpret a struct physical layout as a record ABI.
+
+Portable static lowering plans consist of source-ordered steps and an explicit field-write schedule. Each write identifies its source step, statically named field, resolved target slot, primitive field type, and whether it came from a spread; rightmost overrides write the same target slot without erasing earlier side effects. To obtain deterministic projection slots from an order-independent static row type, sort keys lexicographically by **Unicode scalar value** (equivalently, unsigned UTF-8 bytes for valid Unicode). Do not substitute Java UTF-16 code-unit ordering or locale/case-sensitive collation. This is a compile-time slot ordering rule, not a change to observable source evaluation order or structural type equality.
+
+A construction plan is type metadata, **not an ownership admission token**. A backend may lower it only after independently proving Copy/borrow/actor-domain authority and exception-path cleanup. Directly constructed, forged, incomplete or type-inconsistent plans must fail closed; source AST rewrites must preserve metadata provenance or trigger revalidation.
 
 Generated codecs for new shapes must be derived at compile time, tree-shake unused metadata and obey the existing Zorde/JSON canonical schema and actor transport contracts. Physical order is not schema identity.
 
