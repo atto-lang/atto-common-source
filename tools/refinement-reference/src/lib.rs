@@ -82,6 +82,41 @@ pub enum CharPolicy {
     Han,
 }
 
+// Unicode 18.0.0 Script=Han, Scripts.txt (2026-06-29), 25 ranges
+// covering exactly 103352 code points, not a Chinese language classifier.
+// https://www.unicode.org/Public/18.0.0/ucd/Scripts.txt
+const HAN18_RANGES: &[(u32, u32)] = &[
+    (11904, 11929),
+    (11931, 12019),
+    (12032, 12245),
+    (12293, 12293),
+    (12295, 12295),
+    (12321, 12329),
+    (12344, 12346),
+    (12347, 12347),
+    (13312, 19903),
+    (19968, 40959),
+    (63744, 64109),
+    (64112, 64217),
+    (94178, 94178),
+    (94179, 94179),
+    (94192, 94193),
+    (94194, 94195),
+    (94196, 94198),
+    (131072, 173791),
+    (173824, 178206),
+    (178208, 183981),
+    (183984, 191456),
+    (191472, 192093),
+    (194560, 195101),
+    (196608, 201546),
+    (201552, 210041),
+];
+
+fn ucd18_han(codepoint: u32) -> bool {
+    HAN18_RANGES.iter().any(|&(start, stop)| (start..=stop).contains(&codepoint))
+}
+
 impl CharPolicy {
     fn accepts(self, value: &str) -> bool {
         match self {
@@ -89,9 +124,9 @@ impl CharPolicy {
             Self::AsciiLetters => value.bytes().all(|b| b.is_ascii_alphabetic()),
             Self::AsciiUppercase => value.bytes().all(|b| b.is_ascii_uppercase()),
             Self::AsciiLowercase => value.bytes().all(|b| b.is_ascii_lowercase()),
-            // Unicode 18 exact property tables are not yet embedded;
-            // host default char/regex tables would silently change the ABI.
-            Self::UnicodeUppercase | Self::UnicodeLowercase | Self::Han => false,
+            // Host Unicode casing tables are not pinned to version 18.
+            Self::UnicodeUppercase | Self::UnicodeLowercase => false,
+            Self::Han => value.chars().all(|ch| ucd18_han(ch as u32)),
         }
     }
 }
@@ -746,10 +781,30 @@ mod tests {
         assert!(!lower.accepts(Candidate::Str("Abc")));
         assert!(!upper.accepts(Candidate::Str("123")));
         assert_eq!(ok("type H = string with chars han;").char_policy, CharPolicy::Han);
-        // Until Unicode 18 property tables ship, Han and Unicode case
-        // policies deliberately never claim a positive validation result.
-        assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("中文")));
+        // Han Script property is pinned to UCD 18.0; casing still blocked.
+        assert!(ok("type H = string with chars han;").accepts(Candidate::Str("中文")));
+        assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("中A")));
+        assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("😀")));
         assert!(!ok("type H = string with chars uppercase;").accepts(Candidate::Str("ABC")));
+    }
+
+    #[test]
+    fn ucd18_han_ranges_verify_count_and_boundaries() {
+        let total: u32 = HAN18_RANGES.iter().map(|&(a, b)| b - a + 1).sum();
+        assert_eq!(HAN18_RANGES.len(), 25);
+        assert_eq!(total, 103352);
+        for (index, &(first, last)) in HAN18_RANGES.iter().enumerate() {
+            assert!(first <= last);
+            if index > 0 { assert!(HAN18_RANGES[index - 1].1 < first); }
+            assert!(ucd18_han(first), "{first:X}");
+            assert!(ucd18_han(last), "{last:X}");
+        }
+        for scalar in [0x3006, 0x2A6E0, 0x3347A, 0x0041, 0x1F600] {
+            assert!(!ucd18_han(scalar), "{scalar:X} must be excluded");
+        }
+        for scalar in [0x3005, 0x4E2D, 0x20000, 0x33479] {
+            assert!(ucd18_han(scalar), "{scalar:X} must be included");
+        }
     }
 
     #[test]
