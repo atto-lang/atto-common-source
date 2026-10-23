@@ -398,7 +398,7 @@ mod tests {
         for value in [
             "",
             "a",
-            "ð",
+            "😀",
             "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
             "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
         ] {
@@ -412,7 +412,7 @@ mod tests {
     #[test]
     fn length_is_unicode_scalar_count() {
         let r = ok("type Emoji = string with length eq 1;");
-        assert!(r.accepts(Candidate::Str("ð")));
+        assert!(r.accepts(Candidate::Str("😀")));
         assert!(!r.accepts(Candidate::Str("e\u{301}")));
     }
 
@@ -473,7 +473,7 @@ mod tests {
         let int = ok("define newtype Number(int);");
         assert!(string.nominal && int.nominal);
         assert!(string.accepts(Candidate::Str("")));
-        assert!(string.accepts(Candidate::Str("ð")));
+        assert!(string.accepts(Candidate::Str("😀")));
         assert!(int.accepts(Candidate::Int(MIN_I64)));
         assert!(!int.accepts(Candidate::Int(MAX_I64 + 1)));
         assert!(parse("type Missing = string;").is_err());
@@ -489,7 +489,7 @@ mod tests {
                     Candidate::Str(""),
                     Candidate::Str("ab"),
                     Candidate::Str("abc"),
-                    Candidate::Str("ððð"),
+                    Candidate::Str("😀😀😀"),
                     Candidate::Str("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
                     Candidate::Str("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
                 ],
