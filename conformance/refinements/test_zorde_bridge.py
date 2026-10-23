@@ -100,8 +100,7 @@ class ZordeBridgeTests(unittest.TestCase):
         self.assertTrue(lower.accepts("abc"))
         self.assertFalse(lower.accepts("Abc"))
         self.assertFalse(lower.accepts("é"))
-        for policy, value in (("uppercase", "ABC"), ("lowercase", "abc"),
-                              ("han", "中文")):
+        for policy, value in (("uppercase", "ABC"), ("lowercase", "abc")):
             refined = parse("type S = string with chars " + policy + ";")
             d = to_zorde_descriptor(refined)
             self.assertEqual(d["schema"], "zorde.scalar/v2")
@@ -109,6 +108,18 @@ class ZordeBridgeTests(unittest.TestCase):
             self.assertIn("verified_ucd_18_0_0_tables", d["runtime_requirements"])
             with self.assertRaises(ConstraintSyntaxError):
                 refined.accepts(value)
+
+        han = parse("type S = string with min_length 1 and chars han;")
+        d = to_zorde_descriptor(han)
+        self.assertEqual(d["schema"], "zorde.scalar/v2")
+        self.assertEqual(d["unicode_version"], "18.0.0")
+        for value, valid in (
+            ("中文", True), ("中", True), ("𠀀", True), ("𳑹", True),
+            ("中A", False), ("中，", False), ("😀", False), ("", False),
+            ("𪛠", False), ("𳑺", False),
+        ):
+            with self.subTest(han=value):
+                self.assertEqual(han.accepts(value), valid)
 
     def test_invalid_string_policy_combinations(self):
         for source in (
