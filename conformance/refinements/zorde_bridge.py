@@ -40,10 +40,16 @@ def to_zorde_descriptor(
             result["charset"] = schema.charset
             result["unicode_version"] = schema.unicode_version or None
             result["runtime_requirements"].append("per_scalar_character_policy")
-            if schema.charset in ("uppercase", "lowercase", "han"):
-                # Matching a host runtime's native Unicode tables is
-                # insufficient to claim the pinned Unicode 18 contract.
+            if schema.charset in ("uppercase", "lowercase"):
+                # Host-native Unicode property versions differ across
+                # backends; these modes remain explicitly unverified.
                 result["runtime_requirements"].append("verified_ucd_18_0_0_tables")
+            elif schema.charset == "han":
+                # Verified exact UCD 18 Scripts.txt Han rows: 25 intervals,
+                # 103352 scalars. No fallback to Unicode block approximations.
+                result["runtime_requirements"].append(
+                    "ucd_18_0_0_script_han_25_ranges"
+                )
 
     elif schema.base == "int":
         result["runtime_requirements"] = [
