@@ -35,6 +35,16 @@ def to_zorde_descriptor(
             "inclusive_signed_int64_interval",
             "sorted_unique_exclusions",
         ]
+        if schema.version == 2:
+            result["schema"] = "zorde.scalar/v2"
+            result["charset"] = schema.charset
+            result["unicode_version"] = schema.unicode_version or None
+            result["runtime_requirements"].append("per_scalar_character_policy")
+            if schema.charset in ("uppercase", "lowercase", "han"):
+                # Matching a host runtime's native Unicode tables is
+                # insufficient to claim the pinned Unicode 18 contract.
+                result["runtime_requirements"].append("verified_ucd_18_0_0_tables")
+
     elif schema.base == "int":
         result["runtime_requirements"] = [
             "exact_signed_int64",
