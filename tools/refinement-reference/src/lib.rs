@@ -71,12 +71,38 @@ pub enum Candidate<'a> {
     Bool(bool),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharPolicy {
+    Any,
+    AsciiLetters,
+    AsciiUppercase,
+    AsciiLowercase,
+    UnicodeUppercase,
+    UnicodeLowercase,
+    Han,
+}
+
+impl CharPolicy {
+    fn accepts(self, value: &str) -> bool {
+        match self {
+            Self::Any => true,
+            Self::AsciiLetters => value.bytes().all(|b| b.is_ascii_alphabetic()),
+            Self::AsciiUppercase => value.bytes().all(|b| b.is_ascii_uppercase()),
+            Self::AsciiLowercase => value.bytes().all(|b| b.is_ascii_lowercase()),
+            // Unicode 18 exact property tables are not yet embedded;
+            // host default char/regex tables would silently change the ABI.
+            Self::UnicodeUppercase | Self::UnicodeLowercase | Self::Han => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refined {
     pub name: String,
     pub base: Base,
     pub nominal: bool,
     pub predicates: Vec<Predicate>,
+    pub char_policy: CharPolicy,
 }
 
 impl Refined {
@@ -88,10 +114,17 @@ impl Refined {
             _ => return false,
         };
         self.predicates.iter().all(|p| p.holds_i128(actual))
+            && match value {
+                Candidate::Str(text) => self.char_policy.accepts(text),
+                _ => self.char_policy == CharPolicy::Any,
+            }
     }
 
     pub fn entails(&self, other: &Self) -> bool {
         if self.base != other.base {
+            return false;
+        }
+        if self.char_policy != other.char_policy && other.char_policy != CharPolicy::Any {
             return false;
         }
         if (self.nominal || other.nominal)
@@ -121,6 +154,14 @@ fn cmp_re() -> &'static Regex {
 fn short_bound_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| Regex::new(r"^\s*(min|max)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+}
+fn short_length_re() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"^\s*(min_length|max_length)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+}
+fn char_policy_re() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"^\s*chars\s+(ascii_letters|ascii_uppercase|ascii_lowercase|uppercase|lowercase|han)\s*$").unwrap())
 }
 fn decl_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
@@ -351,8 +392,24 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
     };
 
     let mut predicates = annotations;
+    let mut char_policy = CharPolicy::Any;
     if let Some(clause) = clause {
         for term in and_re().split(clause.trim()) {
+            if let Some(c) = char_policy_re().captures(term) {
+                if base != Base::String || char_policy != CharPolicy::Any {
+                    return Err(syntax("character policy requires string and must be unique"));
+                }
+                char_policy = match c.get(1).unwrap().as_str() {
+                    "ascii_letters" => CharPolicy::AsciiLetters,
+                    "ascii_uppercase" => CharPolicy::AsciiUppercase,
+                    "ascii_lowercase" => CharPolicy::AsciiLowercase,
+                    "uppercase" => CharPolicy::UnicodeUppercase,
+                    "lowercase" => CharPolicy::UnicodeLowercase,
+                    "han" => CharPolicy::Han,
+                    _ => unreachable!(),
+                };
+                continue;
+            }
             // Two disjoint grammars avoid treating `min0` or
             // `min gte 0` as valid shorthand.
             let (constraint_property, op, bound) =
@@ -371,6 +428,15 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
                         if c.get(1).unwrap().as_str() == "min" { Op::Gte } else { Op::Lte },
                         parse_bound(c.get(2).unwrap().as_str())?,
                     )
+                } else if let Some(c) = short_length_re().captures(term) {
+                    if base != Base::String {
+                        return Err(syntax("min_length/max_length shorthand requires string"));
+                    }
+                    (
+                        Property::Length,
+                        if c.get(1).unwrap().as_str() == "min_length" { Op::Gte } else { Op::Lte },
+                        parse_bound(c.get(2).unwrap().as_str())?,
+                    )
                 } else {
                     return Err(syntax("unsupported with expression"));
                 };
@@ -382,7 +448,7 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
         }
     }
 
-    if predicates.is_empty() && !nominal {
+    if predicates.is_empty() && !nominal && char_policy == CharPolicy::Any {
         return Err(syntax("missing refinement"));
     }
 
@@ -402,6 +468,7 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
         base,
         nominal,
         predicates,
+        char_policy,
     })
 }
 
@@ -656,6 +723,48 @@ mod tests {
             "define type No = int as positive integer;",
         ] {
             assert!(parse(source).is_err(), "accepted invalid refinement: {source}");
+        }
+    }
+
+    #[test]
+    fn string_length_and_ascii_character_policies() {
+        let equivalent = ok("type A = string with min_length 2 and max_length 4 and chars ascii_letters;");
+        let canonical = ok("type A = string with length gte 2 and length lte 4 and chars ascii_letters;");
+        assert_eq!(equivalent, canonical);
+        for (candidate, accepted) in [
+            ("AB", true), ("aBc", true), ("ABCd", true),
+            ("A", false), ("ABCDE", false), ("A1", false),
+            ("éA", false), ("你好", false), ("😀A", false),
+        ] {
+            assert_eq!(equivalent.accepts(Candidate::Str(candidate)), accepted, "{candidate:?}");
+        }
+        let upper = ok("type U = string with chars ascii_uppercase;");
+        let lower = ok("type L = string with chars ascii_lowercase;");
+        assert!(upper.accepts(Candidate::Str("ABC")));
+        assert!(!upper.accepts(Candidate::Str("ABc")));
+        assert!(lower.accepts(Candidate::Str("abc")));
+        assert!(!lower.accepts(Candidate::Str("Abc")));
+        assert!(!upper.accepts(Candidate::Str("123")));
+        assert_eq!(ok("type H = string with chars han;").char_policy, CharPolicy::Han);
+        // Until Unicode 18 property tables ship, Han and Unicode case
+        // policies deliberately never claim a positive validation result.
+        assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("中文")));
+        assert!(!ok("type H = string with chars uppercase;").accepts(Candidate::Str("ABC")));
+    }
+
+    #[test]
+    fn string_policy_invalid_syntax_rejected() {
+        for source in [
+            "type Bad = int with chars ascii_letters;",
+            "type Bad = int with min_length 1;",
+            "type Bad = string with min_length 5 and max_length 4;",
+            "type Bad = string with chars ascii_letters and chars han;",
+            "type Bad = string with chars letters;",
+            "type Bad = string with chars [A-Z];",
+            "type Bad = string with min_length -1;",
+            "type Bad = string with chars ascii_letters or chars han;",
+        ] {
+            assert!(parse(source).is_err(), "accepted {source}");
         }
     }
 
