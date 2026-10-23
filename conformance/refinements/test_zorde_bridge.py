@@ -1,4 +1,6 @@
 import unittest
+import json
+from pathlib import Path
 
 from conformance.refinements.reference import parse, ConstraintSyntaxError
 from conformance.refinements.zorde_bridge import to_zorde_descriptor
@@ -14,6 +16,18 @@ class ZordeBridgeTests(unittest.TestCase):
         self.assertEqual(d["property"], "length")
         self.assertEqual(d["excluded"], [])
         self.assertEqual(d["length_semantics"], "unicode_scalar_values")
+
+    def test_exact_fixture_matches_zorde_contract(self):
+        fixture = (Path(__file__).resolve().parents[2] /
+                   "fixtures/refinement-v1/zorde-code-0-5.json")
+        expected = json.loads(fixture.read_text(encoding="utf-8"))
+        for source in (
+            "define type Code = int with min 0 and max 5;",
+            "type Code = int with value gte 0 and value lte 5;",
+            "@Range(min=0,max=5) type Code = int;",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(to_zorde_descriptor(parse(source)), expected)
 
     def test_integer_shorthand_same_zorde_descriptor_and_outcomes(self):
         shorthand = parse("define type Code = int with min 0 and max 5;")
