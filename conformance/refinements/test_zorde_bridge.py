@@ -69,6 +69,60 @@ class ZordeBridgeTests(unittest.TestCase):
         self.assertFalse(positive.accepts(-1))
         self.assertEqual(to_zorde_descriptor(positive)["minimum"], 1)
 
+    def test_string_v2_charset_descriptor_matches_shared_zorde_fixture(self):
+        fixture = (Path(__file__).resolve().parents[2] /
+                   "fixtures/refinement-v1/zorde-english-letters-2-4-v2.json")
+        expected = json.loads(fixture.read_text(encoding="utf-8"))
+        samples = (
+            "define type English = string with min_length 2 and max_length 4 "
+            "and chars ascii_letters;",
+            "type English = string with length gte 2 and length lte 4 "
+            "and chars ascii_letters;",
+            "@Size(min=2,max=4) type English = string with chars ascii_letters;",
+        )
+        for source in samples:
+            with self.subTest(source=source):
+                refined = parse(source)
+                self.assertEqual(to_zorde_descriptor(refined), expected)
+                for value, valid in (
+                    ("AB", True), ("aBc", True), ("A", False),
+                    ("ABCDE", False), ("A1", False), ("éA", False),
+                    ("中A", False), ("😀", False), (3, False),
+                ):
+                    self.assertEqual(refined.accepts(value), valid)
+
+    def test_strict_ascii_case_and_reserved_unicode_policies(self):
+        upper = parse("type U = string with chars ascii_uppercase;")
+        lower = parse("type L = string with chars ascii_lowercase;")
+        self.assertTrue(upper.accepts("ABC"))
+        self.assertFalse(upper.accepts("ABc"))
+        self.assertFalse(upper.accepts("A1"))
+        self.assertTrue(lower.accepts("abc"))
+        self.assertFalse(lower.accepts("Abc"))
+        self.assertFalse(lower.accepts("é"))
+        for policy, value in (("uppercase", "ABC"), ("lowercase", "abc"),
+                              ("han", "中文")):
+            refined = parse("type S = string with chars " + policy + ";")
+            d = to_zorde_descriptor(refined)
+            self.assertEqual(d["schema"], "zorde.scalar/v2")
+            self.assertEqual(d["unicode_version"], "18.0.0")
+            self.assertIn("verified_ucd_18_0_0_tables", d["runtime_requirements"])
+            with self.assertRaises(ConstraintSyntaxError):
+                refined.accepts(value)
+
+    def test_invalid_string_policy_combinations(self):
+        for source in (
+            "type S = int with chars ascii_letters;",
+            "type S = string with chars ascii_letters and chars han;",
+            "type S = string with min_length 4 and max_length 3;",
+            "type S = string with min_length -1;",
+            "type S = string with chars chinese;",
+            "type S = string with chars english;",
+            "type S = string with chars ascii_letters or chars han;",
+        ):
+            with self.subTest(source=source), self.assertRaises(ConstraintSyntaxError):
+                parse(source)
+
     def test_exact_length_annotation(self):
         d = to_zorde_descriptor(
             parse("@Size(min=10, max=10) type Exact10 = string;")
