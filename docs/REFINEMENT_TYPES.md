@@ -40,6 +40,33 @@ type Percentage = int with value gte 0 and value lte 100;
 type SmallMap = Map[string, int] with size lte 100;
 ```
 
+For numeric `int` refinements only, the short spelling `with min 0 and max 5`
+is a closed-world synonym for `with value gte 0 and value lte 5`.
+It is inclusive at both ends; 0 and 5 are admitted, -1 and 6 rejected.
+The normalizer emits the **same predicate graph and Zorde `zorde.scalar/v1`
+descriptor/fingerprint** as `@Range(min=0,max=5)` and the compiler-admitted
+static builder `Zorde.int().min(0).max(5)`. This is intentionally *not* a
+general English-language refinement DSL. `int as positive integer` is
+unsupported: `as` remains a distinct conversion/typing operator.
+Write strict positivity as `int with value gt 0` (zero excluded), or
+nonnegativity as `int with min 0`.
+
+The preceding examples are contracts for future Java/LLVM type checking;
+`declare type Code;` must resolve against the **whole final definition**
+including its refinement, not first bind to unconstrained `int` and lose
+bounds. A call to `identity(Code value): Code` receives proven valid `Code`.
+A raw arbitrary `int` cannot implicitly become `Code`: invalid constants
+must fail compilation, and dynamic inputs require explicit checked
+construction with a Zorde validation result. Until a backend can preserve
+this invariant through parameters, returns, borrowing, serialization,
+actor hops and code generation, it must reject the refined source. Mere
+syntax acceptance or runtime `bool` validation is not a proof token.
+
+The source-free Rust and Python reference oracles have the shorthand
+normalization; this does not imply Java/LLVM compiler support. The Zorde
+runtime exact-int report helper is staged separately. Generated typed
+validation and authoritative `Valid<T, SchemaId>` remain release-gated.
+
 The supported comparison tokens are `eq`/`==`, `ne`/`!=`, `gt`/`>`, `gte`/`>=`, `lt`/`<`, `lte`/`<=`. `ge` and `le` are not accepted aliases. No other textual aliases are implicit.
 
 Both canonical forms are valid, for example:
