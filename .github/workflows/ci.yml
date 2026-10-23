@@ -21,10 +21,16 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Reachability report validator tests
+      - name: Python contract tests still awaiting Rust migration
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-      - name: Compile Python contract tools
+      - name: Compile remaining Python contract tools
         run: python3 -m py_compile scripts/*.py
+      - name: Format and lint Rust IPC models
+        run: |
+          cargo fmt --manifest-path tools/ipc-models/Cargo.toml -- --check
+          cargo clippy --offline --manifest-path tools/ipc-models/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust IPC receipt and delivery models
+        run: cargo test --offline --manifest-path tools/ipc-models/Cargo.toml
       - name: Format and lint Rust recovery register gate
         run: |
           cargo fmt --manifest-path tools/recovery-register/Cargo.toml -- --check
