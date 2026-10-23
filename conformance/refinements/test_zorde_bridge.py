@@ -15,6 +15,46 @@ class ZordeBridgeTests(unittest.TestCase):
         self.assertEqual(d["excluded"], [])
         self.assertEqual(d["length_semantics"], "unicode_scalar_values")
 
+    def test_integer_shorthand_same_zorde_descriptor_and_outcomes(self):
+        shorthand = parse("define type Code = int with min 0 and max 5;")
+        canonical = parse("type Code = int with value gte 0 and value lte 5;")
+        annotated = parse("@Range(min=0,max=5) type Code = int;")
+        descriptors = [to_zorde_descriptor(v) for v in
+                       (shorthand, canonical, annotated)]
+        self.assertEqual(descriptors[0], descriptors[1])
+        self.assertEqual(descriptors[1], descriptors[2])
+        self.assertEqual(descriptors[0]["schema"], "zorde.scalar/v1")
+        self.assertEqual(descriptors[0]["minimum"], 0)
+        self.assertEqual(descriptors[0]["maximum"], 5)
+        self.assertEqual(descriptors[0]["excluded"], [])
+        self.assertIn("exact_signed_int64", descriptors[0]["runtime_requirements"])
+        self.assertIn("no_float_coercion", descriptors[0]["runtime_requirements"])
+        for value in (-1, 0, 1, 4, 5, 6, True, 1.0):
+            decisions = [v.accepts(value) for v in
+                         (shorthand, canonical, annotated)]
+            self.assertEqual(decisions, [0 <= value <= 5
+                             if type(value) is int else False] * 3)
+
+    def test_shorthand_rejects_unsafe_or_ambiguous_forms(self):
+        for source in (
+            "define type Bad = int with min 5 and max 0;",
+            "type Bad = string with min 0 and max 5;",
+            "type Bad = int with min 0 or max 5;",
+            "type Bad = int with min 0; evil()",
+            "type Bad = int with min foo();",
+            "type Bad = int with min -9223372036854775809;",
+            "define type Bad = int as positive integer;",
+        ):
+            with self.subTest(source=source), self.assertRaises(ConstraintSyntaxError):
+                parse(source)
+
+    def test_positive_is_strict_and_zero_is_not_positive(self):
+        positive = parse("define type Positive = int with value gt 0;")
+        self.assertFalse(positive.accepts(0))
+        self.assertTrue(positive.accepts(1))
+        self.assertFalse(positive.accepts(-1))
+        self.assertEqual(to_zorde_descriptor(positive)["minimum"], 1)
+
     def test_exact_length_annotation(self):
         d = to_zorde_descriptor(
             parse("@Size(min=10, max=10) type Exact10 = string;")
