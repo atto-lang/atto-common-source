@@ -91,6 +91,21 @@ class ZordeBridgeTests(unittest.TestCase):
                 ):
                     self.assertEqual(refined.accepts(value), valid)
 
+    def test_han_v2_schema_fingerprint_and_exact_64bit_bounds(self):
+        path = (Path(__file__).resolve().parents[2] /
+                "fixtures/refinement-v1/zorde-han-nonempty-v2.json")
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["maximum"], (1 << 63) - 1)
+        self.assertEqual(manifest["fingerprint"],
+                         "72c95e512c6e377ec6d4d2a16fcd18b88f2c84abe2d95f01cdc144d6e57061cc")
+        for source in (
+            "define type HanText = string with min_length 1 and chars han;",
+            "type HanText = string with length gte 1 and chars han;",
+            "@MinLength(1) type HanText = string with chars han;",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(to_zorde_descriptor(parse(source)), manifest)
+
     def test_han_ucd18_manifest_exactly_matches_reference(self):
         from conformance.refinements.reference import HAN_UCD_18
         path = (Path(__file__).resolve().parents[2] /
