@@ -65,6 +65,12 @@ For the **eventual** unified syntax, accept `define pub TYPE` and, where a legac
 
 The source-free oracle under `tests/type-adt-contract.test.mjs` checks **only the contract and finite/symbolic model**. It does not parse or execute Oreslang, prove source/typechecker integration, or replace fuzzing/model checking.
 
+## Observed cross-source contradiction: plain `match` ordering
+
+The Java language document describes ordinary `match` as **exclusive-by-default**, with `match first` as an explicit ordered escape hatch. Current Java `TypeChecker.checkMatch` instead states that "Match is ordered. Overlap is valid" and its existing test corpus admits guarded overlaps in plain `match`. This is an observed **spec/compiler disagreement**; the source-free oracle does not settle it. Do not silently change existing guest behavior or claim exclusive matching. Reconcile the grammar, parser AST flag, arm-ambiguity analysis, docs, formatter and actual guest execution in a migration PR; add negative overlapping-arm tests for the eventual exclusive mode and positive ordered tests for `match first`. Keep the gate open until compiled source tests confirm the chosen semantics.
+
+The reference oracle's descriptor identity checks are plain **data comparison**, not cryptographic provenance or unforgeable compiler-origin authority. Runtime constructor authenticity still requires trusted linker/runtime tags and boundary checks.
+
 ## Compile/release gate — fail closed per backend
 
 For each declaration family, use the matrix `source syntax => parsed AST => resolved identity => typed HIR => ownership/effects => guest construction => pattern and serialization => AOT/native parity`. All gates default to NOT VERIFIED, separately for Java/Graal JVM, Native Image/hybrid, LLVM/native, WASM, .NET, Forge and JS. Merely finding a prototype runtime type does not pass a source gate.
