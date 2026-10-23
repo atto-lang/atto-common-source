@@ -99,7 +99,7 @@ define type Handle = string with min_length 3 and max_length 32
 define type UpperCode = string with min_length 1 and chars ascii_uppercase;
 define type LowerCode = string with min_length 1 and chars ascii_lowercase;
 
-// Unicode 18.0 data-dependent policies. Syntax reserved, NOT executable yet.
+// Unicode 18.0 character policies (Han has exact data; casing still gated).
 define type UpperUnicode = string with min_length 1 and chars uppercase;
 define type LowerUnicode = string with min_length 1 and chars lowercase;
 define type HanText = string with min_length 1 and chars han;
@@ -123,7 +123,7 @@ sentence descriptions. The fixed policy registry is:
 | `ascii_lowercase` | U+0061..U+007A, every scalar | Supported in source-free reference and Zorde report-only runtime |
 | `uppercase` | Unicode 18.0 `Uppercase` derived property, every scalar | Reserved: rejects verification until pinned tables exist |
 | `lowercase` | Unicode 18.0 `Lowercase` derived property, every scalar | Reserved: rejects verification until pinned tables exist |
-| `han` | Unicode 18.0 `Script=Han`, every scalar | Reserved: rejects verification until pinned tables exist |
+| `han` | Unicode 18.0 `Script=Han`, every scalar | Exact 25-range source-free reference and Zorde report validation; typed compiler lowering still gated |
 
 `chars han` is **not** a detector for the Chinese language. Han characters
 are also used in Japanese and other contexts. It excludes punctuation,
@@ -141,14 +141,14 @@ one normalized fingerprint. The source-free conformance fixture
 `fixtures/refinement-v1/zorde-english-letters-2-4-v2.json` is byte-identical
 to Zorde's native reference fixture and covers exact ASCII restrictions.
 
-Only the ASCII policies have report-validation implementation.
+ASCII and the Unicode 18.0 `Script=Han` policy have report-validation implementations. The Han table is copied from the exact 25 intervals of [Unicode 18.0 Scripts.txt](https://www.unicode.org/Public/18.0.0/ucd/Scripts.txt), including 103352 assigned scalars; it is **not** a loose CJK block match. Only Unicode uppercase/lowercase remain unverified.
 Neither a runtime report nor a matching schema hash may mint
 compiler-authoritative `Valid<T, SchemaId>`. Java and LLVM must reject
 all refined string aliases until typed HIR, checked conversion, generated
 validator dispatch, ownership/serialization verification and source-level
 execution are proven. Unicode-dependent modes **must not** fall back to the
 host JDK, Rust regex, Python or ICU versions: runtime Unicode tables are
-part of the schema/ABI and must match the pinned data *exactly*.
+part of the schema/ABI and must match the pinned data *exactly*. Han is now pinned to the canonical 25 Script ranges; general Unicode Uppercase/Lowercase remain disabled.
 
 ### 3. General pure predicates with `where`
 
