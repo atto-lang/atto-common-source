@@ -20,6 +20,16 @@ Every closed-world application backend SHOULD emit this manifest immediately aft
 - Backend-specific DCE may remove additional implementation-only helpers, but MUST NOT remove a semantic symbol that the manifest retains.
 - Backend-specific lowering MUST NOT resurrect a semantic symbol listed as removed.
 
+## Semantic symbol identity
+
+For the current cross-backend v1 profile, an unambiguous top-level declaration uses its lexical module-qualified semantic name, for example `__root__.main`, `__root__.helper`, or `A.foo`. `__root__` is the canonical synthetic module name for source outside an explicit module.
+
+The v1 contract does not yet standardize a cross-backend overload discriminator. A producer that cannot represent every admitted declaration with a unique shared semantic symbol MUST fail closed for manifest emission rather than leak a backend ABI encoding such as an LLVM-only symbol suffix. A future reviewed contract revision may standardize overload/generic-specialization identity without changing backend ABI names.
+
+A backend MUST also reject semantic-symbol collisions between different declaration kinds when the current lexical profile cannot disambiguate them.
+
+`scalar-direct-call.ores` and its adjacent JSON receipt are the minimal identical-source cross-backend parity fixture.
+
 ## Cross-backend use
 
 Java/GraalVM, LLVM/native, Wasm, embedded/mobile/desktop, GPU, FPGA and ASIC backends compare this semantic manifest before their own target-specific lowering. A backend may attach a separate target report containing emitted bytes, sections, kernels, RTL modules or gates, but that report does not change semantic reachability.
