@@ -790,6 +790,16 @@ mod tests {
 
     #[test]
     fn ucd18_han_ranges_verify_count_and_boundaries() {
+        let source = include_str!("../../../fixtures/refinement-v1/unicode18-han-ranges.csv");
+        let manifest: Vec<(u32, u32)> = source
+            .lines()
+            .filter(|line| !line.starts_with('#') && !line.is_empty())
+            .map(|line| {
+                let (first, last) = line.split_once(',').expect("canonical Han interval");
+                (first.parse().expect("decimal start"), last.parse().expect("decimal end"))
+            })
+            .collect();
+        assert_eq!(manifest, HAN18_RANGES, "runtime must exactly match pinned UCD18 source");
         let total: u32 = HAN18_RANGES.iter().map(|&(a, b)| b - a + 1).sum();
         assert_eq!(HAN18_RANGES.len(), 25);
         assert_eq!(total, 103352);
