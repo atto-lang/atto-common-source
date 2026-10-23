@@ -74,7 +74,8 @@ class OfflineParityEvidenceTests(unittest.TestCase):
 
     def check(self):
         return checker.compare(self.contract,self.java,self.llvm,
-                               self.java_run,self.java_jobs,self.llvm_run,self.llvm_jobs)
+                               self.java_run,self.java_jobs,self.llvm_run,self.llvm_jobs,
+                               self.java_run["head_sha"], self.llvm_run["head_sha"])
 
     def test_synthetic_records_are_consistent_but_never_attested(self):
         self.assertEqual(self.check()["status"],
@@ -90,6 +91,23 @@ class OfflineParityEvidenceTests(unittest.TestCase):
                 else:job["conclusion"]="skipped"
                 with self.assertRaises(checker.EvidenceError):self.check()
                 self.llvm_jobs=old
+
+    def test_replay_of_old_green_run_rejects_against_current_head(self):
+        # Passing a prior *successful* run is not valid when the audited
+        # source branch has advanced to a new exact commit.
+        self.assertEqual(self.check()["cases"],24)
+        with self.assertRaises(checker.EvidenceError):
+            checker.compare(self.contract,self.java,self.llvm,
+                            self.java_run,self.java_jobs,self.llvm_run,self.llvm_jobs,
+                            "c"*40,self.llvm_run["head_sha"])
+        with self.assertRaises(checker.EvidenceError):
+            checker.compare(self.contract,self.java,self.llvm,
+                            self.java_run,self.java_jobs,self.llvm_run,self.llvm_jobs,
+                            self.java_run["head_sha"],"d"*40)
+        with self.assertRaises(checker.EvidenceError):
+            checker.compare(self.contract,self.java,self.llvm,
+                            self.java_run,self.java_jobs,self.llvm_run,self.llvm_jobs,
+                            "not-a-sha",self.llvm_run["head_sha"])
 
     def test_wrong_head_and_wrong_run_status_reject(self):
         self.java_jobs["jobs"][0]["head_sha"]="0"*40
@@ -112,7 +130,8 @@ class OfflineParityEvidenceTests(unittest.TestCase):
             with self.subTest(mutation=mutation):
                 with self.assertRaises(checker.EvidenceError):
                     checker.compare(self.contract,java,llvm,self.java_run,
-                                    self.java_jobs,self.llvm_run,self.llvm_jobs)
+                                    self.java_jobs,self.llvm_run,self.llvm_jobs,
+                                    self.java_run["head_sha"],self.llvm_run["head_sha"])
 
     def test_missing_or_wrong_java_guest_source_blob_rejects(self):
         original=self.java["guestSourceGitBlob"]
@@ -145,7 +164,8 @@ class OfflineParityEvidenceTests(unittest.TestCase):
         raw=self.contract.replace(b'"schemaVersion":1',b'"schemaVersion":2')
         with self.assertRaises(checker.EvidenceError):
             checker.compare(raw,self.java,self.llvm,self.java_run,self.java_jobs,
-                            self.llvm_run,self.llvm_jobs)
+                            self.llvm_run,self.llvm_jobs,
+                            self.java_run["head_sha"], self.llvm_run["head_sha"])
 
     def test_noncanonical_and_out_of_range_i64_reject(self):
         for value in ("-0","+1","01","9223372036854775808",
