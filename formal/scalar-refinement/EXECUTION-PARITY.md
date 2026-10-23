@@ -39,7 +39,9 @@ python3 scripts/verify_core_math_execution.py \
   --java-run evidence/java/run.json \
   --java-jobs evidence/java/jobs.json \
   --llvm-run evidence/llvm/run.json \
-  --llvm-jobs evidence/llvm/jobs.json
+  --llvm-jobs evidence/llvm/jobs.json \
+  --expected-java-head CURRENT_INDEPENDENTLY_VERIFIED_FULL_40_CHAR_SOURCE_SHA \
+  --expected-llvm-head CURRENT_INDEPENDENTLY_VERIFIED_FULL_40_CHAR_SOURCE_SHA
 ```
 
 **This script does not fetch GitHub or authenticate arbitrary JSON provided
@@ -68,3 +70,34 @@ python3 -m unittest discover -s tests -p test_core_math_execution_evidence.py -v
 The next promotion gate is a working approved private runner, with real
 Java/LLVM compilation, Z3, actual guest execution, independently retrieved
 GitHub run/jobs metadata, artifact integrity validation and human review.
+
+## Current CI authorization and release state (October 22, 2026)
+
+The semantic-result gate now **requires both exact currently reviewed 40-character
+source head commit SHAs**, supplied using `--expected-java-head` and
+`--expected-llvm-head`. A previously successful but stale workflow run does not
+certify a newer compiler revision. The gate also rejects missing or mismatched
+GitHub Actions `run_attempt` values; it does not substitute the newest attempt
+or a fabricated job ID.
+
+A successful **source-free** private GraalVM JDK25 probe was observed in
+`sonus-auris-test/clients-api-contract`,
+[run 39812526084](https://github.com/sonus-auris-test/clients-api-contract/actions/runs/39812526084),
+with runner `1000002375` and five completed steps. Its separate
+[carrier security run 39812526014](https://github.com/sonus-auris-test/clients-api-contract/actions/runs/39812526014)
+executed source-free verifier tests but rejected the unapproved dispatcher
+before source checkout. This demonstrates **some JDK25 runner capacity at that
+time**, not available current minutes, full Maven build capacity, or permission
+to transfer private source. The source
+[approval policy](https://github.com/ores-truffle-oreslang/oreslang-source.java/blob/main/.github/private-ci-approved-repositories.txt)
+still contains **no active noncomment destination entries**. Cross-org
+private-source export is therefore denied. Do not bypass the reviewed V3
+publisher or overwrite an unrelated project repository with source Git blobs.
+
+The previously draft
+[Java checked-AST PR #1885](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1885)
+was **merged** on October 22, 2026 as `7eb4a6bc2211d7da9850bf3554639ff2f65dedaf`,
+while its head-run JUnit/Z3 and guest-math jobs still showed `runner_id:0`
+and `steps:[]`. **A merge is not a passing proof.** This module must
+remain fail closed until exact-current-source independently witnessed
+backend execution and solver receipts have passed.
