@@ -213,7 +213,13 @@ def validate_run(backend, run, jobs):
     return {"run_id": run["id"],"job_id":job["id"],
             "runner_id":job["runner_id"],"head_sha":run["head_sha"]}
 
-def compare(contract_raw, java, llvm, java_run, java_jobs, llvm_run, llvm_jobs):
+def compare(contract_raw, java, llvm, java_run, java_jobs, llvm_run, llvm_jobs,
+            expected_java_head, expected_llvm_head):
+    for identity, head in (("java", expected_java_head), ("llvm", expected_llvm_head)):
+        require(type(head) is str and SHA.fullmatch(head) is not None,
+                "missing exact expected " + identity + " source head")
+    require(expected_java_head != expected_llvm_head,
+            "same source head supplied for distinct compiler repositories")
     try:
         parsed = json.loads(contract_raw.decode("utf8"), object_pairs_hook=unique_pairs)
     except (ValueError, UnicodeError) as e:
@@ -223,7 +229,9 @@ def compare(contract_raw, java, llvm, java_run, java_jobs, llvm_run, llvm_jobs):
     validate_llvm(llvm,cases)
     j = validate_run("graal",java_run,java_jobs)
     l = validate_run("llvm",llvm_run,llvm_jobs)
-    require(j["head_sha"] != l["head_sha"], "unexpected shared backend commit identity")
+    require(j["head_sha"] == expected_java_head and
+            l["head_sha"] == expected_llvm_head,
+            "run does not match independently checked exact compiler source heads")
     return {"contract_git_blob":CONTRACT_GIT_BLOB, "cases":len(cases),
             "graal":j,"llvm":l,"status":"record-consistent-not-cryptographically-attested"}
 
@@ -232,12 +240,15 @@ def main(argv=None):
     for name in ("contract","java-results","llvm-results","java-run","java-jobs",
                  "llvm-run","llvm-jobs"):
         parser.add_argument("--"+name,required=True,type=Path)
+    parser.add_argument("--expected-java-head", required=True)
+    parser.add_argument("--expected-llvm-head", required=True)
     opts=parser.parse_args(argv)
     try:
         result=compare(opts.contract.read_bytes(),read_json(opts.java_results),
                        read_json(opts.llvm_results),read_json(opts.java_run),
                        read_json(opts.java_jobs),read_json(opts.llvm_run),
-                       read_json(opts.llvm_jobs))
+                       read_json(opts.llvm_jobs),
+                       opts.expected_java_head, opts.expected_llvm_head)
     except (EvidenceError,OSError,UnicodeError,ValueError) as e:
         print("CORE_MATH_PARITY_UNVERIFIED: "+str(e),file=sys.stderr)
         return 1
