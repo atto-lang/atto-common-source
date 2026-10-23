@@ -88,6 +88,68 @@ type Contradiction = string with length gt 10 and length lt 5; // error
 
 Static normalization intersects known intervals and equalities, rejects impossible conjunctions, and checks entailment without needing general theorem proving.
 
+### Character set and length policies (v2, staged)
+
+String refinements reuse the **same** `with` conjunction syntax and Zorde
+validation pipeline. These are the proposed canonical source forms:
+
+```ores
+define type Handle = string with min_length 3 and max_length 32
+    and chars ascii_letters;
+define type UpperCode = string with min_length 1 and chars ascii_uppercase;
+define type LowerCode = string with min_length 1 and chars ascii_lowercase;
+
+// Unicode 18.0 data-dependent policies. Syntax reserved, NOT executable yet.
+define type UpperUnicode = string with min_length 1 and chars uppercase;
+define type LowerUnicode = string with min_length 1 and chars lowercase;
+define type HanText = string with min_length 1 and chars han;
+```
+
+`min_length N` and `max_length N` are exclusive to strings and normalize
+to `length gte N` and `length lte N`. All lengths count Unicode
+**scalar values**, not UTF-8 bytes, UTF-16 units or grapheme clusters.
+For example `😀` counts 1; `e\u0301` counts 2. Neither NFC nor case
+normalization is implicit.
+
+The character policy is a closed, single-valued grammar
+`chars <policy>`. Only one character policy may appear in a conjunctive
+`with` clause. String classes are **not** free-form regex, language or
+sentence descriptions. The fixed policy registry is:
+
+| Policy | Exact meaning | Current reference/Zorde status |
+| --- | --- | --- |
+| `ascii_letters` | U+0041..U+005A or U+0061..U+007A, every scalar | Supported in source-free reference and Zorde report-only runtime |
+| `ascii_uppercase` | U+0041..U+005A, every scalar | Supported in source-free reference and Zorde report-only runtime |
+| `ascii_lowercase` | U+0061..U+007A, every scalar | Supported in source-free reference and Zorde report-only runtime |
+| `uppercase` | Unicode 18.0 `Uppercase` derived property, every scalar | Reserved: rejects verification until pinned tables exist |
+| `lowercase` | Unicode 18.0 `Lowercase` derived property, every scalar | Reserved: rejects verification until pinned tables exist |
+| `han` | Unicode 18.0 `Script=Han`, every scalar | Reserved: rejects verification until pinned tables exist |
+
+`chars han` is **not** a detector for the Chinese language. Han characters
+are also used in Japanese and other contexts. It excludes punctuation,
+spacing and non-Han script code points; `Script_Extensions` or language
+identification would require separately named, independently verified
+policies. Because `chars` predicates are universal quantifications,
+an empty string satisfies a pure character policy. Add `min_length 1`
+when emptiness is forbidden.
+
+The v1 scalar length-only schema fingerprint/ABI remains unchanged.
+A character predicate introduces **`zorde.scalar/v2`**, including a
+`charset` and an explicit `unicode_version` for Unicode-backed policies.
+All syntax families emitting an equivalent character predicate share
+one normalized fingerprint. The source-free conformance fixture
+`fixtures/refinement-v1/zorde-english-letters-2-4-v2.json` is byte-identical
+to Zorde's native reference fixture and covers exact ASCII restrictions.
+
+Only the ASCII policies have report-validation implementation.
+Neither a runtime report nor a matching schema hash may mint
+compiler-authoritative `Valid<T, SchemaId>`. Java and LLVM must reject
+all refined string aliases until typed HIR, checked conversion, generated
+validator dispatch, ownership/serialization verification and source-level
+execution are proven. Unicode-dependent modes **must not** fall back to the
+host JDK, Rust regex, Python or ICU versions: runtime Unicode tables are
+part of the schema/ABI and must match the pinned data *exactly*.
+
 ### 3. General pure predicates with `where`
 
 ```ores
