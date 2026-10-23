@@ -17,7 +17,7 @@ A named declaration can (a) introduce a nominal or structural **type**, (b) intr
 * Variants such as `abstract`, `sealed`, `final`, `shared`, `pub`, `pub(file)` and `pub(pkg)` are modifiers/visibility, NOT additional data-type categories. `fnc`/lambdas are callable values and function types, not an additional `define` aggregate family.
 * No user-declared kind has automatically reified type-object authority. Any future `Type<T>` reflection must be explicitly proposed and capability-gated.
 
-### Forward declaration grammar target (not currently advertised as merged)
+### Forward declarations (Java source implementation exists; cross-backend execution not verified)
 
 ```ores
 declare type UserId;
@@ -28,7 +28,7 @@ declare interface Named;
 declare pub interface PublicNamed;
 ```
 
-`declare` reserves an **unresolved compile-time type-level name**, never a runtime object or a default/zero value. It is allowed **only** for `type`, `trait`, and `interface` in v1. No `declare class`, `declare enum`, `declare actor`, `declare newtype`, `declare supervisor`, or `declare model` until a separately reviewed ABI/forward-construction RFC. Multiple compatible references to one declaration may coalesce, but every reachable exported declaration must resolve exactly once to a definition with identical fully qualified identity, visibility, generic arity/variance, bound signatures and module authority. Reject ambiguous or missing resolutions, circular aliases with no productive indirection, imported shadowing, or visibility widening. Never permit a declaration to satisfy an implementation or serialization requirement.
+Java mainline already parses, resolves and has JUnit source tests for same-file `declare [pub] type|trait|interface`; current runner execution has **not** been verified. `declare` reserves an **unresolved compile-time type-level name**, never a runtime object or a default/zero value. It is allowed **only** for `type`, `trait`, and `interface` in v1. No `declare class`, `declare enum`, `declare actor`, `declare newtype`, `declare supervisor`, or `declare model` until a separately reviewed ABI/forward-construction RFC. Multiple compatible references to one declaration may coalesce, but every reachable exported declaration must resolve exactly once to a definition with identical fully qualified identity, visibility, generic arity/variance, bound signatures and module authority. Reject ambiguous or missing resolutions, circular aliases with no productive indirection, imported shadowing, or visibility widening. Never permit a declaration to satisfy an implementation or serialization requirement.
 
 For the **eventual** unified syntax, accept `define pub TYPE` and, where a legacy compiler supports it, `pub define TYPE` as equivalent, with formatter canonicalization to `define pub TYPE`. This is *not* a claim the Java parser already accepts these forms. Existing `define interface` and `define contract` stay type-only even if introduced with `define`; the keyword does **not** imply runtime instantiability.
 
@@ -41,6 +41,9 @@ For the **eventual** unified syntax, accept `define pub TYPE` and, where a legac
 5. `any` may carry an explicitly authenticated dynamic payload; `unknown` requires validation before trusted typed use. Neither allows nominal fabrication, hidden property access, forged method dictionaries, or unchecked ownership weakening.
 6. Generic instance identity and bounds survive imports; variance defaults to **invariant** where mutability/ownership makes variance unsafe. `Option<T>` and `Result<T,E>` are not automatically sendable/serializable if their active payload is not.
 7. Recursive types require finite-by-value layout: an unboxed `Node(Node)` cycle is invalid unless broken by a proven indirect owner/reference with defined lifetime. Static structural aliases must not bypass this check.
+
+
+Type and generic declaration binders must never use `_`, which is an inference/wildcard placeholder; see Java draft compiler hardening PR #1974. Only actual declared names can establish nominal or generic identity.
 
 ## Tagged sums and exhaustive matching
 
