@@ -7,28 +7,29 @@
     "spelling-proposed": "Kind exists in language design, but requested define spelling is not in published Java grammar",
     "draft": "Integration is staged/in progress; do not infer merged executable support",
     "prototype": "Foundation exists but full source semantics are not integrated",
-    "proposed": "Prospective syntax or semantics only"
+    "proposed": "Prospective syntax or semantics only",
+    "implemented-java-source": "Java mainline parser and relevant JUnit source tests exist; this does not establish currently executed CI, backend support or released toolchain behavior"
   },
-  "declaration_rule": "define is a declaration introducer; declare introduces a non-instantiable unresolved type-level signature only",
+  "declaration_rule": "define introduces named kinds; Java already implements same-file forward signatures with contextual declare for type/trait/interface (no runtime value allocation). Other backends still require guest execution receipts",
   "export_rule": "declare pub X and define pub X express public visibility; visibility must not widen during resolution",
   "forward_declarations": [
     {
       "kind": "type",
       "private_form": "declare type Name;",
       "public_form": "declare pub type Name;",
-      "status": "proposed"
+      "status": "implemented-java-source"
     },
     {
       "kind": "trait",
       "private_form": "declare trait Name;",
       "public_form": "declare pub trait Name;",
-      "status": "proposed"
+      "status": "implemented-java-source"
     },
     {
       "kind": "interface",
       "private_form": "declare interface Name;",
       "public_form": "declare pub interface Name;",
-      "status": "proposed"
+      "status": "implemented-java-source"
     }
   ],
   "declaration_kinds": [
@@ -46,7 +47,7 @@
       "semantic_class": "concrete",
       "declares_runtime_instance": true,
       "reifiable_type_object": false,
-      "source_status": "spelling-proposed"
+      "source_status": "implemented-java-source"
     },
     {
       "kind": "supervisor_actor",
@@ -118,7 +119,7 @@
       "semantic_class": "contract",
       "declares_runtime_instance": false,
       "reifiable_type_object": false,
-      "source_status": "prototype"
+      "source_status": "implemented-java-source"
     },
     {
       "kind": "contract",
@@ -134,7 +135,7 @@
       "semantic_class": "alias",
       "declares_runtime_instance": false,
       "reifiable_type_object": false,
-      "source_status": "spelling-proposed"
+      "source_status": "implemented-java-source"
     },
     {
       "kind": "pattern",
@@ -162,7 +163,7 @@
     }
   ],
   "backend_evidence": {
-    "java": "not-verified-for-this-contract",
+    "java": "Java parser and source tests inspected; actual CI execution not verified",
     "llvm": "not-verified-for-this-contract",
     "other": "not-verified-for-this-contract"
   }
