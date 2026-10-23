@@ -17,6 +17,23 @@ class StaticSchemaFirstParityTests(unittest.TestCase):
             accepted = [schema.accepts(n) for schema in examples]
             self.assertEqual(accepted, [accepted[0]] * len(accepted))
 
+    def test_zorde_integer_builder_matches_with_min_max_shorthand(self):
+        examples = [
+            infer_schema("Code", "Zorde.int().min(0).max(5)"),
+            parse("@Range(min=0,max=5) type Code = int;"),
+            parse("define type Code = int with min 0 and max 5;"),
+            parse("type Code = int with value gte 0 and value lte 5;"),
+        ]
+        fingerprints = {descriptor(schema).fingerprint for schema in examples}
+        self.assertEqual(fingerprints, {
+            "827510a6eea2d9be501904db2a1ce1f840bb37d0ae8424db074edd24189673b2"
+        })
+        for candidate in (-1, 0, 3, 5, 6, 1.0, True):
+            self.assertEqual(
+                [schema.accepts(candidate) for schema in examples],
+                [type(candidate) is int and 0 <= candidate <= 5] * len(examples)
+            )
+
     def test_length_emoji_parity(self):
         a = infer_schema("Name", "Zorde.string().minLength(1).maxLength(32)")
         b = parse("@MinLength(1) @MaxLength(32) type Name = string;")
