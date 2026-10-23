@@ -116,7 +116,11 @@ impl Refined {
 
 fn cmp_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"^\s*(length|value|min|max)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)?\s*(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+    R.get_or_init(|| Regex::new(r"^\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+}
+fn short_bound_re() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"^\s*(min|max)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
 }
 fn decl_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
@@ -349,31 +353,31 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
     let mut predicates = annotations;
     if let Some(clause) = clause {
         for term in and_re().split(clause.trim()) {
-            let Some(c) = cmp_re().captures(term) else {
-                return Err(syntax("unsupported with expression"));
-            };
-            let property_token = c.get(1).unwrap().as_str();
-            let operator_token = c.get(2).map(|value| value.as_str());
-            // `with min 0 and max 5` is only closed-world sugar for
-            // `with value gte 0 and value lte 5`. There is no natural
-            // language / user-named validator in this clause.
-            let (constraint_property, op) = match property_token {
-                "min" | "max" => {
-                    if base != Base::Int || operator_token.is_some() {
-                        return Err(syntax("min/max shorthand requires integer base and no comparator"));
+            // Two disjoint grammars avoid treating `min0` or
+            // `min gte 0` as valid shorthand.
+            let (constraint_property, op, bound) =
+                if let Some(c) = cmp_re().captures(term) {
+                    (
+                        property(c.get(1).unwrap().as_str()).unwrap(),
+                        op_alias(c.get(2).unwrap().as_str()).unwrap(),
+                        parse_bound(c.get(3).unwrap().as_str())?,
+                    )
+                } else if let Some(c) = short_bound_re().captures(term) {
+                    if base != Base::Int {
+                        return Err(syntax("min/max shorthand requires integer base"));
                     }
-                    (Property::Value, if property_token == "min" { Op::Gte } else { Op::Lte })
-                }
-                _ => {
-                    let comparator = operator_token.ok_or_else(|| syntax("missing comparison operator"))?;
-                    (property(property_token).unwrap(),
-                     op_alias(comparator).ok_or_else(|| syntax("invalid comparison operator"))?)
-                }
-            };
+                    (
+                        Property::Value,
+                        if c.get(1).unwrap().as_str() == "min" { Op::Gte } else { Op::Lte },
+                        parse_bound(c.get(2).unwrap().as_str())?,
+                    )
+                } else {
+                    return Err(syntax("unsupported with expression"));
+                };
             predicates.push(Predicate {
                 property: constraint_property,
                 op,
-                bound: parse_bound(c.get(3).unwrap().as_str())?,
+                bound,
             });
         }
     }
@@ -644,6 +648,8 @@ mod tests {
             "type No = int with min gte 0;",
             "type No = int with max <= 5;",
             "type No = int with min x;",
+            "type No = int with min0;",
+            "type No = int with min gte 0;",
             "type No = int with min 0 or max 5;",
             "type No = int with min 0; trailing",
             "type No = int with min -9223372036854775809;",
