@@ -28,6 +28,7 @@ class Refined:
     base: str
     nominal: bool
     predicates: tuple[Predicate, ...]
+    charset: str = "any"
 
     def accepts(self, value: object) -> bool:
         if self.base == "int":
@@ -40,12 +41,20 @@ class Refined:
             if any(0xD800 <= ord(ch) <= 0xDFFF for ch in value):
                 return False
             actual = len(value)
+            if self.charset in ("uppercase", "lowercase", "han"):
+                # Unicode property profiles require version-pinned generated
+                # UCD 18.0 tables. No host-dependent fallback is authoritative.
+                raise ConstraintSyntaxError("Unicode character policy is not yet verified")
+            if not _chars_accept(value, self.charset):
+                return False
         else:
             return False
         return all(_test(actual, p) for p in self.predicates)
 
     def entails(self, other: "Refined") -> bool:
         if self.base != other.base:
+            return False
+        if self.charset != other.charset and other.charset != "any":
             return False
         if (self.nominal or other.nominal) and not (
             self.nominal and other.nominal and self.name == other.name
@@ -81,11 +90,27 @@ COMPARISON = re.compile(
     rf"\s*({INTEGER})\s*\Z"
 )
 SHORTHAND = re.compile(rf"\s*(min|max)\s+({INTEGER})\s*\Z")
+LENGTH_SHORTHAND = re.compile(rf"\s*(min_length|max_length)\s+({INTEGER})\s*\Z")
+CHAR_POLICY = re.compile(
+    r"\s*chars\s+(ascii_letters|ascii_uppercase|ascii_lowercase|uppercase|lowercase|han)\s*\Z"
+)
 ANNOTATION = re.compile(
     rf"\s*@([A-Za-z_][A-Za-z_0-9]*)(?:\s*\(([^()]*)\))?"
 )
 POS_ARG = re.compile(rf"\s*({INTEGER})\s*\Z")
 NAMED_ARG = re.compile(rf"\s*(min|max|eq)\s*=\s*({INTEGER})\s*\Z")
+
+
+def _chars_accept(value: str, charset: str) -> bool:
+    if charset == "any":
+        return True
+    if charset == "ascii_letters":
+        return all(("A" <= ch <= "Z") or ("a" <= ch <= "z") for ch in value)
+    if charset == "ascii_uppercase":
+        return all("A" <= ch <= "Z" for ch in value)
+    if charset == "ascii_lowercase":
+        return all("a" <= ch <= "z" for ch in value)
+    raise ConstraintSyntaxError("unknown character policy")
 
 
 def _number(raw: str) -> int:
@@ -185,6 +210,7 @@ def parse(source: str) -> Refined:
         raise ConstraintSyntaxError("unsupported refinement declaration")
     name, base, with_clause = m.groups()
     predicates: list[Predicate] = []
+    charset = "any"
     expected = "value" if base == "int" else "length"
     for ann, args in annotations:
         if ann == "NotEmpty":
@@ -221,9 +247,22 @@ def parse(source: str) -> Refined:
                                             "gte" if boundary == "min" else "lte",
                                             _number(number)))
                 continue
+            c = LENGTH_SHORTHAND.fullmatch(clause)
+            if c is not None and base == "string":
+                boundary, number = c.groups()
+                predicates.append(Predicate("length",
+                                            "gte" if boundary == "min_length" else "lte",
+                                            _number(number)))
+                continue
+            c = CHAR_POLICY.fullmatch(clause)
+            if c is not None and base == "string":
+                if charset != "any":
+                    raise ConstraintSyntaxError("duplicate character policy")
+                charset = c[1]
+                continue
             raise ConstraintSyntaxError("unsupported with expression")
-    if not predicates and not nominal:
+    if not predicates and not nominal and charset == "any":
         raise ConstraintSyntaxError("missing refinement")
     frozen = tuple(predicates)
     _bounds(frozen, base)
-    return Refined(name, base, nominal, frozen)
+    return Refined(name, base, nominal, frozen, charset)
