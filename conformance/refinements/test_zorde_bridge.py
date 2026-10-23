@@ -91,6 +91,22 @@ class ZordeBridgeTests(unittest.TestCase):
                 ):
                     self.assertEqual(refined.accepts(value), valid)
 
+    def test_han_ucd18_manifest_exactly_matches_reference(self):
+        from conformance.refinements.reference import HAN_UCD_18
+        path = (Path(__file__).resolve().parents[2] /
+                "fixtures/refinement-v1/unicode18-han-ranges.csv")
+        pairs = []
+        for raw in path.read_text(encoding="ascii").splitlines():
+            if raw.startswith("#") or not raw:
+                continue
+            a, b = raw.split(",")
+            pairs.append((int(a), int(b)))
+        self.assertEqual(tuple(pairs), HAN_UCD_18)
+        self.assertEqual(len(pairs), 25)
+        self.assertEqual(sum(b-a+1 for a,b in pairs), 103352)
+        self.assertTrue(all(pairs[i-1][1] < pairs[i][0]
+                            for i in range(1, len(pairs))))
+
     def test_strict_ascii_case_and_reserved_unicode_policies(self):
         upper = parse("type U = string with chars ascii_uppercase;")
         lower = parse("type L = string with chars ascii_lowercase;")
