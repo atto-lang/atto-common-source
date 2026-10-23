@@ -3,7 +3,7 @@
 //! This is a reference model, not a language parser, compiler, production
 //! cache, or security-sensitive compiler authority.
 
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -196,20 +196,19 @@ impl QueryEngine {
     }
 
     pub fn result(&mut self, kind: &str, symbol: &str) -> Result<QueryResult, QueryError> {
-        let result = self.evaluate(QueryKey::new(kind, symbol))?;
-        Ok(result.clone())
+        self.evaluate(QueryKey::new(kind, symbol))
     }
 
     fn use_query(&mut self, kind: &str, symbol: &str) -> Result<QueryValue, QueryError> {
         let key = QueryKey::new(kind, symbol);
-        let child = self.evaluate(key.clone())?.clone();
+        let child = self.evaluate(key.clone())?;
         if let Some(frame) = self.frames.last_mut() {
             frame.insert(key, child.fingerprint.clone());
         }
         Ok(child.value)
     }
 
-    fn evaluate(&mut self, key: QueryKey) -> Result<&QueryResult, QueryError> {
+    fn evaluate(&mut self, key: QueryKey) -> Result<QueryResult, QueryError> {
         if self.active.contains(&key) {
             return Err(QueryError::QueryCycle(key));
         }
@@ -223,7 +222,7 @@ impl QueryEngine {
         outcome
     }
 
-    fn evaluate_active(&mut self, key: &QueryKey) -> Result<&QueryResult, QueryError> {
+    fn evaluate_active(&mut self, key: &QueryKey) -> Result<QueryResult, QueryError> {
         if let Some(cached) = self.cache.get(key).cloned() {
             let mut green = true;
             for (dep, fingerprint) in &cached.dependencies {
@@ -233,7 +232,7 @@ impl QueryEngine {
                 }
             }
             if green {
-                return Ok(self.cache.get(key).expect("cached result retained"));
+                return Ok(cached);
             }
         }
 
@@ -249,8 +248,8 @@ impl QueryEngine {
         };
 
         *self.computations.entry(key.clone()).or_insert(0) += 1;
-        self.cache.insert(key.clone(), result);
-        Ok(self.cache.get(key).expect("inserted result"))
+        self.cache.insert(key.clone(), result.clone());
+        Ok(result)
     }
 
     fn digest(&self, value: &QueryValue) -> Result<String, QueryError> {
