@@ -41,10 +41,10 @@ class Refined:
             if any(0xD800 <= ord(ch) <= 0xDFFF for ch in value):
                 return False
             actual = len(value)
-            if self.charset in ("uppercase", "lowercase", "han"):
+            if self.charset in ("uppercase", "lowercase"):
                 # Unicode property profiles require version-pinned generated
                 # UCD 18.0 tables. No host-dependent fallback is authoritative.
-                raise ConstraintSyntaxError("Unicode character policy is not yet verified")
+                raise ConstraintSyntaxError("Unicode uppercase/lowercase property tables not yet verified")
             if not _chars_accept(value, self.charset):
                 return False
         else:
@@ -101,6 +101,42 @@ POS_ARG = re.compile(rf"\s*({INTEGER})\s*\Z")
 NAMED_ARG = re.compile(rf"\s*(min|max|eq)\s*=\s*({INTEGER})\s*\Z")
 
 
+# Exact Unicode 18.0.0 Script=Han property from Scripts.txt, 2026-06-29.
+# Source: https://www.unicode.org/Public/18.0.0/ucd/Scripts.txt
+# 25 disjoint ranges; 103352 code points. Not a Chinese language classifier.
+HAN_UCD_18 = (
+    (11904, 11929),
+    (11931, 12019),
+    (12032, 12245),
+    (12293, 12293),
+    (12295, 12295),
+    (12321, 12329),
+    (12344, 12346),
+    (12347, 12347),
+    (13312, 19903),
+    (19968, 40959),
+    (63744, 64109),
+    (64112, 64217),
+    (94178, 94178),
+    (94179, 94179),
+    (94192, 94193),
+    (94194, 94195),
+    (94196, 94198),
+    (131072, 173791),
+    (173824, 178206),
+    (178208, 183981),
+    (183984, 191456),
+    (191472, 192093),
+    (194560, 195101),
+    (196608, 201546),
+    (201552, 210041),
+)
+
+
+def _han18(codepoint: int) -> bool:
+    return any(start <= codepoint <= stop for start, stop in HAN_UCD_18)
+
+
 def _chars_accept(value: str, charset: str) -> bool:
     if charset == "any":
         return True
@@ -110,7 +146,9 @@ def _chars_accept(value: str, charset: str) -> bool:
         return all("A" <= ch <= "Z" for ch in value)
     if charset == "ascii_lowercase":
         return all("a" <= ch <= "z" for ch in value)
-    raise ConstraintSyntaxError("unknown character policy")
+    if charset == "han":
+        return all(_han18(ord(ch)) for ch in value)
+    raise ConstraintSyntaxError("unverified Unicode uppercase/lowercase policy")
 
 
 def _number(raw: str) -> int:
