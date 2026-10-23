@@ -145,7 +145,8 @@ function shapeAccepts(expected, value) {
   return false;
 }
 
-function authenticConstructor(schema, supplied) {
+// Source-free descriptor equality only: strings cannot authenticate runtime authority.
+function descriptorMatchesConstructor(schema, supplied) {
   if (schema.nominalId !== supplied.nominalId || !validCases(schema.cases, true)) return false;
   const def = schema.cases.find(c => c.name === supplied.case);
   return !!def && def.tag === supplied.tag && shapeAccepts(def.payload, supplied.payload);
@@ -246,13 +247,13 @@ test("constructor checks nominal owner, tag, exact payload shape and scalar type
     {name:"Failure",tag:2,payload:Unit}
   ]};
   const value={nominalId:"pkg/Response@v1",case:"Success",tag:1,payload:{code:200,body:true}};
-  assert.equal(authenticConstructor(schema,value),true);
-  assert.equal(authenticConstructor(schema,{...value,nominalId:"pkg/Other@v1"}),false);
-  assert.equal(authenticConstructor(schema,{...value,tag:2}),false);
-  assert.equal(authenticConstructor(schema,{...value,payload:{code:200,body:1}}),false);
-  assert.equal(authenticConstructor(schema,{...value,payload:{code:200,body:true,extra:7}}),false);
-  assert.equal(authenticConstructor(schema,{...value,payload:{code:200.5,body:true}}),false);
-  assert.equal(authenticConstructor(schema,{...value,case:"Missing"}),false);
+  assert.equal(descriptorMatchesConstructor(schema,value),true);
+  assert.equal(descriptorMatchesConstructor(schema,{...value,nominalId:"pkg/Other@v1"}),false);
+  assert.equal(descriptorMatchesConstructor(schema,{...value,tag:2}),false);
+  assert.equal(descriptorMatchesConstructor(schema,{...value,payload:{code:200,body:1}}),false);
+  assert.equal(descriptorMatchesConstructor(schema,{...value,payload:{code:200,body:true,extra:7}}),false);
+  assert.equal(descriptorMatchesConstructor(schema,{...value,payload:{code:200.5,body:true}}),false);
+  assert.equal(descriptorMatchesConstructor(schema,{...value,case:"Missing"}),false);
 });
 
 test("user-defined tagged sums are closed and nominal", () => {
