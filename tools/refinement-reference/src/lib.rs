@@ -2,10 +2,7 @@
 //! This is a conformance oracle, not an Oreslang compiler or runtime.
 
 use regex::Regex;
-use std::{
-    collections::BTreeSet,
-    sync::OnceLock,
-};
+use std::{collections::BTreeSet, sync::OnceLock};
 
 const MIN_I64: i128 = i64::MIN as i128;
 const MAX_I64: i128 = i64::MAX as i128;
@@ -97,10 +94,10 @@ impl Refined {
         if self.base != other.base {
             return false;
         }
-        if self.nominal || other.nominal {
-            if !(self.nominal && other.nominal && self.name == other.name) {
-                return false;
-            }
+        if (self.nominal || other.nominal)
+            && !(self.nominal && other.nominal && self.name == other.name)
+        {
+            return false;
         }
         let Ok((lo, hi, excluded)) = bounds(&self.predicates, self.base) else {
             return false;
@@ -398,15 +395,24 @@ mod tests {
     fn equivalent_annotation_and_with() {
         let a = ok("@Size(min=1, max=32) type A = string;");
         let b = ok("type B = string with length gte 1 and length lte 32;");
-        for value in ["", "a", "😀", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"] {
-            assert_eq!(a.accepts(Candidate::Str(value)), b.accepts(Candidate::Str(value)));
+        for value in [
+            "",
+            "a",
+            "ð",
+            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        ] {
+            assert_eq!(
+                a.accepts(Candidate::Str(value)),
+                b.accepts(Candidate::Str(value))
+            );
         }
     }
 
     #[test]
     fn length_is_unicode_scalar_count() {
         let r = ok("type Emoji = string with length eq 1;");
-        assert!(r.accepts(Candidate::Str("😀")));
+        assert!(r.accepts(Candidate::Str("ð")));
         assert!(!r.accepts(Candidate::Str("e\u{301}")));
     }
 
@@ -467,7 +473,7 @@ mod tests {
         let int = ok("define newtype Number(int);");
         assert!(string.nominal && int.nominal);
         assert!(string.accepts(Candidate::Str("")));
-        assert!(string.accepts(Candidate::Str("😀")));
+        assert!(string.accepts(Candidate::Str("ð")));
         assert!(int.accepts(Candidate::Int(MIN_I64)));
         assert!(!int.accepts(Candidate::Int(MAX_I64 + 1)));
         assert!(parse("type Missing = string;").is_err());
@@ -483,7 +489,7 @@ mod tests {
                     Candidate::Str(""),
                     Candidate::Str("ab"),
                     Candidate::Str("abc"),
-                    Candidate::Str("😀😀😀"),
+                    Candidate::Str("ððð"),
                     Candidate::Str("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
                     Candidate::Str("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
                 ],
@@ -598,10 +604,8 @@ mod tests {
         assert!(a.accepts(Candidate::Int(MIN_I64)));
         assert!(parse("type Bad = int with value gte 1__0;").is_err());
 
-        let percentage_keyword =
-            ok("type Percentage = int with value gte 0 and value lte 100;");
-        let percentage_symbols =
-            ok("type Percentage = int with value >= 0 and value <= 100;");
+        let percentage_keyword = ok("type Percentage = int with value gte 0 and value lte 100;");
+        let percentage_symbols = ok("type Percentage = int with value >= 0 and value <= 100;");
         for value in [-1, 0, 50, 100, 101] {
             assert_eq!(
                 percentage_keyword.accepts(Candidate::Int(value)),
