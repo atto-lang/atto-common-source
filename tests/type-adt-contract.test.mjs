@@ -161,7 +161,7 @@ test("manifest contains 16 distinct kinds and never invents first-class type obj
   ]);
   for (const item of kinds.values()) {
     assert.equal(item.reifiable_type_object, false, item.kind);
-    assert.ok(["grammar", "spelling-proposed", "draft", "prototype", "proposed"].includes(item.source_status), item.kind);
+    assert.ok(["grammar", "spelling-proposed", "draft", "prototype", "proposed", "implemented-java-source"].includes(item.source_status), item.kind);
     assert.ok(["concrete", "contract", "alias", "pattern", "constant", "namespace"].includes(item.semantic_class), item.kind);
     assert.equal(item.declares_runtime_instance, ["concrete", "constant"].includes(item.semantic_class), item.kind);
     assert.equal(item.form.startsWith("define "), true, item.kind);
@@ -169,6 +169,9 @@ test("manifest contains 16 distinct kinds and never invents first-class type obj
   assert.equal(kinds.get("type").semantic_class, "alias");
   assert.equal(kinds.get("module").semantic_class, "namespace");
   assert.equal(kinds.get("supervisor_actor").source_status, "proposed");
+  assert.equal(kinds.get("actor").source_status, "implemented-java-source");
+  assert.equal(kinds.get("trait").source_status, "implemented-java-source");
+  assert.equal(kinds.get("type").source_status, "implemented-java-source");
   assert.equal(kinds.get("model").source_status, "draft");
   assert.equal(kinds.get("enum").source_status, "draft");
 });
@@ -178,7 +181,7 @@ test("declare only permits type/trait/interface, including pub forms", () => {
   for (const d of manifest.forward_declarations) {
     assert.equal(d.private_form, "declare " + d.kind + " Name;");
     assert.equal(d.public_form, "declare pub " + d.kind + " Name;");
-    assert.equal(d.status, "proposed");
+    assert.equal(d.status, "implemented-java-source");
     assert.equal(kinds.get(d.kind).declares_runtime_instance, false);
   }
 });
