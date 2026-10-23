@@ -141,6 +141,14 @@ class OfflineParityEvidenceTests(unittest.TestCase):
         with self.assertRaises(checker.EvidenceError):self.check()
         self.java["guestSourceGitBlob"]=original
 
+    def test_missing_or_replayed_job_attempt_rejects(self):
+        original=self.llvm_jobs["jobs"][0]["run_attempt"]
+        del self.llvm_jobs["jobs"][0]["run_attempt"]
+        with self.assertRaises(checker.EvidenceError):self.check()
+        self.llvm_jobs["jobs"][0]["run_attempt"]=original + 1
+        with self.assertRaises(checker.EvidenceError):self.check()
+        self.llvm_jobs["jobs"][0]["run_attempt"]=original
+
     def test_wrong_repository_or_workflow_identity_rejects(self):
         for field, new_value in (("name","Impostor run"),
                                  ("path",".github/workflows/other.yml"),
