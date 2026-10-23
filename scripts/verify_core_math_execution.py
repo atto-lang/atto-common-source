@@ -193,10 +193,9 @@ def validate_run(backend, run, jobs):
             "unassigned/stale/mismatched job")
     require(job.get("status") == "completed" and job.get("conclusion") == "success",
             "job did not succeed")
-    if "run_attempt" in job:
-        require(type(job["run_attempt"]) is int and
-                job["run_attempt"] == run["run_attempt"],
-                "stale job attempt")
+    require(type(job.get("run_attempt")) is int and
+            job["run_attempt"] == run["run_attempt"],
+            "missing or stale job attempt")
     steps = job.get("steps")
     require(type(steps) is list and steps,"zero executed job steps")
     names = set()
