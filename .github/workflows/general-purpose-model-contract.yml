@@ -21,6 +21,7 @@ on:
       - "experiments/model_graph_admission.mjs"
       - "experiments/model_run_fence.mjs"
       - "experiments/model_graph_digest_v1.mjs"
+      - "experiments/model_symbol_constant_v1.mjs"
       - "experiments/model_execution_profile_digest_v1.mjs"
       - "contracts/v1/model-autodiff/**"
       - "contracts/v1/model-graph/**"
@@ -46,6 +47,7 @@ on:
       - "experiments/model_graph_admission.mjs"
       - "experiments/model_run_fence.mjs"
       - "experiments/model_graph_digest_v1.mjs"
+      - "experiments/model_symbol_constant_v1.mjs"
       - "experiments/model_execution_profile_digest_v1.mjs"
       - "contracts/v1/model-autodiff/**"
       - "contracts/v1/model-graph/**"
@@ -67,6 +69,7 @@ jobs:
           node --version
           node --check experiments/model_graph_admission.mjs
           node --check experiments/model_graph_digest_v1.mjs
+          node --check experiments/model_symbol_constant_v1.mjs
           node --check experiments/model_execution_profile_digest_v1.mjs
           node -e "JSON.parse(require('fs').readFileSync('contracts/v1/model-graph/graph.schema.json','utf8')); console.log('schema-json-parse=PASS')"
       - name: Execute host reference suites
