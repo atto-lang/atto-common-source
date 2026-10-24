@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ActorArenaOracle} from '../scripts/actor-memory-layout-v1.mjs';
+import {ActorArenaOracle, DenseRegionOracle, LAYOUTS} from '../scripts/actor-memory-layout-v1.mjs';
 
 const denied = (fn, reason) => assert.throws(fn, new RegExp('ACTOR_MEMORY_V1: .*' + reason));
 
@@ -326,4 +326,33 @@ test('actor-global serial access remains supported before and after all messages
   assert.equal(actor.read(state, 0), 7);
   actor.free(state);
   assert.equal(actor.used, 0);
+});
+
+test('all four dense backing layouts reject off-lane reads, writes and conversions', () => {
+  for (const layout of LAYOUTS) {
+    const actor = new ActorArenaOracle('dense-'+layout, 1, 4096);
+    const first = actor.startMessage();
+    const region = new DenseRegionOracle(actor, ['x','y','z'], 8, layout, 4);
+    const id = region.insert([11,22,33]);
+    const bytes = actor.used;
+    actor.suspendMessage(first);
+    denied(() => region.read(id), 'persistent allocation requires an executing');
+    denied(() => region.write(id, [8,8,8]), 'persistent allocation requires an executing');
+    denied(() => region.insert([44,55,66]), 'persistent allocation requires an executing');
+    denied(() => region.eraseSwap(id), 'persistent allocation requires an executing');
+    denied(() => region.changeLayout(layout === 'aos' ? 'soa' : 'aos'),
+      'persistent allocation requires an executing');
+    denied(() => region.close(), 'persistent allocation requires an executing');
+    assert.equal(actor.used, bytes, 'failed access must not consume quota');
+    assert.equal(region.length, 1, 'failed access must not change row count');
+    const second = actor.startMessage();
+    assert.deepEqual(region.read(id), [11,22,33]);
+    region.write(id, [12,24,36]);
+    actor.completeMessage(second);
+    actor.resumeMessage(first);
+    assert.deepEqual(region.read(id), [12,24,36]);
+    actor.completeMessage(first);
+    region.close();
+    assert.equal(actor.used, 0);
+  }
 });
