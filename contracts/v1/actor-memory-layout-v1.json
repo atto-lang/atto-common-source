@@ -39,7 +39,8 @@
     "host_metadata": "JS reference model charges guest payload bytes but not all host Map/handle bookkeeping; no production memory accounting claim",
     "message_lane": "at most one message executes actor code at a time, despite many concurrent outstanding message lifetimes",
     "legacy_transition": "global scratch and outstanding global read loans must drain before entering message-lifetime mode",
-    "message_scoped_external_dependencies": "active external lifetime pins and descendant task lifetimes retain the originating message's scratch until explicit release; off-carrier release allowed, no guest byte authority implied"
+    "message_scoped_external_dependencies": "active external lifetime pins and descendant task lifetimes retain the originating message's scratch until explicit release; off-carrier release allowed, no guest byte authority implied",
+    "legacy_scratch_external_barrier": "serial nextTurn must not revoke legacy scratch while any external pin or descendant task can still retain that lifetime"
   },
   "cases": [
     {
@@ -272,6 +273,18 @@
     },
     {
       "id": "independent-newer-message-reclaim",
+      "expect": "allow"
+    },
+    {
+      "id": "serial-scratch-reset-with-external-pin",
+      "expect": "deny"
+    },
+    {
+      "id": "serial-scratch-reset-with-child-task",
+      "expect": "deny"
+    },
+    {
+      "id": "serial-persistent-cross-turn-under-pin",
       "expect": "allow"
     }
   ],
