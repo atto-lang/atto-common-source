@@ -264,3 +264,66 @@ test('serial persistent memory may cross turn with lifetime pins but stays owned
   actor.free(persistent);
   assert.equal(actor.used, 0);
 });
+
+test('no physical actor lane means no access to persistent state during suspension', () => {
+  const actor = new ActorArenaOracle('actor', 1, 128);
+  const first = actor.startMessage();
+  const state = actor.allocate(8, 'persistent');
+  actor.write(state, 0, 13);
+  const scratch = actor.allocate(8, 'scratch');
+  actor.write(scratch, 0, 21);
+  actor.suspendMessage(first);
+
+  denied(() => actor.read(state, 0), 'persistent allocation requires an executing');
+  denied(() => actor.write(state, 0, 99), 'persistent allocation requires an executing');
+  denied(() => actor.readF64(state, 0), 'persistent allocation requires an executing');
+  denied(() => actor.ensureWritable(state), 'persistent allocation requires an executing');
+  denied(() => actor.free(state), 'persistent allocation requires an executing');
+  denied(() => actor.borrowRead(state), 'persistent allocation requires an executing');
+  denied(() => actor.read(scratch, 0), 'owning execution');
+
+  const second = actor.startMessage();
+  assert.equal(actor.read(state, 0), 13);
+  actor.completeMessage(second);
+  actor.resumeMessage(first);
+  assert.equal(actor.read(state, 0), 13);
+  actor.completeMessage(first);
+  actor.free(state);
+  assert.equal(actor.used, 0);
+});
+
+test('suspended message cannot allocate or issue fresh lifetime authority off-lane', () => {
+  const actor = new ActorArenaOracle('actor', 1, 128);
+  const message = actor.startMessage();
+  const state = actor.allocate(8, 'persistent');
+  actor.suspendMessage(message);
+  denied(() => actor.allocate(1), 'allocation requires an executing');
+  denied(() => actor.allocate(1, 'scratch'), 'allocation requires an executing');
+  denied(() => actor.pinExternal(), 'external pin requires an executing');
+  denied(() => actor.beginTask(), 'child task requires an executing');
+  assert.equal(actor.used, 8);
+  actor.resumeMessage(message);
+  actor.write(state, 0, 27);
+  const pin = actor.pinExternal();
+  const task = actor.beginTask();
+  actor.suspendMessage(message);
+  actor.finishTask(task); // off-carrier completion remains legal
+  actor.releasePin(pin);
+  actor.resumeMessage(message);
+  assert.equal(actor.read(state, 0), 27);
+  actor.completeMessage(message);
+});
+
+test('actor-global serial access remains supported before and after all messages', () => {
+  const actor = new ActorArenaOracle('serial', 1, 64);
+  const state = actor.allocate(8, 'persistent');
+  actor.write(state, 0, 6);
+  const msg = actor.startMessage();
+  assert.equal(actor.read(state, 0), 6);
+  actor.completeMessage(msg);
+  assert.equal(actor.read(state, 0), 6);
+  actor.write(state, 0, 7);
+  assert.equal(actor.read(state, 0), 7);
+  actor.free(state);
+  assert.equal(actor.used, 0);
+});
