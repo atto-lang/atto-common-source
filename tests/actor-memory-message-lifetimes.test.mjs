@@ -196,3 +196,42 @@ test('message completion refuses to release suspended scratch while another mess
   a.completeMessage(first);
   assert.equal(a.used, 0);
 });
+
+test('message completion cannot scrub scratch with a live callback or child task', () => {
+  const actor = new ActorArenaOracle('callback', 1, 128);
+  const message = actor.startMessage();
+  const scratch = actor.allocate(16, 'scratch');
+  actor.write(scratch, 0, 41);
+  const pin = actor.pinExternal();
+  const task = actor.beginTask();
+  actor.suspendMessage(message);
+  assert.equal(actor.used, 16);
+  denied(() => actor.completeMessage(message), 'outstanding external pins');
+  actor.releasePin(pin); // callback completion need not run in the actor lane
+  denied(() => actor.completeMessage(message), 'outstanding descendant tasks');
+  actor.finishTask(task);
+  actor.resumeMessage(message);
+  assert.equal(actor.read(scratch, 0), 41);
+  actor.completeMessage(message);
+  assert.equal(actor.used, 0);
+});
+
+test('pins are bound to their originating message, not a newer message lifetime', () => {
+  const actor = new ActorArenaOracle('callback', 1, 128);
+  const older = actor.startMessage();
+  const oldScratch = actor.allocate(12, 'scratch');
+  actor.write(oldScratch, 0, 7);
+  const pin = actor.pinExternal();
+  actor.suspendMessage(older);
+  const newer = actor.startMessage();
+  const newScratch = actor.allocate(5, 'scratch');
+  actor.write(newScratch, 0, 9);
+  actor.completeMessage(newer);
+  assert.equal(actor.used, 12);
+  denied(() => actor.completeMessage(older), 'outstanding external pins');
+  assert.equal(actor.retire(), false);
+  actor.releasePin(pin);
+  actor.completeMessage(older); // no guest resume after retirement
+  assert.equal(actor.reclaimed, true);
+  assert.equal(actor.used, 0);
+});
