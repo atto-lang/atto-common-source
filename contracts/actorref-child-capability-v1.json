@@ -36,5 +36,7 @@
     "A workflow with zero executed steps is infrastructure failure, not conformance evidence.",
     "Java and LLVM parity requires this exact fixture bytes or a recorded fixture digest from this repository.",
     "Embedded may claim only bounded-subset target execution until this exact source form is compiled and run on the target profile."
-  ]
+  ],
+  "fixtureSha256": "599d1366b5926e5afc567cb7832d4769ebef6c43cd19b8010aeca22fdf83b585",
+  "fixtureBytes": 680
 }
