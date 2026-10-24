@@ -58,3 +58,11 @@ Suspension rejects outstanding read loans from the executing message. A legacy g
 Additional hardening: external lifetime pins and descendant tasks issued while a message owns the execution lane are **bound to that message**, not just to the actor. Message completion cannot scrub its scratch while such pins/tasks are still outstanding; it must wait for their release, including late off-carrier callbacks. An unrelated newer message can finish and scrub its own scratch independently. This is a conservative reference constraint, not an extension of lifetime pins into byte read/write capabilities.
 
 Serial-compatibility safety follow-up (2026-10-24): `nextTurn()` now fails closed when a legacy scratch allocation exists alongside any active external pin or descendant task. A callback or task might still retain that temporary lifetime after the actor transitions turns. Persistent allocations continue across turns with ordinary actor ownership checks. These host-oracle checks are not executable guest proof.
+
+### Quiescent physical lane during overlapping messages (2026-10-24)
+
+The initial message-lifetime hardening prevented access to *scratch* owned by a suspended message, but the source-free oracle could still mutate *persistent* actor state, issue a new external pin, or start a child task after every message had suspended and the physical actor lane was empty. This breaks actor lane exclusion and allows the next executing message to observe an unauthenticated mutation.
+
+While one or more message lifetimes are outstanding, only an executing message may allocate, read, write, borrow, or free persistent state, or issue new external pins/child tasks. Existing callback pins and child tasks may be **released off-carrier**, and a suspended message can be completed after the retirement seal once its dependencies drain. The legacy direct reference mode remains available only when no message lifetime is outstanding.
+
+This is a fail-closed model admission contract; it does not grant general user access to actor state. Actual Oreslang actor `state { ... }` access still requires the compiler-verified critical state loan and real runtime authority tests.
