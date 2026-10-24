@@ -386,11 +386,12 @@ test("portable Symbol admission rejects presentation strings and forged kinds", 
     nc("cfg", "SymbolConfigured", ["x"], [{kind:"symbol",value}])
   ]);
   assert.doesNotThrow(() => admit(candidate({symbolKind:"process",name:"ready"}), safe));
+  assert.doesNotThrow(() => admit(candidate({symbolKind:"process",name:"#ready"}), safe));
   assert.doesNotThrow(() => admit(candidate({
     symbolKind:"stable",name:"12345678-1234-1234-1234-123456789abc"
   }), safe));
   for (const value of [
-    "#ready", {symbolKind:"process",name:"#ready"},
+    "#ready",
     {symbolKind:"process",name:"e\u0301"},
     {symbolKind:"stable",name:"ready"},
     {symbolKind:"process",name:"\u0000"}, {symbolKind:"untrusted",name:"ready"},
