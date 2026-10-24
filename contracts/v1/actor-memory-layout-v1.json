@@ -40,7 +40,8 @@
     "message_lane": "at most one message executes actor code at a time, despite many concurrent outstanding message lifetimes",
     "legacy_transition": "global scratch and outstanding global read loans must drain before entering message-lifetime mode",
     "message_scoped_external_dependencies": "active external lifetime pins and descendant task lifetimes retain the originating message's scratch until explicit release; off-carrier release allowed, no guest byte authority implied",
-    "legacy_scratch_external_barrier": "serial nextTurn must not revoke legacy scratch while any external pin or descendant task can still retain that lifetime"
+    "legacy_scratch_external_barrier": "serial nextTurn must not revoke legacy scratch while any external pin or descendant task can still retain that lifetime",
+    "message_turn_exclusivity": "while any message lifetime is outstanding, no actor-owned persistent or scratch byte operations and no allocation/pin/task issuance may proceed without an executing message; off-carrier dependency completion remains legal"
   },
   "cases": [
     {
@@ -285,6 +286,34 @@
     },
     {
       "id": "serial-persistent-cross-turn-under-pin",
+      "expect": "allow"
+    },
+    {
+      "id": "suspended-message-persistent-read",
+      "expect": "deny"
+    },
+    {
+      "id": "suspended-message-persistent-write",
+      "expect": "deny"
+    },
+    {
+      "id": "suspended-message-native-allocation",
+      "expect": "deny"
+    },
+    {
+      "id": "suspended-message-issue-external-pin",
+      "expect": "deny"
+    },
+    {
+      "id": "suspended-message-spawn-task",
+      "expect": "deny"
+    },
+    {
+      "id": "off-carrier-release-existing-dependencies",
+      "expect": "allow"
+    },
+    {
+      "id": "serial-persistent-legacy-access-when-quiescent",
       "expect": "allow"
     }
   ],
