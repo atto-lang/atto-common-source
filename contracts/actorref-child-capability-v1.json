@@ -18,9 +18,10 @@
       "sourceExecutionRequired": true
     },
     "llvm": {
-      "syntax": "canonical fixture pending receive/ActorMail/output/await parity",
+      "syntax": "canonical ActorRef/receive/output/end slice implemented; child-output await continuation and full async main parity pending",
       "noPtrToInt": true,
-      "generationFencedCapabilityRequired": true
+      "generationFencedCapabilityRequired": true,
+      "remainingGate": "suspend receive handler on await child.outputs.next() without parking a carrier, then execute this exact fixture"
     },
     "embedded": {
       "boundedSubset": true,
