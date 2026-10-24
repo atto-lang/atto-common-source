@@ -235,3 +235,32 @@ test('pins are bound to their originating message, not a newer message lifetime'
   assert.equal(actor.reclaimed, true);
   assert.equal(actor.used, 0);
 });
+
+test('serial scratch survives pending external pin and descendant task until both drain', () => {
+  const actor = new ActorArenaOracle('serial', 1, 128);
+  const scratch = actor.allocate(16, 'scratch');
+  actor.write(scratch, 0, 33);
+  const pin = actor.pinExternal();
+  const task = actor.beginTask();
+  denied(() => actor.nextTurn(), 'legacy scratch reset blocked');
+  assert.equal(actor.used, 16);
+  assert.equal(actor.read(scratch, 0), 33);
+  actor.releasePin(pin);
+  denied(() => actor.nextTurn(), 'legacy scratch reset blocked');
+  actor.finishTask(task);
+  actor.nextTurn();
+  assert.equal(actor.used, 0);
+  denied(() => actor.read(scratch, 0), 'stale allocation');
+});
+
+test('serial persistent memory may cross turn with lifetime pins but stays owned', () => {
+  const actor = new ActorArenaOracle('serial', 1, 128);
+  const persistent = actor.allocate(16);
+  actor.write(persistent, 0, 27);
+  const pin = actor.pinExternal();
+  actor.nextTurn();
+  assert.equal(actor.read(persistent, 0), 27);
+  actor.releasePin(pin);
+  actor.free(persistent);
+  assert.equal(actor.used, 0);
+});
