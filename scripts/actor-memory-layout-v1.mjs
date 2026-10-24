@@ -165,6 +165,13 @@ export class ActorArenaOracle {
   startMessage() {
     this.#active();
     if (this.#executing) fail('actor lane already executing');
+    if (this.#loans.size) fail('previous turn loan must be released before message admission');
+    // The reference keeps a legacy actor-global nextTurn() mode only for
+    // strictly serial callers. It cannot silently carry that old scratch
+    // allocation into concurrent message-lifetime mode.
+    for (const record of this.#allocations.values())
+      if (record.lifetime === 'scratch' && record.message === null)
+        fail('legacy scratch must be retired before message admission');
     if (this.#messages.size >= MAX_LIVE_MESSAGES) fail('outstanding message limit');
     if (this.#turn === Number.MAX_SAFE_INTEGER) fail('turn overflow');
     // An opaque issued object is not a caller-supplied actor ID or message ID.
