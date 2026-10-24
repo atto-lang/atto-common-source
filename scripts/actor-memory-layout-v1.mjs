@@ -156,6 +156,13 @@ export class ActorArenaOracle {
     this.#active();
     if (this.#messages.size) fail('legacy actor-global scratch reset denied with in-flight messages');
     if (this.#loans.size) fail('read loan cannot cross actor turn');
+    // Even the serial compatibility path cannot scrub scratch while an
+    // external lifetime pin or descendant task could still retain it. These
+    // may complete off-carrier after the current execution turn.
+    if ((this.#pins.size || this.#tasks.size) &&
+        [...this.#allocations.values()].some(record =>
+          record.lifetime === 'scratch' && record.message === null))
+      fail('legacy scratch reset blocked by outstanding callback or task');
     if (this.#turn === Number.MAX_SAFE_INTEGER) fail('turn overflow');
     for (const [handle, record] of this.#allocations) {
       if (record.lifetime === 'scratch') this.#drop(handle, record);
