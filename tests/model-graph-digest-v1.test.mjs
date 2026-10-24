@@ -196,3 +196,43 @@ test("host byte bounds agree with signed 64-bit backend limits", () => {
   };
   err("MODEL_INVALID_PORT", () => digestModelGraphV1(invalidUnit));
 });
+
+test("Symbol constants bind nominal kind and NFC logical name, not #display syntax", () => {
+  const symbolGraph = (symbolKind, name) => {
+    const graph = clone(vectors.base.graph);
+    graph.nodes[1].signature.constKinds = ["symbol"];
+    graph.nodes[1].constArgs = [{kind:"symbol", value:{symbolKind,name}}];
+    return graph;
+  };
+  const uuid = "12345678-1234-1234-1234-123456789abc";
+  const process = symbolGraph("process", uuid);
+  const stable = symbolGraph("stable", uuid);
+  const processBytes = canonicalModelGraphV1Bytes(process);
+  const stableBytes = canonicalModelGraphV1Bytes(stable);
+  assert.equal(processBytes.length, stableBytes.length);
+  assert.notDeepEqual(processBytes, stableBytes);
+  assert.notEqual(digestModelGraphV1(process), digestModelGraphV1(stable));
+  assert.equal(digestModelGraphV1(process), digestModelGraphV1(symbolGraph("process", uuid)));
+  assert.notEqual(digestModelGraphV1(symbolGraph("process", "ready")),
+    digestModelGraphV1(symbolGraph("process", "error")));
+
+  for (const [kind, name] of [
+    ["process", "#ready"], ["process", "e\u0301"],
+    ["process", "\ud800"], ["process", "x".repeat(257)],
+    ["process", "\u202eunsafe"], ["process", ""],
+    ["stable", "NOT-A-UUID"], ["stable", uuid.toUpperCase()],
+    ["forged", "ready"]
+  ]) {
+    err("MODEL_INVALID_CONST", () => digestModelGraphV1(symbolGraph(kind, name)));
+  }
+  const wrongShape = symbolGraph("process", "ready");
+  wrongShape.nodes[1].constArgs[0].value.authority = "forged";
+  err("MODEL_INVALID_CONST", () => digestModelGraphV1(wrongShape));
+  const getterGraph = symbolGraph("process", "ready");
+  let touched = 0;
+  const value = {symbolKind:"process"};
+  Object.defineProperty(value, "name", {enumerable:true, get(){touched++; return "ready";}});
+  getterGraph.nodes[1].constArgs[0].value = value;
+  err("MODEL_INVALID_CONST", () => digestModelGraphV1(getterGraph));
+  assert.equal(touched, 0);
+});
