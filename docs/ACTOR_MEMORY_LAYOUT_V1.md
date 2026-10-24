@@ -44,3 +44,13 @@ Private source transfer to another GitHub organization requires explicit reviewe
 ## Non-goals
 
 This first slice does not implement a frontend, actor schedule, a true actor-private OS process, native guest GC elimination, SIMD, NUMA, affinity, or GPU kernels. It gives those implementations a deterministic semantic reference and adversarial test contract.
+
+## Multiple in-flight message lifetimes (2026-10-24 hardening)
+
+The original actor-global `nextTurn()` reset is retained only for a **strictly serial** legacy reference caller. It is **not** valid for actors with multiple outstanding messages. A suspended handler may resume on another carrier after newer messages have run, and its scoped temporary data must still exist.
+
+The reference now issues opaque message-lifetime tokens using `startMessage()`, `suspendMessage(token)`, `resumeMessage(token)`, and `completeMessage(token)`. This is **reference-model API, not claimed Oreslang source syntax**. At most one message token owns the actor's physical execution lane at a time. New messages can begin while previous messages are suspended, but scratch allocations are attributed to the exact message, cannot be accessed from another message's lane, and are scrubbed at that message's completion. Persistent actor-owned data remains until independently freed or actor retirement.
+
+Suspension rejects outstanding read loans from the executing message. A legacy global scratch allocation or an outstanding legacy read loan must first drain before entering the multi-message mode. On retirement the actor seals new operations immediately, then waits for outstanding messages **and** tasks/pins/loans before physically reclaiming. A late scheduler completion can free a suspended message after seal without resuming guest execution.
+
+**Proof level:** source-free JavaScript oracle; tests in `tests/actor-memory-message-lifetimes.test.mjs`. Do not count this as GraalVM, LLVM, Native AOT .NET, Web Workers or Wasm guest execution, and do not use a host reference pass to certify source actor lowering.
