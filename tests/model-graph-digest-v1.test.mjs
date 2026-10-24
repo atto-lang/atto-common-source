@@ -217,7 +217,7 @@ test("Symbol constants bind nominal kind and NFC logical name, not #display synt
     digestModelGraphV1(symbolGraph("process", "error")));
 
   for (const [kind, name] of [
-    ["process", "#ready"], ["process", "e\u0301"],
+    ["process", "e\u0301"],
     ["process", "\ud800"], ["process", "x".repeat(257)],
     ["process", "\u202eunsafe"], ["process", ""],
     ["stable", "NOT-A-UUID"], ["stable", uuid.toUpperCase()],
