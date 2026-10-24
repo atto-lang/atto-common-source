@@ -38,7 +38,8 @@
     "authority_quotas": "max 4096 simultaneously live allocation handles, read loans, external pins, and tasks, independently",
     "host_metadata": "JS reference model charges guest payload bytes but not all host Map/handle bookkeeping; no production memory accounting claim",
     "message_lane": "at most one message executes actor code at a time, despite many concurrent outstanding message lifetimes",
-    "legacy_transition": "global scratch and outstanding global read loans must drain before entering message-lifetime mode"
+    "legacy_transition": "global scratch and outstanding global read loans must drain before entering message-lifetime mode",
+    "message_scoped_external_dependencies": "active external lifetime pins and descendant task lifetimes retain the originating message's scratch until explicit release; off-carrier release allowed, no guest byte authority implied"
   },
   "cases": [
     {
@@ -256,6 +257,22 @@
     {
       "id": "message-overlap-stress-and-scrub",
       "expect": "equal"
+    },
+    {
+      "id": "message-pin-prevents-scratch-reclaim",
+      "expect": "defer"
+    },
+    {
+      "id": "message-descendant-task-prevents-scratch-reclaim",
+      "expect": "defer"
+    },
+    {
+      "id": "off-carrier-pin-release",
+      "expect": "allow"
+    },
+    {
+      "id": "independent-newer-message-reclaim",
+      "expect": "allow"
     }
   ],
   "promotion_gate": {
