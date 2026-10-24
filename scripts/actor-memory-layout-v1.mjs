@@ -63,6 +63,8 @@ export class ActorArenaOracle {
     if (!record || !record.live) fail('foreign, forged, or stale allocation handle');
     if (record.message && this.#executing !== record.message)
       fail('message scratch is not accessible outside its owning execution turn');
+    if (record.lifetime === 'persistent' && this.#messages.size && !this.#executing)
+      fail('persistent allocation requires an executing message turn');
     return record;
   }
   #range(record, offset) {
@@ -73,8 +75,8 @@ export class ActorArenaOracle {
     this.#active();
     integer(size, 'allocation bytes', 1);
     if (!['persistent', 'scratch'].includes(lifetime)) fail('unknown lifetime');
-    if (lifetime === 'scratch' && this.#messages.size && !this.#executing)
-      fail('scratch allocation requires an executing message');
+    if (this.#messages.size && !this.#executing)
+      fail('actor allocation requires an executing message turn');
     if (size > this.#quota - this.#used) fail('actor quota exceeded');
     if (this.#allocations.size >= MAX_LIVE_HANDLES) fail('live allocation handle limit');
     const bytes = new Uint8Array(size);
@@ -222,6 +224,8 @@ export class ActorArenaOracle {
   }
   pinExternal() {
     this.#active();
+    if (this.#messages.size && !this.#executing)
+      fail('external pin requires an executing message turn');
     if (this.#pins.size >= MAX_LIVE_PINS) fail('external pin limit');
     const pin = Object.freeze({kind: 'lifetime-only'});
     this.#pins.set(pin,this.#executing);
@@ -233,6 +237,8 @@ export class ActorArenaOracle {
   }
   beginTask() {
     this.#active();
+    if (this.#messages.size && !this.#executing)
+      fail('child task requires an executing message turn');
     if (this.#tasks.size >= MAX_LIVE_TASKS) fail('outstanding task limit');
     const token = Object.freeze({kind: 'task-lifetime'});
     this.#tasks.set(token,this.#executing);
