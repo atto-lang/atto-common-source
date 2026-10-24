@@ -165,3 +165,34 @@ test('message scratch uses actor quota and retires under deterministic stress', 
   assert.equal(actor.reclaimed, true);
   assert.equal(actor.used, 0);
 });
+
+test('legacy scratch and cross-turn loans cannot leak into multi-message mode', () => {
+  const actor = new ActorArenaOracle('actor', 1, 128);
+  const legacy = actor.allocate(8, 'scratch');
+  denied(() => actor.startMessage(), 'legacy scratch must be retired');
+  actor.nextTurn();
+  denied(() => actor.read(legacy, 0), 'stale allocation');
+  const persistent = actor.allocate(8);
+  const loan = actor.borrowRead(persistent);
+  denied(() => actor.startMessage(), 'previous turn loan');
+  actor.releaseLoan(loan);
+  const message = actor.startMessage();
+  actor.completeMessage(message);
+  assert.equal(actor.used, 8);
+});
+
+test('message completion refuses to release suspended scratch while another message owns the lane', () => {
+  const a = new ActorArenaOracle('actor', 1, 128);
+  const first = a.startMessage();
+  const h = a.allocate(8, 'scratch');
+  a.write(h, 0, 10);
+  a.suspendMessage(first);
+  const second = a.startMessage();
+  denied(() => a.completeMessage(first), 'another message owns');
+  assert.equal(a.used, 8);
+  a.completeMessage(second);
+  a.resumeMessage(first);
+  assert.equal(a.read(h, 0), 10);
+  a.completeMessage(first);
+  assert.equal(a.used, 0);
+});
