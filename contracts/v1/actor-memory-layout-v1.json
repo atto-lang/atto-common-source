@@ -315,6 +315,18 @@
     {
       "id": "serial-persistent-legacy-access-when-quiescent",
       "expect": "allow"
+    },
+    {
+      "id": "dense-region-suspended-read-write-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "dense-region-suspended-relayout-denied-without-quota-use",
+      "expect": "deny"
+    },
+    {
+      "id": "dense-region-new-message-sees-only-executed-updates",
+      "expect": "allow"
     }
   ],
   "promotion_gate": {
