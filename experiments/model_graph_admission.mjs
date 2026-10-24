@@ -1,3 +1,4 @@
+import { modelSymbolKindOrdinal } from "./model_symbol_constant_v1.mjs";
 // Source-free admission oracle for a proposed compiler-owned typed ModelGraph HIR.
 // NOT a guest Oreslang compiler, runtime, verified op registry or executable tensor backend.
 // Registry belongs to the compiler/library linker, never to guest graph input.
@@ -132,8 +133,7 @@ function validateConstant(c, expectedKind) {
         fail("MODEL_INVALID_CONST");
       return;
     case "symbol":
-      if (typeof c.value !== "string" || !/^#[A-Za-z][A-Za-z0-9_]{0,63}$/.test(c.value))
-        fail("MODEL_INVALID_CONST");
+      if (modelSymbolKindOrdinal(c.value) === null) fail("MODEL_INVALID_CONST");
       return;
     default:
       fail("MODEL_INVALID_CONST");
