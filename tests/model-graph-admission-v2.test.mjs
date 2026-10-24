@@ -139,11 +139,11 @@ test("effectful operation is disallowed on use; unused registry entries remain h
   errs("MODEL_EFFECTFUL_OP", () =>
     admit(g([n("x", "VecInput"), n("bad", "Impure", "x")]), unsafe));
 });
-test("shape mismatch and mismatched physical units denied", () => {
+test("shape mismatch and mismatched physical units denied with specific diagnostics", () => {
   const safe = reg(); safe.delete("Impure");
-  errs("MODEL_PORT_TYPE_MISMATCH", () =>
+  errs("MODEL_PORT_SHAPE_MISMATCH", () =>
     admit(g([n("s", "ScalarInput"), n("scaled", "VecScale", "s")]), safe));
-  errs("MODEL_PORT_TYPE_MISMATCH", () =>
+  errs("MODEL_PORT_UNIT_MISMATCH", () =>
     admit(g([n("x", "VecInput"), n("mass", "MassScale", "x")]), safe));
 });
 test("unit-bearing matching graph is allowed without unit conversion", () => {
