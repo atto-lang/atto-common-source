@@ -31,8 +31,8 @@ export class ActorArenaOracle {
   #reclaimed = false;
   #allocations = new Map();
   #loans = new Map();
-  #pins = new Set();
-  #tasks = new Set();
+  #pins = new Map(); // pin -> owning message, if acquired in a turn
+  #tasks = new Map(); // task -> owning message, if spawned in a turn
   // Outstanding message LIFETIMES can overlap, but only one enters the
   // actor's execution lane at a time. A suspended message retains its own
   // scratch allocations until that exact message completes.
@@ -203,6 +203,10 @@ export class ActorArenaOracle {
       fail('another message owns the actor lane');
     for (const loan of this.#loans.values())
       if (loan.message === message) fail('message has outstanding loans');
+    for (const origin of this.#pins.values())
+      if (origin === message) fail('message has outstanding external pins');
+    for (const origin of this.#tasks.values())
+      if (origin === message) fail('message has outstanding descendant tasks');
     for (const [handle,record] of this.#allocations)
       if (record.message === message) this.#drop(handle,record);
     this.#messages.delete(message);
@@ -213,7 +217,7 @@ export class ActorArenaOracle {
     this.#active();
     if (this.#pins.size >= MAX_LIVE_PINS) fail('external pin limit');
     const pin = Object.freeze({kind: 'lifetime-only'});
-    this.#pins.add(pin);
+    this.#pins.set(pin,this.#executing);
     return pin;
   }
   releasePin(pin) {
@@ -224,7 +228,7 @@ export class ActorArenaOracle {
     this.#active();
     if (this.#tasks.size >= MAX_LIVE_TASKS) fail('outstanding task limit');
     const token = Object.freeze({kind: 'task-lifetime'});
-    this.#tasks.add(token);
+    this.#tasks.set(token,this.#executing);
     return token;
   }
   finishTask(token) {
