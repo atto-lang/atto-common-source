@@ -133,7 +133,7 @@ def verify_admission_report(report, root=ROOT):
             if item["tool_exit"] != 0 or item["diagnostic"] is not None:
                 _fail("accept case did not compile cleanly")
         else:
-            if item["tool_exit"] == 0 or (type(item["diagnostic"]) is not str
+            if item["tool_exit"] != 1 or (type(item["diagnostic"]) is not str
                                          or not item["diagnostic"].strip()):
                 _fail("rejection lacked a diagnostic")
     return len(seen)
