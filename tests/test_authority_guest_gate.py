@@ -1,6 +1,8 @@
 """Source-free metadata tests only. Synthetic reports are NOT execution evidence."""
 import copy
 import json
+import tempfile
+import shutil
 import sys
 import unittest
 from pathlib import Path
@@ -100,6 +102,42 @@ class AuthorityGuestGateTest(unittest.TestCase):
             rejected["diagnostic"] = diagnostic
             with self.subTest(diagnostic=diagnostic), self.assertRaises(GateError):
                 verify_admission_report(report)
+
+    def test_corpus_rejects_omitted_or_substituted_cases(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "fixtures").mkdir()
+            fixture_dir = root / "fixtures/authority-guest-v1"
+            shutil.copytree(ROOT / "fixtures/authority-guest-v1", fixture_dir)
+            manifest_file = fixture_dir / "cases.json"
+            original = json.loads(manifest_file.read_text())
+            shortened = copy.deepcopy(original)
+            shortened["cases"] = shortened["cases"][:-1]
+            manifest_file.write_text(json.dumps(shortened))
+            with self.assertRaisesRegex(GateError, "canonical fixture coverage"):
+                verify_manifest(root)
+            substituted = copy.deepcopy(original)
+            substituted["cases"][-1]["id"] = "unlisted-replacement"
+            substituted["cases"][-1]["path"] = "fixtures/authority-guest-v1/unlisted-replacement.ores"
+            (fixture_dir / "unlisted-replacement.ores").write_bytes(
+                (ROOT / original["cases"][-1]["path"]).read_bytes())
+            manifest_file.write_text(json.dumps(substituted))
+            with self.assertRaisesRegex(GateError, "canonical fixture IDs"):
+                verify_manifest(root)
+
+    def test_corpus_rejects_unlisted_guest_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "fixtures").mkdir()
+            fixture_dir = root / "fixtures/authority-guest-v1"
+            shutil.copytree(ROOT / "fixtures/authority-guest-v1", fixture_dir)
+            (fixture_dir / "unreviewed.ores").write_text("fnc main(): void { return; }\\n")
+            with self.assertRaisesRegex(GateError, "unlisted or missing guest"):
+                verify_manifest(root)
+            (fixture_dir / "unreviewed.ores").unlink()
+            (fixture_dir / "guard-any-accepted.ores").unlink()
+            with self.assertRaises((GateError, OSError)):
+                verify_manifest(root)
 
     def test_unverified_status_rejected(self):
         for status in ("skipped", "pending", "failed", None):
