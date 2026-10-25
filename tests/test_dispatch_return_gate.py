@@ -103,6 +103,20 @@ class FourFormsDispatchContractTest(unittest.TestCase):
     def test_synthetic_receipts_cannot_be_execution_evidence(self):
         self.assert_rejected(lambda r: r.update(synthetic=True))
 
+    def test_nb_match_and_nb_switch_are_not_dispatch_forms(self):
+        from tempfile import TemporaryDirectory
+        import json
+        for form in ("nb match", "nb switch"):
+            manifest = copy.deepcopy(self.manifest)
+            manifest["cases"][0]["form"] = form
+            with TemporaryDirectory() as temp:
+                p = Path(temp) / "bad.json"
+                p.write_text(json.dumps(manifest), encoding="utf-8")
+                with self.assertRaisesRegex(
+                        DispatchParityError,
+                        "nb match/switch is invalid; nb is a channel/select wait mode"):
+                    oracle(p)
+
     def test_duplicated_forms_cannot_shrink_the_oracle(self):
         manifest = copy.deepcopy(self.manifest)
         manifest["cases"][3]["form"] = "match"
