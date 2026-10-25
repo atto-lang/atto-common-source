@@ -77,6 +77,14 @@ class AuthorityGuestGateTest(unittest.TestCase):
         with self.assertRaises(GateError):
             verify_admission_report(r)
 
+    def test_noncompiler_exit_codes_cannot_count_as_rejection(self):
+        for code in (2, 124, 126, 127, -9):
+            report = self.dummy_report()
+            rejected = next(c for c in report["cases"] if c["result"] == "reject")
+            rejected["tool_exit"] = code
+            with self.subTest(exit_code=code), self.assertRaises(GateError):
+                verify_admission_report(report)
+
     def test_unverified_status_rejected(self):
         for status in ("skipped", "pending", "failed", None):
             r = self.dummy_report()
