@@ -5,6 +5,7 @@ on:
       - '.github/workflows/authority-boundary-v1.yml'
       - 'scripts/authority_boundary_v1.py'
       - 'tests/test_authority_boundary_v1.py'
+      - 'tests/test_authority_boundary_properties_v1.py'
       - 'contracts/v1/authority-boundary-v1.json'
   push:
     branches: [main]
@@ -12,6 +13,7 @@ on:
       - '.github/workflows/authority-boundary-v1.yml'
       - 'scripts/authority_boundary_v1.py'
       - 'tests/test_authority_boundary_v1.py'
+      - 'tests/test_authority_boundary_properties_v1.py'
       - 'contracts/v1/authority-boundary-v1.json'
 permissions:
   contents: read
@@ -35,4 +37,4 @@ jobs:
           echo "Reference oracle commit: $EXPECTED_HEAD"
           echo "Reference oracle tree: $(git rev-parse 'HEAD^{tree}')"
       - name: Run authority and admission oracle (not backend parity)
-        run: python3 -m unittest discover -s tests -p 'test_authority_boundary_v1.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_authority_boundary*.py' -v
