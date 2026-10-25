@@ -1,0 +1,34 @@
+name: explicit-exports-source-free
+
+on:
+  pull_request:
+    paths:
+      - "docs/EXPLICIT_EXPORTS_V1.md"
+      - "contracts/explicit-exports-v1.json"
+      - "tests/verify-explicit-exports-v1.mjs"
+      - ".github/workflows/explicit-exports-source-free.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: source-free explicit export contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Require supported Node
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          major="$(node -p 'Number(process.versions.node.split(".")[0])')"
+          test "$major" -ge 20
+      - name: Verify explicit export contract
+        run: node tests/verify-explicit-exports-v1.mjs
