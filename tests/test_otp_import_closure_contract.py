@@ -108,7 +108,7 @@ def audit_closure(units, roots, *, allowed_layers, providers=(),
 
 
 def synthetic_units():
-    """The normative six-module inventory as hypothetical parsed units."""
+    """The normative eight-module inventory as hypothetical parsed units."""
     units = {
         "core/scalars": {"layer": "core"},
         "actor/mail": {"layer": "actor", "imports": ["core/scalars"]},
@@ -140,7 +140,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
                           providers=ACTOR_PROVIDERS),
         )
 
-    def test_all_six_otp_modules_can_have_freestanding_source_closure(self):
+    def test_all_eight_otp_modules_can_have_freestanding_source_closure(self):
         units = synthetic_units()
         mandatory_features = {
             feature for module in MODULES.values() for feature in module["requires"]
@@ -150,9 +150,30 @@ class ImportClosureReferenceTests(unittest.TestCase):
             units, roots, allowed_layers={"core", "actor", "otp"},
             providers=ACTOR_PROVIDERS, features=mandatory_features,
         )
-        self.assertEqual(len(roots), 6)
-        self.assertEqual(len(closure), 8)
+        self.assertEqual(len(roots), 8)
+        self.assertEqual(len(closure), 10)
         self.assertNotIn("host-adapter", {units[x]["layer"] for x in closure})
+
+    def test_pg_and_ets_require_explicit_feature_sets(self):
+        units = synthetic_units()
+        for module in ("pg", "ets"):
+            with self.subTest(module=module):
+                with self.assertRaisesRegex(AdmissionError, "missing feature"):
+                    audit_closure(
+                        units, ["otp/" + module],
+                        allowed_layers={"core", "actor", "otp"},
+                        providers=ACTOR_PROVIDERS,
+                        features=set(MODULES[module]["requires"]) - {
+                            MODULES[module]["requires"][-1]
+                        },
+                    )
+                audit_closure(
+                    units, ["otp/" + module],
+                    allowed_layers={"core", "actor", "otp"},
+                    providers=ACTOR_PROVIDERS,
+                    features=MODULES[module]["requires"],
+                )
+
 
     def test_missing_mandatory_otp_feature_rejects(self):
         units = synthetic_units()

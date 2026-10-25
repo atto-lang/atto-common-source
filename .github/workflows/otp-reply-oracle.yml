@@ -1,0 +1,16 @@
+name: OTP G0 reply oracle only
+on:
+  pull_request:
+  push:
+    branches: ['design/otp-behaviors-hardware-synthesis-v1-20261017']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-free-reference-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run GenServer model invariants (not guest execution)
+        run: python3 -m unittest discover -s tests -p test_gen_server_reply_oracle.py -v

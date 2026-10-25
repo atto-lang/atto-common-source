@@ -166,3 +166,8 @@ The hardening includes repeatable deterministic interleaving tests across 48 see
 - Implement detached prepared optimizer publication via sealed `handle_state`/lexical `using state.write`, preserving sole actor `state` ownership, with real compiler-negative escape/effects tests.
 - Compile and execute the `oreslang-ml` scalar actor fixture and `oreslang-autograd` VJP under both Java and LLVM; check numeric gradients against independent finite differences and prove exact source-tree identity.
 - Exercise deterministic cancellation/failure injection, multi-shard restart recovery and bounded native memory under concurrent actor work.
+
+
+## Reconciled cohort and activation lifetimes
+
+A planned step may exceed the in-flight activation capacity. Each completed backward fan-in retires its activation and byte/pin credits into a bounded completed-microbatch set; optimizer preparation still requires the entire planned cohort. Snapshot leases retain their independent identity and pin budget. Prepare/commit/cancel preserve exact capabilities, validate the full pin ledger, and stage a detached successor before one local state-root publication. This remains a host-only model, not native guest or training-runtime proof.

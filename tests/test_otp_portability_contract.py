@@ -8,7 +8,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "contracts" / "library" / "v1" / "otp-portability.json"
 EXPECTED = {
     "gen_server", "supervisor", "gen_statem",
-    "application", "event_manager", "registry",
+    "application", "event_manager", "registry", "pg", "ets",
 }
 OS_EFFECTS = {"os", "posix", "linux", "libc", "filesystem", "network",
               "process", "threads", "java-interop", "clock.ambient",
@@ -43,7 +43,7 @@ class ContractTests(unittest.TestCase):
                 module["canonicalImport"],
                 d["canonicalImportPrefix"] + module["module"])
 
-    def test_exact_six_unique_modules_and_locations(self):
+    def test_exact_eight_unique_modules_and_locations(self):
         modules = self.data["modules"]
         self.assertEqual(len(modules), len(EXPECTED))
         self.assertEqual({m["module"] for m in modules}, EXPECTED)
@@ -95,6 +95,12 @@ class ContractTests(unittest.TestCase):
             self.assertNotIn("memory.ambient", m["conditional"])
         self.assertIn("control.authenticated", next(m for m in d["modules"]
                                                    if m["module"] == "supervisor")["requires"])
+        pg = next(m for m in d["modules"] if m["module"] == "pg")
+        self.assertIn("group.membership-incarnation-fenced", pg["requires"])
+        self.assertIn("group.scope-explicit", pg["requires"])
+        ets = next(m for m in d["modules"] if m["module"] == "ets")
+        self.assertIn("table.capacity-bounded", ets["requires"])
+        self.assertIn("table.atomic-operation", ets["requires"])
 
 if __name__ == "__main__":
     unittest.main()

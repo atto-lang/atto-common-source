@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "ores-effect-graph",
+  "source_tree": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "producer": {
+    "backend": "reference",
+    "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "entries": [
+    "app.main"
+  ],
+  "functions": [
+    {
+      "id": "app.main",
+      "calls": [
+        "app.work"
+      ],
+      "effects": {
+        "blocking_io": "never",
+        "dynamic_dispatch": "never",
+        "ffi": "never",
+        "gc": "never",
+        "heap_alloc": "never",
+        "runtime_codegen": "never",
+        "suspension": "never",
+        "unbounded_work": "never"
+      }
+    },
+    {
+      "id": "app.work",
+      "calls": [],
+      "effects": {
+        "blocking_io": "unknown",
+        "dynamic_dispatch": "never",
+        "ffi": "never",
+        "gc": "never",
+        "heap_alloc": "never",
+        "runtime_codegen": "never",
+        "suspension": "never",
+        "unbounded_work": "never"
+      }
+    }
+  ]
+}

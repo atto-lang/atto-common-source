@@ -18,8 +18,8 @@ This document does **not** claim that full ownership/borrow/drop parity exists.
   `const owned: int = 6;`, unless a separate explicitly specified
   language-scoped restriction is approved with migration tests.
 - Existing explicit ownership operations use the agreed contracts:
-  `rt borrow`, `rt borrow mut`, `rt take`, `rt copy`,
-  `rt share`, and `borrow T` / `borrow mut T` in type positions.
+  `rt borrow`, `rt mut borrow`, `rt take`, `rt copy`,
+  `rt share`, and `borrow T` / `borrow mut T` in type positions. Oreslang source does not use `&` or `*` for reference/pointer/dereference operations, and does not expose `Pointer<T>`, `rt ref`, `rt deref`, or `rt unref` as public language syntax.
   An implementation may reject unsupported operations, but may not quietly
   reinterpret `owned int` as the canonical spelling of implicit ownership.
 

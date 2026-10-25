@@ -165,6 +165,43 @@
       "sourceStatus": "pending",
       "executableTestsPassed": false,
       "canonicalImport": "otp/registry"
+    },
+    {
+      "module": "pg",
+      "path": "stdlib/otp/pg.ores",
+      "layer": "otp",
+      "requires": [
+        "actor.group",
+        "actor.identity",
+        "group.membership-bounded",
+        "group.membership-incarnation-fenced",
+        "group.scope-explicit"
+      ],
+      "conditional": [
+        "distribution.membership-eventual",
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/pg"
+    },
+    {
+      "module": "ets",
+      "path": "stdlib/otp/ets.ores",
+      "layer": "otp",
+      "requires": [
+        "table.runtime-owned",
+        "table.typed",
+        "table.capacity-bounded",
+        "table.atomic-operation",
+        "table.access-policy"
+      ],
+      "conditional": [
+        "allocator.explicit"
+      ],
+      "sourceStatus": "pending",
+      "executableTestsPassed": false,
+      "canonicalImport": "otp/ets"
     }
   ],
   "forbiddenHostEffects": [

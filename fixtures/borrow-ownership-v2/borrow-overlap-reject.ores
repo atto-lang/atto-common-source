@@ -1,0 +1,10 @@
+define class Cell as
+  pub let int value = 0;
+end
+fnc inspect(borrow mut Cell writer, borrow Cell reader): int {
+  return writer.value;
+}
+pub fnc main(): int {
+  let mut Cell cell = new Cell();
+  return inspect(rt mut borrow cell, rt borrow cell);
+}

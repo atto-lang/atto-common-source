@@ -10,12 +10,13 @@ TARGETS = {".java", ".llvm", ".net", ".forge", ".wasm"}
 CASE_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 DIAGNOSTIC = re.compile(r"[a-z][a-z0-9-]*\Z")
 
-# Frozen v1 baseline: additions are allowed, silent substitution is not.
+# Frozen v1 baseline plus named-stage extension: additions are allowed, silent substitution is not.
 REQUIRED_V1_CASES = {
     "scalar-left-associative", "result-map-error", "option-transpose",
     "reject-noncallable-stage", "reject-maperr-on-option",
     "option-map-aot", "result-chain-aot", "result-recovery-aot",
     "aot-option-result-composition",
+    "scalar-named-first-argument", "reject-duplicate-forwarded-binding",
 }
 
 
@@ -43,7 +44,7 @@ class ValuePipelineContractTests(unittest.TestCase):
         self.assertEqual(set(targets), TARGETS)
         cases = doc.get("cases")
         self.assertIsInstance(cases, list)
-        self.assertGreaterEqual(len(cases), 9, "v1 must not silently drop registered cases")
+        self.assertGreaterEqual(len(cases), 11, "v1 must not silently drop registered cases")
         seen_ids, seen_fixtures = set(), set()
         for case in cases:
             self.assertIsInstance(case, dict)
@@ -89,7 +90,7 @@ class ValuePipelineContractTests(unittest.TestCase):
                                     for f in fragments.values()))
             self.assertNotIn("verified", case)
         self.assertTrue(REQUIRED_V1_CASES <= seen_ids,
-                        "all nine original v1 cases must remain registered")
+                        "all eleven registered v1 cases must remain registered")
         fixture_files = {p.name for p in (root / "fixtures").glob("*.ores") if p.is_file()}
         self.assertEqual(seen_fixtures, fixture_files,
                          "registry and fixture directory must have identical membership")

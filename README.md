@@ -54,9 +54,12 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 ## Documents
 
+- [Checked exceptional effects v2](contracts/v2/CHECKED_EXCEPTIONAL_EFFECTS_V2.md) — strict throws/raises/panics propagation, uncatchable panics and conformance gates.
+
 - [Architecture proposal](docs/ARCHITECTURE.md)
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
+- [Callable bodies, return types, and contextual tuple syntax v1](docs/CALLABLE_SYNTAX_V1.md)
 - [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
