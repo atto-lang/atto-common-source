@@ -21,6 +21,7 @@ EXPECTED_DEST = {
     "switch": "ARM_RESULT",
     "do switch": "FUNCTION_RETURN",
 }
+INVALID_DISPATCH_FORMS = {"nb match", "nb switch"}
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
@@ -43,6 +44,8 @@ def oracle(path: str | Path) -> dict:
         if not isinstance(name, str) or name in unique:
             raise DispatchParityError("duplicate or invalid oracle id")
         unique.add(name)
+        if form in INVALID_DISPATCH_FORMS:
+            raise DispatchParityError("nb match/switch is invalid; nb is a channel/select wait mode")
         if form not in EXPECTED_DEST or item.get("return_destination") != EXPECTED_DEST[form]:
             raise DispatchParityError("wrong destination in oracle")
         if form in unique_forms:

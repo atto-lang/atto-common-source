@@ -1,0 +1,4 @@
+pub fnc bad(any value): void {
+  value.length;
+  return;
+}
