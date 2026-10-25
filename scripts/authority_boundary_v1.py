@@ -92,6 +92,7 @@ class AuthorityBoundaryV1:
 
     def spawn(self, parent_token, name, permissions):
         parent = self._actor(parent_token)
+        self._not_loaned(parent_token)
         rights = _rights(permissions)
         _require(rights <= parent.rights, "child cannot escalate parent authority")
         _require(type(name) is str and bool(name) and name not in self._current,
