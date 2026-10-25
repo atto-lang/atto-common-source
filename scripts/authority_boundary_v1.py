@@ -164,7 +164,7 @@ class AuthorityBoundaryV1:
         # A source annotation is evidence of an effect, never its authority.
         _require(type(effect) is str and effect in _EFFECT_RIGHTS, "unverified effect")
         _require(type(declared_effects) is tuple, "effect declaration must be a tuple")
-        _require(effect in declared_effects, "missing declared effect")
+        _require(effect in tuple(item for item in declared_effects if type(item) is str), "missing declared effect")
         _require(_EFFECT_RIGHTS[effect] in actor.rights, "missing runtime capability")
         return effect
 
