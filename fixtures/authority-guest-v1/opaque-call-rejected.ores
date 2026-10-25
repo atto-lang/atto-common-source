@@ -1,0 +1,4 @@
+pub fnc bad(any callback): void {
+  callback(1);
+  return;
+}

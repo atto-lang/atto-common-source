@@ -1,0 +1,139 @@
+{
+  "schema": "oreslang.authority-guest-conformance.v1",
+  "status": "candidate-fixtures-only",
+  "evidence": "NOT_EXECUTED_GUEST_COMPILER",
+  "purpose": "Unchanged source corpus for admission checking; no backend pass status is implied.",
+  "backend_status": {
+    "java": "pending",
+    "llvm": "pending",
+    "wasm": "pending"
+  },
+  "cases": [
+    {
+      "id": "guard-any-accepted",
+      "path": "fixtures/authority-guest-v1/guard-any-accepted.ores",
+      "boundary": "types",
+      "expected": "accept",
+      "stage": "typecheck",
+      "source_blob_sha": "9d8cb47f7631fd41262e2d2c49d548170903e440",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "guard-unknown-accepted",
+      "path": "fixtures/authority-guest-v1/guard-unknown-accepted.ores",
+      "boundary": "types",
+      "expected": "accept",
+      "stage": "typecheck",
+      "source_blob_sha": "5eba2cbdb6f0b61e9718b8ccdd7f37c6918df491",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "unguarded-any-return-rejected",
+      "path": "fixtures/authority-guest-v1/unguarded-any-return-rejected.ores",
+      "boundary": "types",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "d14160d1756e7437a75e87040ecebe3ab464d05f",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "unknown-to-any-rejected",
+      "path": "fixtures/authority-guest-v1/unknown-to-any-rejected.ores",
+      "boundary": "types",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "8a12f0c82d5383fb7eecdeccbfa962224950f989",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "opaque-member-rejected",
+      "path": "fixtures/authority-guest-v1/opaque-member-rejected.ores",
+      "boundary": "types",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "0ac9b8def7c1734f5b45f0014234eea45900925d",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "opaque-call-rejected",
+      "path": "fixtures/authority-guest-v1/opaque-call-rejected.ores",
+      "boundary": "types",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "16ae029deb1b9a6ddcab2b3a82625526f4d8061a",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "opaque-channel-rejected",
+      "path": "fixtures/authority-guest-v1/opaque-channel-rejected.ores",
+      "boundary": "ownership",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "0840e085c48532544648c44a44cc4589c25ef6ec",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "opaque-async-rejected",
+      "path": "fixtures/authority-guest-v1/opaque-async-rejected.ores",
+      "boundary": "ownership",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "e27bfb844cba54b4697420faed23b97a73320ade",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "checked-effect-propagation-accepted",
+      "path": "fixtures/authority-guest-v1/checked-effect-propagation-accepted.ores",
+      "boundary": "effects",
+      "expected": "accept",
+      "stage": "typecheck",
+      "source_blob_sha": "89f0c048f738c6caa2a0425d398ba5bf77459ba6",
+      "candidate_reference": "java#1290"
+    },
+    {
+      "id": "checked-effect-missing-rejected",
+      "path": "fixtures/authority-guest-v1/checked-effect-missing-rejected.ores",
+      "boundary": "effects",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "a25cc8581afcc3ab0fe8ec9147d07d32bc649347",
+      "candidate_reference": "java#1290"
+    },
+    {
+      "id": "checked-effect-crosscategory-rejected",
+      "path": "fixtures/authority-guest-v1/checked-effect-crosscategory-rejected.ores",
+      "boundary": "effects",
+      "expected": "reject",
+      "stage": "typecheck",
+      "source_blob_sha": "ce580d59504aaa1d085e7978ab598f24636b8860",
+      "candidate_reference": "java#1290"
+    },
+    {
+      "id": "checked-effect-duplicate-rejected",
+      "path": "fixtures/authority-guest-v1/checked-effect-duplicate-rejected.ores",
+      "boundary": "effects",
+      "expected": "reject",
+      "stage": "parser",
+      "source_blob_sha": "279c86b17bc59649d7d58bf26f1a838d826d9370",
+      "candidate_reference": "java#1290"
+    },
+    {
+      "id": "untrusted-process-access-rejected",
+      "path": "fixtures/authority-guest-v1/untrusted-process-access-rejected.ores",
+      "boundary": "capability",
+      "expected": "reject",
+      "stage": "capability",
+      "source_blob_sha": "a0c2024297d8ad822a75110fe283f6732ff03ee9",
+      "candidate_reference": "java#1176"
+    },
+    {
+      "id": "untrusted-helper-access-rejected",
+      "path": "fixtures/authority-guest-v1/untrusted-helper-access-rejected.ores",
+      "boundary": "capability",
+      "expected": "reject",
+      "stage": "capability",
+      "source_blob_sha": "f31c9156097e94f894ae5d2886c016034ba7f726",
+      "candidate_reference": "java#1176"
+    }
+  ]
+}
