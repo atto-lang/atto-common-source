@@ -142,5 +142,24 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
         self.assertEqual(self.oracle.perform(self.worker, "io.file.read", ("io.file.read",)), "io.file.read")
 
 
+    def test_spoofed_effect_declaration_is_not_admitted(self):
+        class ForgedEffect:
+            def __eq__(self, other):
+                raise AssertionError("user comparison must not be invoked")
+        with self.assertRaises(Denied):
+            self.oracle.perform(self.root, "io.net", (ForgedEffect(),))
+        with self.assertRaises(Denied):
+            self.oracle.perform(self.root, "io.net")
+        self.assertEqual(self.oracle.perform(self.root, "io.net", ("io.net",)), "io.net")
+
+    def test_child_spawn_forbidden_while_state_loan_is_live(self):
+        lease = self.oracle.enter_critical(self.root)
+        try:
+            with self.assertRaises(Denied):
+                self.oracle.spawn(self.root, "forbidden", set())
+        finally:
+            self.oracle.leave_critical(self.root, lease)
+        self.oracle.spawn(self.root, "allowed", set())
+
 if __name__ == "__main__":
     unittest.main()
