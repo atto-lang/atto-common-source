@@ -6,6 +6,7 @@ on:
       - 'scripts/actor-memory-layout-v1.mjs'
       - 'tests/actor-memory-layout-v1.test.mjs'
       - 'tests/actor-memory-layout-hardening.test.mjs'
+      - 'tests/actor-memory-message-lifetimes.test.mjs'
       - 'contracts/v1/actor-memory-layout-v1.json'
   pull_request:
     paths:
@@ -13,6 +14,7 @@ on:
       - 'scripts/actor-memory-layout-v1.mjs'
       - 'tests/actor-memory-layout-v1.test.mjs'
       - 'tests/actor-memory-layout-hardening.test.mjs'
+      - 'tests/actor-memory-message-lifetimes.test.mjs'
       - 'contracts/v1/actor-memory-layout-v1.json'
 permissions:
   contents: read
@@ -40,4 +42,4 @@ jobs:
         with:
           node-version: '22.16.0'
       - name: Source-free actor memory + adversarial hardening
-        run: node --test tests/actor-memory-layout-v1.test.mjs tests/actor-memory-layout-hardening.test.mjs
+        run: node --test tests/actor-memory-layout-v1.test.mjs tests/actor-memory-layout-hardening.test.mjs tests/actor-memory-message-lifetimes.test.mjs

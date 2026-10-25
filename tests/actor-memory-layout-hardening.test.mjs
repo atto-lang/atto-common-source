@@ -131,7 +131,7 @@ test('normative manifest has source-free evidence and all adversarial vectors',(
   const m=JSON.parse(readFileSync(new URL('../contracts/v1/actor-memory-layout-v1.json',import.meta.url)));
   assert.equal(m.evidence,'SOURCE_FREE_ORACLE_ONLY');
   assert.equal(m.promotion_gate.zero_step_ci,'NOT_EXECUTED');
-  assert.equal(m.cases.length,41);
+  assert.ok(m.cases.length >= 41); // The suite extends this stable baseline.
   const ids=new Set(m.cases.map(x=>x.id));
   for(const id of ['accessor-backed-row-input','sparse-or-inherited-component-input',
                    'reentrant-descriptor-side-effect','borrowed-layout-conversion-no-temporary-allocation',

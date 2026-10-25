@@ -71,12 +71,73 @@ pub enum Candidate<'a> {
     Bool(bool),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharPolicy {
+    Any,
+    AsciiLetters,
+    AsciiUppercase,
+    AsciiLowercase,
+    UnicodeUppercase,
+    UnicodeLowercase,
+    Han,
+}
+
+// Unicode 18.0.0 Script=Han, Scripts.txt (2026-06-29), 25 ranges
+// covering exactly 103352 code points, not a Chinese language classifier.
+// https://www.unicode.org/Public/18.0.0/ucd/Scripts.txt
+const HAN18_RANGES: &[(u32, u32)] = &[
+    (11904, 11929),
+    (11931, 12019),
+    (12032, 12245),
+    (12293, 12293),
+    (12295, 12295),
+    (12321, 12329),
+    (12344, 12346),
+    (12347, 12347),
+    (13312, 19903),
+    (19968, 40959),
+    (63744, 64109),
+    (64112, 64217),
+    (94178, 94178),
+    (94179, 94179),
+    (94192, 94193),
+    (94194, 94195),
+    (94196, 94198),
+    (131072, 173791),
+    (173824, 178206),
+    (178208, 183981),
+    (183984, 191456),
+    (191472, 192093),
+    (194560, 195101),
+    (196608, 201546),
+    (201552, 210041),
+];
+
+fn ucd18_han(codepoint: u32) -> bool {
+    HAN18_RANGES.iter().any(|&(start, stop)| (start..=stop).contains(&codepoint))
+}
+
+impl CharPolicy {
+    fn accepts(self, value: &str) -> bool {
+        match self {
+            Self::Any => true,
+            Self::AsciiLetters => value.bytes().all(|b| b.is_ascii_alphabetic()),
+            Self::AsciiUppercase => value.bytes().all(|b| b.is_ascii_uppercase()),
+            Self::AsciiLowercase => value.bytes().all(|b| b.is_ascii_lowercase()),
+            // Host Unicode casing tables are not pinned to version 18.
+            Self::UnicodeUppercase | Self::UnicodeLowercase => false,
+            Self::Han => value.chars().all(|ch| ucd18_han(ch as u32)),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refined {
     pub name: String,
     pub base: Base,
     pub nominal: bool,
     pub predicates: Vec<Predicate>,
+    pub char_policy: CharPolicy,
 }
 
 impl Refined {
@@ -88,10 +149,17 @@ impl Refined {
             _ => return false,
         };
         self.predicates.iter().all(|p| p.holds_i128(actual))
+            && match value {
+                Candidate::Str(text) => self.char_policy.accepts(text),
+                _ => self.char_policy == CharPolicy::Any,
+            }
     }
 
     pub fn entails(&self, other: &Self) -> bool {
         if self.base != other.base {
+            return false;
+        }
+        if self.char_policy != other.char_policy && other.char_policy != CharPolicy::Any {
             return false;
         }
         if (self.nominal || other.nominal)
@@ -118,9 +186,21 @@ fn cmp_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| Regex::new(r"^\s*(length|value)\s*(eq|ne|gte|lte|gt|lt|==|!=|>=|<=|>|<)\s*(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
 }
+fn short_bound_re() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"^\s*(min|max)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+}
+fn short_length_re() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"^\s*(min_length|max_length)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+}
+fn char_policy_re() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"^\s*chars\s+(ascii_letters|ascii_uppercase|ascii_lowercase|uppercase|lowercase|han)\s*$").unwrap())
+}
 fn decl_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?s)^\s*type\s+([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*$").unwrap())
+    R.get_or_init(|| Regex::new(r"(?s)^\s*(?:(?:define\s+(?:pub\s+)?)|(?:pub\s+define\s+))?type\s+([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(string|int)\s*(?:with\s+(.+))?\s*;\s*$").unwrap())
 }
 fn newtype_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
@@ -347,20 +427,63 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
     };
 
     let mut predicates = annotations;
+    let mut char_policy = CharPolicy::Any;
     if let Some(clause) = clause {
         for term in and_re().split(clause.trim()) {
-            let Some(c) = cmp_re().captures(term) else {
-                return Err(syntax("unsupported with expression"));
-            };
+            if let Some(c) = char_policy_re().captures(term) {
+                if base != Base::String || char_policy != CharPolicy::Any {
+                    return Err(syntax("character policy requires string and must be unique"));
+                }
+                char_policy = match c.get(1).unwrap().as_str() {
+                    "ascii_letters" => CharPolicy::AsciiLetters,
+                    "ascii_uppercase" => CharPolicy::AsciiUppercase,
+                    "ascii_lowercase" => CharPolicy::AsciiLowercase,
+                    "uppercase" => CharPolicy::UnicodeUppercase,
+                    "lowercase" => CharPolicy::UnicodeLowercase,
+                    "han" => CharPolicy::Han,
+                    _ => unreachable!(),
+                };
+                continue;
+            }
+            // Two disjoint grammars avoid treating `min0` or
+            // `min gte 0` as valid shorthand.
+            let (constraint_property, op, bound) =
+                if let Some(c) = cmp_re().captures(term) {
+                    (
+                        property(c.get(1).unwrap().as_str()).unwrap(),
+                        op_alias(c.get(2).unwrap().as_str()).unwrap(),
+                        parse_bound(c.get(3).unwrap().as_str())?,
+                    )
+                } else if let Some(c) = short_bound_re().captures(term) {
+                    if base != Base::Int {
+                        return Err(syntax("min/max shorthand requires integer base"));
+                    }
+                    (
+                        Property::Value,
+                        if c.get(1).unwrap().as_str() == "min" { Op::Gte } else { Op::Lte },
+                        parse_bound(c.get(2).unwrap().as_str())?,
+                    )
+                } else if let Some(c) = short_length_re().captures(term) {
+                    if base != Base::String {
+                        return Err(syntax("min_length/max_length shorthand requires string"));
+                    }
+                    (
+                        Property::Length,
+                        if c.get(1).unwrap().as_str() == "min_length" { Op::Gte } else { Op::Lte },
+                        parse_bound(c.get(2).unwrap().as_str())?,
+                    )
+                } else {
+                    return Err(syntax("unsupported with expression"));
+                };
             predicates.push(Predicate {
-                property: property(c.get(1).unwrap().as_str()).unwrap(),
-                op: op_alias(c.get(2).unwrap().as_str()).unwrap(),
-                bound: parse_bound(c.get(3).unwrap().as_str())?,
+                property: constraint_property,
+                op,
+                bound,
             });
         }
     }
 
-    if predicates.is_empty() && !nominal {
+    if predicates.is_empty() && !nominal && char_policy == CharPolicy::Any {
         return Err(syntax("missing refinement"));
     }
 
@@ -380,6 +503,7 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
         base,
         nominal,
         predicates,
+        char_policy,
     })
 }
 
@@ -596,6 +720,117 @@ mod tests {
         assert!(!narrow.entails(&other));
         assert!(!narrow.entails(&alias));
         assert!(!alias.entails(&narrow));
+    }
+
+    #[test]
+    fn numeric_shorthand_normalizes_exactly_to_zorde_value_interval() {
+        let sugar = ok("define type Code = int with min 0 and max 5;");
+        let canonical = ok("type Code = int with value gte 0 and value lte 5;");
+        let annotation = ok("@Range(min=0,max=5) type Code = int;");
+        assert_eq!(sugar.predicates, canonical.predicates);
+        assert_eq!(sugar.predicates, annotation.predicates);
+        for n in [-1, 0, 1, 4, 5, 6] {
+            assert_eq!(sugar.accepts(Candidate::Int(n)), (0..=5).contains(&n));
+        }
+        assert!(!sugar.accepts(Candidate::Bool(true)));
+
+        let old = ok("type Positive = int with value gt 0;");
+        let positive = ok("define pub type Positive = int with value gt 0;");
+        assert_eq!(old.predicates, positive.predicates);
+        let legacy = ok("pub define type Positive = int with min 1;");
+        assert_eq!(legacy.predicates, ok("type Positive = int with value gte 1;").predicates);
+    }
+
+    #[test]
+    fn shorthand_must_not_disable_refinement_validation() {
+        for source in [
+            "type Negative = int with min 10 and max 5;",
+            "define type Negative = int with min 5 and max 4;",
+            "type No = string with min 1 and max 5;",
+            "type No = int with min gte 0;",
+            "type No = int with max <= 5;",
+            "type No = int with min x;",
+            "type No = int with min0;",
+            "type No = int with min gte 0;",
+            "type No = int with min 0 or max 5;",
+            "type No = int with min 0; trailing",
+            "type No = int with min -9223372036854775809;",
+            "define type No = int as positive integer;",
+        ] {
+            assert!(parse(source).is_err(), "accepted invalid refinement: {source}");
+        }
+    }
+
+    #[test]
+    fn string_length_and_ascii_character_policies() {
+        let equivalent = ok("type A = string with min_length 2 and max_length 4 and chars ascii_letters;");
+        let canonical = ok("type A = string with length gte 2 and length lte 4 and chars ascii_letters;");
+        assert_eq!(equivalent, canonical);
+        for (candidate, accepted) in [
+            ("AB", true), ("aBc", true), ("ABCd", true),
+            ("A", false), ("ABCDE", false), ("A1", false),
+            ("éA", false), ("你好", false), ("😀A", false),
+        ] {
+            assert_eq!(equivalent.accepts(Candidate::Str(candidate)), accepted, "{candidate:?}");
+        }
+        let upper = ok("type U = string with chars ascii_uppercase;");
+        let lower = ok("type L = string with chars ascii_lowercase;");
+        assert!(upper.accepts(Candidate::Str("ABC")));
+        assert!(!upper.accepts(Candidate::Str("ABc")));
+        assert!(lower.accepts(Candidate::Str("abc")));
+        assert!(!lower.accepts(Candidate::Str("Abc")));
+        assert!(!upper.accepts(Candidate::Str("123")));
+        assert_eq!(ok("type H = string with chars han;").char_policy, CharPolicy::Han);
+        // Han Script property is pinned to UCD 18.0; casing still blocked.
+        assert!(ok("type H = string with chars han;").accepts(Candidate::Str("中文")));
+        assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("中A")));
+        assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("😀")));
+        assert!(!ok("type H = string with chars uppercase;").accepts(Candidate::Str("ABC")));
+    }
+
+    #[test]
+    fn ucd18_han_ranges_verify_count_and_boundaries() {
+        let source = include_str!("../../../fixtures/refinement-v1/unicode18-han-ranges.csv");
+        let manifest: Vec<(u32, u32)> = source
+            .lines()
+            .filter(|line| !line.starts_with('#') && !line.is_empty())
+            .map(|line| {
+                let (first, last) = line.split_once(',').expect("canonical Han interval");
+                (first.parse().expect("decimal start"), last.parse().expect("decimal end"))
+            })
+            .collect();
+        assert_eq!(manifest, HAN18_RANGES, "runtime must exactly match pinned UCD18 source");
+        let total: u32 = HAN18_RANGES.iter().map(|&(a, b)| b - a + 1).sum();
+        assert_eq!(HAN18_RANGES.len(), 25);
+        assert_eq!(total, 103352);
+        for (index, &(first, last)) in HAN18_RANGES.iter().enumerate() {
+            assert!(first <= last);
+            if index > 0 { assert!(HAN18_RANGES[index - 1].1 < first); }
+            assert!(ucd18_han(first), "{first:X}");
+            assert!(ucd18_han(last), "{last:X}");
+        }
+        for scalar in [0x3006, 0x2A6E0, 0x3347A, 0x0041, 0x1F600] {
+            assert!(!ucd18_han(scalar), "{scalar:X} must be excluded");
+        }
+        for scalar in [0x3005, 0x4E2D, 0x20000, 0x33479] {
+            assert!(ucd18_han(scalar), "{scalar:X} must be included");
+        }
+    }
+
+    #[test]
+    fn string_policy_invalid_syntax_rejected() {
+        for source in [
+            "type Bad = int with chars ascii_letters;",
+            "type Bad = int with min_length 1;",
+            "type Bad = string with min_length 5 and max_length 4;",
+            "type Bad = string with chars ascii_letters and chars han;",
+            "type Bad = string with chars letters;",
+            "type Bad = string with chars [A-Z];",
+            "type Bad = string with min_length -1;",
+            "type Bad = string with chars ascii_letters or chars han;",
+        ] {
+            assert!(parse(source).is_err(), "accepted {source}");
+        }
     }
 
     #[test]
