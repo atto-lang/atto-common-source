@@ -28,7 +28,7 @@ _KNOWN_RIGHTS = frozenset(_EFFECT_RIGHTS.values())
 
 
 def _rights(value):
-    _require(isinstance(value, (frozenset, set, tuple, list)), "invalid rights container")
+    _require(type(value) in (frozenset, set, tuple, list), "invalid rights container")
     _require(all(type(v) is str and v in _KNOWN_RIGHTS for v in value), "unknown right")
     return frozenset(value)
 
