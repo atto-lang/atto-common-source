@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "fixtures/authority-guest-v1/cases.json"
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 
+EXPECTED_CASE_IDS = frozenset(["guard-any-accepted","guard-unknown-accepted","unguarded-any-return-rejected","unknown-to-any-rejected","opaque-member-rejected","opaque-call-rejected","opaque-channel-rejected","opaque-async-rejected","checked-effect-propagation-accepted","checked-effect-missing-rejected","checked-effect-crosscategory-rejected","checked-effect-duplicate-rejected","untrusted-process-access-rejected","untrusted-helper-access-rejected"])
+
 
 class GateError(ValueError):
     pass
@@ -38,8 +40,8 @@ def verify_manifest(root=ROOT):
     if manifest.get("backend_status") != {"java": "pending", "llvm": "pending", "wasm": "pending"}:
         _fail("backend readiness cannot be asserted by a source-free corpus")
     cases = manifest.get("cases")
-    if not isinstance(cases, list) or len(cases) < 12:
-        _fail("insufficient fixture coverage")
+    if not isinstance(cases, list) or len(cases) != len(EXPECTED_CASE_IDS):
+        _fail("incomplete canonical fixture coverage")
     by_id, paths, groups, outcomes = {}, set(), set(), set()
     for case in cases:
         if type(case) is not dict:
@@ -75,6 +77,12 @@ def verify_manifest(root=ROOT):
         paths.add(path)
         groups.add(case["boundary"])
         outcomes.add(case["expected"])
+    if set(by_id) != EXPECTED_CASE_IDS:
+        _fail("missing or substituted canonical fixture IDs")
+    # An unlisted source file is never silently outside the test population.
+    actual_files = {p.name for p in (root / "fixtures/authority-guest-v1").glob("*.ores")}
+    if actual_files != {cid + ".ores" for cid in EXPECTED_CASE_IDS}:
+        _fail("unlisted or missing guest source fixture")
     if groups != {"types", "ownership", "effects", "capability"} or outcomes != {"accept", "reject"}:
         _fail("incomplete coverage categories")
     return by_id
