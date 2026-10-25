@@ -41,6 +41,11 @@ zero steps does not demonstrate executable conformance.
    destination from runtime return-value type or whether a caller ignores it.
 9. The `match<ret=T>` / `match<T>` contract applies to ARM_RESULT type.
    `do match<ret=T>` constrains enclosing callable returns, not an arm result.
+10. Suspension is orthogonal to dispatch return destination. A selected arm may
+    contain `await` when the surrounding callable/effect context permits
+    suspension; no `nb` dispatch modifier is required. `nb match` and
+    `nb switch` are invalid forms. `nb` remains a wait-mode modifier for
+    channel/select operations and must never mean "allow async arms".
 
 ## Select is subject to the same explicit dispatch rule
 
