@@ -19,6 +19,7 @@ const MAX_LIVE_HANDLES = 4096;
 const MAX_LIVE_LOANS = 4096;
 const MAX_LIVE_PINS = 4096;
 const MAX_LIVE_TASKS = 4096;
+const MAX_LIVE_MESSAGES = 4096;
 
 export class ActorArenaOracle {
   #actor;
@@ -30,8 +31,13 @@ export class ActorArenaOracle {
   #reclaimed = false;
   #allocations = new Map();
   #loans = new Map();
-  #pins = new Set();
-  #tasks = new Set();
+  #pins = new Map(); // pin -> owning message, if acquired in a turn
+  #tasks = new Map(); // task -> owning message, if spawned in a turn
+  // Outstanding message LIFETIMES can overlap, but only one enters the
+  // actor's execution lane at a time. A suspended message retains its own
+  // scratch allocations until that exact message completes.
+  #messages = new Map();
+  #executing = null;
 
   constructor(actor, incarnation, quota = 1048576) {
     if (typeof actor !== 'string' || !actor || actor.length > 128 ||
@@ -48,11 +54,17 @@ export class ActorArenaOracle {
   get reclaimed() { return this.#reclaimed; }
   get actor() { return this.#actor; }
   get incarnation() { return this.#incarnation; }
+  get pendingMessages() { return this.#messages.size; }
+  get executingMessage() { return this.#executing !== null; }
 
   #active() { if (this.#sealed) fail('actor retired'); }
   #record(handle) {
     const record = this.#allocations.get(handle);
     if (!record || !record.live) fail('foreign, forged, or stale allocation handle');
+    if (record.message && this.#executing !== record.message)
+      fail('message scratch is not accessible outside its owning execution turn');
+    if (record.lifetime === 'persistent' && this.#messages.size && !this.#executing)
+      fail('persistent allocation requires an executing message turn');
     return record;
   }
   #range(record, offset) {
@@ -63,12 +75,17 @@ export class ActorArenaOracle {
     this.#active();
     integer(size, 'allocation bytes', 1);
     if (!['persistent', 'scratch'].includes(lifetime)) fail('unknown lifetime');
+    if (this.#messages.size && !this.#executing)
+      fail('actor allocation requires an executing message turn');
     if (size > this.#quota - this.#used) fail('actor quota exceeded');
     if (this.#allocations.size >= MAX_LIVE_HANDLES) fail('live allocation handle limit');
     const bytes = new Uint8Array(size);
     const handle = Object.freeze({actor: this.#actor, incarnation: this.#incarnation,
       lifetime, turn: this.#turn});
-    this.#allocations.set(handle, {bytes, view: new DataView(bytes.buffer), lifetime, turn: this.#turn, live: true});
+    this.#allocations.set(handle, {
+      bytes, view: new DataView(bytes.buffer), lifetime, turn: this.#turn,
+      message: lifetime === 'scratch' ? this.#executing : null, live: true
+    });
     this.#used += size;
     return handle;
   }
@@ -92,7 +109,7 @@ export class ActorArenaOracle {
     this.#record(handle);
     if (this.#loans.size >= MAX_LIVE_LOANS) fail('active read loan limit');
     const lease = Object.freeze({kind: 'read-only'});
-    this.#loans.set(lease, {handle, turn: this.#turn});
+    this.#loans.set(lease, {handle, turn: this.#turn, message: this.#executing});
     return lease;
   }
   readLoan(lease, offset) {
@@ -139,18 +156,79 @@ export class ActorArenaOracle {
   }
   nextTurn() {
     this.#active();
+    if (this.#messages.size) fail('legacy actor-global scratch reset denied with in-flight messages');
     if (this.#loans.size) fail('read loan cannot cross actor turn');
+    // Even the serial compatibility path cannot scrub scratch while an
+    // external lifetime pin or descendant task could still retain it. These
+    // may complete off-carrier after the current execution turn.
+    if ((this.#pins.size || this.#tasks.size) &&
+        [...this.#allocations.values()].some(record =>
+          record.lifetime === 'scratch' && record.message === null))
+      fail('legacy scratch reset blocked by outstanding callback or task');
     if (this.#turn === Number.MAX_SAFE_INTEGER) fail('turn overflow');
     for (const [handle, record] of this.#allocations) {
       if (record.lifetime === 'scratch') this.#drop(handle, record);
     }
     this.#turn++;
   }
+  startMessage() {
+    this.#active();
+    if (this.#executing) fail('actor lane already executing');
+    if (this.#loans.size) fail('previous turn loan must be released before message admission');
+    // The reference keeps a legacy actor-global nextTurn() mode only for
+    // strictly serial callers. It cannot silently carry that old scratch
+    // allocation into concurrent message-lifetime mode.
+    for (const record of this.#allocations.values())
+      if (record.lifetime === 'scratch' && record.message === null)
+        fail('legacy scratch must be retired before message admission');
+    if (this.#messages.size >= MAX_LIVE_MESSAGES) fail('outstanding message limit');
+    if (this.#turn === Number.MAX_SAFE_INTEGER) fail('turn overflow');
+    // An opaque issued object is not a caller-supplied actor ID or message ID.
+    const message = Object.freeze({kind:'actor-message-lifetime'});
+    this.#messages.set(message, {incarnation:this.#incarnation});
+    this.#executing = message;
+    this.#turn++;
+    return message;
+  }
+  suspendMessage(message) {
+    this.#active();
+    if (this.#executing !== message || !this.#messages.has(message))
+      fail('not the executing message');
+    for (const loan of this.#loans.values())
+      if (loan.message === message) fail('loan cannot cross message suspension');
+    this.#executing = null;
+  }
+  resumeMessage(message) {
+    this.#active();
+    if (!this.#messages.has(message)) fail('foreign or stale message');
+    if (this.#executing) fail('actor lane already executing');
+    this.#executing = message;
+  }
+  completeMessage(message) {
+    if (!this.#messages.has(message)) fail('foreign or stale message');
+    // Completion can arrive after the actor is sealed; it can revoke a
+    // suspended message, but cannot run guest code after retirement.
+    if (this.#executing && this.#executing !== message)
+      fail('another message owns the actor lane');
+    for (const loan of this.#loans.values())
+      if (loan.message === message) fail('message has outstanding loans');
+    for (const origin of this.#pins.values())
+      if (origin === message) fail('message has outstanding external pins');
+    for (const origin of this.#tasks.values())
+      if (origin === message) fail('message has outstanding descendant tasks');
+    for (const [handle,record] of this.#allocations)
+      if (record.message === message) this.#drop(handle,record);
+    this.#messages.delete(message);
+    if (this.#executing === message) this.#executing = null;
+    this.#tryReclaim();
+  }
   pinExternal() {
     this.#active();
+    if (this.#messages.size && !this.#executing)
+      fail('external pin requires an executing message turn');
     if (this.#pins.size >= MAX_LIVE_PINS) fail('external pin limit');
     const pin = Object.freeze({kind: 'lifetime-only'});
-    this.#pins.add(pin);
+    this.#pins.set(pin,this.#executing);
     return pin;
   }
   releasePin(pin) {
@@ -159,9 +237,11 @@ export class ActorArenaOracle {
   }
   beginTask() {
     this.#active();
+    if (this.#messages.size && !this.#executing)
+      fail('child task requires an executing message turn');
     if (this.#tasks.size >= MAX_LIVE_TASKS) fail('outstanding task limit');
     const token = Object.freeze({kind: 'task-lifetime'});
-    this.#tasks.add(token);
+    this.#tasks.set(token,this.#executing);
     return token;
   }
   finishTask(token) {
@@ -174,7 +254,8 @@ export class ActorArenaOracle {
   }
   #tryReclaim() {
     if (!this.#sealed || this.#reclaimed) return this.#reclaimed;
-    if (this.#loans.size || this.#pins.size || this.#tasks.size) return false;
+    if (this.#loans.size || this.#pins.size || this.#tasks.size ||
+        this.#messages.size) return false;
     for (const [handle, record] of this.#allocations) this.#drop(handle, record);
     this.#reclaimed = true;
     return true;

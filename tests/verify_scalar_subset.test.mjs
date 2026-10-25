@@ -42,19 +42,19 @@ test("unsupported and malformed source fails closed",()=>{
     MIN.replace("if left < right", "if left == right"),
     MIN.replace("return right;", "return 5;"),
     MIN.replace("return right;", "return left + right;"),
-    MIN.replace("fi", "return left; fi"),
-    MIN.replace("fi", "fi if left < right; do return left; fi"),
+    MIN.replace(/\bfi\b/, "return left; fi"),
+    MIN.replace(/\bfi\b/, "fi if left < right; do return left; fi"),
     MIN.replace("int right", "String right"),
     MIN.replace("int right", "int left"),
     MIN.replace("return left;", "return missing;"),
     MIN.replace("left < right", "left < left"),
     MIN.replace("return right;", "return right"),
-    MIN.replace("fi", "end"),
+    MIN.replace(/\bfi\b/, "end"),
     MIN+"\npub fnc min_int(int a, int b): int {if a < b; do return a; else return b; fi}",
     MIN.replace("left < right", "left < right @"),
     MIN.replace("fi\n  }","fi"),
   ];
-  for(const bad of mutations) assert.throws(()=>extractScalar(bad,"min_int"));
+  for(const [index,bad] of mutations.entries()) assert.throws(()=>extractScalar(bad,"min_int"), "mutation " + index);
   assert.throws(()=>extractScalar(MIN,"clamp_int"));
 });
 test("solver output gate rejects unknown, incorrect, extra or missing results",()=>{

@@ -57,7 +57,7 @@ function parse(tokens, name) {
       } else if(peek()==="if"){
         read();
         const l=read(),op=read(),r=read();
-        assert(params.includes(l)&&params.includes(r)&&Object.hasOwn(OPS,op),
+        assert(params.includes(l)&&params.includes(r)&&l!==r&&Object.hasOwn(OPS,op),
           "unsupported comparison");
         need(";");need("do");
         const yes=sequence(["else","fi"]);
