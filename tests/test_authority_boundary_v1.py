@@ -175,6 +175,22 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
                 self.oracle.perform(self.root, "io.net", not_a_tuple)
         self.assertEqual(self.oracle.perform(self.root, "io.net", ("io.net",)), "io.net")
 
+    def test_user_permission_container_subclasses_do_not_execute(self):
+        class EvilList(list):
+            def __iter__(self):
+                raise AssertionError("permissions executed attacker iterator")
+        class EvilSet(set):
+            def __iter__(self):
+                raise AssertionError("permissions executed attacker iterator")
+        for fake in (EvilList(("fs.read",)), EvilSet(("fs.read",))):
+            with self.subTest(container_type=type(fake).__name__):
+                with self.assertRaises(Denied):
+                    AuthorityBoundaryV1(fake)
+                with self.assertRaises(Denied):
+                    self.oracle.spawn(self.root, "child", fake)
+        self.assertEqual(self.oracle.perform(self.worker, "io.file.read",
+                                              ("io.file.read",)), "io.file.read")
+
     def test_child_spawn_forbidden_while_state_loan_is_live(self):
         lease = self.oracle.enter_critical(self.root)
         try:
