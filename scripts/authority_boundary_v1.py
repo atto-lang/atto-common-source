@@ -163,6 +163,7 @@ class AuthorityBoundaryV1:
         self._not_loaned(actor_token)
         # A source annotation is evidence of an effect, never its authority.
         _require(type(effect) is str and effect in _EFFECT_RIGHTS, "unverified effect")
+        _require(effect in declared_effects, "missing declared effect")
         _require(_EFFECT_RIGHTS[effect] in actor.rights, "missing runtime capability")
         return effect
 
