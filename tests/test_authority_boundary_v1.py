@@ -43,8 +43,8 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
             "process-policy-escalation": lambda: o.root_actor("rogue", {"ffi.call"}),
             "spawn-escalation": lambda: o.spawn(worker, "rogue", {"net.connect"}),
             "child-net-effect-denied": lambda: o.perform(worker, "io.net", ("io.net",)),
-            "root-net-effect-allowed": lambda: o.perform(root, "io.net"),
-            "child-file-effect-allowed": lambda: o.perform(worker, "io.file.read"),
+            "root-net-effect-allowed": lambda: o.perform(root, "io.net", ("io.net",)),
+            "child-file-effect-allowed": lambda: o.perform(worker, "io.file.read", ("io.file.read",)),
             "unknown-effect-denied": lambda: o.perform(root, "io.not.real"),
             "annotation-does-not-grant": lambda: o.perform(worker, "ffi", ("ffi",)),
             "critical-send-denied": lambda: self._during_loan(lambda: o.send(root, worker, 7)),
@@ -88,7 +88,7 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
     def _check_failed_upgrade_no_revoke(self):
         with self.assertRaises(Denied):
             self.oracle.upgrade(self.worker, {"ffi.call"})
-        return self.oracle.perform(self.worker, "io.file.read")
+        return self.oracle.perform(self.worker, "io.file.read", ("io.file.read",))
 
     def test_vectors_all_executed(self):
         contract = json.loads(MANIFEST.read_text(encoding="utf-8"))
