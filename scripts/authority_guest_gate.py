@@ -136,4 +136,10 @@ def verify_admission_report(report, root=ROOT):
             if item["tool_exit"] != 1 or (type(item["diagnostic"]) is not str
                                          or not item["diagnostic"].strip()):
                 _fail("rejection lacked a diagnostic")
+            lowered = item["diagnostic"].casefold()
+            if any(fragment in lowered for fragment in (
+                    "traceback (most recent call last)", "filenotfounderror",
+                    "command not found", "no such file or directory",
+                    "compiler unavailable", "process timed out")):
+                _fail("infrastructure failure is not guest rejection")
     return len(seen)
