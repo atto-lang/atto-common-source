@@ -56,11 +56,11 @@ function parseModifierHeader(source) {
 }
 
 function bindingKey(b) {
-  return [b.local, b.external, b.scope].join("\0");
+  return [b._symbolId, b.external, b.scope].join("\0");
 }
 
 function canonicalBindings(bindings) {
-  return [...bindings].sort((a,b) =>
+  return bindings.map(({_symbolId, ...b}) => b).sort((a,b) =>
     a.external.localeCompare(b.external) ||
     a.local.localeCompare(b.local) ||
     a.scope.localeCompare(b.scope)
@@ -86,7 +86,7 @@ function resolve(items) {
     if (item.op === "decl") {
       declarationSeen = true;
       if (!visibilityRank.has(item.visibility)) fail("INVALID_VISIBILITY");
-      decls.push(item);
+      decls.push({...item, _id:"d" + decls.length});
       continue;
     }
     fail("UNKNOWN_ITEM");
@@ -115,8 +115,8 @@ function resolve(items) {
 
   function addBinding(binding) {
     const existing = bindings.find(b => b.external === binding.external);
-    if (existing && existing.local !== binding.local) fail("EXPORT_ALIAS_COLLISION");
-    if (existing && existing.local === binding.local && existing.scope !== binding.scope) fail("SCOPE_CONFLICT");
+    if (existing && existing._symbolId !== binding._symbolId) fail("EXPORT_ALIAS_COLLISION");
+    if (existing && existing._symbolId === binding._symbolId && existing.scope !== binding.scope) fail("SCOPE_CONFLICT");
     const key = bindingKey(binding);
     if (!bindingKeys.has(key)) {
       bindingKeys.add(key);
@@ -126,7 +126,7 @@ function resolve(items) {
 
   for (const d of decls) {
     if (["file","pkg","public"].includes(d.visibility)) {
-      addBinding({local:d.name, external:d.name, scope:d.visibility});
+      addBinding({_symbolId:d._id, local:d.name, external:d.name, scope:d.visibility});
     }
   }
 
@@ -153,24 +153,31 @@ function resolve(items) {
     const d = candidates[0];
     if (d.visibility === "private") fail("PRIVATE_EXPORT_CONFLICT");
     if (["file","pkg","public"].includes(d.visibility) && d.visibility !== ex.scope) fail("SCOPE_CONFLICT");
-    addBinding({local:d.name, external:ex.external ?? d.name, scope:ex.scope});
+    addBinding({_symbolId:d._id, local:d.name, external:ex.external ?? d.name, scope:ex.scope});
   }
 
   const effectiveScope = new Map();
   for (const d of decls) {
     let rank = visibilityRank.get(d.visibility);
     for (const b of bindings) {
-      if (b.local === d.name) rank = Math.max(rank, visibilityRank.get(b.scope));
+      if (b._symbolId === d._id) rank = Math.max(rank, visibilityRank.get(b.scope));
     }
-    effectiveScope.set(d.name, rank);
+    effectiveScope.set(d._id, rank);
+  }
+
+  function resolveSignatureRef(ref) {
+    const candidates = (byName.get(ref) ?? []).filter(d => namespaceOf(d.kind) === "type");
+    if (candidates.length === 0) fail("UNKNOWN_SIGNATURE_REF");
+    if (candidates.length !== 1) fail("AMBIGUOUS_SIGNATURE_REF");
+    return candidates[0];
   }
 
   for (const d of decls) {
-    const dBindings = bindings.filter(b => b.local === d.name);
+    const dBindings = bindings.filter(b => b._symbolId === d._id);
     for (const b of dBindings) {
       for (const ref of d.signatureRefs ?? []) {
-        if (!effectiveScope.has(ref)) fail("UNKNOWN_SIGNATURE_REF");
-        if (effectiveScope.get(ref) < visibilityRank.get(b.scope)) fail("VISIBILITY_LEAK");
+        const target = resolveSignatureRef(ref);
+        if (effectiveScope.get(target._id) < visibilityRank.get(b.scope)) fail("VISIBILITY_LEAK");
       }
     }
   }
