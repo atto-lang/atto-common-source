@@ -139,7 +139,7 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
     def test_failed_upgrade_keeps_current_generation(self):
         with self.assertRaises(Denied):
             self.oracle.upgrade(self.worker, {"net.connect"})
-        self.assertEqual(self.oracle.perform(self.worker, "io.file.read"), "io.file.read")
+        self.assertEqual(self.oracle.perform(self.worker, "io.file.read", ("io.file.read",)), "io.file.read")
 
 
 if __name__ == "__main__":
