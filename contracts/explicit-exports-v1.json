@@ -607,6 +607,38 @@
           }
         ]
       }
+    },
+    {
+      "name": "same spelling distinct symbols cannot share one external alias",
+      "items": [
+        {
+          "op": "decl",
+          "name": "Thing",
+          "kind": "type",
+          "visibility": "default"
+        },
+        {
+          "op": "decl",
+          "name": "Thing",
+          "kind": "const",
+          "visibility": "default"
+        },
+        {
+          "op": "export",
+          "name": "Thing",
+          "kind": "type",
+          "external": "Shared",
+          "scope": "public"
+        },
+        {
+          "op": "export",
+          "name": "Thing",
+          "kind": "const",
+          "external": "Shared",
+          "scope": "public"
+        }
+      ],
+      "error": "EXPORT_ALIAS_COLLISION"
     }
   ]
 }
