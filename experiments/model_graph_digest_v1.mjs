@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { modelSymbolKindOrdinal } from "./model_symbol_constant_v1.mjs";
 
 export class ModelDigestError extends Error {
   constructor(code) { super(code); this.name = "ModelDigestError"; this.code = code; }
@@ -116,6 +117,11 @@ function encodeConstant(out, c) {
     const exponent = (bits >> 52n) & 0x7ffn;
     if (exponent === 0x7ffn) fail("MODEL_NONFINITE_CONST");
     out.raw(Buffer.from(c.value.slice(2), "hex"));
+  } else if (c.kind === "symbol") {
+    const symbolKind = modelSymbolKindOrdinal(c.value);
+    if (symbolKind === null) fail("MODEL_INVALID_CONST");
+    out.u8(symbolKind);
+    out.string(c.value.name);
   } else {
     out.string(c.value);
   }

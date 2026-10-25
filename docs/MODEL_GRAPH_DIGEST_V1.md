@@ -91,7 +91,12 @@ A constant starts with its kind ordinal.
 - bool: `u8(0|1)`;
 - i64: exact signed two's-complement `i64`;
 - f64bits: eight raw bits;
-- string/symbol: canonical string encoding.
+- string: canonical string encoding (u32 UTF-8 byte length, then UTF-8 bytes);
+- symbol: u8 nominal Symbol kind (process=0, stable=1), followed by the same length-prefixed UTF-8 string encoding of the **NFC-normalized logical name**. Never hash `#name`, `Symbol.stable(...)`, display strings, interning IDs, or process-local handles. Both kinds can carry the same text but must yield different digests.
+
+Portable symbol HIR uses `{"kind":"symbol","value":{"symbolKind":"process"|"stable","name":"..."}}`.
+Compiler emission canonicalizes names to NFC before HIR publication. Portable HIR admission rejects non-NFC, unpaired UTF-16, NUL/control/format characters, names outside 1..256 UTF-8 bytes, noncanonical stable UUIDs, foreign fields/accessors and missing kind. This tightens the **draft v1** symbol payload; no symbol-bearing portable-v1 graph hash was previously qualified as a shipping backend ABI. Existing no-Symbol vectors (including i64 graph goldens) retain identical encoding.
+
 
 Defaults are resolved before this stage. Expressions, object identities, pointers, callbacks, capabilities and ambient state never enter the digest.
 

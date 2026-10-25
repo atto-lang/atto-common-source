@@ -139,11 +139,11 @@ test("effectful operation is disallowed on use; unused registry entries remain h
   errs("MODEL_EFFECTFUL_OP", () =>
     admit(g([n("x", "VecInput"), n("bad", "Impure", "x")]), unsafe));
 });
-test("shape mismatch and mismatched physical units denied", () => {
+test("shape mismatch and mismatched physical units denied with specific diagnostics", () => {
   const safe = reg(); safe.delete("Impure");
-  errs("MODEL_PORT_TYPE_MISMATCH", () =>
+  errs("MODEL_PORT_SHAPE_MISMATCH", () =>
     admit(g([n("s", "ScalarInput"), n("scaled", "VecScale", "s")]), safe));
-  errs("MODEL_PORT_TYPE_MISMATCH", () =>
+  errs("MODEL_PORT_UNIT_MISMATCH", () =>
     admit(g([n("x", "VecInput"), n("mass", "MassScale", "x")]), safe));
 });
 test("unit-bearing matching graph is allowed without unit conversion", () => {
@@ -319,7 +319,7 @@ test("all canonical constant kinds are bounded and i64 overflow fails closed", (
     { kind: "bool", value: true },
     { kind: "i64", value: "-42" },
     { kind: "string", value: "window-a" },
-    { kind: "symbol", value: "#fixed" }
+    { kind: "symbol", value: { symbolKind: "process", name: "fixed" } }
   ]);
   assert.equal(admit(g([n("x", "VecInput"), good]), safe).staticArgs, 4);
   const bad = structuredClone(g([n("x", "VecInput"), good]));
@@ -376,4 +376,27 @@ test("model admission deliberately makes no hard-real-time claim", () => {
   });
   assert.equal(Object.hasOwn(result, "hardRealtime"), false);
   assert.equal(Object.hasOwn(result.capabilities, "hardRealtime"), false);
+});
+
+test("portable Symbol admission rejects presentation strings and forged kinds", () => {
+  const safe = reg();
+  safe.set("SymbolConfigured", op([V], V, { constKinds: ["symbol"] }));
+  const candidate = value => g([
+    n("x", "VecInput"),
+    nc("cfg", "SymbolConfigured", ["x"], [{kind:"symbol",value}])
+  ]);
+  assert.doesNotThrow(() => admit(candidate({symbolKind:"process",name:"ready"}), safe));
+  assert.doesNotThrow(() => admit(candidate({symbolKind:"process",name:"#ready"}), safe));
+  assert.doesNotThrow(() => admit(candidate({
+    symbolKind:"stable",name:"12345678-1234-1234-1234-123456789abc"
+  }), safe));
+  for (const value of [
+    "#ready",
+    {symbolKind:"process",name:"e\u0301"},
+    {symbolKind:"stable",name:"ready"},
+    {symbolKind:"process",name:"\u0000"}, {symbolKind:"untrusted",name:"ready"},
+    {symbolKind:"process",name:"ready", metadata:"forged"}
+  ]) {
+    errs("MODEL_INVALID_CONST", () => admit(candidate(value), safe));
+  }
 });
