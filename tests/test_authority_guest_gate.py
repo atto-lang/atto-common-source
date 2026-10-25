@@ -85,6 +85,22 @@ class AuthorityGuestGateTest(unittest.TestCase):
             with self.subTest(exit_code=code), self.assertRaises(GateError):
                 verify_admission_report(report)
 
+    def test_infrastructure_messages_are_not_semantic_denials(self):
+        diagnostics = (
+            "Traceback (most recent call last): test exception",
+            "FileNotFoundError: missing compiler",
+            "command not found",
+            "No such file or directory",
+            "compiler unavailable",
+            "process timed out",
+        )
+        for diagnostic in diagnostics:
+            report = self.dummy_report()
+            rejected = next(c for c in report["cases"] if c["result"] == "reject")
+            rejected["diagnostic"] = diagnostic
+            with self.subTest(diagnostic=diagnostic), self.assertRaises(GateError):
+                verify_admission_report(report)
+
     def test_unverified_status_rejected(self):
         for status in ("skipped", "pending", "failed", None):
             r = self.dummy_report()
