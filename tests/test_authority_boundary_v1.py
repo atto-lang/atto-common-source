@@ -152,6 +152,29 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
             self.oracle.perform(self.root, "io.net")
         self.assertEqual(self.oracle.perform(self.root, "io.net", ("io.net",)), "io.net")
 
+    def test_mixed_duplicate_and_unknown_effects_fail_closed(self):
+        class Hostile:
+            def __eq__(self, _):
+                raise AssertionError("effect spoofing")
+            def __hash__(self):
+                raise AssertionError("effect hashing")
+        bad = (
+            ("io.net", Hostile()),
+            ("io.net", "io.net"),
+            ("io.net", "not-an-effect"),
+            ("io.net", 7),
+            ("io.net", None),
+            ("io.net",) * 20,
+        )
+        for declared in bad:
+            with self.subTest(declared_types=tuple(type(x).__name__ for x in declared)):
+                with self.assertRaises(Denied):
+                    self.oracle.perform(self.root, "io.net", declared)
+        for not_a_tuple in (["io.net"], "io.net", None):
+            with self.assertRaises(Denied):
+                self.oracle.perform(self.root, "io.net", not_a_tuple)
+        self.assertEqual(self.oracle.perform(self.root, "io.net", ("io.net",)), "io.net")
+
     def test_child_spawn_forbidden_while_state_loan_is_live(self):
         lease = self.oracle.enter_critical(self.root)
         try:
