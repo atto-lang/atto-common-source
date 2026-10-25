@@ -40,6 +40,33 @@ type Percentage = int with value gte 0 and value lte 100;
 type SmallMap = Map[string, int] with size lte 100;
 ```
 
+For numeric `int` refinements only, the short spelling `with min 0 and max 5`
+is a closed-world synonym for `with value gte 0 and value lte 5`.
+It is inclusive at both ends; 0 and 5 are admitted, -1 and 6 rejected.
+The normalizer emits the **same predicate graph and Zorde `zorde.scalar/v1`
+descriptor/fingerprint** as `@Range(min=0,max=5)` and the compiler-admitted
+static builder `Zorde.int().min(0).max(5)`. This is intentionally *not* a
+general English-language refinement DSL. `int as positive integer` is
+unsupported: `as` remains a distinct conversion/typing operator.
+Write strict positivity as `int with value gt 0` (zero excluded), or
+nonnegativity as `int with min 0`.
+
+The preceding examples are contracts for future Java/LLVM type checking;
+`declare type Code;` must resolve against the **whole final definition**
+including its refinement, not first bind to unconstrained `int` and lose
+bounds. A call to `identity(Code value): Code` receives proven valid `Code`.
+A raw arbitrary `int` cannot implicitly become `Code`: invalid constants
+must fail compilation, and dynamic inputs require explicit checked
+construction with a Zorde validation result. Until a backend can preserve
+this invariant through parameters, returns, borrowing, serialization,
+actor hops and code generation, it must reject the refined source. Mere
+syntax acceptance or runtime `bool` validation is not a proof token.
+
+The source-free Rust and Python reference oracles have the shorthand
+normalization; this does not imply Java/LLVM compiler support. The Zorde
+runtime exact-int report helper is staged separately. Generated typed
+validation and authoritative `Valid<T, SchemaId>` remain release-gated.
+
 The supported comparison tokens are `eq`/`==`, `ne`/`!=`, `gt`/`>`, `gte`/`>=`, `lt`/`<`, `lte`/`<=`. `ge` and `le` are not accepted aliases. No other textual aliases are implicit.
 
 Both canonical forms are valid, for example:
@@ -60,6 +87,68 @@ type Contradiction = string with length gt 10 and length lt 5; // error
 ```
 
 Static normalization intersects known intervals and equalities, rejects impossible conjunctions, and checks entailment without needing general theorem proving.
+
+### Character set and length policies (v2, staged)
+
+String refinements reuse the **same** `with` conjunction syntax and Zorde
+validation pipeline. These are the proposed canonical source forms:
+
+```ores
+define type Handle = string with min_length 3 and max_length 32
+    and chars ascii_letters;
+define type UpperCode = string with min_length 1 and chars ascii_uppercase;
+define type LowerCode = string with min_length 1 and chars ascii_lowercase;
+
+// Unicode 18.0 character policies (Han has exact data; casing still gated).
+define type UpperUnicode = string with min_length 1 and chars uppercase;
+define type LowerUnicode = string with min_length 1 and chars lowercase;
+define type HanText = string with min_length 1 and chars han;
+```
+
+`min_length N` and `max_length N` are exclusive to strings and normalize
+to `length gte N` and `length lte N`. All lengths count Unicode
+**scalar values**, not UTF-8 bytes, UTF-16 units or grapheme clusters.
+For example `😀` counts 1; `e\u0301` counts 2. Neither NFC nor case
+normalization is implicit.
+
+The character policy is a closed, single-valued grammar
+`chars <policy>`. Only one character policy may appear in a conjunctive
+`with` clause. String classes are **not** free-form regex, language or
+sentence descriptions. The fixed policy registry is:
+
+| Policy | Exact meaning | Current reference/Zorde status |
+| --- | --- | --- |
+| `ascii_letters` | U+0041..U+005A or U+0061..U+007A, every scalar | Supported in source-free reference and Zorde report-only runtime |
+| `ascii_uppercase` | U+0041..U+005A, every scalar | Supported in source-free reference and Zorde report-only runtime |
+| `ascii_lowercase` | U+0061..U+007A, every scalar | Supported in source-free reference and Zorde report-only runtime |
+| `uppercase` | Unicode 18.0 `Uppercase` derived property, every scalar | Reserved: rejects verification until pinned tables exist |
+| `lowercase` | Unicode 18.0 `Lowercase` derived property, every scalar | Reserved: rejects verification until pinned tables exist |
+| `han` | Unicode 18.0 `Script=Han`, every scalar | Exact 25-range source-free reference and Zorde report validation; typed compiler lowering still gated |
+
+`chars han` is **not** a detector for the Chinese language. Han characters
+are also used in Japanese and other contexts. It excludes punctuation,
+spacing and non-Han script code points; `Script_Extensions` or language
+identification would require separately named, independently verified
+policies. Because `chars` predicates are universal quantifications,
+an empty string satisfies a pure character policy. Add `min_length 1`
+when emptiness is forbidden.
+
+The v1 scalar length-only schema fingerprint/ABI remains unchanged.
+A character predicate introduces **`zorde.scalar/v2`**, including a
+`charset` and an explicit `unicode_version` for Unicode-backed policies.
+All syntax families emitting an equivalent character predicate share
+one normalized fingerprint. The source-free conformance fixture
+`fixtures/refinement-v1/zorde-english-letters-2-4-v2.json` is byte-identical
+to Zorde's native reference fixture and covers exact ASCII restrictions.
+
+ASCII and the Unicode 18.0 `Script=Han` policy have report-validation implementations. The Han table is copied from the exact 25 intervals of [Unicode 18.0 Scripts.txt](https://www.unicode.org/Public/18.0.0/ucd/Scripts.txt), including 103352 assigned scalars; it is **not** a loose CJK block match. Only Unicode uppercase/lowercase remain unverified.
+Neither a runtime report nor a matching schema hash may mint
+compiler-authoritative `Valid<T, SchemaId>`. Java and LLVM must reject
+all refined string aliases until typed HIR, checked conversion, generated
+validator dispatch, ownership/serialization verification and source-level
+execution are proven. Unicode-dependent modes **must not** fall back to the
+host JDK, Rust regex, Python or ICU versions: runtime Unicode tables are
+part of the schema/ABI and must match the pinned data *exactly*. Han is now pinned to the canonical 25 Script ranges; general Unicode Uppercase/Lowercase remain disabled.
 
 ### 3. General pure predicates with `where`
 
