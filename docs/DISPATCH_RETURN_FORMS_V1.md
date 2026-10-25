@@ -41,6 +41,11 @@ zero steps does not demonstrate executable conformance.
    destination from runtime return-value type or whether a caller ignores it.
 9. The `match<ret=T>` / `match<T>` contract applies to ARM_RESULT type.
    `do match<ret=T>` constrains enclosing callable returns, not an arm result.
+10. Suspension is orthogonal to dispatch return destination. A selected arm may
+    contain `await` when the surrounding callable/effect context permits
+    suspension; no `nb` dispatch modifier is required. `nb match` and
+    `nb switch` are invalid forms. `nb` remains a wait-mode modifier for
+    channel/select operations and must never mean "allow async arms".
 
 ## Select is subject to the same explicit dispatch rule
 
@@ -92,6 +97,26 @@ defaults to `false`. This marker prevents later AST passes from guessing
 the return destination, but does not by itself implement the missing
 `ValueSwitchExpr`/ARM_RESULT lowering or make bare legacy statements
 conformant. The release gate must cover strict admission and AST preservation.
+
+## Current-main implementation audit (2026-10-25)
+
+This contract is the target language surface, not a claim that every backend
+currently implements every form.
+
+- Java/GraalVM has a distinct value `MatchExpr` and procedural `MatchStmt`.
+  Awaited value-match subject/guard/arm execution has prior exact-tree guest
+  evidence. Canonical `do match` and `do switch` are statement forms; the
+  current hardening branch preserves an explicit procedural bit for
+  `do switch`. Java does **not** yet have a value-producing `SwitchExpr`;
+  value `switch` must fail closed.
+- Java still accepts legacy bare statement `match`/`switch` during migration.
+  That compatibility surface is not evidence for the canonical value forms.
+- Current LLVM main does not lower ordinary value/procedural match or switch.
+  It must reject all four forms before emitting IR until typed
+  `ARM_RESULT`/`FUNCTION_RETURN` lowering exists. Historical native PRs do
+  not establish current-main support.
+- `nb match` and `nb switch` are invalid on every backend. Suspension in a
+  selected arm is governed by the enclosing async/suspending context.
 
 ## Evidence gate
 
