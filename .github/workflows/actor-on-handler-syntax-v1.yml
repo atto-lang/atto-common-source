@@ -1,5 +1,6 @@
 name: Actor on-handler syntax v1 source contract
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/actor-on-handler-syntax-v1.yml'
@@ -14,6 +15,10 @@ on:
       - 'tests/actor-on-handler-syntax-v1.test.mjs'
 permissions:
   contents: read
+
+concurrency:
+  group: actor-on-handler-v1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   source-contract:
     runs-on: ubuntu-24.04
