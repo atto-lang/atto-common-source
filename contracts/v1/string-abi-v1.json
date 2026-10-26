@@ -1,0 +1,198 @@
+{
+  "schema": "oreslang.string-abi.v1",
+  "revision": "string-abi-v1.2026-10-25.1",
+  "string": {
+    "encoding": "utf-8",
+    "semantic_units": "unicode_scalar_values",
+    "extent": "explicit_byte_length",
+    "embedded_nul": "allowed",
+    "trailing_nul_required": false,
+    "sentinel_scan_for_extent": false,
+    "byte_length_includes_terminator": false
+  },
+  "cstring": {
+    "distinct_from_string": true,
+    "encoding": "utf-8",
+    "implicit_conversion": false,
+    "embedded_nul": "reject",
+    "byte_length_excludes_terminator": true,
+    "required_trailing_nul_bytes": 1,
+    "mutates_source_storage": false
+  },
+  "inbound_pointer": {
+    "explicit_length_preferred": true,
+    "embedded_nul_with_explicit_length": "allowed",
+    "nul_only_pointer_requires_independent_max_bound": true,
+    "unbounded_scan_allowed": false
+  },
+  "cases": [
+    {
+      "name": "empty",
+      "code_points": [],
+      "utf8": [],
+      "byte_length": 0,
+      "cstring": {
+        "ok": true,
+        "storage": [
+          0
+        ],
+        "byte_length": 0
+      }
+    },
+    {
+      "name": "ascii",
+      "code_points": [
+        104,
+        101,
+        108,
+        108,
+        111
+      ],
+      "utf8": [
+        104,
+        101,
+        108,
+        108,
+        111
+      ],
+      "byte_length": 5,
+      "cstring": {
+        "ok": true,
+        "storage": [
+          104,
+          101,
+          108,
+          108,
+          111,
+          0
+        ],
+        "byte_length": 5
+      }
+    },
+    {
+      "name": "multibyte",
+      "code_points": [
+        233,
+        128512
+      ],
+      "utf8": [
+        195,
+        169,
+        240,
+        159,
+        152,
+        128
+      ],
+      "byte_length": 6,
+      "cstring": {
+        "ok": true,
+        "storage": [
+          195,
+          169,
+          240,
+          159,
+          152,
+          128,
+          0
+        ],
+        "byte_length": 6
+      }
+    },
+    {
+      "name": "embedded-nul",
+      "code_points": [
+        65,
+        0,
+        66
+      ],
+      "utf8": [
+        65,
+        0,
+        66
+      ],
+      "byte_length": 3,
+      "cstring": {
+        "ok": false,
+        "error": "EMBEDDED_NUL"
+      }
+    }
+  ],
+  "invalid_utf8": [
+    {
+      "name": "overlong-slash",
+      "bytes": [
+        192,
+        175
+      ]
+    },
+    {
+      "name": "utf8-surrogate",
+      "bytes": [
+        237,
+        160,
+        128
+      ]
+    },
+    {
+      "name": "truncated-four-byte",
+      "bytes": [
+        240,
+        159
+      ]
+    },
+    {
+      "name": "above-u10ffff",
+      "bytes": [
+        244,
+        144,
+        128,
+        128
+      ]
+    }
+  ],
+  "invalid_utf16": [
+    {
+      "name": "lone-high",
+      "code_units": [
+        55296
+      ]
+    },
+    {
+      "name": "lone-low",
+      "code_units": [
+        56320
+      ]
+    }
+  ],
+  "inbound_cases": [
+    {
+      "name": "explicit-length-keeps-nul",
+      "storage": [
+        65,
+        0,
+        66,
+        90,
+        90
+      ],
+      "byte_length": 3,
+      "utf8": [
+        65,
+        0,
+        66
+      ]
+    },
+    {
+      "name": "cstring-length-excludes-terminator",
+      "storage": [
+        195,
+        169,
+        0
+      ],
+      "byte_length": 2,
+      "utf8": [
+        195,
+        169
+      ]
+    }
+  ]
+}
