@@ -100,7 +100,20 @@ on #get -> int {
 }
 ```
 
-The compiler must reject a value-returning handler with an omitted result type, a value return from `void`, or reachable fallthrough from a non-`void` handler. Non-`void` handler return values are request/reply results, not actor output-stream emissions.
+The compiler must reject a value-returning handler with an omitted result type, a value return from `void`, or reachable fallthrough from a non-`void` handler. **Every non-`void`, non-lambda callable in Oreslang requires an explicit `return` on every reachable value-producing path.** A trailing expression does not implicitly return from a function, method, actor handler, or ordinary block. Lambdas retain their separately defined expression-body shorthand.
+
+For a value-producing dispatch expression such as `match`, the enclosing callable still needs its explicit function return:
+
+```ores
+on #get -> int ::
+    return match state.balance over
+        on n when n >= 0 -> n;
+        on _ -> 0;
+    end
+end
+```
+
+Non-`void` handler return values are request/reply results, not actor output-stream emissions.
 
 ## Delimiter rules
 
@@ -260,14 +273,49 @@ An implementation must run the same ownership checker used by ordinary actor mai
 
 ## Interaction with `match ... over`
 
-The `on` keyword deliberately has the same "this case handles this pattern" meaning used by canonical matching:
+The `on` keyword deliberately has the same "this case handles this pattern" meaning used by canonical matching. Value-match arms have two explicit body forms:
+
+```text
+match_arm := "on" pattern guard? "->" expression ";"
+           | "on" pattern guard? "->" "::" statements "end"
+```
+
+The expression-arm semicolon is explicit. A block arm is introduced by `-> ::` and, when it produces a value for a value `match`, must execute an explicit arm-result `return` on every reachable value-producing path. There is no implicit "last expression" return from a block arm.
+
+Canonical example:
 
 ```ores
-return match result over
-    on Ok(value) -> value
-    on Err(error) -> handle_error(error)
+define actor Account conforms AccountService as
+    state {
+        int balance = 0;
+    }
+
+    on #deposit(int amount) when amount > 0 -> void ::
+        state.balance += amount
+    end
+
+    on #withdraw(int amount) -> Result<int, Error> ::
+        return match amount over
+            on n when n <= 0 ->
+                Err(#invalid_amount);
+
+            on n when n > state.balance ->
+                Err(#insufficient_funds);
+
+            on n -> ::
+                state.balance -= n
+                return Ok(state.balance);
+            end
+        end
+    end
+
+    on #get -> int ::
+        return state.balance
+    end
 end
 ```
+
+Here the outer `return match ...` is the explicit **function/handler return** required by the non-`void` handler. Inside the block arm, `return Ok(...)` is the explicit **ARM_RESULT** for the selected value-match arm; it does not bypass the match and return directly from the actor handler. Frontends must preserve those two return destinations distinctly in typed IR.
 
 Actor `on #selector` declarations are not implemented as runtime source-level `match` statements, however. The compiler records a handler dispatch table so selector/arity/type admission occurs before entering user code. This avoids repeated dynamic matching and keeps handler ABI metadata available to AOT/linkers.
 
