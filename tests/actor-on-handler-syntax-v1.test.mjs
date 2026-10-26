@@ -100,3 +100,26 @@ test('all fixture ids are globally unique and outcomes are closed', () => {
   assert.equal(new Set(ids).size, ids.length);
   for (const row of rows) assert.ok(['accept','reject'].includes(row.expected), row.id);
 });
+
+test('nonvoid non-lambda handlers require explicit function return', () => {
+  const c = byId(contract.cases);
+  assert.equal(contract.return_policy.nonvoid_nonlambda_callable_requires_explicit_return, true);
+  assert.equal(contract.return_policy.trailing_expression_is_function_return, false);
+  assert.equal(contract.return_policy.lambda_expression_body_exception, true);
+  assert.equal(c['nonvoid-handler-tail-expression'].expected, 'reject');
+  assert.equal(c['nonvoid-handler-explicit-return'].expected, 'accept');
+});
+
+test('value match arms distinguish expression and explicit block results', () => {
+  const m = byId(contract.match_arm_cases);
+  assert.equal(contract.return_policy.value_match_expression_requires_enclosing_explicit_return, true);
+  assert.equal(contract.return_policy.value_match_expression_arm_form, 'on pattern [when guard] -> expression;');
+  assert.equal(contract.return_policy.value_match_block_arm_form, 'on pattern [when guard] -> :: statements end');
+  assert.equal(contract.return_policy.block_arm_return_destination, 'ARM_RESULT');
+  assert.equal(contract.return_policy.enclosing_return_match_destination, 'FUNCTION_RETURN');
+  assert.equal(m['value-expression-arm-semicolon'].expected, 'accept');
+  assert.equal(m['value-block-arm-explicit-return'].expected, 'accept');
+  assert.equal(m['value-block-arm-explicit-return'].return_destination, 'ARM_RESULT');
+  assert.equal(m['value-block-arm-tail-expression'].expected, 'reject');
+  assert.equal(m['value-expression-arm-missing-semicolon'].expected, 'reject');
+});
