@@ -72,7 +72,7 @@ state_entry    := type_ref IDENT ("=" expression)? ";"
 
 A zero-parameter selector omits parentheses canonically: `on #increment`, not `on #increment()`. Backends may retain a compatibility spelling only if it normalizes identically and does not create a second ABI identity.
 
-`on`, `state`, and `when` are contextual in these positions. A Symbol selector is a compile-time Symbol literal, not a String and not a dynamically evaluated value.
+`on`, `state`, and `when` are contextual in these positions. A Symbol selector is a compile-time Symbol literal, not a String and not a dynamically evaluated value. Handler identity uses the Symbol's normalized key, so equivalent spellings such as `#ready` and `#'ready'` collide and must be diagnosed as a duplicate selector/arity rather than producing two dispatch entries.
 
 ## Return rules
 
@@ -136,7 +136,7 @@ Examples:
 
 A v1 actor may declare at most one handler for a selector/arity pair. Multiple guarded clauses for the same selector/arity are deferred until ordered clause exhaustiveness and overlap diagnostics have a shared contract. Backends must reject duplicates rather than choose by parameter type, source order, or return type.
 
-Parameter types are part of the handler ABI even though they are not overload discriminators. Every incoming payload slot must be assignable to its declared type before user code runs.
+Parameter types are part of the handler ABI even though they are not overload discriminators. Every incoming payload slot must be assignable to its declared type before user code runs. Multiple source parameters are represented in the mailbox/request envelope as one ordered tuple of argument slots; they are not multiple independent mailbox messages.
 
 ## Guards
 
@@ -148,7 +148,7 @@ on #add(int amount) when amount > 0 -> void {
 }
 ```
 
-Guards must be Boolean, pure, deterministic, and non-suspending. They may read admitted parameter values and immutable constants. A guard may not:
+Guards must be Boolean, pure, deterministic, and non-suspending. They may read admitted parameter values and immutable constants. They may not read actor state: selector/arity/type/guard admission must complete before acquiring any actor-state capability. A guard may not:
 
 - mutate actor state or other storage;
 - perform I/O or actor messaging;
@@ -163,7 +163,7 @@ A false guard performs no user-state mutation. For a one-way event it enters the
 
 An actor may contain zero or one compiler-owned `state { ... }` block. Ordinary actor instance fields outside that block are not an alternative storage channel once this contract is enabled.
 
-Both state-entry spellings are accepted and normalize to the same fixed-key state schema:
+Both state-entry spellings are accepted and normalize to the same fixed-key state schema. In v1, a default initializer must be a detached context-free scalar/immutable literal admitted by the actor-state contract. Calls, external bindings, evaluated allocations, and reference-valued defaults remain rejected until an actor-owned initialization/move lowering proves ownership:
 
 ```ores
 state {
@@ -190,7 +190,7 @@ Direct handler access is syntactic sugar for the shortest compiler-owned state c
 
 This does not weaken the sealed `handle_state` / `using state.read/write` contract used by ordinary helper methods and lower-level backends. A backend may lower direct handler projections to those sealed operations. It must never expose a raw mutable state pointer or permit `rt borrow state.count` to escape an actor turn.
 
-State keys are fixed at compile time. Duplicate keys, unknown keys, dynamic indexing, `self.state`, and returning/capturing the state object itself are rejected.
+State keys are fixed at compile time. Duplicate keys, unknown keys, dynamic indexing, `self.state`, and returning/capturing the state object itself are rejected. Within an `on` handler, `state` is a reserved compiler binding: handler parameters and local bindings may not shadow it.
 
 ## Handler state authority
 
@@ -204,11 +204,11 @@ This distinction keeps the common event-handler case concise without turning arb
 
 A `void` handler is an event handler. A non-`void` handler is a request/reply handler.
 
-The transport envelope, correlation identifier, reply completion authority, cancellation state, and pending-reply accounting are runtime-owned. Guest source must not forge or directly complete a reply token.
+The transport envelope, normalized selector, ordered argument tuple, correlation identifier, reply completion authority, cancellation state, and pending-reply accounting are runtime-owned. Guest source must not forge a dispatch envelope or directly manufacture/complete a reply token. Unknown selectors, arity/type mismatches, and false guards fail before user body execution or actor-state acquisition.
 
 A non-`void` handler therefore lowers to the same kind of compiler/runtime request path as a typed `ActorRef.request(...): Future<T>`; it must **not** be implemented by emitting onto the actor's ordinary output stream.
 
-This contract intentionally does not choose the final caller-side selector sugar. Whether a later source form is `ref.request(#get)`, a typed generated method, or another checked spelling, it must target this exact selector/arity/type contract and the same runtime-owned correlation machinery.
+This contract intentionally does not choose the final caller-side selector sugar. Whether a later source form is `ref.request(#get)`, a typed generated method, or another checked spelling, it must target this exact selector/arity/type contract and the same runtime-owned correlation machinery. Java PR #456 supplies correlation/reply machinery, but its single private `run(In): Out` entrypoint is not by itself multi-selector dispatch; an implementation must add an authenticated selector-bearing envelope/dispatch table before claiming this syntax executable.
 
 Until a backend has a real correlated request/reply implementation, it may parse and diagnose this syntax but must not claim executable support for non-`void` handlers.
 
@@ -256,7 +256,7 @@ State loans and borrowed payload references may not escape through:
 - closures that outlive the handler;
 - `await` or other suspension points unless the ordinary ownership checker independently proves a permitted owned copy.
 
-An implementation must run the same ownership checker used by ordinary actor mailbox/request entrypoints after syntax normalization.
+An implementation must run the same ownership checker used by ordinary actor mailbox/request entrypoints after syntax normalization. Handler syntax does not imply a second `async` declaration kind: a handler may suspend only on a backend that has real actor-turn continuation lowering. Otherwise any suspending handler body must be rejected before code generation. Direct state capabilities remain expression/statement scoped and never stay live across that suspension.
 
 ## Interaction with `match ... over`
 
@@ -271,13 +271,19 @@ end
 
 Actor `on #selector` declarations are not implemented as runtime source-level `match` statements, however. The compiler records a handler dispatch table so selector/arity/type admission occurs before entering user code. This avoids repeated dynamic matching and keeps handler ABI metadata available to AOT/linkers.
 
+## ABI and hot-reload identity
+
+The canonical handler dispatch table is keyed by normalized Symbol selector plus arity. ABI signature metadata includes ordered parameter types, result type, and interaction kind (event versus request/reply). Concrete body delimiter and guard expression text are not ABI identity. Actor state has a separate schema fingerprint over fixed key names and key types; defaults and handler bodies are code-generation semantics, not a substitute for schema compatibility.
+
+A backend must make dispatch-table construction deterministic and reject normalized duplicate keys before emitting executable artifacts. Hot reload may change handler bodies/guards under the ordinary code-generation compatibility policy, but a selector/arity/signature or state-schema change must pass the actor upgrade compatibility gate rather than being silently treated as the same ABI.
+
 ## Diagnostics
 
 At minimum, frontends should distinguish:
 
 1. malformed handler header;
 2. non-Symbol selector;
-3. duplicate selector/arity;
+3. duplicate normalized selector/arity, including equivalent quoted/unquoted Symbol spellings;
 4. missing explicit result type for a value-returning handler;
 5. non-`void` fallthrough;
 6. value return from `void`;
