@@ -47,19 +47,19 @@ function parseExportSyntax(source) {
     const end = text.indexOf(close, 1);
     if (end < 0) fail("MALFORMED_EXPORT_SCOPE");
     const raw = text.slice(1, end).trim();
-    if (!["file","pkg","package"].includes(raw)) fail("UNKNOWN_EXPORT_SCOPE");
+    if (!["file","pkg","package"].includes(raw)) fail("EXPORT_UNKNOWN_SCOPE");
     scope = raw === "package" ? "pkg" : raw;
     scopeSeen = true;
     text = text.slice(end + 1).trimStart();
   }
 
   if (scopeSeen && (text.startsWith("[") || text.startsWith("("))) {
-    fail("MULTIPLE_EXPORT_SCOPES");
+    fail("EXPORT_MULTIPLE_SCOPES");
   }
 
-  if (/^\*/.test(text) && /\bfrom\b/.test(text)) fail("REEXPORT_UNSUPPORTED");
-  if (/^from\b/.test(text)) fail("REEXPORT_UNSUPPORTED");
-  if (/^\*/.test(text)) fail("WILDCARD_EXPORT_UNSUPPORTED");
+  if (/^\*/.test(text) && /\bfrom\b/.test(text)) fail("EXPORT_REEXPORT_UNSUPPORTED");
+  if (/^from\b/.test(text)) fail("EXPORT_REEXPORT_UNSUPPORTED");
+  if (/^\*/.test(text)) fail("EXPORT_WILDCARD_UNSUPPORTED");
 
   let kind = null;
   const firstWord = text.match(/^([A-Za-z_][A-Za-z0-9_]*)\b/);
@@ -67,34 +67,34 @@ function parseExportSyntax(source) {
     kind = firstWord[1];
     text = text.slice(firstWord[0].length).trimStart();
   } else if (firstWord && ["string","int","float","bool","void"].includes(firstWord[1])) {
-    fail("UNKNOWN_EXPORT_DECLARATION_KIND");
+    fail("EXPORT_UNKNOWN_DECLARATION_KIND");
   }
 
   function parseOne(raw, insideGroup) {
     const item = raw.trim();
-    if (!item) fail("MALFORMED_EXPORT_LIST");
+    if (!item) fail("EXPORT_MALFORMED_LIST");
 
-    if (item.includes("{") || item.includes("}")) fail("NESTED_EXPORT_GROUP");
+    if (item.includes("{") || item.includes("}")) fail("EXPORT_NESTED_GROUP");
     if (item.includes("::") || item.includes(".") || item.includes("/")) {
-      fail("QUALIFIED_EXPORT_UNSUPPORTED");
+      fail("EXPORT_QUALIFIED_TARGET_UNSUPPORTED");
     }
-    if (item.includes("<") || item.includes(">")) fail("GENERIC_EXPORT_TARGET_UNSUPPORTED");
-    if (item.includes("(") || item.includes(")")) fail("CALLABLE_SIGNATURE_EXPORT_UNSUPPORTED");
+    if (item.includes("<") || item.includes(">")) fail("EXPORT_GENERIC_TARGET_UNSUPPORTED");
+    if (item.includes("(") || item.includes(")")) fail("EXPORT_CALLABLE_SIGNATURE_UNSUPPORTED");
 
     const words = item.split(/\s+/);
     if (insideGroup && words.length > 1 && exportKinds.has(words[0])) {
-      fail("KIND_PREFIX_IN_GROUP");
+      fail("EXPORT_KIND_PREFIX_IN_GROUP");
     }
 
     if (item.startsWith("#")) {
       const selfIdentity = item.match(/^(#[A-Za-z_][A-Za-z0-9_]*)\s+as\s+(#[A-Za-z_][A-Za-z0-9_]*)$/);
       if (selfIdentity) {
         if (kind !== null && kind !== "symbol") fail("EXPORT_KIND_MISMATCH");
-        if (selfIdentity[1] !== selfIdentity[2]) fail("SYMBOL_IDENTITY_MISMATCH");
+        if (selfIdentity[1] !== selfIdentity[2]) fail("EXPORT_SYMBOL_IDENTITY_MISMATCH");
         return {name:selfIdentity[1], symbol:true, selfIdentity:true};
       }
       if (/^(#[A-Za-z_][A-Za-z0-9_]*)\s+as\s+([A-Za-z_][A-Za-z0-9_]*)$/.test(item)) {
-        fail("SYMBOL_BINDING_ALIAS_UNSUPPORTED");
+        fail("EXPORT_SYMBOL_BINDING_ALIAS_UNSUPPORTED");
       }
       if (!symbolRe.test(item)) fail("MALFORMED_EXPORT_TARGET");
       if (kind !== null && kind !== "symbol") fail("EXPORT_KIND_MISMATCH");
@@ -102,33 +102,33 @@ function parseExportSyntax(source) {
     }
 
     if (/^([A-Za-z_][A-Za-z0-9_]*)\s+as\s+#[A-Za-z_][A-Za-z0-9_]*$/.test(item)) {
-      fail("SYMBOL_IDENTITY_TARGET_REQUIRES_SYMBOL_SOURCE");
+      fail("EXPORT_SYMBOL_IDENTITY_TARGET_REQUIRES_SYMBOL_SOURCE");
     }
 
     if (/^([A-Za-z_][A-Za-z0-9_]*)\s+as\s+(?:'[^']*'|"[^"]*")$/.test(item)) {
-      fail("LITERAL_EXPORT_ALIAS_UNSUPPORTED");
+      fail("EXPORT_LITERAL_ALIAS_UNSUPPORTED");
     }
 
     const aliasMatch = item.match(/^([A-Za-z_][A-Za-z0-9_]*)\s+as\s+([A-Za-z_][A-Za-z0-9_]*)$/);
     if (aliasMatch) return {name:aliasMatch[1], external:aliasMatch[2]};
 
-    if (!identRe.test(item)) fail("MALFORMED_EXPORT_LIST");
+    if (!identRe.test(item)) fail("EXPORT_MALFORMED_LIST");
     return {name:item};
   }
 
   let items;
   if (text.startsWith("{")) {
-    if (!text.endsWith("}")) fail("MALFORMED_EXPORT_LIST");
+    if (!text.endsWith("}")) fail("EXPORT_MALFORMED_LIST");
     const inner = text.slice(1, -1);
-    if (inner.trim() === "") fail("EMPTY_EXPORT_GROUP");
-    if (inner.includes("{") || inner.includes("}")) fail("NESTED_EXPORT_GROUP");
+    if (inner.trim() === "") fail("EXPORT_EMPTY_GROUP");
+    if (inner.includes("{") || inner.includes("}")) fail("EXPORT_NESTED_GROUP");
 
     const raw = inner.split(",");
     if (raw[raw.length - 1].trim() === "") raw.pop();
-    if (raw.length === 0 || raw.some(x => x.trim() === "")) fail("MALFORMED_EXPORT_LIST");
+    if (raw.length === 0 || raw.some(x => x.trim() === "")) fail("EXPORT_MALFORMED_LIST");
     items = raw.map(x => parseOne(x, true));
   } else {
-    if (text.includes("{") || text.includes("}")) fail("MALFORMED_EXPORT_LIST");
+    if (text.includes("{") || text.includes("}")) fail("EXPORT_MALFORMED_LIST");
     items = [parseOne(text, false)];
   }
 
@@ -199,7 +199,7 @@ function resolve(items, {ownerScope = "public", abi = false} = {}) {
       continue;
     }
     if (item.op === "import") {
-      if (declarationSeen) fail("IMPORT_AFTER_DECLARATION");
+      if (declarationSeen) fail("EXPORT_IMPORT_PRELUDE");
       imports.push(item);
       continue;
     }
@@ -252,7 +252,7 @@ function resolve(items, {ownerScope = "public", abi = false} = {}) {
   function addBinding(binding) {
     const existing = bindings.find(b => b.external === binding.external);
     if (existing && existing._symbolId !== binding._symbolId) fail("EXPORT_ALIAS_COLLISION");
-    if (existing && existing._symbolId === binding._symbolId && existing.scope !== binding.scope) fail("SCOPE_CONFLICT");
+    if (existing && existing._symbolId === binding._symbolId && existing.scope !== binding.scope) fail("EXPORT_SCOPE_CONFLICT");
     const key = bindingKey(binding);
     if (!bindingKeys.has(key)) {
       bindingKeys.add(key);
@@ -273,23 +273,23 @@ function resolve(items, {ownerScope = "public", abi = false} = {}) {
       const typed = candidates.filter(d => d.kind === ex.kind);
       if (typed.length === 0) {
         if (candidates.length > 0) fail("EXPORT_KIND_MISMATCH");
-        if (importedByName.has(ex.name)) fail("IMPORTED_LOCAL_EXPORT");
-        fail("UNKNOWN_EXPORT");
+        if (importedByName.has(ex.name)) fail("EXPORT_IMPORTED_NAME");
+        fail("EXPORT_UNKNOWN_TARGET");
       }
       candidates = typed;
     } else {
       if (candidates.length === 0) {
-        if (importedByName.has(ex.name)) fail("IMPORTED_LOCAL_EXPORT");
-        fail("UNKNOWN_EXPORT");
+        if (importedByName.has(ex.name)) fail("EXPORT_IMPORTED_NAME");
+        fail("EXPORT_UNKNOWN_TARGET");
       }
       const logical = new Set(candidates.map(d => namespaceOf(d.kind) + ":" + d.kind));
-      if (logical.size > 1) fail("AMBIGUOUS_EXPORT");
+      if (logical.size > 1) fail("EXPORT_AMBIGUOUS_TARGET");
     }
     if (candidates.length !== 1 && !candidates.every(d =>
-        ["fnc","routine"].includes(d.kind) && d.kind === candidates[0].kind)) fail("AMBIGUOUS_EXPORT");
+        ["fnc","routine"].includes(d.kind) && d.kind === candidates[0].kind)) fail("EXPORT_AMBIGUOUS_TARGET");
     const d = candidates[0];
-    if (d.visibility === "private") fail("PRIVATE_EXPORT_CONFLICT");
-    if (["file","pkg","public"].includes(d.visibility) && d.visibility !== ex.scope) fail("SCOPE_CONFLICT");
+    if (d.visibility === "private") fail("EXPORT_EXPLICIT_PRIVATE");
+    if (["file","pkg","public"].includes(d.visibility) && d.visibility !== ex.scope) fail("EXPORT_SCOPE_CONFLICT");
     addBinding({_symbolId:d._id, local:d.name, external:ex.external ?? d.name, scope:ex.scope});
   }
 
@@ -312,7 +312,7 @@ function resolve(items, {ownerScope = "public", abi = false} = {}) {
   function checkRefs(refs, audience, seen = new Set()) {
     for (const ref of refs) {
       const target = resolveSignatureRef(ref);
-      if (effectiveScope.get(target._id) < audience) fail("VISIBILITY_LEAK");
+      if (effectiveScope.get(target._id) < audience) fail("EXPORT_API_LEAK");
       if (seen.has(target._id)) continue;
       seen.add(target._id);
       checkRefs(target.signatureRefs ?? [], audience, seen);
@@ -434,7 +434,7 @@ for (let n = 0; n <= 16; n++) {
       {op:"import",name:"Dep",kind:"class"}
     ]);
   } catch (e) { code = e.code; }
-  assert.equal(code, "IMPORT_AFTER_DECLARATION");
+  assert.equal(code, "EXPORT_IMPORT_PRELUDE");
 }
 
 // Property: no source export can imply target-native exposure in this contract.
@@ -464,9 +464,9 @@ const parsedIdentity = parseExportSyntax("export symbol #ready as #ready;");
 const symbolExport = {op:"export",kind:"symbol",name:parsedIdentity.items[0].name,scope:parsedIdentity.scope};
 assert.deepEqual(resolve([{op:"decl",kind:"symbol",name:"#ready",visibility:"default"},symbolExport]),
   resolve([{op:"decl",kind:"symbol",name:"#ready",visibility:"default"}, {...symbolExport,source_span:"elsewhere"}]));
-assert.throws(() => resolve([symbolExport]), {code:"UNKNOWN_EXPORT"});
+assert.throws(() => resolve([symbolExport]), {code:"EXPORT_UNKNOWN_TARGET"});
 assert.throws(() => resolve([{op:"decl",kind:"symbol",name:"#ready",visibility:"private"},symbolExport]),
-  {code:"PRIVATE_EXPORT_CONFLICT"});
+  {code:"EXPORT_EXPLICIT_PRIVATE"});
 
 console.log(JSON.stringify({
   status:"PASS",
