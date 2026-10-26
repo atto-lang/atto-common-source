@@ -60,7 +60,8 @@ for (const c of contract.cases) {
   assert.equal(bytes.length, c.byte_length, c.name);
   assert.equal(decodeExplicit(bytes, c.byte_length), text, c.name);
   if (c.cstring.ok) {
-    assert.deepEqual(toCString(text), c.cstring, c.name);
+    assert.deepEqual(toCString(text),
+      {storage:c.cstring.storage, byte_length:c.cstring.byte_length}, c.name);
   } else {
     assert.throws(() => toCString(text), {code:c.cstring.error}, c.name);
   }
