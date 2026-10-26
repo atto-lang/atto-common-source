@@ -162,8 +162,8 @@ end
 and, for an explicitly typed generator:
 
 ```ores
-define typed macro generate_debug<T: type>() -> declarations as
-    comptime for field in meta.fields(T) {
+define macro generate_debug(Type target) -> SyntaxList<Decl> as
+    comptime for field in meta.fields(target) {
         emit quote {
             // emit verified syntax using typed syntax interpolation
         };
@@ -173,6 +173,53 @@ end
 
 A syntax macro uses the same `quote` family but receives syntax objects rather
 than resolved `TypeMeta<T>`.
+
+### 3.4 Phase separation: Zig-style comptime and runtime renderers
+
+A function may have a compile-time parameter alongside ordinary runtime
+parameters. A compile-time parameter must be fully bound to a verified constant
+before AOT emission; a regular runtime parameter remains dynamic.
+
+Illustrative source (syntax under review):
+
+    fnc power(int base, comptime int exponent) -> int
+        let int result = 1;
+        comptime for i in 0..exponent {
+            result *= base;
+        }
+        return result;
+    end
+
+The unrolled multiplications execute at runtime unless the complete call is
+evaluated in a proven compile-time context. A comptime branch is a structural
+compiler decision, not a permissive way to evaluate effects or inspect actor
+state during compilation. Compile-time evaluation has deterministic budgets.
+
+Canonical macro declarations use **define macro**, not a separate
+define typed macro declaration keyword. Syntax-only versus typed inspection is
+a staged permission determined by admitted argument and metadata categories.
+The concrete v1 invocation is name!(...) with explicit compiler-argument
+categories; this does not turn a macro into a runtime function.
+
+The first executable Java evaluator slice is deliberately narrower than this
+proposed general model: a macro may return caller-owned Syntax<Expr>, or emit a
+compiler-proven primitive Const<T> literal through quote(value). Any more
+general expression evaluation, declarations or quasiquotation must fail closed
+until independently admitted.
+
+A macro can also generate a **runtime renderer** ahead of time. Such a
+renderer may accept runtime values to create or update DOM nodes, generate HTML
+or JSON, or serialize data. A UI framework can compile rendering and reactive
+logic to JavaScript/Wasm artifacts at build time; it does not require running
+the macro or compiling new Oreslang/JavaScript source inside the application.
+Source text produced as runtime data is not permission to execute it as
+Oreslang, and injection/escaping/capability policies still apply. Browser
+machine-code JIT is separate from Oreslang guest source compilation.
+
+Strict-AOT hot reload stages precompiled, verified actor generations; it never
+executes the macro engine in a live actor. AoS/SoA representation selection
+cannot mint Sendable/Shareable proofs, expose raw pointers or actor-private
+storage, or bypass checked relocation.
 
 ## 4. Syntax objects and hygiene
 
