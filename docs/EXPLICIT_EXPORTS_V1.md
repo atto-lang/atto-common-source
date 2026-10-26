@@ -200,7 +200,7 @@ Prefer `export` as a contextual keyword at declaration-namespace positions so ex
 
 ## Concrete grammar and Symbol identities
 
-Contract revision: `explicit-exports-v1.2026-10-25.4`. Consume this document,
+Contract revision: `explicit-exports-v1.2026-10-26.5`. Consume this document,
 the JSON vectors and the oracle from one exact commit. This revision recovers
 the later #150 grammar/Symbol decisions that were present on the source-free
 carrier but absent from the initial merge. It supersedes the earlier blanket
@@ -220,12 +220,12 @@ statement that all Symbol `as` forms reject.
 
 | Source | Result |
 | --- | --- |
-| `export symbol ready as #ready;` | `SYMBOL_IDENTITY_TARGET_REQUIRES_SYMBOL_SOURCE` |
-| `export symbol ready as 'ready';` | `LITERAL_EXPORT_ALIAS_UNSUPPORTED` |
+| `export symbol ready as #ready;` | `EXPORT_SYMBOL_IDENTITY_TARGET_REQUIRES_SYMBOL_SOURCE` |
+| `export symbol ready as 'ready';` | `EXPORT_LITERAL_ALIAS_UNSUPPORTED` |
 | `export symbol #ready as #ready;` | Valid identity assertion; normalize to `export symbol #ready;` |
-| `export string ready as 'ready';` | `UNKNOWN_EXPORT_DECLARATION_KIND` |
-| `export symbol #ready as #other;` | `SYMBOL_IDENTITY_MISMATCH` |
-| `export symbol #ready as Ready;` | `SYMBOL_BINDING_ALIAS_UNSUPPORTED` |
+| `export string ready as 'ready';` | `EXPORT_UNKNOWN_DECLARATION_KIND` |
+| `export symbol #ready as #other;` | `EXPORT_SYMBOL_IDENTITY_MISMATCH` |
+| `export symbol #ready as Ready;` | `EXPORT_SYMBOL_BINDING_ALIAS_UNSUPPORTED` |
 
 Diagnostic precedence is kind validation, then target/alias shape validation,
 then semantic name/kind/visibility resolution. Thus a runtime type prefix reports
@@ -271,6 +271,10 @@ duplicate identical exports, formatting and export/declaration order must not
 alter that digest. Alias, scope or ABI-significant signature changes must alter
 it. Owner namespace/source/package identities must remain part of the production
 metadata and access checks; display names are not authority.
+
+## Canonical diagnostic namespace
+
+Export-specific parser and semantic failures use the shared `EXPORT_*` category namespace. Message text may vary by backend, but category identity is part of cross-backend conformance. General language errors that are not export-specific (for example a duplicate overload signature that is illegal even without an export) may retain their existing language-wide diagnostic category.
 
 ## Reference-model coverage limits
 
