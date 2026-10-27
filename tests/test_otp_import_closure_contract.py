@@ -110,7 +110,9 @@ def audit_closure(
             if not isinstance(imported, dict):
                 raise AdmissionError("invalid imported unit: " + dep)
             if imported.get("layer") not in permitted_layers:
-                raise AdmissionError("forbidden layer edge: " + name + " -> " + dep)
+                raise AdmissionError(
+                    "forbidden layer edge: " + name + " -> " + dep
+                )
             if dep not in visited:
                 pending.append(dep)
 
@@ -196,7 +198,7 @@ class ImportClosureReferenceTests(unittest.TestCase):
                 with self.assertRaisesRegex(AdmissionError, "missing feature"):
                     audit_closure(
                         units,
-                        ["otp/" + module],
+                        ["ores.core/otp/" + module],
                         allowed_layers={"core"},
                         providers=ACTOR_PROVIDERS,
                         features=required - {missing},
@@ -252,14 +254,16 @@ class ImportClosureReferenceTests(unittest.TestCase):
 
     def test_allocator_and_clock_are_explicit_providers_not_layers(self):
         units = synthetic_units()
-        units["otp/supervisor"]["providerRequires"].append("clock.monotonic")
-        units["otp/event_manager"]["providerRequires"].append(
+        units["ores.core/otp/supervisor"]["providerRequires"].append(
+            "clock.monotonic"
+        )
+        units["ores.core/otp/event_manager"]["providerRequires"].append(
             "allocator.explicit"
         )
         with self.assertRaisesRegex(AdmissionError, "missing provider"):
             audit_closure(
                 units,
-                ["otp/supervisor"],
+                ["ores.core/otp/supervisor"],
                 allowed_layers={"core"},
                 providers=ACTOR_PROVIDERS,
                 features=MODULES["supervisor"]["requires"],
@@ -267,14 +271,17 @@ class ImportClosureReferenceTests(unittest.TestCase):
         with self.assertRaisesRegex(AdmissionError, "missing provider"):
             audit_closure(
                 units,
-                ["otp/event_manager"],
+                ["ores.core/otp/event_manager"],
                 allowed_layers={"core"},
                 providers=ACTOR_PROVIDERS,
                 features=MODULES["event_manager"]["requires"],
             )
         audit_closure(
             units,
-            ["otp/supervisor", "otp/event_manager"],
+            [
+                "ores.core/otp/supervisor",
+                "ores.core/otp/event_manager",
+            ],
             allowed_layers={"core"},
             providers={
                 *ACTOR_PROVIDERS,
@@ -312,7 +319,10 @@ class ImportClosureReferenceTests(unittest.TestCase):
             ("requires", "actor.serial"),
             ("requires", ["x"] * 257),
             ("providerRequires", "allocator.explicit"),
-            ("providerRequires", ["allocator.explicit", "allocator.explicit"]),
+            (
+                "providerRequires",
+                ["allocator.explicit", "allocator.explicit"],
+            ),
         ):
             units = synthetic_units()
             units["ores.core/scalars"][field] = malformed
@@ -357,7 +367,11 @@ class ImportClosureReferenceTests(unittest.TestCase):
         units = {
             "ores.core/" + str(i): {
                 "layer": "core",
-                "imports": [] if i == 2999 else ["ores.core/" + str(i + 1)],
+                "imports": (
+                    []
+                    if i == 2999
+                    else ["ores.core/" + str(i + 1)]
+                ),
             }
             for i in range(3000)
         }
@@ -375,7 +389,11 @@ class ImportClosureReferenceTests(unittest.TestCase):
         too_large = {
             "ores.core/" + str(i): {
                 "layer": "core",
-                "imports": [] if i == 4096 else ["ores.core/" + str(i + 1)],
+                "imports": (
+                    []
+                    if i == 4096
+                    else ["ores.core/" + str(i + 1)]
+                ),
             }
             for i in range(4097)
         }
@@ -390,7 +408,10 @@ class ImportClosureReferenceTests(unittest.TestCase):
         units = {
             "ores.core/root": {
                 "layer": "core",
-                "imports": ["ores.core/" + str(i) for i in range(257)],
+                "imports": [
+                    "ores.core/" + str(i)
+                    for i in range(257)
+                ],
             }
         }
         for i in range(257):
