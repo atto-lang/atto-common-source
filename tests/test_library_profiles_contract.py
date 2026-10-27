@@ -71,7 +71,7 @@ class LibraryProfileContractTests(unittest.TestCase):
         self.assertIn("`core`", text)
         self.assertIn("`std`", text)
         self.assertIn("not additional library layers or public profiles", text)
-        self.assertIn("explicit providers", text)
+        self.assertIn("provider/capability families", text)
 
 
 if __name__ == "__main__":
