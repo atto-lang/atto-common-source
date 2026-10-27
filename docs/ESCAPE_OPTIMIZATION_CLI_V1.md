@@ -26,6 +26,24 @@ Candidate allocation IR must conservatively mark observation and escape through:
 
 Any unproven or oversized candidate stays within its existing safe storage discipline or is rejected at compilation when even the fallback is not safe. Never dynamically spill an unbounded value onto a native stack. A stack slot is not safe merely because its allocation site is lexically inside the caller.
 
+## Initial typed allocation MIR classification slice
+
+The additional `contracts/v1/escape-allocation-mir-v1.json` introduces an
+explicit *candidate* vocabulary (`scalar-candidate`,
+`stack-candidate`, `preserve-allocation`) plus negative vectors for
+escaping values and lifetime hazards. Forge's
+`compiler/escape_analysis.hpp` is a standalone C++ implementation and
+`verification/escape_analysis_tests.cpp` exercises its decisions.
+The CTest name is `oresforge_escape_candidate_analysis`.
+
+This is deliberately **not** connected to Forge's source parser or native
+backend: classifying a standalone typed fixture is not removing a heap
+allocation. The model's `complete_effect_graph` marker is untrusted until a
+real MIR verifier proves it, including alias/capture graphs and
+exceptional/cancellation paths. Inter-object stores and cyclic reference
+graphs are excluded from promotion until explicitly modeled. The current
+value is a reproducible, fail-closed representation and regression substrate.
+
 ## Evidence gate
 
 The JSON contract in `contracts/v1/escape-optimization-cli-v1.json` defines policy vectors and future acceptance requirements. Reference-model tests establish **contract consistency only**. Promotion from unsupported to safe/verify/speculative requires real compiler tests, sanitizer execution, exact-revision build evidence, allocation measurements, stack budget tests, guards/deoptimization, and 5-backend differential cases. A backend lacking a requested tier must fail closed rather than silently downgrade and report success.
