@@ -61,6 +61,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Architecture proposal](docs/ARCHITECTURE.md)
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
+- [Three full-AOT guarantees: safe hot swap, real-time qualification, and actor session proofs](docs/THREE_GUARANTEES_AOT_V1.md) — proposed cross-backend acceptance contract; not executable guest proof.
 - [Callable bodies, return types, and contextual tuple syntax v1](docs/CALLABLE_SYNTAX_V1.md)
 - [Generators and async iterators v1](docs/GENERATORS_V1.md) — canonical `gen*`, iterator protocols, lazy pulls, cleanup and ownership.
 - [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
