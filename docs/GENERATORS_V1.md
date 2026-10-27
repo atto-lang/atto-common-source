@@ -1,35 +1,144 @@
-# Generator and Async Iterator Contract v1
+# Generators and async iterators v1
 
-Status: proposed cross-backend contract. Parser acceptance, skipped tests, and zero-step CI do not establish parity.
+Status: proposed normative cross-backend contract. Implementation evidence is tracked separately; this document does not claim backend parity.
 
-Canonical declarations:
+## Canonical declarations
 
 ```oreslang
-pub gen* values(): Iterator<int> { yield 1; }
-pub async gen* events(): AsyncIterator<Event> { yield await next_event(); }
-pub suspend gen* cooperative(): AsyncIterator<Event> { yield await next_event(); }
+pub gen* values(): Iterator<int> {
+  yield 1;
+  yield 2;
+  return;
+}
+
+pub async gen* events(): AsyncIterator<Event> {
+  yield await next_event();
+  return;
+}
+
+pub suspend gen* cooperative(): AsyncIterator<Event> {
+  rt cooperate;
+  yield await next_event();
+  return;
+}
 ```
 
-`gen*` is a callable declaration and does not require `fnc` or `routine`. Existing `generator fnc`, `generator routine`, `fnc gen*`, and `routine gen*` forms remain compatibility aliases during migration. `async suspend gen*` is invalid.
+`gen*` is a generator callable marker; canonical source does not require a redundant `fnc` or `routine`.
+Migration aliases may accept `generator fnc`, `generator routine`, `fnc gen*`, `routine gen*`, and `generator*`, but formatters should emit the canonical forms above.
 
-A sync activation exposes `Iterator<T>`. Async and suspend activations expose `AsyncIterator<T>`. Explicit iterator annotations name the exposed protocol and must never be double-wrapped. Calling a generator creates the iterator lazily; async generator creation does not return `Future<AsyncIterator<T>>`.
+`async suspend gen*` is invalid: `async` and `suspend` are distinct declaration modes and must not be silently combined.
 
-The pull protocol is `Iterator<T>.next() -> IteratorResult<T>` and `AsyncIterator<T>.next() -> Future<IteratorResult<T>>`. DONE is stable. `close()` is idempotent. There is at most one active continuation; concurrent pulls must serialize in bounded FIFO order or fail deterministically.
+## Public types
 
-`yield value` emits one element. `yield*` preserves type, backpressure, error, cancellation, and close semantics. Sync generators delegate only to sync protocols; async/suspend generators may delegate to async or sync protocols. `rt cooperate` is scheduler cooperation, not a generator yield. Generator completion uses bare `return;`; return values remain rejected in v1.
+A synchronous generator declaration exposes `Iterator<T>`.
+An `async gen*` or `suspend gen*` declaration exposes `AsyncIterator<T>`.
 
-`suspend gen*` keeps the suspend effect distinct from async while exposing `AsyncIterator<T>`, because a pull may suspend. Neither async nor suspend generators may park reusable carriers.
+The return annotation describes the iterator protocol. The body is checked against the yielded element type `T`.
+Backends may temporarily accept the historical element annotation spelling for migration, but canonical source uses the public iterator type.
 
-Static class generator functions do not retain a receiver and may be enabled independently once their callable metadata, iterator typing, lazy activation, cleanup, and backend lowering satisfy this contract.
+`Iterator<?>` / `AsyncIterator<?>`, if the wildcard type is available, means an existentially unknown element type. It is **not** the syntax for yield-type inference. V1 canonical declarations use an explicit iterator element type; a future omitted-return inference rule must be specified separately and must not silently widen to `?`.
 
-Instance generator methods are enabled only when receiver lifetime and ownership are proven across suspension. A lazy activation must not retain an ordinary lexical borrow of `self` across yield. The backend must prove receiver survival, exclusive mutation, generation-safe dispatch, and exactly-once loan retirement. Until then, instance generator methods remain fail-closed unsupported; removing a parser rejection alone is not an implementation. Actor message entrypoints do not return generator activations across mailbox boundaries.
+The v1 pull protocol is:
 
-No local borrow, mutable loan, MutexGuard, stack-only capability, raw host pointer, or actor-confined capability may escape through a suspended frame without an explicit continuation-safe representation. Yielding a move-only value transfers ownership to the consumer.
+```oreslang
+Iterator<T>.next(): IteratorResult<T>
+AsyncIterator<T>.next(): Future<IteratorResult<T>>
+```
 
-Normal exhaustion, close, consumer break, throw, raise, panic, cancellation, scheduler shutdown, and context shutdown must execute finally/defer/delegate-close/owned-drop exactly once. Terminal cancellation bypasses ordinary guest catch while still unwinding cleanup. Public DONE cannot precede required physical runtime-exit fencing.
+`IteratorResult<T>` distinguishes `yielded(T)` from `done`; null or an Option sentinel must not be used to encode completion because T may itself contain those values.
 
-Each backend fixture reports one of `verified`, `compile_reject_expected`, `unsupported`, `failed`, or `not_executed`. Unsupported and not-executed are parity gaps, never passes.
+A generator may use `return;` for completion. `return value;` is rejected in v1. A future completion-result type would require a separately versioned contract.
 
-Required identical-source fixtures cover lazy sync gen*, explicit iterator type and repeated DONE, async await around yield, real suspend gen*, yield* delegation, early-break cleanup, return-value rejection, protocol mismatch, live-borrow rejection, generator-method receiver lifetime, concurrent pull/close/cancel, terminal cleanup, actor-boundary rejection, pending-pull shutdown, and host continuation fencing where applicable.
+## Laziness and suspension
 
-Parity claims require executable evidence across Java/Graal, LLVM, .NET Native AOT, WebAssembly, and JavaScript for every claimed-supported fixture. Java additionally requires JDK25 plus Native Image AOT/hybrid real guest execution; LLVM requires source codegen/native execution plus sanitizers; Wasm must use the pinned real Oreslang compiler; JS must execute compiler-produced ESM. Zero-step Actions is `not_executed`.
+Calling a generator constructs an activation only. It does not execute the body, perform I/O, await, cooperate, acquire a runtime carrier, or consume a suspension permit.
+
+The first pull resumes the activation and runs until exactly one of:
+- a value is yielded;
+- normal completion;
+- a declared failure/effect reaches the iterator boundary;
+- cancellation/close terminates the activation.
+
+`async gen*` permits async/await operations under the ordinary task-safe capture rules.
+`suspend gen*` permits scheduler-managed cooperative suspension while retaining the same `AsyncIterator<T>` pull protocol.
+In both cases, suspension happens while servicing a pull, never merely because the generator was created.
+
+## Single-flight pulls and backpressure
+
+Each generator has exactly one logical suspended activation.
+
+At most one async pull may be active at a time. An overlapping `next()` fails deterministically with a concurrent-pull error; it must not allocate a second producer, queue an unbounded number of scheduler tasks, or execute the body twice.
+
+A later pull after the previous pull settles is valid. Terminal DONE and terminal failure are sticky and repeatable according to the iterator protocol.
+
+Implementations may use a state-machine frame, coroutine, continuation, or another backend representation, but observable pull ordering is identical.
+
+## yield and delegation
+
+`yield value` produces one T and suspends the activation.
+
+`yield* source` delegates sequentially:
+- a sync generator delegates only a synchronous iterable/iterator;
+- an async/suspend generator may delegate an async iterable/iterator and preserves one-pull-at-a-time backpressure;
+- an async iterator is never implicitly blocked into a synchronous iterator.
+
+Generator `yield` is unrelated to scheduler `rt yield`.
+
+## Cleanup and terminal behavior
+
+Normal exhaustion, explicit close, early consumer break, cancellation, failure, panic/security termination, and delegated-iterator failure must run all applicable cleanup exactly once:
+- `finally`;
+- `defer`;
+- delegated iterator close;
+- iterator/generator close hooks;
+- ownership loans and guards;
+- backend frame/arena retirement.
+
+Terminal cancellation is control flow, not a catchable ordinary guest exception. User catch blocks must not swallow it, but cleanup still runs.
+
+A failure remains sticky across later pulls unless explicit close changes the public state to DONE according to the runtime close contract. Backends must not launder an admission failure into successful completion.
+
+## Ownership and receivers
+
+Values captured into async/suspend generator frames must satisfy the same task-safe/sendable/ownership rules as other suspended frames. Borrowed locals, native handles, actor-private references, or other non-transferable values must not silently outlive their owners.
+
+Static class generator functions do not retain a receiver and may be enabled independently once callable metadata, iterator typing, lazy activation, cleanup, and backend lowering satisfy this contract. Their parameters and captures must still satisfy the normal generator boundary rules.
+
+A generator instance method retains `self` beyond the source call. Until the type system has an iterator-owned receiver lifetime (or an equivalent proved ownership transfer), instance generator methods must fail closed.
+
+Actor mailbox-turn `self` may not escape through a generator activation.
+
+## Effects and diagnostics
+
+`throws`, `raises`, and `panics` remain distinct. Generator construction does not trigger body effects. Effects occur while pulling and retain causal provenance across yield/await boundaries.
+
+Unsupported generator lowering must be rejected explicitly. Parsing a declaration while silently changing its laziness, cleanup, ownership, or async behavior is non-conforming.
+
+## Evidence states
+
+Each backend fixture reports one of `verified`, `compile_reject_expected`, `unsupported`, `failed`, or `not_executed`. Unsupported and not-executed are parity gaps, never passes. Parser acceptance, skipped tests, source-free models, and zero-step CI do not establish backend support.
+
+## Required conformance
+
+Every backend must cover:
+1. lazy creation and three typed yields followed by sticky DONE;
+2. explicit `Iterator<T>` / `AsyncIterator<T>` call-site typing;
+3. `async gen*` and `suspend gen*` without `Future<AsyncIterator<T>>` double wrapping;
+4. deterministic rejection of an overlapping async pull;
+5. `yield*` order, failure propagation, and exactly-once delegate close;
+6. early break and explicit close;
+7. cancellation racing a pending pull and physical frame/guest-turn exit;
+8. exactly-once finally/defer/loan retirement;
+9. actor-private and borrowed-capture rejection;
+10. static generator methods and fail-closed instance receiver escape until receiver lifetime support exists;
+11. backend-native execution, not parser-only or host-mock evidence.
+
+Backend-specific evidence requirements are additive:
+- Java/Graal requires JDK 25 plus Native Image AOT/hybrid real guest execution for supported fixtures.
+- LLVM requires source code generation, linked native execution, and sanitizer coverage.
+- .NET requires Native AOT execution for supported generator behavior.
+- Wasm must use the pinned real Oreslang compiler and execute the produced Wasm.
+- JavaScript must execute compiler-produced ESM rather than treating parser acceptance as support.
+- Zero-step Actions remains `not_executed`.
+
+Shared source-admission targets live in oreslang-platform-conformance#176. Java reference work is oreslang-source.java#2110; Java async continuation proof gaps remain tracked by #721, #883, and #677.
