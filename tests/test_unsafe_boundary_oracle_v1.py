@@ -80,5 +80,34 @@ class UnsafeBoundaryOracleTest(unittest.TestCase):
             self.o.host_grant(self.actor, self.region, start=2**64, size=1,
                               writable=True)
 
+    def test_exhaustive_small_access_lattice(self):
+        # 432 combinations; positive and negative witnesses are both required.
+        observations = set()
+        for actor in (self.actor, self.actor_b, self.untrusted):
+            for effects in (frozenset(), frozenset({'unsafe.memory'}),
+                            frozenset({'unsafe.ffi'})):
+                for lexical in (False, True):
+                    for write in (False, True):
+                        for address in (0x1000, 0x100F, 0x1010):
+                            for width in (1, 4):
+                                for suspended in (False, True):
+                                    expected = (
+                                        actor is self.actor and lexical and
+                                        'unsafe.memory' in effects and not write and
+                                        address + width <= 0x1010 and
+                                        address % width == 0 and not suspended
+                                    )
+                                    try:
+                                        result = self.check(
+                                            actor=actor, effects=effects,
+                                            lexical_unsafe=lexical, write=write,
+                                            address=address, width=width,
+                                            suspended=suspended)
+                                    except Denied:
+                                        result = False
+                                    self.assertEqual(result, expected)
+                                    observations.add(result)
+        self.assertEqual(observations, {True, False})
+
 if __name__ == '__main__':
     unittest.main()
