@@ -40,7 +40,7 @@
     {
       "id": "session_protocols",
       "priority": "P0",
-      "related_contract": "docs/THREE_GUARANTEES_AOT_V1.md",
+      "related_contract": "docs/OTP_BEHAVIOURS_V1.md",
       "stage": "DESIGN_REVIEW_REQUIRED",
       "formal_methods": [
         "TLA+",
