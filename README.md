@@ -68,6 +68,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
 - [Ownership-first, zero-GC native and low-GC Graal performance contract](docs/MEMORY_SAFETY_AND_PERFORMANCE.md)
+- [Opt-in escape optimization and JIT CLI v1](docs/ESCAPE_OPTIMIZATION_CLI_V1.md) — flag contract, fail-closed acceptance, and execution proof gates; no five-backend optimization parity claimed.
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
 - [Decisions, non-goals and unresolved choices](docs/DECISIONS.md)
 
