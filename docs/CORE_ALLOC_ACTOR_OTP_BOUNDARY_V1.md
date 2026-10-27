@@ -4,9 +4,22 @@
 
 ## Decision
 
-`core` is freestanding: compiling or linking it must not need Linux, POSIX, libc, JVM, an OS allocator, a scheduler, a filesystem, a clock, threads, sockets or runtime initialization. Scalar values, fixed layouts, `Option`/`Result`, ownership/effects and panic/abort contracts belong here. No heap is required.
+## Public library profiles
 
-`alloc` is optional, explicit allocation: callers furnish the provider/arena; no implicit ambient allocator. Pure dynamic codecs that require owned growable storage—including JSON—belong here rather than in `core`. `core` may still expose allocation-free JSON-adjacent contracts—token kinds, borrowed-input cursors, caller-provided encode sinks, and static codec markers—provided those contracts neither allocate nor require an ambient allocator. An owned `JsonValue` tree, owned JSON `String`, growable array/object, parser DOM, or generated codec scratch storage is never pulled into the allocator-free `core` closure. The canonical JSON namespace is `alloc/json`: `JsonValue`, owned strings/arrays/objects, parsing, encoding, and generated typed codecs may depend on `alloc` but require no OS capability. Hosted `std/*` I/O/network adapters may feed bytes to or consume bytes from `alloc/json`, but neither `alloc/json` nor its transitive dependencies may import those adapters. A `freestanding-alloc` target can therefore use JSON when it supplies an allocator and explicit resource quotas.
+Oreslang has **exactly two public library profiles**:
+
+| Profile | Contract |
+| --- | --- |
+| `core` | Freestanding/no-OS library surface. It must remain linkable without an OS, libc, ambient allocator, scheduler, filesystem, sockets, process APIs, or runtime initialization. |
+| `std` | Hosted/platform library surface. It builds on `core` and may expose explicitly admitted OS/platform services. |
+
+`alloc`, `actor`, and `otp` remain real architectural capability tiers and import namespaces where applicable, but they are **not public library profiles**. A `core` build may opt into caller-provided allocation, a bounded actor executor, or OTP behaviours without becoming `std`, provided the transitive closure remains OS-independent.
+
+Backends must reject profile/target combinations they cannot actually certify rather than silently weakening the requested profile. The public profile vocabulary is therefore just `core` and `std`; older contract-only names such as `freestanding-core`, `freestanding-actor`, `freestanding-otp`, and `hosted` are superseded as public profile names.
+
+The `core` **layer** is freestanding: compiling or linking the base layer itself must not need Linux, POSIX, libc, JVM, an OS allocator, a scheduler, a filesystem, a clock, threads, sockets or runtime initialization. Scalar values, fixed layouts, `Option`/`Result`, ownership/effects and panic/abort contracts belong here. No heap is required.
+
+`alloc` is optional, explicit allocation: callers furnish the provider/arena; no implicit ambient allocator. Pure dynamic codecs that require owned growable storage—including JSON—belong here rather than in `core`. `core` may still expose allocation-free JSON-adjacent contracts—token kinds, borrowed-input cursors, caller-provided encode sinks, and static codec markers—provided those contracts neither allocate nor require an ambient allocator. An owned `JsonValue` tree, owned JSON `String`, growable array/object, parser DOM, or generated codec scratch storage is never pulled into the allocator-free `core` closure. The canonical JSON namespace is `alloc/json`: `JsonValue`, owned strings/arrays/objects, parsing, encoding, and generated typed codecs may depend on `alloc` but require no OS capability. Hosted `std/*` I/O/network adapters may feed bytes to or consume bytes from `alloc/json`, but neither `alloc/json` nor its transitive dependencies may import those adapters. A `core` profile can therefore use JSON when it supplies an explicit allocator provider and resource quotas; this does not create a third public profile.
 
 `actor` is optional and OS-independent: it needs a **provided** scheduler/executor and bounded mailbox storage. Actor-only deployments MAY use fixed slots/arenas and never import `alloc`. Dynamic actor and OTP variants may import `alloc` only through a declared optional dependency and an explicit allocator provider; that opt-in does not weaken the freestanding `core` closure. The CONTROL lane is runtime-owned, distinct from USER/DATA; library code does not create privileged CONTROL messages.
 
@@ -55,7 +68,7 @@ module identities for two spellings.
 3. **Bounded execution:** fixed slots, bounded mailboxes, bounded event-handler sets, finite restart budgets and eventual cancellation/teardown; no unbounded busy restart loops, hidden threads or invisible retries. Backend may require `alloc` for a chosen dynamic policy, but not by default for `core`.
 4. **Ownership and trust:** actor-owned state is sealed; refs and response capabilities are generation-fenced; no raw pointer/object/OS handle, live reply token or forged CONTROL passes via ordinary sendable payload. A `cast` receipt means *admission*, not processing or delivery.
 5. **No keyword proliferation:** behaviours are Oreslang-authored library modules over existing actor, channel/future and CONTROL intrinsics. No `gen_server`/ `supervisor` special compiler keyword is required.
-6. **Profile intent:** `freestanding-core` uses only `core`; `freestanding-actor` adds explicit actor runtime providers; `freestanding-otp` adds the eight behaviours when their individual requirements exist; `hosted` may additionally grant OS adapters. These are contract profiles, **not** claims that the compiler supports these profile names or syntax today.
+6. **Profile intent:** the public profile vocabulary is exactly `core` and `std`. `core` is the freestanding/no-OS surface and may optionally use explicit `alloc`, `actor`, and `otp` providers without gaining hosted authority. `std` adds hosted/platform adapters. `alloc`, `actor`, and `otp` are capability tiers, not public profiles.
 7. **Build opt-out syntax:** Rust's `#![no_std]` is an analogy, not accepted Oreslang grammar. Until explicit attributes/effects are implemented, use a versioned target/import manifest for test/admission intent. A future source attribute requires its own syntax RFC and parser tests.
 
 ## Milestones / evidence
