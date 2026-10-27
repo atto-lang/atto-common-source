@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: three-guarantees-aot-v1-\${{ github.workflow }}-\${{ github.event.pull_request.number || github.ref }}
+  group: three-guarantees-aot-v1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -34,11 +34,11 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Pin exact commit and clean working tree
         env:
-          EXPECTED_HEAD: \${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         shell: bash
         run: |
           set -euo pipefail
