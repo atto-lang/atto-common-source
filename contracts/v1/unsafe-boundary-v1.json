@@ -524,6 +524,50 @@
       "forge": "pending",
       "wasm": "pending",
       "net": "pending"
+    },
+    {
+      "id": "unsafe-in-nested-block-comment",
+      "expected": "accept",
+      "kind": "lexical",
+      "reason": "Nested comment text does not become the unsafe keyword in any parser entry",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-after-nested-comment",
+      "expected": "reject",
+      "kind": "lexical",
+      "reason": "A real unsafe lexeme after a nested comment must be rejected before IR or assembly",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-native-asm-pipeline",
+      "expected": "reject",
+      "kind": "source_admission",
+      "reason": "All assembly emission CLI modes must fail closed on unsupported unsafe keyword source",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "malformed-utf8-hidden-in-comment",
+      "expected": "reject",
+      "kind": "source_identity",
+      "reason": "An invalid UTF-8 scalar inside a comment must not pass native source admission",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
     }
   ]
 }
