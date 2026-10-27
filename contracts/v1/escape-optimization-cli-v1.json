@@ -29,19 +29,79 @@
     "llvm": "unverified",
     "net": "unverified",
     "wasm": "unverified",
-    "forge": "off-only-cli-admission-proposed"
+    "forge": "closed-world-point-x86_64-safe-experimental; general commands off-only"
   },
   "admission_vectors": [
-    {"id":"defaults","escape":"off","jit":"off","report":false,"expect":"accept-off"},
-    {"id":"explicit-off","escape":"off","jit":"off","report":false,"expect":"accept-off"},
-    {"id":"safe-available-backend","escape":"safe","jit":"off","report":false,"expect":"require-safe-implementation"},
-    {"id":"safe-with-jit","escape":"safe","jit":"on","report":false,"expect":"require-safe-and-executable-jit"},
-    {"id":"verify","escape":"verify","jit":"off","report":false,"expect":"require-verified-implementation"},
-    {"id":"verify-report","escape":"verify","jit":"off","report":true,"expect":"require-verified-implementation-and-evidence"},
-    {"id":"speculative-no-jit","escape":"speculative","jit":"off","report":false,"expect":"reject-requires-jit"},
-    {"id":"speculative-with-jit","escape":"speculative","jit":"on","report":false,"expect":"require-deoptimization-and-executable-jit"},
-    {"id":"jit-only","escape":"off","jit":"on","report":false,"expect":"require-executable-jit"},
-    {"id":"report-only","escape":"off","jit":"off","report":true,"expect":"require-evidence-provider"}
+    {
+      "id": "defaults",
+      "escape": "off",
+      "jit": "off",
+      "report": false,
+      "expect": "accept-off"
+    },
+    {
+      "id": "explicit-off",
+      "escape": "off",
+      "jit": "off",
+      "report": false,
+      "expect": "accept-off"
+    },
+    {
+      "id": "safe-available-backend",
+      "escape": "safe",
+      "jit": "off",
+      "report": false,
+      "expect": "require-safe-implementation"
+    },
+    {
+      "id": "safe-with-jit",
+      "escape": "safe",
+      "jit": "on",
+      "report": false,
+      "expect": "require-safe-and-executable-jit"
+    },
+    {
+      "id": "verify",
+      "escape": "verify",
+      "jit": "off",
+      "report": false,
+      "expect": "require-verified-implementation"
+    },
+    {
+      "id": "verify-report",
+      "escape": "verify",
+      "jit": "off",
+      "report": true,
+      "expect": "require-verified-implementation-and-evidence"
+    },
+    {
+      "id": "speculative-no-jit",
+      "escape": "speculative",
+      "jit": "off",
+      "report": false,
+      "expect": "reject-requires-jit"
+    },
+    {
+      "id": "speculative-with-jit",
+      "escape": "speculative",
+      "jit": "on",
+      "report": false,
+      "expect": "require-deoptimization-and-executable-jit"
+    },
+    {
+      "id": "jit-only",
+      "escape": "off",
+      "jit": "on",
+      "report": false,
+      "expect": "require-executable-jit"
+    },
+    {
+      "id": "report-only",
+      "escape": "off",
+      "jit": "off",
+      "report": true,
+      "expect": "require-evidence-provider"
+    }
   ],
   "required_optimization_proofs": [
     "observable allocation and allocator failure semantics preserved",
@@ -63,5 +123,26 @@
     "suspension": "actor send, await, cancellation, hot reload, and FFI failure paths executed",
     "jit": "guard miss, deoptimization, reoptimization, and materialization executed for speculative mode",
     "provenance": "record exact build inputs SHA test vectors runner and native binary identity"
+  },
+  "experimental_native_slice": {
+    "backend": "forge",
+    "command": "emit-alloc-asm x86_64",
+    "profile": "Point { int x; int y } local with two runtime parameters, fully initialized fields, two field reads and checked addition",
+    "executable_baseline": "malloc/free heap-backed Point",
+    "executable_safe": "scalar-replaced Point, no malloc/free",
+    "certificate": "closed grammar fully parsed through EOF; effect graph constructed inside trusted compiler code",
+    "unsupported": [
+      "general Forge run/emit-asm",
+      "actor sends",
+      "await/select",
+      "closures",
+      "FFI",
+      "heap identity",
+      "generic stack promotion",
+      "allocator callback observation",
+      "JIT"
+    ],
+    "proof_status": "code and regression gate proposed, exact-head native CI not yet verified",
+    "required_runner": "Linux x86-64 with C compiler and malloc/free linker wrapping"
   }
 }
