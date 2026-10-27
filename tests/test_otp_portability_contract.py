@@ -28,14 +28,14 @@ class ContractTests(unittest.TestCase):
     def test_version_and_no_false_advertising(self):
         d = self.data
         self.assertEqual(d["schemaVersion"], 1)
-        self.assertEqual(d["canonicalImportPrefix"], "otp/")
+        self.assertEqual(d["canonicalImportPrefix"], "ores.core/otp/")
         self.assertEqual(d["status"], "contract-only")
         self.assertIs(d["sourceImplementationAvailable"], False)
         self.assertIn("does not invoke", d["validation"])
 
     def test_future_canonical_import_is_distinct_from_java_draft(self):
         d = self.data
-        self.assertEqual(d["canonicalImportPrefix"], "otp/")
+        self.assertEqual(d["canonicalImportPrefix"], "ores.core/otp/")
         self.assertEqual(d["transitionalJavaDraftImportPrefix"], "std/otp/")
         self.assertNotEqual(
             d["canonicalImportPrefix"],
@@ -59,7 +59,10 @@ class ContractTests(unittest.TestCase):
         self.assertEqual({m["module"] for m in modules}, EXPECTED)
         for m in modules:
             self.assertEqual(m["path"], f"stdlib/otp/{m['module']}.ores")
-            self.assertEqual(m["canonicalImport"], f"otp/{m['module']}")
+            self.assertEqual(
+                m["canonicalImport"],
+                f"ores.core/otp/{m['module']}",
+            )
             self.assertEqual(m["layer"], "core")
             self.assertEqual(set(m["providerRequires"]), ACTOR_PROVIDERS)
             self.assertEqual(m["sourceStatus"], "pending")
@@ -103,7 +106,9 @@ class ContractTests(unittest.TestCase):
             self.assertTrue(set(m["requires"]).isdisjoint(OS_EFFECTS))
         self.assertIn(
             "control.authenticated",
-            next(m for m in d["modules"] if m["module"] == "supervisor")["requires"],
+            next(
+                m for m in d["modules"] if m["module"] == "supervisor"
+            )["requires"],
         )
         pg = next(m for m in d["modules"] if m["module"] == "pg")
         self.assertIn("group.membership-incarnation-fenced", pg["requires"])
