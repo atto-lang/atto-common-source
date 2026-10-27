@@ -20,6 +20,8 @@ unsafe fnc read_register(address: RawPointer<u32>): u32
 end
 ```
 
+At G0, `unsafe` is reserved in all source positions and imports containing a `std.unsafe` segment are intentionally not yet admitted. When G2 publishes `std.unsafe.*`, the parser must recognize `unsafe` as a **qualified import/path segment only**; it must not make the keyword a legal binding, callable, alias, or dynamic property fallback. Once available, importing this namespace alone is permitted for trusted and untrusted actors, but no native operation, permission, or trust upgrade follows from the import. A separate negative fixture ensures untrusted actors are still denied native operations after such an import.
+
 The precise block-expression/statement AST grammar is still proposed. The initial keyword reservation must not be mistaken for accepting this example. `unsafe fnc` marks *caller-required* obligations; an `unsafe` block marks a local proof obligation. An ordinary safe function may encapsulate a verified unsafe implementation, but does not thereby acquire grant authority. Importing `std.unsafe` is not sufficient either.
 
 Proposed subpackages: `std.unsafe.memory`, `std.unsafe.pointer`, `std.unsafe.ffi`, `std.unsafe.layout` and `std.unsafe.intrinsics`. No such package is declared implemented by this proposal. Function/method names use snake_case.
@@ -34,7 +36,9 @@ The compiler must preserve effect summaries through linked metadata, macro expan
 
 A future `RawPointer<T>` is not a safe `Pointer<T>`. The former is non-owning and receives a live region lease or an immutable supervisor/platform native-memory grant. Every grant binds runtime and actor identity, trust domain, region/object and grant identity, generation/epoch, address space, bounds, read/write rights and MMIO/FFI classes. Numeric addresses alone have no authority.
 
-`unsafe` cannot waive checked bounds, integer overflow, alignment, exclusive-loan proofs, provenance fencing, grant narrowing, actor-domain checks or runtime revocation. Raw pointer and grant tokens must not pass by actor send, channel, serialization, `any`, erased generic field or reflection. They are non-Sendable and non-Serializable by default. `UNTRUSTED` actors cannot receive native address authority even inside an unsafe scope. Forged native authority must fail again at the host call boundary.
+`unsafe` cannot waive checked bounds, integer overflow, alignment, exclusive-loan proofs, provenance fencing, grant narrowing, actor-domain checks or runtime revocation. The grant is a host/supervisor-minted, identity-checked object, never a user-provided boolean or numeric address. A public operation on a fabricated opaque token must be rejected *before* reading attacker-controlled fields or triggering attacker callbacks.
+
+Raw pointer and grant tokens must not pass by actor send, channel, serialization, `any`, erased generic field or reflection. They are non-Sendable and non-Serializable by default. `UNTRUSTED` actors cannot receive native address authority even inside an unsafe scope. Forged native authority must fail again at the host call boundary.
 
 Unsafe operations do not permit direct access to sealed actor state, supervisor CONTROL queues, mailbox internals or generation state. Arbitrary hostile native code in the same address space cannot be contained merely by language checks; untrusted plugins require a real process/VM sandbox.
 
@@ -54,3 +58,7 @@ Unsafe does not imply `no_alloc`, `no_block`, `hard_rt`, `pure`, bounded WCET, d
 The manifest should report source span, effect, call-edge, backend/profile, and verification status without leaking addresses or secrets. Every release receipt must identify exact source and fixture hashes. A zero-step CI job, static oracle or host-only test is not a compiled guest pass.
 
 Related: [LLVM issue #528](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/528). It names `NativePointer<T>`; this contract names `RawPointer<T>`. Settle the spelling before enabling the type.
+
+## G0 admission audit, October 27, 2026
+
+The Java Parser accepts public pre-tokenized input; reserve-word checks must not rely exclusively on `Lexer`. An externally constructed `IDENT("unsafe")` is rejected just like a genuine UNSAFE token, while STRING, SYMBOL_LITERAL and TEMPLATE_LITERAL remain data. The LLVM nested parser must report the absolute source offset for unsafe inside interpolations. Positive lexical/compiled-baseline fixtures guard against blanket string/comment/suffix rejection. These tests do **not** authorize lowering of any unsafe operation.
