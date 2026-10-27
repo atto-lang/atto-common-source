@@ -52,6 +52,19 @@ exceptional/cancellation paths. Inter-object stores and cyclic reference
 graphs are excluded from promotion until explicitly modeled. The current
 value is a reproducible, fail-closed representation and regression substrate.
 
+### Field-initialization checks (Forge classifier)
+
+Forge's standalone candidate analyzer now checks ordered field-store and
+field-load uses. A read before its modeled write is rejected; a verified
+local borrow of a partially initialized aggregate cannot qualify for stack
+promotion. Field writes to one allocation cannot initialize another.
+
+**Limit:** this is a single ordered use stream. It is not a control-flow,
+definite-assignment, exceptional-edge, alias, or lifetime proof for arbitrary
+Oreslang source. The tiny Point parser initializes both fields before reads
+by construction; general MIR must introduce CFG-aware dominance and
+initialization proofs before exposing these optimizations.
+
 ## Evidence gate
 
 The JSON contract in `contracts/v1/escape-optimization-cli-v1.json` defines policy vectors and future acceptance requirements. Reference-model tests establish **contract consistency only**. Promotion from unsupported to safe/verify/speculative requires real compiler tests, sanitizer execution, exact-revision build evidence, allocation measurements, stack budget tests, guards/deoptimization, and 5-backend differential cases. A backend lacking a requested tier must fail closed rather than silently downgrade and report success.
