@@ -47,7 +47,7 @@
   ],
   "source_fixture": {
     "status": "illustrative only, not accepted by Forge scalar parser",
-    "text": "define struct Point as\\n    int x\\n    int y\\nend\\ndefine pub fnc calculate(): int {\\n    let p = Point { x: 10, y: 20 };\\n    return p.x + p.y;\\n}\\n",
+    "text": "define struct Point as\n    int x\n    int y\nend\ndefine pub fnc calculate(): int {\n    let p = Point { x: 10, y: 20 };\n    return p.x + p.y;\n}\n",
     "intended_result": 30
   },
   "cases": [
@@ -262,5 +262,30 @@
     "cross-backend": "Require exact-head Java LLVM Forge NET Wasm independently executed vectors",
     "report-provenance": "Bind allocation decisions to exact source and binary SHA",
     "speculative": "Prove JIT guard misses with deoptimization and exact materialization"
+  },
+  "forge_experiment": {
+    "status": "draft source-to-x86_64 allocation-ASM slice; independent exact-head executable CI unverified",
+    "source_scope": "closed Point{x:i64,y:i64} with 2 i64 parameters/literals and two field reads in checked addition",
+    "subcommands": [
+      "ir-alloc",
+      "emit-alloc-asm x86_64"
+    ],
+    "safe_flag_scope": "safe only for emit-alloc-asm x86_64; other general compiler commands reject",
+    "baseline": "malloc(16) / two field stores / checked add / free",
+    "optimized": "scalarized register fields / checked add / no malloc/free calls",
+    "ctests": [
+      "oresforge_native_allocation_elision",
+      "oresforge_allocation_native_elision"
+    ],
+    "excluded": [
+      "actor/channel send",
+      "await/select",
+      "return object",
+      "FFI",
+      "custom destructor",
+      "catchable allocation failure",
+      "observable allocator hooks",
+      "general source MIR"
+    ]
   }
 }
