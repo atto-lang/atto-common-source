@@ -70,7 +70,7 @@ class LibraryProfileContractTests(unittest.TestCase):
         self.assertIn("exactly two public library profiles", text)
         self.assertIn("`core`", text)
         self.assertIn("`std`", text)
-        self.assertIn("not public library profiles", text)
+        self.assertIn("not additional library layers or public profiles", text)
         self.assertIn("explicit providers", text)
 
 
