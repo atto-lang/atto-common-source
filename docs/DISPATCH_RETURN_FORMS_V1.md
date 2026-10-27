@@ -13,13 +13,28 @@ zero steps does not demonstrate executable conformance.
 | `switch` | Scalar case-based value expression | Complete the nearest switch's ARM_RESULT | yes |
 | `do switch` | Scalar case-based procedural statement | FUNCTION_RETURN (enclosing callable) | no |
 
+## Canonical value-match arm syntax
+
+For the canonical `match ... over` surface, value arms use one of two explicit forms:
+
+```text
+on <pattern> [when <guard>] -> <expression>;
+on <pattern> [when <guard>] -> ::
+    <statements>
+    return <value>;
+end
+```
+
+The semicolon terminates an expression arm. The `-> ::` spelling opens a statement block that is closed by its own `end`. In a value match, every reachable normal completion of that block must execute an explicit `return <value>;`; the final expression is never an implicit arm result.
+
+That arm-local `return` has typed destination `ARM_RESULT`. If the containing non-`void` callable itself returns the match, it must separately spell `return match ...`, whose destination is `FUNCTION_RETURN`. These two destinations must never be collapsed merely because both are written with the `return` keyword.
+
+Older braced-arm fixtures in this document and the v1 machine-readable corpus are compatibility evidence for historical parser branches; they do not override this canonical arm surface. Backends adopting the canonical syntax must normalize both accepted compatibility forms to the same typed arm-result IR or reject the legacy spelling under strict mode.
+
 ## Invariants
 
 1. The dispatch subject is evaluated **once**. No implicit arm fallthrough.
-2. An arm-local `return` in a value expression completes **only its nearest
-   value dispatch**, then its containing callable continues unless that
-   callable explicitly returns the dispatch result (`return match` or
-   `return switch`).
+2. An arm-local `return` in a value expression—including a canonical `-> :: ... end` block arm—completes **only its nearest value dispatch** as `ARM_RESULT`, then its containing callable continues unless that callable explicitly returns the dispatch result (`return match` or `return switch`). A trailing expression in a block arm is not an implicit arm result.
 3. In a procedural `do` form, `return` exits the enclosing lexical callable.
    Never lower it to a discarded expression or an `ARM_RESULT` signal.
 4. A partial `do` form with no matching arm may continue after the statement.

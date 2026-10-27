@@ -1,0 +1,1045 @@
+{
+  "schema": "oreslang.macro-semantics.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "declaration": {
+    "compile_time_only": true,
+    "private_by_default": true,
+    "pub_is_compile_time_api_only": true,
+    "explicit_result_kind_required": true,
+    "first_class_runtime_value": false,
+    "generated_macro_declarations": false
+  },
+  "meta_types": [
+    "Type",
+    "Const<T>",
+    "Identifier",
+    "Syntax<Expr>",
+    "Syntax<Stmt>",
+    "Syntax<Decl>",
+    "Syntax<Type>",
+    "Syntax<Pattern>",
+    "SyntaxList<Decl>"
+  ],
+  "invocation": {
+    "canonical_spelling": "name!(...)",
+    "ordinary_runtime_call": false,
+    "argument_categories_explicit": true,
+    "type_prefix": "type",
+    "const_prefix": "const",
+    "identifier_prefix": "ident",
+    "syntax_prefix": "syntax",
+    "identifier_is_checked_capture": false,
+    "declaration_result_kinds": [
+      "Syntax<Decl>",
+      "SyntaxList<Decl>"
+    ],
+    "expression_result_kinds": [
+      "Syntax<Expr>"
+    ],
+    "runtime_const_fallback": false,
+    "identifier_is_hygienic_provenance": true,
+    "capture_requires_explicit_checked_operation": true,
+    "qualified_lookup_obeys_visibility": true,
+    "const_type_must_match": true
+  },
+  "ast": {
+    "typed_not_text": true,
+    "raw_token_streams": false,
+    "parse_generated_source": false,
+    "provenance_required": true,
+    "hygienic_by_default": true,
+    "hygiene_identity_exact": true,
+    "hash_collision_grants_identity": false,
+    "runtime_hygiene_table_required": false,
+    "explicit_checked_capture_only": true,
+    "transactional_provenance_publication": true,
+    "splice_and_const_quote_origins_distinct": true
+  },
+  "generated_namespace": {
+    "ordinary_declarations": true,
+    "package_or_module_header": false,
+    "imports_or_aliases": false,
+    "exports_or_reexports": false,
+    "macros": false,
+    "build_manifest_or_flags": false
+  },
+  "phase_order": [
+    "parse",
+    "resolve_macro_imports",
+    "bind_macro_signatures",
+    "compile_macro_bodies",
+    "resolve_macro_arguments",
+    "expand",
+    "reject_residual_macros",
+    "ordinary_semantic_checks",
+    "finite_generic_closure",
+    "backend_codegen"
+  ],
+  "determinism": {
+    "expansion_key": [
+      "macro_content_hash",
+      "canonical_typed_arguments",
+      "declared_build_inputs",
+      "explicit_target_profile_features",
+      "macro_semantics_abi"
+    ],
+    "ambient_time": false,
+    "ambient_random": false,
+    "undeclared_env": false,
+    "arbitrary_files": false,
+    "network": false,
+    "mutable_global_state_observable": false,
+    "target_independent_hash_parity": true
+  },
+  "authority": {
+    "ffi": false,
+    "raw_pointer": false,
+    "actor_runtime": false,
+    "supervisor_runtime": false,
+    "runtime_task_future_thread": false,
+    "runtime_ownership_ops": false,
+    "diagnostics_side_channel_only": true
+  },
+  "generics": {
+    "generated_generics_allowed": true,
+    "concrete_runtime_specialization_hook": false,
+    "finite_feedback_required": true,
+    "unavailable_concrete_metadata_is_compile_error": true
+  },
+  "resources": {
+    "deterministic_budgets_required": true,
+    "budget_profile_in_cache_identity": true,
+    "expansion_transactional": true,
+    "runtime_fallback": false,
+    "active_cycle_detection": true
+  },
+  "cases": [
+    {
+      "id": "typed-decl-output",
+      "mechanism": "declaration macro returns SyntaxList<Decl>",
+      "expected": "accept"
+    },
+    {
+      "id": "typed-expr-output",
+      "mechanism": "expression macro returns Syntax<Expr>",
+      "expected": "accept"
+    },
+    {
+      "id": "wrong-result-context",
+      "mechanism": "SyntaxList<Decl> used in expression position",
+      "expected": "reject"
+    },
+    {
+      "id": "source-string-eval",
+      "mechanism": "macro generates text then parses/executes it as Oreslang",
+      "expected": "reject"
+    },
+    {
+      "id": "implicit-text-capture",
+      "mechanism": "generated identifier captures caller solely by equal spelling",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-capture",
+      "mechanism": "explicit typed capture resolves visible caller binding",
+      "expected": "accept"
+    },
+    {
+      "id": "private-cross-boundary-capture",
+      "mechanism": "macro captures inaccessible private declaration",
+      "expected": "reject"
+    },
+    {
+      "id": "generate-import",
+      "mechanism": "macro emits import/alias declaration",
+      "expected": "reject"
+    },
+    {
+      "id": "generate-export",
+      "mechanism": "macro emits export/re-export declaration",
+      "expected": "reject"
+    },
+    {
+      "id": "generate-macro",
+      "mechanism": "macro emits define macro declaration",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-capability-input",
+      "mechanism": "actor/socket/pointer/capability passed to macro",
+      "expected": "reject"
+    },
+    {
+      "id": "type-metadata-visible",
+      "mechanism": "macro inspects visible semantic fields/types",
+      "expected": "accept"
+    },
+    {
+      "id": "type-metadata-raw-offset",
+      "mechanism": "macro obtains physical address/raw field offset",
+      "expected": "reject"
+    },
+    {
+      "id": "layout-does-not-grant-pointer",
+      "mechanism": "layout selector yields raw-pointer authority",
+      "expected": "reject"
+    },
+    {
+      "id": "nested-existing-macro",
+      "mechanism": "generated AST invokes an already-bound macro and terminates finitely",
+      "expected": "accept"
+    },
+    {
+      "id": "macro-expansion-cycle",
+      "mechanism": "direct or indirect active expansion-key cycle",
+      "expected": "reject"
+    },
+    {
+      "id": "budget-exhaustion",
+      "mechanism": "macro expansion exceeds deterministic budget",
+      "expected": "reject"
+    },
+    {
+      "id": "partial-expansion-visibility",
+      "mechanism": "failed invocation leaks partially generated declarations",
+      "expected": "reject"
+    },
+    {
+      "id": "generated-effect-violation",
+      "mechanism": "generated code violates declared effect contract",
+      "expected": "reject"
+    },
+    {
+      "id": "generated-borrow-violation",
+      "mechanism": "generated code violates ownership/borrow rules",
+      "expected": "reject"
+    },
+    {
+      "id": "generic-finite-generation",
+      "mechanism": "macro emits finite reachable generic declarations",
+      "expected": "accept"
+    },
+    {
+      "id": "generic-runtime-defer",
+      "mechanism": "macro waits until runtime for concrete generic specialization",
+      "expected": "reject"
+    },
+    {
+      "id": "ambient-network",
+      "mechanism": "macro reads network",
+      "expected": "reject"
+    },
+    {
+      "id": "ambient-time",
+      "mechanism": "macro reads wall clock",
+      "expected": "reject"
+    },
+    {
+      "id": "hot-reload-preexpanded",
+      "mechanism": "candidate generation is fully expanded before runtime admission",
+      "expected": "accept"
+    },
+    {
+      "id": "runtime-macro-engine",
+      "mechanism": "runtime image needs macro engine for correctness",
+      "expected": "reject"
+    },
+    {
+      "id": "identifier-input-no-implicit-capture",
+      "mechanism": "ident name carries hygienic identifier/provenance without granting caller-binding access",
+      "expected": "accept"
+    },
+    {
+      "id": "private-qualified-macro",
+      "mechanism": "another module invokes a private macro through qualification",
+      "expected": "reject"
+    },
+    {
+      "id": "public-qualified-macro",
+      "mechanism": "another module invokes a public macro through an admitted compile-time API boundary",
+      "expected": "accept"
+    },
+    {
+      "id": "const-type-mismatch",
+      "mechanism": "Const<int> invocation receives a closed String compile-time value",
+      "expected": "reject"
+    },
+    {
+      "id": "const-type-unproven",
+      "mechanism": "Const<T> value is closed but compiler cannot prove its compile-time type",
+      "expected": "reject"
+    },
+    {
+      "id": "unused-supported-macro-erased",
+      "mechanism": "supported macro declaration is validated and removed even when never invoked",
+      "expected": "accept"
+    },
+    {
+      "id": "identity-expansion-structural-equivalence",
+      "mechanism": "Syntax<Expr> identity expansion preserves the complete quoted AST and semantic tags",
+      "expected": "accept"
+    },
+    {
+      "id": "const-quote-literal",
+      "mechanism": "define macro returns quote(proven Const<int>) as Syntax<Expr>",
+      "expected": "accept"
+    },
+    {
+      "id": "const-quote-runtime-variable",
+      "mechanism": "quote argument is not a compile-time-proven Const<T>",
+      "expected": "reject"
+    },
+    {
+      "id": "const-quote-unchecked-type",
+      "mechanism": "quote emits literal with unproven declared Const<T> type",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-renderer-data",
+      "mechanism": "build-time macro expands to closed function producing HTML/DOM from runtime input",
+      "expected": "accept"
+    },
+    {
+      "id": "precompiled-web-target",
+      "mechanism": "build-time macro emits functions compiled to JS/Wasm artifact before runtime",
+      "expected": "accept"
+    },
+    {
+      "id": "runtime-macro-invocation",
+      "mechanism": "runtime attempts to run define macro evaluator",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-oreslang-source-eval",
+      "mechanism": "runtime source string used to synthesize and execute new Oreslang behavior in strict AOT",
+      "expected": "reject"
+    },
+    {
+      "id": "layout-actor-data-escape",
+      "mechanism": "layout generator makes actor-private storage visible to another actor",
+      "expected": "reject"
+    },
+    {
+      "id": "layout-mints-sendable",
+      "mechanism": "layout generator declares unsafe payload Sendable without normal ownership proof",
+      "expected": "reject"
+    },
+    {
+      "id": "quote-name-shadow",
+      "mechanism": "macro parameter or local binding shadows compiler quote intrinsic",
+      "expected": "reject"
+    },
+    {
+      "id": "quote-pipeline-lookalike",
+      "mechanism": "pipeline/call rewriting is mistaken for direct compiler quote intrinsic",
+      "expected": "reject"
+    },
+    {
+      "id": "public-macro-cache-invalidation",
+      "mechanism": "public macro signature/content changes while a unit imports its compile-time API",
+      "expected": "accept"
+    },
+    {
+      "id": "private-macro-cache-isolation",
+      "mechanism": "private macro changes without changing public runtime/compile-time API",
+      "expected": "accept"
+    },
+    {
+      "id": "const-int-division-type",
+      "mechanism": "Const<int> receives 4 / 2 even though division evaluates to float",
+      "expected": "reject"
+    },
+    {
+      "id": "const-float-division-type",
+      "mechanism": "Const<float> receives 4 / 2 and quote emits 2.0",
+      "expected": "accept"
+    },
+    {
+      "id": "const-memory-budget",
+      "mechanism": "bounded Const<T> value accounting exceeds const-v1 estimated-memory budget",
+      "expected": "reject"
+    },
+    {
+      "id": "nested-provenance-chain",
+      "mechanism": "nested macro expansion preserves distinct inner and outer exact origins",
+      "expected": "accept"
+    },
+    {
+      "id": "failed-expansion-provenance",
+      "mechanism": "failed expansion publishes partial syntax provenance",
+      "expected": "reject"
+    },
+    {
+      "id": "const-arithmetic-fold",
+      "mechanism": "closed Const<int> arithmetic is deterministically reduced before quote",
+      "expected": "accept"
+    },
+    {
+      "id": "const-aggregate-fold",
+      "mechanism": "closed finite Const<List<int>> children are reduced into ordinary list AST",
+      "expected": "accept"
+    },
+    {
+      "id": "const-runtime-name",
+      "mechanism": "Const<T> expression reads a runtime/local name",
+      "expected": "reject"
+    },
+    {
+      "id": "const-invalid-operation",
+      "mechanism": "compile-time constant performs invalid operation such as integer remainder by zero",
+      "expected": "reject"
+    },
+    {
+      "id": "const-budget-exhaustion",
+      "mechanism": "compile-time constant exceeds deterministic step/depth/aggregate/memory budget",
+      "expected": "reject"
+    },
+    {
+      "id": "const-nonfinite-float",
+      "mechanism": "compile-time evaluation produces NaN or infinity in deterministic cross-backend profile",
+      "expected": "reject"
+    },
+    {
+      "id": "provenance-splice-kind",
+      "mechanism": "successful call-site syntax splice records compiler-only CALL_SITE_SPLICE origin",
+      "expected": "accept"
+    },
+    {
+      "id": "provenance-const-quote-kind",
+      "mechanism": "successful evaluated Const<T> quotation records compiler-only CONST_QUOTE origin",
+      "expected": "accept"
+    },
+    {
+      "id": "const-integer-overflow",
+      "mechanism": "bounded comptime integer arithmetic overflows signed 64-bit",
+      "expected": "reject"
+    },
+    {
+      "id": "const-string-budget",
+      "mechanism": "compile-time string exceeds deterministic per-value string budget",
+      "expected": "reject"
+    },
+    {
+      "id": "const-mixed-i64-f64-exact-ordering",
+      "mechanism": "closed Const<bool> comparison distinguishes integer 2^53+1 from floating 2^53 without rounding the integer to double",
+      "expected": "accept"
+    },
+    {
+      "id": "const-ieee-signed-zero",
+      "mechanism": "closed Const<bool> equality treats -0.0 and +0.0 as equal and relational ordering treats them as equal",
+      "expected": "accept"
+    },
+    {
+      "id": "const-nonfinite-literal",
+      "mechanism": "NaN or infinite compile-time literal is emitted to a strict const-v1 artifact",
+      "expected": "reject"
+    },
+    {
+      "id": "const-checked-subtraction-negation",
+      "mechanism": "overflow in signed i64 subtraction or unary minus is silently wrapped by the evaluator",
+      "expected": "reject"
+    },
+    {
+      "id": "typed-template-unquote",
+      "mechanism": "identifier-free quote template splices declared Syntax<Expr> through direct unquote(parameter)",
+      "expected": "accept"
+    },
+    {
+      "id": "template-callsite-name-preserved",
+      "mechanism": "caller identifier arrives only inside unquoted caller-owned Syntax<Expr>",
+      "expected": "accept"
+    },
+    {
+      "id": "template-introduced-identifier",
+      "mechanism": "quote template invents a name/call target before generated-identifier hygiene exists",
+      "expected": "reject"
+    },
+    {
+      "id": "unquote-pipeline-lookalike",
+      "mechanism": "pipeline/call rewriting is mistaken for direct compiler unquote intrinsic",
+      "expected": "reject"
+    },
+    {
+      "id": "unquote-name-shadow",
+      "mechanism": "macro parameter/local binding shadows compiler unquote intrinsic",
+      "expected": "reject"
+    },
+    {
+      "id": "template-provenance-kind",
+      "mechanism": "successful typed expression template records compiler-only TEMPLATE_QUOTE origin",
+      "expected": "accept"
+    },
+    {
+      "id": "qualified-provenance-canonical-identity",
+      "mechanism": "Consumer invokes Producer.identity and provenance records caller Consumer, owner Producer, local name identity",
+      "expected": "accept"
+    },
+    {
+      "id": "qualified-provenance-spelling-identity",
+      "mechanism": "qualified invocation spelling itself becomes macro hygiene identity",
+      "expected": "reject"
+    },
+    {
+      "id": "template-duplicate-move",
+      "mechanism": "repeated unquote of nontrivial syntax that may carry effects or ownership transfer is rejected before expansion",
+      "expected": "reject"
+    },
+    {
+      "id": "provenance-definition-site",
+      "mechanism": "emitted syntax origin retains both invocation source site and macro definition source site",
+      "expected": "accept"
+    },
+    {
+      "id": "template-unused-syntax-parameter",
+      "mechanism": "typed template silently discards a declared Syntax<Expr> argument before semantic checking",
+      "expected": "reject"
+    },
+    {
+      "id": "template-budget-exhaustion",
+      "mechanism": "typed template exceeds deterministic depth/node validation budget",
+      "expected": "reject"
+    },
+    {
+      "id": "const-depth-inclusive",
+      "mechanism": "const-v1 evaluator accepts depth exactly 64 and rejects depth 65",
+      "expected": "accept"
+    },
+    {
+      "id": "template-nonfinite-float",
+      "mechanism": "typed quote template contains NaN or infinite floating literal",
+      "expected": "reject"
+    },
+    {
+      "id": "const-empty-list-expected-type",
+      "mechanism": "Const<List<int>> admits const [] using the declared closed expected element type",
+      "expected": "accept"
+    },
+    {
+      "id": "const-empty-list-untyped",
+      "mechanism": "empty list constant has no exact closed List<Element> expected type",
+      "expected": "reject"
+    },
+    {
+      "id": "provenance-depth-quota",
+      "mechanism": "macro provenance traversal exceeds 256 nested AST/statement frames and leaves any new origin metadata visible",
+      "expected": "reject"
+    },
+    {
+      "id": "provenance-node-quota",
+      "mechanism": "macro provenance traversal exceeds 65536 AST/statement nodes and publishes partial origin metadata",
+      "expected": "reject"
+    },
+    {
+      "id": "provenance-failed-then-success",
+      "mechanism": "after a failed over-budget provenance walk, an unrelated bounded expansion still publishes complete exact origins",
+      "expected": "accept"
+    },
+    {
+      "id": "const-type-depth-budget",
+      "mechanism": "deeply nested Const<T> type metadata exceeds type admission depth 64",
+      "expected": "reject"
+    },
+    {
+      "id": "const-type-node-budget",
+      "mechanism": "wide Const<T> type metadata exceeds 512 nodes before compiler type checking",
+      "expected": "reject"
+    },
+    {
+      "id": "const-type-diagnostic-bounded",
+      "mechanism": "malformed or oversized type metadata reports truncated, bounded diagnostics without recursively reducing type arguments",
+      "expected": "accept"
+    },
+    {
+      "id": "const-type-boolean-alias",
+      "mechanism": "primitive boolean and bool type aliases denote the same closed type",
+      "expected": "accept"
+    },
+    {
+      "id": "const-direct-ast-meta-bypass",
+      "mechanism": "programmatic MacroParamType.constant(List<Type>) bypasses source parser meta-type rejection",
+      "expected": "reject"
+    },
+    {
+      "id": "const-direct-ast-inferred-hole",
+      "mechanism": "programmatic Const<T> value type contains unresolved inferred generic argument",
+      "expected": "reject"
+    },
+    {
+      "id": "const-direct-ast-borrow",
+      "mechanism": "programmatic Const<T> value type embeds runtime borrow capability",
+      "expected": "reject"
+    },
+    {
+      "id": "template-duplicate-trivial-identity",
+      "mechanism": "duplicated trivial unquote emits distinct AST identities for each output occurrence",
+      "expected": "accept"
+    },
+    {
+      "id": "template-shared-output-identity",
+      "mechanism": "two generated output positions alias the same Expr object identity",
+      "expected": "reject"
+    },
+    {
+      "id": "generated-hygienic-no-text-capture",
+      "mechanism": "hygienic(Identifier) uses caller spelling as hint but emits a fresh source-unspellable identifier with exact hygiene metadata",
+      "expected": "accept"
+    },
+    {
+      "id": "generated-hygienic-equal-spelling-capture",
+      "mechanism": "fresh generated identifier resolves caller local solely because hint spelling is equal",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-same-module-private",
+      "mechanism": "capture_fnc targets a private module-level function even though macro owner equals caller module",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-cross-module-public",
+      "mechanism": "public macro from another module explicitly captures caller public module-level function family",
+      "expected": "accept"
+    },
+    {
+      "id": "checked-function-capture-cross-module-private",
+      "mechanism": "macro owner differs from caller and capture_fnc targets a private caller function family",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-wrong-kind",
+      "mechanism": "capture_fnc receives Identifier naming a non-function declaration",
+      "expected": "reject"
+    },
+    {
+      "id": "identifier-intrinsic-shadow",
+      "mechanism": "macro parameter or local binding shadows hygienic or capture_fnc",
+      "expected": "reject"
+    },
+    {
+      "id": "hygiene-source-unit-distinct",
+      "mechanism": "two independently compiled source units share module, invocation line/column and local expansion ordinal",
+      "expected": "accept"
+    },
+    {
+      "id": "hygiene-source-unit-collision",
+      "mechanism": "same module/site/ordinal from different source units receives one hygiene identity",
+      "expected": "reject"
+    },
+    {
+      "id": "generated-handle-unit-collision",
+      "mechanism": "generated identifiers in different source units receive equal compiler handle because unit identity was omitted or only collision-prone authority was used",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-actor",
+      "mechanism": "capture_fnc targets an actor function and thereby attempts to acquire actor authority",
+      "expected": "reject"
+    },
+    {
+      "id": "macro-canonical-formatting-stable",
+      "mechanism": "public macro source changes only whitespace while parsed typed AST and semantic profile remain identical",
+      "expected": "accept"
+    },
+    {
+      "id": "macro-canonical-semantic-change",
+      "mechanism": "public macro changes compiler intrinsic body from hygienic(id) to capture_fnc(id)",
+      "expected": "invalidate-importers"
+    },
+    {
+      "id": "macro-canonical-signed-zero",
+      "mechanism": "canonical literal identity distinguishes +0.0 and -0.0 using raw IEEE-754 bits",
+      "expected": "accept"
+    },
+    {
+      "id": "macro-canonical-record-tostring",
+      "mechanism": "public macro content identity depends on Java/C++/host record toString formatting",
+      "expected": "reject"
+    },
+    {
+      "id": "declare-fnc-private-zero-arg",
+      "mechanism": "declare_fnc(Identifier, Type, Syntax<Expr>) emits one private ordinary zero-argument function",
+      "expected": "accept"
+    },
+    {
+      "id": "declare-fnc-nested-expression-macro",
+      "mechanism": "generated function body contains an expression macro that fully expands before ordinary semantic checking",
+      "expected": "accept"
+    },
+    {
+      "id": "declare-fnc-existing-name-collision",
+      "mechanism": "generated stable function name collides with an existing runtime declaration",
+      "expected": "reject"
+    },
+    {
+      "id": "declare-fnc-generated-name-collision",
+      "mechanism": "two declaration expansions expose the same stable name",
+      "expected": "reject"
+    },
+    {
+      "id": "declare-fnc-body-semantic-recheck",
+      "mechanism": "generated function declares return int but emitted expression has incompatible String type",
+      "expected": "reject"
+    },
+    {
+      "id": "declare-fnc-public-output",
+      "mechanism": "first declaration-generation slice attempts to synthesize a public function",
+      "expected": "reject"
+    },
+    {
+      "id": "declare-fnc-exposed-name-provenance",
+      "mechanism": "generated declaration retains exact ident argument source site plus macro call/definition provenance",
+      "expected": "accept"
+    },
+    {
+      "id": "hygiene-source-unit-normalization",
+      "mechanism": "programmatic source-unit identities pkg/tmp/../unit.ores and pkg/unit.ores canonicalize to one hygiene unit",
+      "expected": "accept"
+    },
+    {
+      "id": "hygiene-source-unit-rebind",
+      "mechanism": "one parsed Program is rebound to a different canonical source-unit identity",
+      "expected": "reject"
+    },
+    {
+      "id": "macro-rewrite-deep-programmatic-ast",
+      "mechanism": "macro-enabled compilation receives a programmatic runtime AST deeper than the rewrite traversal profile",
+      "expected": "reject"
+    },
+    {
+      "id": "macro-rewrite-bounded-program",
+      "mechanism": "bounded runtime AST containing an expression macro is rewritten and macro nodes are erased",
+      "expected": "accept"
+    },
+    {
+      "id": "generated-hygienic-full-semantic-noncapture",
+      "mechanism": "full ordinary type checking sees generated hygienic identifier as distinct from equal-spelled caller local",
+      "expected": "reject-unresolved-generated-name"
+    },
+    {
+      "id": "declare-fnc-pipeline-lookalike",
+      "mechanism": "pipeline rewriting produces a call shape resembling declare_fnc but call origin is not DIRECT",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-same-module-public",
+      "mechanism": "capture_fnc resolves one public ordinary reifiable fnc in caller module",
+      "expected": "accept"
+    },
+    {
+      "id": "checked-function-capture-local-shadow",
+      "mechanism": "caller local has same spelling as captured public module fnc; lowered internal module reference still resolves the checked function",
+      "expected": "accept"
+    },
+    {
+      "id": "checked-function-capture-overload",
+      "mechanism": "capture_fnc attempts to reify an overloaded function family as one function value",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-routine",
+      "mechanism": "capture_fnc attempts to reify a routine as a first-class fnc value",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-generic",
+      "mechanism": "capture_fnc attempts to reify unspecialized generic fnc",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-suspends",
+      "mechanism": "capture_fnc attempts to reify suspends fnc while Fnc types do not encode suspension",
+      "expected": "reject"
+    },
+    {
+      "id": "hygiene-source-unit-absolute-path",
+      "mechanism": "source-unit identity contains an absolute workspace-dependent path",
+      "expected": "reject"
+    },
+    {
+      "id": "hygiene-source-unit-parent-escape",
+      "mechanism": "source-unit identity normalizes above its logical root",
+      "expected": "reject"
+    },
+    {
+      "id": "hygiene-source-unit-slash-equivalence",
+      "mechanism": "pkg\\\\tmp\\\\..\\\\unit.ores and pkg/tmp/../unit.ores normalize to one logical unit",
+      "expected": "accept"
+    },
+    {
+      "id": "checked-function-capture-capability-laundering",
+      "mechanism": "captured public function with restricted capability enters a private actor as a function value",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-forged-internal-module-ref",
+      "mechanism": "programmatic AST constructs the exact internal $module$ spelling without checked-capture identity",
+      "expected": "reject"
+    },
+    {
+      "id": "checked-function-capture-rewrite-preserves-authority",
+      "mechanism": "generic macro AST rewrite preserves the exact checked-capture node and receiver admission identity",
+      "expected": "accept"
+    },
+    {
+      "id": "checked-function-capture-receiver-reuse",
+      "mechanism": "authorized internal module receiver is reused in a newly constructed MemberExpr naming a different module member",
+      "expected": "reject"
+    }
+  ],
+  "literal_quote": {
+    "compiler_only_intrinsic": true,
+    "result_kind": "Syntax<Expr>",
+    "requires_proven_const_value": true,
+    "requires_exact_const_type": true,
+    "emits_literal_ast_not_source_text": true,
+    "ordinary_semantic_recheck": true,
+    "nonliteral_subset_may_fail_closed": true,
+    "runtime_evaluation_fallback": false,
+    "quote_name_reserved_in_macro_scope": true,
+    "direct_call_origin_required": true
+  },
+  "runtime_generation": {
+    "macro_runs_at_build_time": true,
+    "generated_function_may_consume_runtime_values": true,
+    "runtime_dom_or_html_generation": true,
+    "runtime_json_or_sql_generation": true,
+    "precompiled_js_or_wasm_output": true,
+    "runtime_source_text_is_data_not_authority": true,
+    "runtime_oreslang_compilation_required": false,
+    "runtime_macro_engine_required": false,
+    "runtime_generated_nominal_types": false,
+    "representation_grants_ownership_authority": false
+  },
+  "incremental_compilation": {
+    "public_macro_content_invalidates_importers": true,
+    "private_macro_change_is_not_imported_abi": true,
+    "transitive_compile_time_dependencies_invalidate": true,
+    "runtime_artifact_requires_macro_metadata": false
+  },
+  "const_evaluator": {
+    "deterministic": true,
+    "runtime_authority": false,
+    "supported_initial_forms": [
+      "primitive literals",
+      "unary numeric/boolean/bitwise",
+      "arithmetic/comparison/equality/boolean/shift",
+      "closed type-consistent conditional",
+      "finite list",
+      "finite tuple",
+      "finite closed record/struct"
+    ],
+    "name_lookup": false,
+    "calls": false,
+    "runtime_intrinsics": false,
+    "actors": false,
+    "tasks_or_futures": false,
+    "reflection": false,
+    "ffi": false,
+    "io": false,
+    "environment": false,
+    "time": false,
+    "randomness": false,
+    "parse_generated_source": false,
+    "max_steps": 512,
+    "max_depth": 64,
+    "max_aggregate_elements": 256,
+    "max_estimated_bytes": 1048576,
+    "non_finite_float": false,
+    "exact_const_type_required": true,
+    "max_string_chars": 65536,
+    "checked_integer_overflow": true,
+    "exact_mixed_integer_float_comparison": true,
+    "ieee_signed_zero_comparison": true,
+    "checked_integer_subtraction_and_negation": true,
+    "profile": "const-v1",
+    "division_of_ints_has_type": "float",
+    "integer_overflow_policy": "reject",
+    "depth_limit_inclusive": true,
+    "expected_directed_empty_list": true,
+    "empty_list_requires_exact_list_element_type": true,
+    "max_const_type_depth": 64,
+    "max_const_type_nodes": 512,
+    "max_type_diagnostic_depth": 16,
+    "max_type_diagnostic_nodes": 128,
+    "max_type_diagnostic_children": 16,
+    "max_type_diagnostic_chars": 1024,
+    "type_matching_is_iterative": true,
+    "ast_const_value_type_invariant": true,
+    "ast_const_meta_type_bypass": false,
+    "ast_const_inferred_type_hole": false,
+    "ast_const_runtime_borrow": false,
+    "ast_const_type_validation_bounded": true
+  },
+  "provenance": {
+    "compiler_only": true,
+    "exact_hygiene_identity": true,
+    "ordered_expansion_chain": true,
+    "nested_origins_preserved": true,
+    "transactional_publication": true,
+    "runtime_authority": false,
+    "retained_in_native_artifact": false,
+    "identity_fields": [
+      "source_unit_id",
+      "caller_module",
+      "macro_owner_module",
+      "macro_declaration_name",
+      "invocation_site",
+      "expansion_ordinal"
+    ],
+    "qualified_invocation_spelling_is_identity": false,
+    "concurrent_publication_atomic": true,
+    "origin_fields": [
+      "source_unit_id",
+      "caller_module",
+      "macro_owner_module",
+      "macro_declaration_name",
+      "invocation_site",
+      "macro_definition_site",
+      "expansion_ordinal",
+      "emission_kind"
+    ],
+    "definition_and_invocation_sites_distinct": true,
+    "max_traversal_depth": 256,
+    "max_traversal_nodes": 65536,
+    "budget_checked_before_publication": true,
+    "failed_walk_does_not_publish_any_origin": true,
+    "source_unit_identity_required": true,
+    "same_module_same_site_different_unit_is_distinct": true,
+    "source_unit_normalization": "logical-relative-segments-forward-slash",
+    "memory_source_unit": "<memory>",
+    "absolute_source_unit_id": false,
+    "source_unit_parent_escape": false,
+    "backslash_and_slash_equivalent": true
+  },
+  "template_quote": {
+    "result_kind": "Syntax<Expr>",
+    "compiler_only": true,
+    "quote_direct_call_only": true,
+    "unquote_direct_call_only": true,
+    "unquote_parameter_kind": "Syntax<Expr>",
+    "identifier_free_template": true,
+    "introduced_identifiers": false,
+    "generated_call_targets": false,
+    "caller_identifiers_via_unquote_only": true,
+    "quote_name_reserved_in_macro_scope": true,
+    "unquote_name_reserved_in_macro_scope": true,
+    "runtime_names_outside_macro_scope": true,
+    "source_text_reparse": false,
+    "provenance_kind": "TEMPLATE_QUOTE",
+    "duplicate_unquote_grants_ownership": false,
+    "max_depth": 64,
+    "max_nodes": 2048,
+    "all_parameters_must_be_used": true,
+    "duplicate_nontrivial_unquote": false,
+    "duplicate_trivial_name_or_literal": true,
+    "non_finite_float": false,
+    "deterministic_parameter_order": true,
+    "duplicated_trivial_splice_unique_ast_identity": true,
+    "shared_expr_identity_across_output_occurrences": false
+  },
+  "identifier_hygiene": {
+    "compiler_only": true,
+    "runtime_table_required": false,
+    "identifier_argument_grants_capture": false,
+    "generated_intrinsic": "hygienic",
+    "generated_direct_call_only": true,
+    "generated_source_spellable": false,
+    "generated_textual_equality_grants_capture": false,
+    "generated_exact_hygiene_identity": true,
+    "generated_hint_is_authority": false,
+    "capture_intrinsic": "capture_fnc",
+    "capture_direct_call_only": true,
+    "capture_kind": "public-reifiable-module-fnc",
+    "capture_resolves_from": "caller_module",
+    "capture_records_overload_family": false,
+    "capture_local_binding": false,
+    "capture_field": false,
+    "capture_method": false,
+    "capture_import_alias": false,
+    "capture_type": false,
+    "capture_actor_or_capability": false,
+    "cross_module_requires_public_family": true,
+    "intrinsic_names_reserved_only_in_macro_scope": true,
+    "generated_handle_includes_lossless_source_unit": true,
+    "generated_handle_uses_hash_as_authority": false,
+    "capture_requires_public": true,
+    "capture_same_module_private": false,
+    "capture_overloaded_family": false,
+    "capture_routine": false,
+    "capture_generic": false,
+    "capture_suspends": false,
+    "capture_runtime_macro_table_required": false,
+    "capture_lowering": "source-unspellable-lossless-module-ref",
+    "capture_local_shadow_can_redirect": false,
+    "capture_internal_module_ref_encoding": "lossless-utf8-hex",
+    "capture_internal_module_ref_source_spellable": false,
+    "capture_internal_module_ref_decoded_before_local_lookup": true,
+    "capture_internal_module_ref_capability_canonicalized": true,
+    "capture_preserves_referenced_function_effects": true,
+    "capture_internal_module_ref_text_is_authority": false,
+    "capture_internal_module_ref_requires_exact_admission_identity": true,
+    "capture_rewrite_preserves_admission_identity": true,
+    "capture_forged_programmatic_ast": false,
+    "capture_authority_binds_exact_member_expr": true,
+    "capture_authorized_receiver_reuse": false
+  },
+  "canonical_content_identity": {
+    "format": "ores-macro-content-v1",
+    "semantics_abi": "ores-macro-semantics-v1",
+    "encoding": "utf-8",
+    "free_form_string_length_unit": "utf-8-bytes",
+    "max_encoded_bytes": 1048576,
+    "max_nodes": 4096,
+    "max_depth": 128,
+    "source_text_in_identity": false,
+    "source_location_in_identity": false,
+    "record_to_string_in_identity": false,
+    "reflection_in_identity": false,
+    "object_identity_in_identity": false,
+    "parameter_names_in_identity": true,
+    "call_origin_in_identity": true,
+    "object_kind_in_identity": true,
+    "float_encoding": "raw-ieee754-bits",
+    "hash_is_cache_only": true,
+    "hash_grants_hygiene_or_capture": false,
+    "resource_profiles_in_identity": true,
+    "format_or_semantics_change_invalidates_importers": true,
+    "identifier_max_chars": 1024,
+    "source_unit_max_chars": 4096
+  },
+  "declaration_generation_slice": {
+    "enabled": true,
+    "intrinsic": "declare_fnc",
+    "direct_call_only": true,
+    "result_kind": "Syntax<Decl>",
+    "parameters": [
+      "Identifier",
+      "Type",
+      "Syntax<Expr>"
+    ],
+    "output_kind": "ordinary-module-function",
+    "output_visibility": "private",
+    "output_actor_kind": "NONE",
+    "output_async": false,
+    "output_generic": false,
+    "output_parameters": 0,
+    "stable_name_requires_explicit_identifier": true,
+    "exposed_name_site_in_provenance": true,
+    "duplicate_existing_name": "reject",
+    "duplicate_generated_name": "reject",
+    "overload_synthesis": false,
+    "generated_public_declaration": false,
+    "generated_import": false,
+    "generated_export": false,
+    "generated_macro": false,
+    "generated_module_or_package": false,
+    "nested_expression_macros_expand_before_semantics": true,
+    "generated_declaration_reenters_type_effect_ownership_capability_checks": true,
+    "syntax_decl_source_argument_enabled": false
+  },
+  "resource_limits": {
+    "rewrite_traversal_max_depth": 512,
+    "rewrite_traversal_max_nodes": 1000000,
+    "rewrite_traversal_covers_programmatic_ast": true,
+    "rewrite_traversal_failure_before_runtime_fallback": true
+  }
+}
