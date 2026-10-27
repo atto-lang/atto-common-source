@@ -30,7 +30,7 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
 
     def test_nonvacuous_positive_and_negative_scenarios(self):
         cases = self.contract["cases"]
-        self.assertEqual(len(cases), 50)
+        self.assertEqual(len(cases), 52)
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
         expected = {case["expected"] for case in cases}
@@ -79,10 +79,12 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
             "unsafe-after-nested-comment",
             "unsafe-native-asm-pipeline",
             "malformed-utf8-hidden-in-comment",
+            "unsafe-block-comment-depth-129",
         }
         self.assertTrue(required <= set(cases))
         self.assertTrue(all(cases[x]["expected"] == "reject" for x in required))
         self.assertEqual(cases["unsafe-in-nested-block-comment"]["expected"], "accept")
+        self.assertEqual(cases["unsafe-in-block-comment-depth-128"]["expected"], "accept")
 
     def test_import_is_not_authority_and_unsupported_code_fails_closed(self):
         cases = {item["id"]: item for item in self.contract["cases"]}
