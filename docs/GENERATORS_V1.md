@@ -42,7 +42,9 @@ The v1 pull protocol is:
 
 ```oreslang
 Iterator<T>.next(): IteratorResult<T>
+Iterator<T>.close(): void
 AsyncIterator<T>.next(): Future<IteratorResult<T>>
+AsyncIterator<T>.close(): Future<void>
 ```
 
 `IteratorResult<T>` distinguishes `yielded(T)` from `done`; null or an Option sentinel must not be used to encode completion because T may itself contain those values.
@@ -70,6 +72,8 @@ Each generator has exactly one logical suspended activation.
 At most one async pull may be active at a time. An overlapping `next()` fails deterministically with a concurrent-pull error; it must not allocate a second producer, queue an unbounded number of scheduler tasks, or execute the body twice.
 
 A later pull after the previous pull settles is valid. Terminal DONE and terminal failure are sticky and repeatable according to the iterator protocol.
+
+Async close is itself asynchronous because it may need to cancel a pending pull, unwind finally/defer/delegates, and wait for physical producer/frame exit. Calling `AsyncIterator.close()` must return promptly with a memoizable `Future<void>`; it must not synchronously park an actor/runtime carrier while cleanup completes. Repeated closes share the same logical terminal cleanup and must not amplify cleanup tasks.
 
 Implementations may use a state-machine frame, coroutine, continuation, or another backend representation, but observable pull ordering is identical.
 
