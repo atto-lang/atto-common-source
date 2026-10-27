@@ -30,7 +30,7 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
 
     def test_nonvacuous_positive_and_negative_scenarios(self):
         cases = self.contract["cases"]
-        self.assertGreaterEqual(len(cases), 35)
+        self.assertEqual(len(cases), 38)
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
         expected = {case["expected"] for case in cases}
@@ -73,6 +73,19 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
         }
         self.assertTrue(required <= set(cases))
         self.assertTrue(all(cases[x]["expected"] == "reject" for x in required))
+
+    def test_import_is_not_authority_and_unsupported_code_fails_closed(self):
+        cases = {item["id"]: item for item in self.contract["cases"]}
+        self.assertEqual(cases["untrusted-actor-import-only"]["expected"],
+                         "accept_after_g2")
+        self.assertEqual(cases["untrusted-actor-native-after-import"]["expected"],
+                         "reject")
+        self.assertIn("qualified import/path segment only", self.doc)
+        self.assertIn("IDENT(\"unsafe\")", self.doc)
+        self.assertIn("absolute source offset", self.doc)
+        self.assertIn("host/supervisor-minted", self.doc)
+        self.assertEqual(cases["unsafe-effect-without-grant"]["expected"],
+                         "reject")
 
     def test_effect_taxonomy_and_existing_pointer_contract_not_rewritten(self):
         self.assertEqual(set(self.contract["effect_kinds"]),
