@@ -8,6 +8,8 @@ This is a **shared language/evidence contract, not a common compiler implementat
 
 Both required primary production paths compile **all reachable Oreslang guest functionality** before deployment.
 
+This is the mandatory **normal/strict-AOT production profile** for newly admitted language features. An explicitly selected, separately labeled hybrid/JIT profile for untrusted guest execution may remain available under the existing compilation policy, but must never be presented as an LLVM/Graal native-AOT artifact, a substitute for an AOT lowering, or a hard-RT-certified path. An admitted normal-profile feature may not rely on the optional JIT path for its semantics.
+
 - **LLVM:** typed/verified Oreslang -> LLVM objects -> native executable, with compiled actor handlers, callbacks, closure bodies, exceptional exits, scheduler continuations, and runtime glue. A JIT/evaluator/interpreter is not a substitute.
 - **Java/GraalVM:** typed/verified Oreslang -> generated program-specific compiled JVM implementation (or equivalent AOT-visible guest lowering) -> **GraalVM Native Image native executable**. Merely embedding the Truffle interpreter in Native Image, including with `--no-fallback`, is explicitly *not* full guest AOT.
 - Before linking, resolve macros/comptime, finite generic specializations, static protocol witnesses, actor/session transition tables, layouts/codecs, permission and effect closure, ownership, and all reachable suspension/failure/cleanup edges. All forbidden or unknown requirements fail **before executable artifact emission**, not as a runtime interpreter/JIT fallback.
