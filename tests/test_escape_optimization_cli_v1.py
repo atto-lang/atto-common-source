@@ -57,7 +57,9 @@ class EscapeOptimizationPolicyTest(unittest.TestCase):
         self.assertEqual(c["flag_transport"]["adapter"], "flags-2-env")
         self.assertEqual(c["flag_transport"]["duplicate_cli_policy"], "reject")
         self.assertEqual(set(c["backend_admission"]), {"java", "llvm", "net", "wasm", "forge"})
-        self.assertEqual(c["backend_admission"]["forge"], "off-only-cli-admission-proposed")
+        self.assertIn("closed-world-point-x86_64-safe-experimental", c["backend_admission"]["forge"])
+        self.assertEqual(c["experimental_native_slice"]["command"], "emit-alloc-asm x86_64")
+        self.assertIn("not yet verified", c["experimental_native_slice"]["proof_status"])
         self.assertEqual(set(c["escape_modes"]), {"off", "safe", "verify", "speculative"})
 
     def test_release_gate_does_not_confuse_models_with_execution(self):
