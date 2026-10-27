@@ -141,10 +141,21 @@
       "net": "pending"
     },
     {
-      "id": "untrusted-actor-import-unsafe",
+      "id": "untrusted-actor-import-only",
+      "expected": "accept_after_g2",
+      "kind": "import_only",
+      "reason": "Importing an unsafe namespace grants no native authority and is permitted once the package is available",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "untrusted-actor-native-after-import",
       "expected": "reject",
       "kind": "actor_domain",
-      "reason": "Import does not authorize native memory",
+      "reason": "Importing std.unsafe does not permit native operations in an untrusted actor",
       "java": "pending",
       "llvm": "pending",
       "forge": "pending",
