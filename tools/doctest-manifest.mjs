@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync, realpathSync} from 'node:fs';
 import {resolve, relative, isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -12,6 +12,7 @@ const anyDoctest = new RegExp('^' + ticks + '.*\\bdoctest\\b');
 
 export function extractDoctests(markdown, documentPath = 'example.md') {
   if (typeof markdown !== 'string') throw new TypeError('markdown must be UTF-8 text');
+  if (Buffer.byteLength(markdown, 'utf8') > 1024 * 1024) throw new Error('Markdown file exceeds 1 MiB source scan budget');
   const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
   const seen = new Set(), items = [];
   let active = null, ignored = false;
@@ -64,7 +65,7 @@ export function extractDoctests(markdown, documentPath = 'example.md') {
 }
 
 export function manifestForFile(filepath, rootDir = process.cwd()) {
-  const root = resolve(rootDir), absolute = resolve(filepath);
+  const root = realpathSync(resolve(rootDir)), absolute = realpathSync(resolve(filepath));
   const rel = relative(root, absolute);
   if (rel.startsWith('..') || isAbsolute(rel) || rel === '') throw new Error('doctest file must be under designated repository root');
   if (!rel.endsWith('.md')) throw new Error('doctest scanner only accepts Markdown files');
