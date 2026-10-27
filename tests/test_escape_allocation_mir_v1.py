@@ -77,6 +77,18 @@ class TypedAllocationMirContractTest(unittest.TestCase):
         case["expected"] = "scalar-candidate"
         self.assertNotEqual(case["expected"], candidate(case))
 
+    def test_native_slice_is_distinct_from_general_backend_parity(self):
+        fixture = self.data["source_fixture"]["text"]
+        self.assertIn("define struct Point as\n", fixture)
+        self.assertIn("return p.x + p.y;", fixture)
+        scope = self.data["forge_experiment"]
+        self.assertIn("exact-head", scope["status"])
+        self.assertEqual(scope["subcommands"],
+                         ["ir-alloc", "emit-alloc-asm x86_64"])
+        self.assertEqual(len(scope["ctests"]), 2)
+        self.assertIn("general source MIR", scope["excluded"])
+        self.assertIn("observable allocator hooks", scope["excluded"])
+
     def test_release_gates_are_executable_not_models(self):
         gates = self.data["release_gates"]
         self.assertIn("Emit executable", gates["compiler-lowering"])
