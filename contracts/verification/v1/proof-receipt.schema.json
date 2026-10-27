@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oreslang structural proof receipt v1: NOT provenance attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "proofIrSha256",
+    "solver",
+    "results",
+    "job",
+    "guest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "ores-proof-receipt"
+    },
+    "proofIrSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "solver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "binarySha256"
+      ],
+      "properties": {
+        "name": {
+          "enum": [
+            "z3",
+            "cvc5"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "binarySha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "verdict",
+          "transcriptSha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "sat",
+              "unsat"
+            ]
+          },
+          "transcriptSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "headSha",
+        "checkedOutSha",
+        "runId",
+        "runAttempt",
+        "runnerId",
+        "jobId",
+        "conclusion",
+        "steps"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^ores-truffle-oreslang/"
+        },
+        "headSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "checkedOutSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "runId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runAttempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runnerId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "jobId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "conclusion": {
+          "const": "success"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "conclusion"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "conclusion": {
+                "const": "success"
+              }
+            }
+          }
+        }
+      }
+    },
+    "guest": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "backend",
+            "binarySha256",
+            "fixtureSha256",
+            "observationsSha256",
+            "cases",
+            "job"
+          ],
+          "properties": {
+            "backend": {
+              "enum": [
+                "java-graal",
+                "llvm",
+                "dotnet",
+                "wasm",
+                "js",
+                "forge"
+              ]
+            },
+            "binarySha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "fixtureSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "observationsSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "cases": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "job": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repository",
+                "headSha",
+                "checkedOutSha",
+                "runId",
+                "runAttempt",
+                "runnerId",
+                "jobId",
+                "conclusion",
+                "steps"
+              ],
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "pattern": "^ores-truffle-oreslang/"
+                },
+                "headSha": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "checkedOutSha": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "runId": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "runAttempt": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "runnerId": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "jobId": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "conclusion": {
+                  "const": "success"
+                },
+                "steps": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 64,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "conclusion"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "conclusion": {
+                        "const": "success"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
