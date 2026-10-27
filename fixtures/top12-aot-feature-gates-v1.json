@@ -1,0 +1,929 @@
+{
+  "schema": "oreslang.top12-aot-feature-admission.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "normative_doc": "docs/TOP12_FEATURE_ADMISSION_AOT_V1.md",
+  "required_primary_native_guest_aot": [
+    "llvm",
+    "java-graal"
+  ],
+  "primary_aot_definition": {
+    "llvm": "compiled_oreslang_guest_native_executable_no_interpreter_or_jit",
+    "java-graal": "program_specific_compiled_guest_methods_in_graalvm_native_image_no_interpreter_or_jit"
+  },
+  "allowed_backend_outcomes": [
+    "verified",
+    "compile_reject_expected",
+    "unsupported",
+    "failed",
+    "not_executed"
+  ],
+  "proof_levels": [
+    "F0_contract",
+    "F1_model",
+    "F2_compiler_source_ir",
+    "F3_guest_binary",
+    "F4_refinement",
+    "F5_release"
+  ],
+  "complete_compiler_claims": false,
+  "release_requirements": [
+    "finite_code_closure",
+    "ownership_borrow_effect_capability_proof",
+    "static_runtime_layout",
+    "sound_failure_and_cleanup",
+    "no_runtime_guest_code_generation",
+    "formal_negative_mutations",
+    "verified_guest_binary",
+    "source_artifact_digest_bound"
+  ],
+  "features": [
+    {
+      "id": "session_protocols",
+      "priority": "P0",
+      "related_contract": "docs/THREE_GUARANTEES_AOT_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "TLA+",
+        "typestate",
+        "model-refinement"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "session_protocols--single_affine_session_transition",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "session_protocols--per_generation_session_drain",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "session_protocols--bounded_admission_recovery",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "session_protocols--wrong_phase_message",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "session_protocols--double_spend_session",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "session_protocols--forged_session_epoch",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "session_protocols--timeout_reissues_old_phase",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "session_protocols--intercept_actor_panic",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "session_protocols--generation_migration_without_proof",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "refinement_contracts",
+      "priority": "P0",
+      "related_contract": "docs/REFINEMENT_TYPES.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "SMT",
+        "abstract-interpretation",
+        "IR-contracts"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "refinement_contracts--validated_dynamic_try_from",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "refinement_contracts--compiletime_predicate_entailment",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "refinement_contracts--checked_pre_postcondition",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "refinement_contracts--raw_value_implicitly_refined",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "refinement_contracts--mutable_alias_invalidates_refinement",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "refinement_contracts--effectful_predicate",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "refinement_contracts--missing_return_path_postcondition",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "refinement_contracts--false_nominal_newtype_cast",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "refinement_contracts--unsigned_length_wrap",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "associated_witnesses",
+      "priority": "P0",
+      "related_contract": "docs/AOT_LANGUAGE_CLOSURE_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "coherence-checking",
+        "IR-translation-validation",
+        "closed-world-analysis"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "associated_witnesses--static_unique_witness",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "associated_witnesses--associated_item_resolution",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "associated_witnesses--finite_generic_instantiation",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "associated_witnesses--ambiguous_overlapping_impls",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "associated_witnesses--orphan_protocol_authority",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "associated_witnesses--runtime_impl_registry",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "associated_witnesses--unbounded_specialization",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "associated_witnesses--effect_laundered_trait",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "associated_witnesses--import_order_changes_witness",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "typed_queries",
+      "priority": "P1",
+      "related_contract": "docs/AOT_LANGUAGE_CLOSURE_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "SMT",
+        "effect-system",
+        "trace-refinement"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "typed_queries--statically_typed_query_projection",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "typed_queries--parameterized_async_query",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "typed_queries--bounded_row_stream",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "typed_queries--string_interpolated_sql_value",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "typed_queries--identifier_from_untrusted_string",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "typed_queries--cross_generation_tx_lease",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "typed_queries--blocking_actor_db_call",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "typed_queries--schema_mismatch_ignored",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "typed_queries--unbounded_row_prefetch",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "lazy_stream_fusion",
+      "priority": "P1",
+      "related_contract": "docs/GENERATORS_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "equivalence-checking",
+        "trace-refinement",
+        "ownership-proof"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "lazy_stream_fusion--pure_single_consumer_fusion",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "lazy_stream_fusion--take_zero_never_pulls",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "lazy_stream_fusion--fused_close_once",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "lazy_stream_fusion--effectful_callback_reordered",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "lazy_stream_fusion--source_prefetch_beyond_demand",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "lazy_stream_fusion--duplicate_move_after_filter",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "lazy_stream_fusion--async_generator_unsafely_fused",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "lazy_stream_fusion--panic_erased_as_data",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "lazy_stream_fusion--delegated_cleanup_skipped",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "secret_safe_types",
+      "priority": "P1",
+      "related_contract": "docs/OWNERSHIP_SYNTAX.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "information-flow",
+        "ownership-proof",
+        "cryptographic-kernel-verification"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "secret_safe_types--owned_secret_region",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "secret_safe_types--scoped_authorized_reveal",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "secret_safe_types--checked_secret_cleanup",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "secret_safe_types--secret_implicit_logging",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "secret_safe_types--secret_to_plain_string",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "secret_safe_types--secret_ffi_lease_escape",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "secret_safe_types--copy_without_authority",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "secret_safe_types--unverified_zeroization_guarantee",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "secret_safe_types--secret_timing_claim_without_proof",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "portable_atomics",
+      "priority": "P1",
+      "related_contract": "docs/REALTIME_EXECUTION.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "weak-memory-litmus",
+        "SMT",
+        "ABI-refinement"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "portable_atomics--release_acquire_publication",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "portable_atomics--legal_compare_exchange_order",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "portable_atomics--seq_cst_closed_type",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "portable_atomics--release_load_order",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "portable_atomics--acquire_store_order",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "portable_atomics--cas_failure_release_order",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "portable_atomics--volatile_as_atomic",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "portable_atomics--unbounded_spin_hard_rt",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "portable_atomics--unsupported_width_silently_emulated",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "register_bitfields",
+      "priority": "P1",
+      "related_contract": "docs/POINTER_CAPABILITY_CONTRACT.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "SMT",
+        "layout-verification",
+        "effect-checking"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "register_bitfields--nonoverlapping_static_masks",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "register_bitfields--access_controlled_mmio",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "register_bitfields--explicit_w1c_write",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "register_bitfields--overlap_without_alias_contract",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "register_bitfields--reserved_register_bit_write",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "register_bitfields--wrong_endian_field_access",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "register_bitfields--read_to_clear_as_pure",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "register_bitfields--untrusted_raw_mmio_grant",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "register_bitfields--implicit_mmio_read_modify_write",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "language_editions",
+      "priority": "P1",
+      "related_contract": "docs/PACKAGE_VISIBILITY_AND_MULTIFILE_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "AST-equivalence",
+        "ABI-compatibility",
+        "model-refinement"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "language_editions--pinned_source_edition",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "language_editions--verified_codemod_transform",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "language_editions--compatible_versioned_import",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "language_editions--runtime_selects_language_edition",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "language_editions--unversioned_ambiguous_migration",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "language_editions--upgrade_breaks_actor_schema",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "language_editions--breaking_effect_narrowing_hidden",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "language_editions--edition_changes_wire_tags",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "language_editions--dynamic_runtime_parser_fallback",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "doctests",
+      "priority": "P1",
+      "related_contract": "docs/COMPILATION-POLICY.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "compiler-execution",
+        "diagnostic-contract",
+        "provenance-validation"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "doctests--declared_positive_ores_example",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "doctests--expected_compile_failure_snippet",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "doctests--sandboxed_doctest",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "doctests--illustrative_snippet_claimed_executable",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "doctests--skip_or_zero_step_called_pass",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "doctests--interpreter_native_image_called_guest_aot",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "doctests--ambient_network_permission",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "doctests--undisclosed_secret_in_docs",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "doctests--unbound_source_sha",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "functional_lenses",
+      "priority": "P2",
+      "related_contract": "docs/JSON_RECORD_MAP_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "equational-logic",
+        "borrow-checking",
+        "layout-refinement"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "functional_lenses--generated_immutable_nested_get",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "functional_lenses--owned_immutable_update",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "functional_lenses--lens_get_put_laws",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "functional_lenses--string_reflection_field_access",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "functional_lenses--mutable_alias_retained_after_update",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "functional_lenses--lens_escape_actor_private_state",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "functional_lenses--dynamic_unknown_field_path",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "functional_lenses--inverted_layout_mismatch",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "functional_lenses--unknown_index_out_of_bounds",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    },
+    {
+      "id": "declarative_reactive",
+      "priority": "P2",
+      "related_contract": "docs/REACTIVE_ITERATOR_STREAM_CHANNEL_INTEROP_V1.md",
+      "stage": "DESIGN_REVIEW_REQUIRED",
+      "formal_methods": [
+        "TLA+",
+        "dependency-graph-analysis",
+        "trace-refinement"
+      ],
+      "backend_evidence": {
+        "java-graal": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed"
+      },
+      "cases": [
+        {
+          "id": "declarative_reactive--typed_pure_computed_graph",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "declarative_reactive--bounded_subscription_lifecycle",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "declarative_reactive--topological_transaction_update",
+          "type": "positive",
+          "expected": "accept",
+          "evidence": "source_fixture_required"
+        },
+        {
+          "id": "declarative_reactive--unbounded_dynamic_dependency_creation",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "declarative_reactive--implicit_reentrant_actor_callback",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "declarative_reactive--undeclared_cycle_in_static_graph",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "declarative_reactive--duplicate_terminal_notification",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "declarative_reactive--consumer_cancellation_kills_borrowed_producer",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        },
+        {
+          "id": "declarative_reactive--reactive_source_eval_at_runtime",
+          "type": "negative",
+          "expected": "reject",
+          "evidence": "source_or_boundary_negative_required"
+        }
+      ]
+    }
+  ]
+}
