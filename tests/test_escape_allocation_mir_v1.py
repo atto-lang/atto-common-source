@@ -60,8 +60,8 @@ def candidate(case):
     budget = case.get("stack_budget_bytes", 4096)
     if type(budget) is not int or budget <= 0:
         return preserve
-    # Match the native classifier's rounded-slot stack budget, not payload
-    # bytes alone. Avoid treating a second candidate as an isolated frame.
+    # Round one slot's footprint. Multiple concurrent candidates require
+    # cumulative frame accounting in a real verified MIR pass, not this model.
     rounded = (size + alignment - 1) & ~(alignment - 1)
     if rounded > budget:
         return preserve
