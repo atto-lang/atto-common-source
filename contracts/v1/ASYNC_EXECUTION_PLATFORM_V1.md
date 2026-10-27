@@ -12,6 +12,21 @@ This proposal extends, and does not override, the already normative:
 
 The portable NIO/physical-turn authority currently lives in [platform-conformance/contracts/v1/NIO_ACTOR_EXECUTION_V1.md](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/main/contracts/v1/NIO_ACTOR_EXECUTION_V1.md). Its pending delta ratification is tracked in [conformance #173](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/173). If a point conflicts, **do not silently broaden the existing contract**; resolve it in review before promotion.
 
+## Foundational rule — one standard execution model, multiple target implementations
+
+**Oreslang MUST provide one standard asynchronous execution model, with target-specific runtime implementations. Application developers MUST NOT be required to assemble, select, or coordinate a Tokio-equivalent userland executor stack to run ordinary, supported Oreslang async code.**
+
+This is a **semantic and library API guarantee**, not a promise of one global OS thread pool or one identical scheduler binary:
+
+1. The compiler owns `async`/`await`, `Task<T>`, `Future<T>`, `select`, source suspension, ownership/effects, and cancellation semantics. A task or Future created by any conforming standard module is awaitable, cancellable where its type permits, and observable through the **same** scheduler, authority, and lifecycle model. The language must not expose runtime-family-specific Future types that fragment compatibility.
+2. OresVM owns the standardized executor, I/O readiness/completion integration, timers, admission/backpressure, actor/supervisor lifecycle, and physical retirement contract. Hosted distributions MUST supply the necessary providers for every capability they advertise; applications do not install a separate runtime dependency merely to use standard async networking or channels.
+3. Backends MAY use different **implementations**: LLVM/native reactor and bounded carrier scheduling, Java/Graal continuation/runtime integration, .NET Native AOT facilities, WASM host event loops/workers, Forge, or statically provisioned embedded executors. Backend-specific worker topology and tuning may differ; observable task, cancellation, capability, and generation invariants MUST NOT.
+4. Freestanding `ores.core` stays OS-independent. Its optional actor/task APIs may require **explicit compile/link-time executor, mailbox, clock, or allocator providers** supplied by the target/platform integrator. Such provisioning is not a competing application-selected async *semantics* stack and MUST NOT introduce ambient hosted dependencies or a new library layer.
+5. Libraries MAY add higher-level actor, networking, or concurrency abstractions, but MUST compose with standard Task/Future/Channel/Observable contracts and scheduler/cancellation authority. Third-party scheduling adapters are allowed only through an explicitly checked boundary; they MUST NOT bypass scope ownership, capabilities, physical retirement, or nonblocking-I/O requirements.
+6. If a backend cannot provide compliant I/O or a declared async feature, it MUST reject the feature deterministically. It MUST NOT silently switch executors, park an actor/root carrier, use per-operation blocking worker offload, or substitute weaker cancellation/ownership semantics.
+
+**Acceptance gate:** for each supported target, an application using only compiler-owned `ores.core/*` and `ores.std/*` async APIs must compile and execute its advertised Task/Future/Channel/I/O operations **without any third-party async runtime dependency**. The same supported source fixture must preserve terminal and physical-retirement ordering, cancellation, actor generation fencing, and bounded admission across backends. On unsupported targets, compile/admission must fail closed with a precise diagnostic. Executed guest and native-AOT evidence is required before advertising this guarantee.
+
 ## 1. Scope, placement, and API staging
 
 - **No additional async runtime dependency:** a backend that advertises async guest support MUST ship the compatible executor/reactor provider itself or statically link a compliant platform adapter. It MUST NOT require source applications to select between incompatible task runtimes.
