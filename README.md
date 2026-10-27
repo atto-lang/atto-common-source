@@ -61,6 +61,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Architecture proposal](docs/ARCHITECTURE.md)
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
+- [Top-12 AOT-first language features and formal admission gates](docs/TOP12_FEATURE_ADMISSION_AOT_V1.md) — proposed source-contract matrix for all 12 opportunities; backend execution unverified.
 - [Callable bodies, return types, and contextual tuple syntax v1](docs/CALLABLE_SYNTAX_V1.md)
 - [Generators and async iterators v1](docs/GENERATORS_V1.md) — canonical `gen*`, iterator protocols, lazy pulls, cleanup and ownership.
 - [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
