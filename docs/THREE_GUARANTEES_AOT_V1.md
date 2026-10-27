@@ -97,6 +97,19 @@ All unsupported cases **fail closed**. Do not label generic runtime `Err` as pro
 - **E4 RT:** source-linked bounds and a target-specific timing/deadline certificate, including upgrade jitter, GC/interference assumptions and stress corroboration; normal Graal Native Image qualifies only as AOT/soft-RT without separate hard-RT vendor proof.
 - **E5 parity:** same observable source semantics and negative diagnostics in both backends; then .NET/WASM/Forge explicitly report implemented or unsupported separately. Pin exact repository tree, toolchain, artifact digests, runner allocation, executed steps and test receipts. Zero-step Actions, host mocks, reference JSON, skipped/pending or source-free tests **never** count as backend proof.
 
+## Formal verification is an admission requirement
+
+This specification is paired with the [formal proof workstream and review PR](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/191), building on the [existing formal core/stdlib verification program](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/150).
+
+1. **F0 — contract and explicit assumptions:** finite protocol/session schemas, state and frame retirement rules, permission/capability and effect constraints, artifact/target-tied timing budgets.
+2. **F1 — mathematical models:** check concurrent hot-swap publication/retirement and token lifecycle with TLA+/TLC; prove integer bounds and fail-closed RT admission with SMT; deliberately broken purge, timeout and missing-cleanup mutants must yield named counterexamples. A bounded JavaScript exploration is useful evidence **but does not substitute for TLC/SMT**.
+3. **F2 — compiler-owned source proof:** independently derive phase/authority/ownership/effect facts from typed Java/Graal and LLVM HIR/MIR for an exact `.ores` source SHA. Reject handwritten or unauthenticated declarations of proof facts. Show that every guest call, handler, callback, await, FFI, exceptional exit and dynamic dispatch belongs to the AOT closure.
+4. **F3 — lowering/translation validation:** validate independently emitted LLVM native and Graal program-specific guest-code Native Image against typed semantics; ensure lowering does not silently add an interpreter, JIT, ownership alias, privilege, or unbounded side effect.
+5. **F4 — executable model refinement:** execute compiled guest code (not host-only simulations) with positive/negative fixtures and compare exact-generation event traces to the abstract model. Trace testing alone does **not** prove all possible executions, so retain compiler proof and negative tests.
+6. **F5 — deployment/certification:** prove exact-image/loader compatibility, quiescent memory reclamation, atomic routing, and target-specific WCET + schedulability with bound workload/hardware/OS/FFI/GC assumptions. A changed image or assumption invalidates a prior timing certificate.
+
+For all required solver/model gates, pin the tool version/hash and prove the *unsafe mutants fail*. Missing solvers, parse errors, incomplete state space, solver UNKNOWN/timeouts, stale source, skipped tests and zero-step CI are `not_executed` or `failed`, never `verified`. Do not assert soundness of all Oreslang programs from small-model results. Separate safety invariants from conditional liveness: an unresponsive external FFI operation can legitimately prevent retirement indefinitely.
+
 ## Rollout order
 
 1. Shared contract and machine-readable fail-closed vectors (E0) with zero changes to executable language behavior.
