@@ -20,7 +20,9 @@ The pull protocol is `Iterator<T>.next() -> IteratorResult<T>` and `AsyncIterato
 
 `suspend gen*` keeps the suspend effect distinct from async while exposing `AsyncIterator<T>`, because a pull may suspend. Neither async nor suspend generators may park reusable carriers.
 
-Generator methods are enabled only when receiver lifetime and ownership are proven across suspension. A lazy activation must not retain an ordinary lexical borrow of `self` across yield. The backend must prove receiver survival, exclusive mutation, generation-safe dispatch, and exactly-once loan retirement. Until then, generator methods remain fail-closed unsupported; removing a parser rejection alone is not an implementation. Actor message entrypoints do not return generator activations across mailbox boundaries.
+Static class generator functions do not retain a receiver and may be enabled independently once their callable metadata, iterator typing, lazy activation, cleanup, and backend lowering satisfy this contract.
+
+Instance generator methods are enabled only when receiver lifetime and ownership are proven across suspension. A lazy activation must not retain an ordinary lexical borrow of `self` across yield. The backend must prove receiver survival, exclusive mutation, generation-safe dispatch, and exactly-once loan retirement. Until then, instance generator methods remain fail-closed unsupported; removing a parser rejection alone is not an implementation. Actor message entrypoints do not return generator activations across mailbox boundaries.
 
 No local borrow, mutable loan, MutexGuard, stack-only capability, raw host pointer, or actor-confined capability may escape through a suspended frame without an explicit continuation-safe representation. Yielding a move-only value transfers ownership to the consumer.
 
