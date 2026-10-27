@@ -36,9 +36,17 @@ escaping values and lifetime hazards. Forge's
 `verification/escape_analysis_tests.cpp` exercises its decisions.
 The CTest name is `oresforge_escape_candidate_analysis`.
 
-This is deliberately **not** connected to Forge's source parser or native
-backend: classifying a standalone typed fixture is not removing a heap
-allocation. The model's `complete_effect_graph` marker is untrusted until a
+The standalone typed classifier is not in the general Forge source parser.
+A separate closed-world `Point` x86-64 experiment now parses a very small
+source grammar into typed fields and emits either an actual `malloc/free`
+baseline or scalar-replaced arithmetic with no allocator call. It admits
+`--opt-escape=safe` exclusively for `emit-alloc-asm x86_64`; normal
+compiler commands still reject the flag. The Forge CTests
+`oresforge_native_allocation_elision` and
+`oresforge_allocation_native_elision` assemble/link and execute the native
+variants using wrapped malloc/free counters and checked arithmetic.
+These executed tests are pending exact-head GitHub Actions verification; code
+and test registration must not be confused with a confirmed passing run. The model's `complete_effect_graph` marker is untrusted until a
 real MIR verifier proves it, including alias/capture graphs and
 exceptional/cancellation paths. Inter-object stores and cyclic reference
 graphs are excluded from promotion until explicitly modeled. The current
@@ -48,4 +56,13 @@ value is a reproducible, fail-closed representation and regression substrate.
 
 The JSON contract in `contracts/v1/escape-optimization-cli-v1.json` defines policy vectors and future acceptance requirements. Reference-model tests establish **contract consistency only**. Promotion from unsupported to safe/verify/speculative requires real compiler tests, sanitizer execution, exact-revision build evidence, allocation measurements, stack budget tests, guards/deoptimization, and 5-backend differential cases. A backend lacking a requested tier must fail closed rather than silently downgrade and report success.
 
-Initial implementation target: Forge supports `off` parsing (including flags-2-env mapping) and rejects `safe`, `verify`, `speculative`, `--jit=on`, and enabled reports until corresponding execution paths exist. Java/Graal, LLVM, .NET, and Wasm remain unverified for this specific policy; their existing native optimizers are not an implementation claim for the new common flags.
+Current Forge draft: `off` works for general scalar compilation;
+`safe` is restricted to the closed allocation-ASM experiment. `verify`,
+`speculative`, `--jit=on`, and enabled reports are rejected.
+The isolated language subset excludes allocator identity/hooks and catchable
+allocation failures, FFI, actors, async, custom drops, and returned pointers.
+The baseline can trap on host allocation failure while the scalar path has no
+heap call; therefore no general-language allocation failure equivalence has
+been proven. Broader `safe` must keep an allocation when failure or identity
+is semantically observable, unless the language explicitly allows its
+elision with a proven effect contract. Java/Graal, LLVM, .NET, and Wasm remain unverified for this specific policy; their existing native optimizers are not an implementation claim for the new common flags.
