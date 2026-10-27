@@ -7,13 +7,13 @@
       "id": "core",
       "osRequired": false,
       "ambientAllocatorAllowed": false,
-      "requiredLayers": [
-        "core"
-      ],
-      "optionalLayers": [
-        "alloc",
-        "actor",
-        "otp"
+      "admittedLibraryLayers": ["core"],
+      "optionalProviders": [
+        "allocator.explicit",
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted",
+        "clock.monotonic"
       ],
       "forbiddenCapabilities": [
         "os",
@@ -32,63 +32,37 @@
       "id": "std",
       "osRequired": true,
       "ambientAllocatorAllowed": true,
-      "requiredLayers": [
-        "core",
-        "host-adapter"
-      ],
-      "optionalLayers": [
-        "alloc",
-        "actor",
-        "otp"
+      "admittedLibraryLayers": ["core", "std"],
+      "optionalProviders": [
+        "allocator.explicit",
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted",
+        "clock.monotonic",
+        "host.capabilities.explicit"
       ],
       "forbiddenCapabilities": []
     }
   ],
-  "internalLayers": [
+  "libraryLayers": [
     {
       "id": "core",
       "dependsOn": [],
-      "optionalDependsOn": []
+      "osRequired": false
     },
     {
-      "id": "alloc",
-      "dependsOn": [
-        "core"
-      ],
-      "optionalDependsOn": [],
-      "requiresExplicitProviderUnderCore": true
-    },
-    {
-      "id": "actor",
-      "dependsOn": [
-        "core"
-      ],
-      "optionalDependsOn": [
-        "alloc"
-      ],
-      "requiresExplicitProviderUnderCore": true
-    },
-    {
-      "id": "otp",
-      "dependsOn": [
-        "core",
-        "actor"
-      ],
-      "optionalDependsOn": [
-        "alloc"
-      ],
-      "requiresExplicitProviderUnderCore": true
-    },
-    {
-      "id": "host-adapter",
-      "dependsOn": [
-        "core"
-      ],
-      "optionalDependsOn": [
-        "alloc"
-      ],
-      "stdOnly": true
+      "id": "std",
+      "dependsOn": ["core"],
+      "osRequired": true
     }
+  ],
+  "providerKinds": [
+    "allocator.explicit",
+    "executor.explicit",
+    "mailbox.bounded",
+    "control.trusted",
+    "clock.monotonic",
+    "host.capabilities.explicit"
   ],
   "forbiddenPublicProfileNames": [
     "alloc",
@@ -96,15 +70,17 @@
     "otp",
     "hosted",
     "freestanding-core",
+    "freestanding-alloc",
     "freestanding-actor",
     "freestanding-otp"
   ],
   "rules": {
     "coreMustRemainLinkableWithoutOS": true,
     "coreMustNotRequireHeap": true,
-    "coreMayUseCallerProvidedAllocation": true,
-    "stdMayDependOnCore": true,
+    "coreMayUseExplicitProviders": true,
     "coreMayNotDependOnStd": true,
+    "stdMayDependOnCore": true,
+    "providerRequirementsMustBeCompilerInferred": true,
     "actorRuntimeIsOptional": true,
     "backendMustRejectUnsupportedProfileTargetPairs": true
   },
