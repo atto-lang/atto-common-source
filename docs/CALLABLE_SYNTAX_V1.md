@@ -162,6 +162,24 @@ fnc choose(bool flag) -> int
 end
 ```
 
+A trailing expression is **not** an implicit return from an ordinary callable. For example, this remains invalid even though the last expression has the declared type:
+
+```ores
+fnc value() -> int
+    42
+end
+```
+
+The callable must use an explicit return:
+
+```ores
+fnc value() -> int
+    return 42
+end
+```
+
+This explicit-return rule applies to non-`void` free functions, methods, actor handlers, and other non-lambda callables. Expression-bodied lambdas are a separately defined shorthand and do not relax ordinary callable return completeness.
+
 For `void`, reaching the closing `end` is a valid normal return. An explicit bare `return` remains allowed.
 
 Return completeness is a control-flow property, not a textual "last statement must be return" rule. A backend must account for exhaustive branches and other proven non-fallthrough control flow.
