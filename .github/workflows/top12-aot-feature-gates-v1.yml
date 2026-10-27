@@ -1,0 +1,48 @@
+name: Top-12 language AOT feature contracts v1
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/top12-aot-feature-gates-v1.yml'
+      - 'docs/TOP12_FEATURE_ADMISSION_AOT_V1.md'
+      - 'fixtures/top12-aot-feature-gates-v1.json'
+      - 'tests/top12-aot-feature-gates-v1.test.mjs'
+  push:
+    paths:
+      - '.github/workflows/top12-aot-feature-gates-v1.yml'
+      - 'docs/TOP12_FEATURE_ADMISSION_AOT_V1.md'
+      - 'fixtures/top12-aot-feature-gates-v1.json'
+      - 'tests/top12-aot-feature-gates-v1.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: top12-aot-feature-gates-v1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-free-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact commit and clean workspace
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          echo "source_head=$EXPECTED_HEAD"
+          echo "source_tree=$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Execute 108-case machine-readable design fixture validation
+        run: node --test tests/top12-aot-feature-gates-v1.test.mjs
+
+# This verifies only SOURCE_CONTRACT_ONLY feature declarations and scenarios.
+# Do not mark LLVM native/Graal guest Native Image support verified until
+# independently compiled Oreslang guest fixtures run at exact source tree SHA.
