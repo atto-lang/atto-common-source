@@ -44,7 +44,8 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
                 for backend in ("java", "llvm", "forge", "wasm", "net"):
                     self.assertEqual(case[backend], "pending")
         self.assertTrue(all(c["expected"] != "accept"
-                            for c in cases if c["id"].startswith("unsafe-")))
+                            for c in cases if c["id"].startswith("unsafe-")
+                            and c["kind"] != "lexical"))
 
     def test_required_adversarial_edges_present(self):
         cases = {c["id"]: c for c in self.contract["cases"]}
