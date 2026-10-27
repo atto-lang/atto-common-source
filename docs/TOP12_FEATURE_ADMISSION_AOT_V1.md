@@ -14,7 +14,7 @@
 
 ## 1. Session-typed actor protocols — P0
 
-Existing authority: [three guarantees](THREE_GUARANTEES_AOT_V1.md) on draft common-source [PR #168](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/168) (not yet on main), [OTP behaviours](OTP_BEHAVIOURS_V1.md), and Java typestate [#1392](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/1392).
+Existing authority: the [three guarantees draft PR #168](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/168) (not yet on main), [OTP behaviours](OTP_BEHAVIOURS_V1.md), and Java typestate [#1392](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/1392).
 
 Compile a finite protocol transition table with message variant, source phase, settlement/next phase, authority and affine ownership of one per-session capability. A copyable `ActorRef<Message>` never proves the global phase of a concurrently used actor. Only supervisor/runtime-minted opaque session epochs can be trusted across generation changes. Admission failure returns unconsumed moved ownership; **accepted** but timed-out operations return an indeterminate/settlement capability, not fabricated old-phase reuse. Actor restarts and unauthorized protocol upgrades invalidate/fence old capabilities; legal generation pinning allows V1 sessions to drain during V2 admission.
 
