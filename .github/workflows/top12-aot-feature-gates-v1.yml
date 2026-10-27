@@ -6,12 +6,16 @@ on:
       - 'docs/TOP12_FEATURE_ADMISSION_AOT_V1.md'
       - 'fixtures/top12-aot-feature-gates-v1.json'
       - 'tests/top12-aot-feature-gates-v1.test.mjs'
+      - 'tools/doctest-manifest.mjs'
+      - 'tests/doctest-manifest-v1.test.mjs'
   push:
     paths:
       - '.github/workflows/top12-aot-feature-gates-v1.yml'
       - 'docs/TOP12_FEATURE_ADMISSION_AOT_V1.md'
       - 'fixtures/top12-aot-feature-gates-v1.json'
       - 'tests/top12-aot-feature-gates-v1.test.mjs'
+      - 'tools/doctest-manifest.mjs'
+      - 'tests/doctest-manifest-v1.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,7 +45,7 @@ jobs:
         with:
           node-version: '22.16.0'
       - name: Execute 108-case machine-readable design fixture validation
-        run: node --test tests/top12-aot-feature-gates-v1.test.mjs
+        run: node --test tests/top12-aot-feature-gates-v1.test.mjs tests/doctest-manifest-v1.test.mjs
 
 # This verifies only SOURCE_CONTRACT_ONLY feature declarations and scenarios.
 # Do not mark LLVM native/Graal guest Native Image support verified until
