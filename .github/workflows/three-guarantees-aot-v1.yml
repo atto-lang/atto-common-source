@@ -1,0 +1,58 @@
+name: Three Oreslang guarantees full-AOT v1 contract
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/three-guarantees-aot-v1.yml'
+      - 'docs/THREE_GUARANTEES_AOT_V1.md'
+      - 'fixtures/three-guarantees-aot-v1.json'
+      - 'tests/three-guarantees-aot-v1.test.mjs'
+      - 'docs/AOT_LANGUAGE_CLOSURE_V1.md'
+      - 'docs/COMPILATION-POLICY.md'
+      - 'docs/HOT_UPGRADE_ERLANG_PITFALLS_V1.md'
+      - 'docs/REALTIME_EXECUTION.md'
+      - 'docs/REFINEMENT_TYPES.md'
+  push:
+    paths:
+      - '.github/workflows/three-guarantees-aot-v1.yml'
+      - 'docs/THREE_GUARANTEES_AOT_V1.md'
+      - 'fixtures/three-guarantees-aot-v1.json'
+      - 'tests/three-guarantees-aot-v1.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: three-guarantees-aot-v1-\${{ github.workflow }}-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin exact commit and clean working tree
+        env:
+          EXPECTED_HEAD: \${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "source_head=$EXPECTED_HEAD"
+          echo "source_tree=$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Execute source-free contract regression suite
+        run: |
+          node --test tests/three-guarantees-aot-v1.test.mjs tests/aot-language-closure-v1.test.mjs tests/macro-semantics-v1.test.mjs
+
+# IMPORTANT: a green contract job is E0 only. Real Java/Graal Native Image and
+# LLVM native guest-code execution and hard-RT platform proof remain separate.
