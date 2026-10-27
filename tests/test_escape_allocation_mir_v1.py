@@ -15,25 +15,56 @@ ESCAPING_USES = {
 }
 
 
+# A complete-effect-graph bit is a verifier assertion, not a license to
+# default omitted typing, allocation effects, or unrecognized uses to safety.
+USE_KINDS = {"FieldRead", "FieldWrite", "LocalBorrow"} | ESCAPING_USES
+CASE_FIELDS = {
+    "id", "complete", "effects", "expected", "value_type", "size_bytes",
+    "alignment", "stack_budget_bytes", "allocator_effect_observable",
+    "custom_drop", "dynamic_extent", "volatile_or_atomic", "lifetime_proven",
+}
+
+
 def candidate(case):
-    if not case["complete"]:
-        return "preserve-allocation"
-    if (case.get("allocator_effect_observable", False) or
-            case.get("custom_drop", False) or
-            case.get("dynamic_extent", False) or
-            case.get("volatile_or_atomic", False) or
-            case.get("value_type", "NominalRecord") not in ("NominalRecord", "FixedArray")):
-        return "preserve-allocation"
-    effects = set(case["effects"])
-    if effects & ESCAPING_USES:
-        return "preserve-allocation"
+    preserve = "preserve-allocation"
+    if not isinstance(case, dict) or set(case) - CASE_FIELDS:
+        return preserve
+    if case.get("complete") is not True:
+        return preserve
+    if case.get("value_type") not in ("NominalRecord", "FixedArray"):
+        return preserve
+    # The MIR allocation model says allocator effects are observable by
+    # default. Only a verifier's explicit False can enable optimization.
+    if case.get("allocator_effect_observable") is not False:
+        return preserve
+    if any(case.get(flag, False) is not False for flag in (
+            "custom_drop", "dynamic_extent", "volatile_or_atomic")):
+        return preserve
+    effects = case.get("effects")
+    if (not isinstance(effects, list) or
+            any(not isinstance(effect, str) or effect not in USE_KINDS
+                for effect in effects)):
+        return preserve
+    size = case.get("size_bytes")
+    alignment = case.get("alignment")
+    if (type(size) is not int or size <= 0 or type(alignment) is not int or
+            alignment <= 0 or alignment > 64 or
+            (alignment & (alignment - 1)) != 0):
+        return preserve
+    if set(effects) & ESCAPING_USES:
+        return preserve
     if "LocalBorrow" not in effects:
         return "scalar-candidate"
-    if not case.get("lifetime_proven", False):
-        return "preserve-allocation"
-    if (case.get("alignment", 8) > 64 or
-            case.get("size_bytes", 16) > case.get("stack_budget_bytes", 4096)):
-        return "preserve-allocation"
+    if case.get("lifetime_proven") is not True:
+        return preserve
+    budget = case.get("stack_budget_bytes", 4096)
+    if type(budget) is not int or budget <= 0:
+        return preserve
+    # Match the native classifier's rounded-slot stack budget, not payload
+    # bytes alone. Avoid treating a second candidate as an isolated frame.
+    rounded = (size + alignment - 1) & ~(alignment - 1)
+    if rounded > budget:
+        return preserve
     return "stack-candidate"
 
 
@@ -70,6 +101,45 @@ class TypedAllocationMirContractTest(unittest.TestCase):
         self.assertEqual({c["expected"] for c in cases if
                           set(c["effects"]) & ESCAPING_USES},
                          {"preserve-allocation"})
+
+    def test_missing_and_corrupt_mir_metadata_fail_closed(self):
+        base = next(dict(c) for c in self.data["cases"]
+                    if c["id"] == "local-record-scalar")
+        for change in (
+            {"allocator_effect_observable": None},
+            {"complete": "true"},
+            {"effects": ["FieldRead", "FutureUnknownEffect"]},
+            {"effects": ["FieldRead", 42]},
+            {"value_type": "Unknown"},
+            {"size_bytes": 0},
+            {"size_bytes": True},
+            {"alignment": 3},
+            {"alignment": 128},
+            {"unexpected_ffi_capture": True},
+            {"custom_drop": "false"},
+        ):
+            with self.subTest(change=change):
+                self.assertEqual(candidate({**base, **change}),
+                                 "preserve-allocation")
+        for missing in ("complete", "value_type", "size_bytes",
+                        "alignment", "allocator_effect_observable", "effects"):
+            with self.subTest(missing=missing):
+                damaged = dict(base)
+                damaged.pop(missing)
+                self.assertEqual(candidate(damaged), "preserve-allocation")
+
+    def test_rounded_stack_slot_not_raw_payload(self):
+        base = next(dict(c) for c in self.data["cases"]
+                    if c["id"] == "proven-local-borrow-stack")
+        # 17 payload bytes at 16-byte alignment cost 32 stack bytes.
+        self.assertEqual(candidate({**base, "size_bytes": 17,
+                                    "alignment": 16,
+                                    "stack_budget_bytes": 31}),
+                         "preserve-allocation")
+        self.assertEqual(candidate({**base, "size_bytes": 17,
+                                    "alignment": 16,
+                                    "stack_budget_bytes": 32}),
+                         "stack-candidate")
 
     def test_mutation_detected(self):
         case = next(dict(c) for c in self.data["cases"]
