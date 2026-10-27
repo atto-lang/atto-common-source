@@ -7,76 +7,45 @@
     {
       "id": "core",
       "dependsOn": [],
-      "osRequired": false,
-      "heapRequired": false,
-      "requiredProviders": [],
-      "optionalDependsOn": []
+      "osRequired": false
     },
     {
-      "id": "alloc",
+      "id": "std",
       "dependsOn": [
         "core"
       ],
-      "osRequired": false,
-      "heapRequired": true,
-      "requiredProviders": [
-        "explicit-memory-provider"
-      ],
-      "optionalDependsOn": []
-    },
-    {
-      "id": "actor",
-      "dependsOn": [
-        "core"
-      ],
-      "osRequired": false,
-      "heapRequired": false,
-      "requiredProviders": [
-        "scheduler-executor",
-        "bounded-mailbox-storage",
-        "trusted-control-lane"
-      ],
-      "optionalDependsOn": [
-        "alloc"
-      ]
-    },
-    {
-      "id": "otp",
-      "dependsOn": [
-        "core",
-        "actor"
-      ],
-      "osRequired": false,
-      "heapRequired": false,
-      "requiredProviders": [],
-      "optionalDependsOn": [
-        "alloc"
-      ]
-    },
-    {
-      "id": "host-adapter",
-      "dependsOn": [
-        "core"
-      ],
-      "osRequired": true,
-      "heapRequired": false,
-      "requiredProviders": [
-        "explicit-host-capabilities"
-      ],
-      "optionalDependsOn": []
+      "osRequired": true
     }
+  ],
+  "providerKinds": [
+    "allocator.explicit",
+    "executor.explicit",
+    "mailbox.bounded",
+    "control.trusted",
+    "clock.monotonic",
+    "host.capabilities.explicit"
+  ],
+  "actorProviders": [
+    "executor.explicit",
+    "mailbox.bounded",
+    "control.trusted"
   ],
   "modules": [
     {
       "module": "gen_server",
       "path": "stdlib/otp/gen_server.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.serial",
         "mailbox.bounded",
         "reply.oneshot"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "clock.monotonic",
         "allocator.explicit"
       ],
@@ -87,13 +56,18 @@
     {
       "module": "supervisor",
       "path": "stdlib/otp/supervisor.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.lifecycle-authority",
         "control.authenticated",
         "restart.bounded"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "clock.monotonic",
         "allocator.explicit"
       ],
@@ -104,13 +78,18 @@
     {
       "module": "gen_statem",
       "path": "stdlib/otp/gen_statem.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.serial",
         "mailbox.bounded",
         "transition.typed"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "clock.monotonic",
         "allocator.explicit"
       ],
@@ -121,13 +100,18 @@
     {
       "module": "application",
       "path": "stdlib/otp/application.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.lifecycle-authority",
         "startup.dependency-order",
         "startup.rollback"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
@@ -137,13 +121,18 @@
     {
       "module": "event_manager",
       "path": "stdlib/otp/event_manager.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.serial",
         "mailbox.bounded",
         "subscriptions.bounded"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
@@ -153,13 +142,18 @@
     {
       "module": "registry",
       "path": "stdlib/otp/registry.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.identity",
         "registry.incarnation-fenced",
         "registry.bounded"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
@@ -169,7 +163,7 @@
     {
       "module": "pg",
       "path": "stdlib/otp/pg.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "actor.group",
         "actor.identity",
@@ -177,8 +171,12 @@
         "group.membership-incarnation-fenced",
         "group.scope-explicit"
       ],
-      "conditional": [
-        "distribution.membership-eventual",
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
@@ -188,7 +186,7 @@
     {
       "module": "ets",
       "path": "stdlib/otp/ets.ores",
-      "layer": "otp",
+      "layer": "core",
       "requires": [
         "table.runtime-owned",
         "table.typed",
@@ -196,7 +194,12 @@
         "table.atomic-operation",
         "table.access-policy"
       ],
-      "conditional": [
+      "providerRequires": [
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted"
+      ],
+      "conditionalProviders": [
         "allocator.explicit"
       ],
       "sourceStatus": "pending",
