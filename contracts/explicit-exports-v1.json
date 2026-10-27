@@ -168,7 +168,7 @@
           "scope": "public"
         }
       ],
-      "error": "IMPORT_AFTER_DECLARATION"
+      "error": "EXPORT_IMPORT_PRELUDE"
     },
     {
       "name": "inline pub creates implicit binding",
@@ -232,7 +232,7 @@
           "scope": "public"
         }
       ],
-      "error": "PRIVATE_EXPORT_CONFLICT"
+      "error": "EXPORT_EXPLICIT_PRIVATE"
     },
     {
       "name": "scope conflict cannot widen",
@@ -250,7 +250,7 @@
           "scope": "public"
         }
       ],
-      "error": "SCOPE_CONFLICT"
+      "error": "EXPORT_SCOPE_CONFLICT"
     },
     {
       "name": "scope conflict cannot narrow",
@@ -268,7 +268,7 @@
           "scope": "pkg"
         }
       ],
-      "error": "SCOPE_CONFLICT"
+      "error": "EXPORT_SCOPE_CONFLICT"
     },
     {
       "name": "typed kind mismatch",
@@ -298,7 +298,7 @@
           "scope": "public"
         }
       ],
-      "error": "UNKNOWN_EXPORT"
+      "error": "EXPORT_UNKNOWN_TARGET"
     },
     {
       "name": "local export cannot reexport imported name",
@@ -315,7 +315,7 @@
           "scope": "public"
         }
       ],
-      "error": "IMPORTED_LOCAL_EXPORT"
+      "error": "EXPORT_IMPORTED_NAME"
     },
     {
       "name": "alias only exposes alias for default private declaration",
@@ -465,7 +465,7 @@
           "scope": "public"
         }
       ],
-      "error": "VISIBILITY_LEAK"
+      "error": "EXPORT_API_LEAK"
     },
     {
       "name": "package signature may use package type",
@@ -532,7 +532,7 @@
           "scope": "pkg"
         }
       ],
-      "error": "VISIBILITY_LEAK"
+      "error": "EXPORT_API_LEAK"
     },
     {
       "name": "untyped export resolves one local symbol",
@@ -580,7 +580,7 @@
           "scope": "public"
         }
       ],
-      "error": "AMBIGUOUS_EXPORT"
+      "error": "EXPORT_AMBIGUOUS_TARGET"
     },
     {
       "name": "file export remains file scoped",
@@ -808,7 +808,7 @@
           "external": "work"
         }
       ],
-      "error": "PRIVATE_EXPORT_CONFLICT"
+      "error": "EXPORT_EXPLICIT_PRIVATE"
     },
     {
       "name": "fnc duplicate overload signature",
@@ -1005,7 +1005,7 @@
           "external": "work"
         }
       ],
-      "error": "PRIVATE_EXPORT_CONFLICT"
+      "error": "EXPORT_EXPLICIT_PRIVATE"
     },
     {
       "name": "routine duplicate overload signature",
@@ -1294,7 +1294,7 @@
           "external": "Api"
         }
       ],
-      "error": "VISIBILITY_LEAK"
+      "error": "EXPORT_API_LEAK"
     },
     {
       "name": "all overload signatures checked for leakage",
@@ -1330,7 +1330,7 @@
           "external": "f"
         }
       ],
-      "error": "VISIBILITY_LEAK"
+      "error": "EXPORT_API_LEAK"
     },
     {
       "name": "alias makes nominal type accessible without exposing local spelling",
@@ -1519,79 +1519,79 @@
     },
     {
       "source": "export {};",
-      "error": "EMPTY_EXPORT_GROUP"
+      "error": "EXPORT_EMPTY_GROUP"
     },
     {
       "source": "export class {};",
-      "error": "EMPTY_EXPORT_GROUP"
+      "error": "EXPORT_EMPTY_GROUP"
     },
     {
       "source": "export actor {,X};",
-      "error": "MALFORMED_EXPORT_LIST"
+      "error": "EXPORT_MALFORMED_LIST"
     },
     {
       "source": "export actor {X,,Y};",
-      "error": "MALFORMED_EXPORT_LIST"
+      "error": "EXPORT_MALFORMED_LIST"
     },
     {
       "source": "export actor {X Y};",
-      "error": "MALFORMED_EXPORT_LIST"
+      "error": "EXPORT_MALFORMED_LIST"
     },
     {
       "source": "export actor {{X}};",
-      "error": "NESTED_EXPORT_GROUP"
+      "error": "EXPORT_NESTED_GROUP"
     },
     {
       "source": "export *;",
-      "error": "WILDCARD_EXPORT_UNSUPPORTED"
+      "error": "EXPORT_WILDCARD_UNSUPPORTED"
     },
     {
       "source": "export * from \"./dep\";",
-      "error": "REEXPORT_UNSUPPORTED"
+      "error": "EXPORT_REEXPORT_UNSUPPORTED"
     },
     {
       "source": "export from \"./dep\" {X};",
-      "error": "REEXPORT_UNSUPPORTED"
+      "error": "EXPORT_REEXPORT_UNSUPPORTED"
     },
     {
       "source": "export dep.X;",
-      "error": "QUALIFIED_EXPORT_UNSUPPORTED"
+      "error": "EXPORT_QUALIFIED_TARGET_UNSUPPORTED"
     },
     {
       "source": "export dep::X;",
-      "error": "QUALIFIED_EXPORT_UNSUPPORTED"
+      "error": "EXPORT_QUALIFIED_TARGET_UNSUPPORTED"
     },
     {
       "source": "export Foo<int>;",
-      "error": "GENERIC_EXPORT_TARGET_UNSUPPORTED"
+      "error": "EXPORT_GENERIC_TARGET_UNSUPPORTED"
     },
     {
       "source": "export foo(int);",
-      "error": "CALLABLE_SIGNATURE_EXPORT_UNSUPPORTED"
+      "error": "EXPORT_CALLABLE_SIGNATURE_UNSUPPORTED"
     },
     {
       "source": "export {class X, actor Y};",
-      "error": "KIND_PREFIX_IN_GROUP"
+      "error": "EXPORT_KIND_PREFIX_IN_GROUP"
     },
     {
       "source": "export actor {actor X};",
-      "error": "KIND_PREFIX_IN_GROUP"
+      "error": "EXPORT_KIND_PREFIX_IN_GROUP"
     },
     {
       "source": "export symbol #ready as Ready;",
-      "error": "SYMBOL_BINDING_ALIAS_UNSUPPORTED"
+      "error": "EXPORT_SYMBOL_BINDING_ALIAS_UNSUPPORTED"
     },
     {
       "source": "export symbol #ready as #ok;",
-      "error": "SYMBOL_IDENTITY_MISMATCH"
+      "error": "EXPORT_SYMBOL_IDENTITY_MISMATCH"
     },
     {
       "source": "export[pkg][file] X;",
-      "error": "MULTIPLE_EXPORT_SCOPES"
+      "error": "EXPORT_MULTIPLE_SCOPES"
     },
     {
       "source": "export[project] X;",
-      "error": "UNKNOWN_EXPORT_SCOPE"
+      "error": "EXPORT_UNKNOWN_SCOPE"
     },
     {
       "source": "export symbol #ready as #ready;",
@@ -1609,26 +1609,26 @@
     },
     {
       "source": "export symbol ready as #ready;",
-      "error": "SYMBOL_IDENTITY_TARGET_REQUIRES_SYMBOL_SOURCE"
+      "error": "EXPORT_SYMBOL_IDENTITY_TARGET_REQUIRES_SYMBOL_SOURCE"
     },
     {
       "source": "export string ready as 'ready';",
-      "error": "UNKNOWN_EXPORT_DECLARATION_KIND"
+      "error": "EXPORT_UNKNOWN_DECLARATION_KIND"
     },
     {
       "source": "export const ready as 'ready';",
-      "error": "LITERAL_EXPORT_ALIAS_UNSUPPORTED"
+      "error": "EXPORT_LITERAL_ALIAS_UNSUPPORTED"
     },
     {
       "source": "export class Foo as \"foo\";",
-      "error": "LITERAL_EXPORT_ALIAS_UNSUPPORTED"
+      "error": "EXPORT_LITERAL_ALIAS_UNSUPPORTED"
     },
     {
       "source": "export symbol ready as 'ready';",
-      "error": "LITERAL_EXPORT_ALIAS_UNSUPPORTED"
+      "error": "EXPORT_LITERAL_ALIAS_UNSUPPORTED"
     }
   ],
-  "revision": "explicit-exports-v1.2026-10-25.4",
+  "revision": "explicit-exports-v1.2026-10-26.5",
   "abi_cases": [
     {
       "name": "redundant explicit export and provenance do not alter ABI",
@@ -1920,5 +1920,7 @@
       "callerPackage": "q",
       "expect": true
     }
-  ]
+  ],
+  "diagnostic_namespace": "EXPORT_*",
+  "diagnostic_policy": "canonical categories are shared across backends; message text may vary"
 }
