@@ -30,7 +30,7 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
 
     def test_nonvacuous_positive_and_negative_scenarios(self):
         cases = self.contract["cases"]
-        self.assertEqual(len(cases), 38)
+        self.assertEqual(len(cases), 46)
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
         expected = {case["expected"] for case in cases}
@@ -70,6 +70,12 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
             "unsafe-forges-supervisor-control",
             "unsafe-assumes-hard-realtime",
             "unsupported-backend-silent-fallback",
+            "unsafe-after-cr-comment",
+            "unsafe-after-crlf-comment",
+            "unsafe-in-template-interpolation",
+            "unsafe-in-template-after-cr-comment",
+            "unsafe-fabricated-ident-token",
+            "unsafe-bom-normalization",
         }
         self.assertTrue(required <= set(cases))
         self.assertTrue(all(cases[x]["expected"] == "reject" for x in required))
