@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "oreslang.library.profiles",
+  "status": "normative-contract",
+  "publicProfiles": [
+    {
+      "id": "core",
+      "osRequired": false,
+      "ambientAllocatorAllowed": false,
+      "requiredLayers": [
+        "core"
+      ],
+      "optionalLayers": [
+        "alloc",
+        "actor",
+        "otp"
+      ],
+      "forbiddenCapabilities": [
+        "os",
+        "posix",
+        "linux",
+        "libc",
+        "filesystem",
+        "network",
+        "process",
+        "ambient-threads",
+        "ambient-clock",
+        "java-interop"
+      ]
+    },
+    {
+      "id": "std",
+      "osRequired": true,
+      "ambientAllocatorAllowed": true,
+      "requiredLayers": [
+        "core",
+        "host-adapter"
+      ],
+      "optionalLayers": [
+        "alloc",
+        "actor",
+        "otp"
+      ],
+      "forbiddenCapabilities": []
+    }
+  ],
+  "internalLayers": [
+    {
+      "id": "core",
+      "dependsOn": [],
+      "optionalDependsOn": []
+    },
+    {
+      "id": "alloc",
+      "dependsOn": [
+        "core"
+      ],
+      "optionalDependsOn": [],
+      "requiresExplicitProviderUnderCore": true
+    },
+    {
+      "id": "actor",
+      "dependsOn": [
+        "core"
+      ],
+      "optionalDependsOn": [
+        "alloc"
+      ],
+      "requiresExplicitProviderUnderCore": true
+    },
+    {
+      "id": "otp",
+      "dependsOn": [
+        "core",
+        "actor"
+      ],
+      "optionalDependsOn": [
+        "alloc"
+      ],
+      "requiresExplicitProviderUnderCore": true
+    },
+    {
+      "id": "host-adapter",
+      "dependsOn": [
+        "core"
+      ],
+      "optionalDependsOn": [
+        "alloc"
+      ],
+      "stdOnly": true
+    }
+  ],
+  "forbiddenPublicProfileNames": [
+    "alloc",
+    "actor",
+    "otp",
+    "hosted",
+    "freestanding-core",
+    "freestanding-actor",
+    "freestanding-otp"
+  ],
+  "rules": {
+    "coreMustRemainLinkableWithoutOS": true,
+    "coreMustNotRequireHeap": true,
+    "coreMayUseCallerProvidedAllocation": true,
+    "stdMayDependOnCore": true,
+    "coreMayNotDependOnStd": true,
+    "actorRuntimeIsOptional": true,
+    "backendMustRejectUnsupportedProfileTargetPairs": true
+  },
+  "validation": "contract only; backend execution evidence is required separately"
+}
