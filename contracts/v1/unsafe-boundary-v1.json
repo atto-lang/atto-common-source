@@ -436,6 +436,94 @@
       "forge": "pending",
       "wasm": "pending",
       "net": "pending"
+    },
+    {
+      "id": "unsafe-after-cr-comment",
+      "expected": "reject",
+      "kind": "lexical",
+      "reason": "CR-only line comments do not hide later unsafe source tokens",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-after-crlf-comment",
+      "expected": "reject",
+      "kind": "lexical",
+      "reason": "CRLF line comments do not hide later unsafe source tokens",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-after-lf-comment",
+      "expected": "reject",
+      "kind": "lexical",
+      "reason": "LF line comments do not hide later unsafe source tokens",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-in-template-interpolation",
+      "expected": "reject",
+      "kind": "interpolation",
+      "reason": "Nested interpolated expressions are parsed as code, not inert template text",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-in-template-after-cr-comment",
+      "expected": "reject",
+      "kind": "interpolation",
+      "reason": "CR-only comments inside template interpolation cannot hide unsafe",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-fabricated-ident-token",
+      "expected": "reject",
+      "kind": "parser_entry",
+      "reason": "A public parser cannot trust externally constructed IDENT unsafe tokens",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-longer-identifier",
+      "expected": "accept",
+      "kind": "lexical",
+      "reason": "unsafe_helper and unsafe_count are distinct, valid identifiers",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-bom-normalization",
+      "expected": "reject",
+      "kind": "source_identity",
+      "reason": "Source decoding must not silently strip a BOM and corrupt unsafe diagnostics",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
     }
   ]
 }
