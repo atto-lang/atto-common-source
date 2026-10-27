@@ -568,6 +568,28 @@
       "forge": "pending",
       "wasm": "pending",
       "net": "pending"
+    },
+    {
+      "id": "unsafe-in-block-comment-depth-128",
+      "expected": "accept",
+      "kind": "lexical",
+      "reason": "Exactly 128 nested block comments containing the text unsafe remain inert source text",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-block-comment-depth-129",
+      "expected": "reject",
+      "kind": "lexical",
+      "reason": "129 nested block comments are beyond the shared bounded lexer budget and must fail before any IR or guest execution",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
     }
   ]
 }
