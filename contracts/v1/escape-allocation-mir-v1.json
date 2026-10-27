@@ -1,0 +1,266 @@
+{
+  "contract": "oreslang.escape-allocation-mir.v1",
+  "status": "model+Forge-header-only-analysis; not source lowering or runtime optimization",
+  "producer_requirement": "complete_effect_graph true only after independent verifier proves all use, exceptional, FFI, actor, suspension and alias edges represented",
+  "allocation": {
+    "value_type": "NominalRecord|FixedArray|Closure|Unknown",
+    "fields": "checked bound",
+    "size_bytes": "positive",
+    "alignment": "power-of-two",
+    "allocator_effect_observable": "defaults true",
+    "custom_drop": "defaults false",
+    "dynamic_extent": "defaults false",
+    "volatile_or_atomic": "defaults false"
+  },
+  "use_kinds": [
+    "FieldRead",
+    "FieldWrite",
+    "LocalBorrow",
+    "Return",
+    "Capture",
+    "ActorSend",
+    "ChannelSend",
+    "Ffi",
+    "UnknownCall",
+    "Suspend",
+    "IdentityObserve",
+    "StoreGlobal",
+    "UnsafePointer",
+    "Transfer"
+  ],
+  "classifications": [
+    "scalar-candidate",
+    "stack-candidate",
+    "preserve-allocation"
+  ],
+  "default_stack_budget_bytes": 4096,
+  "max_stack_alignment_bytes": 64,
+  "excluded_until_proven": [
+    "nested object references",
+    "inter-object stores",
+    "cycles",
+    "nontrivial finalizers",
+    "allocator identity",
+    "unbounded dynamic alloca",
+    "actor-local object graph",
+    "deoptimization"
+  ],
+  "source_fixture": {
+    "status": "illustrative only, not accepted by Forge scalar parser",
+    "text": "define struct Point as\\n    int x\\n    int y\\nend\\ndefine pub fnc calculate(): int {\\n    let p = Point { x: 10, y: 20 };\\n    return p.x + p.y;\\n}\\n",
+    "intended_result": 30
+  },
+  "cases": [
+    {
+      "id": "local-record-scalar",
+      "complete": true,
+      "effects": [
+        "FieldWrite",
+        "FieldRead"
+      ],
+      "expected": "scalar-candidate"
+    },
+    {
+      "id": "proven-local-borrow-stack",
+      "complete": true,
+      "effects": [
+        "FieldWrite",
+        "LocalBorrow"
+      ],
+      "lifetime_proven": true,
+      "expected": "stack-candidate"
+    },
+    {
+      "id": "unproven-borrow-preserves",
+      "complete": true,
+      "effects": [
+        "LocalBorrow"
+      ],
+      "lifetime_proven": false,
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "unknown-effect-graph",
+      "complete": false,
+      "effects": [
+        "FieldRead"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-return",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "Return"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-capture",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "Capture"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-actorsend",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "ActorSend"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-channelsend",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "ChannelSend"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-ffi",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "Ffi"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-unknowncall",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "UnknownCall"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-suspend",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "Suspend"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-identityobserve",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "IdentityObserve"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-storeglobal",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "StoreGlobal"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-unsafepointer",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "UnsafePointer"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "escape-transfer",
+      "complete": true,
+      "effects": [
+        "FieldRead",
+        "Transfer"
+      ],
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "observable-allocator",
+      "complete": true,
+      "effects": [
+        "FieldRead"
+      ],
+      "allocator_effect_observable": true,
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "custom-destructor",
+      "complete": true,
+      "effects": [
+        "FieldRead"
+      ],
+      "custom_drop": true,
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "dynamic-extent",
+      "complete": true,
+      "effects": [
+        "FieldRead"
+      ],
+      "dynamic_extent": true,
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "volatile-atomic",
+      "complete": true,
+      "effects": [
+        "FieldRead"
+      ],
+      "volatile_or_atomic": true,
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "opaque-type",
+      "complete": true,
+      "effects": [
+        "FieldRead"
+      ],
+      "value_type": "Unknown",
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "stack-budget",
+      "complete": true,
+      "effects": [
+        "LocalBorrow"
+      ],
+      "lifetime_proven": true,
+      "size_bytes": 32,
+      "stack_budget_bytes": 16,
+      "expected": "preserve-allocation"
+    },
+    {
+      "id": "stack-overaligned",
+      "complete": true,
+      "effects": [
+        "LocalBorrow"
+      ],
+      "lifetime_proven": true,
+      "alignment": 128,
+      "expected": "preserve-allocation"
+    }
+  ],
+  "release_gates": {
+    "mir-verification": "Reject malformed inputs, incomplete effect graphs, invalid field indices and unproven borrow lifetimes",
+    "compiler-lowering": "Emit executable Oreslang source to actual allocation IR with complete effects",
+    "safe-transform": "Apply scalar replacement or stack promotion preserving side effects and drop",
+    "native-execution": "Compare exact source outputs optimized vs off, including allocator observations",
+    "sanitizers": "Run actual compiled workloads with ASan and UBSan",
+    "cross-backend": "Require exact-head Java LLVM Forge NET Wasm independently executed vectors",
+    "report-provenance": "Bind allocation decisions to exact source and binary SHA",
+    "speculative": "Prove JIT guard misses with deoptimization and exact materialization"
+  }
+}
