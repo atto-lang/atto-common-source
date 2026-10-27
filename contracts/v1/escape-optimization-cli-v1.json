@@ -1,0 +1,67 @@
+{
+  "contract": "oreslang.escape-optimization-cli.v1",
+  "status": "design-contract; no cross-backend executable parity claimed",
+  "flag_transport": {
+    "adapter": "flags-2-env",
+    "manifest": ".cli-flags.toml",
+    "variables": {
+      "opt-escape": "ORES_OPT_ESCAPE",
+      "jit": "ORES_JIT",
+      "opt-escape-report": "ORES_OPT_ESCAPE_REPORT"
+    },
+    "direct_cli_precedence": "explicit spelling overrides mapped env (where backend supports direct flags)",
+    "duplicate_cli_policy": "reject"
+  },
+  "defaults": {
+    "escape": "off",
+    "jit": "off",
+    "report": false
+  },
+  "escape_modes": {
+    "off": "Do not run the new escape promotion optimization; preserve mandatory ownership and borrow checks",
+    "safe": "Only proven semantics-preserving scalar replacement, elision, or stack promotion; unsupported backend rejects",
+    "verify": "Safe optimization with machine-readable decision evidence, verifier replay, and differential test gates",
+    "speculative": "Guarded profile-based specialization with proven deoptimization/materialization, requires executable JIT"
+  },
+  "feature_independence": "JIT enablement is independent of escape optimization except speculative requires JIT",
+  "backend_admission": {
+    "java": "unverified",
+    "llvm": "unverified",
+    "net": "unverified",
+    "wasm": "unverified",
+    "forge": "off-only-cli-admission-proposed"
+  },
+  "admission_vectors": [
+    {"id":"defaults","escape":"off","jit":"off","report":false,"expect":"accept-off"},
+    {"id":"explicit-off","escape":"off","jit":"off","report":false,"expect":"accept-off"},
+    {"id":"safe-available-backend","escape":"safe","jit":"off","report":false,"expect":"require-safe-implementation"},
+    {"id":"safe-with-jit","escape":"safe","jit":"on","report":false,"expect":"require-safe-and-executable-jit"},
+    {"id":"verify","escape":"verify","jit":"off","report":false,"expect":"require-verified-implementation"},
+    {"id":"verify-report","escape":"verify","jit":"off","report":true,"expect":"require-verified-implementation-and-evidence"},
+    {"id":"speculative-no-jit","escape":"speculative","jit":"off","report":false,"expect":"reject-requires-jit"},
+    {"id":"speculative-with-jit","escape":"speculative","jit":"on","report":false,"expect":"require-deoptimization-and-executable-jit"},
+    {"id":"jit-only","escape":"off","jit":"on","report":false,"expect":"require-executable-jit"},
+    {"id":"report-only","escape":"off","jit":"off","report":true,"expect":"require-evidence-provider"}
+  ],
+  "required_optimization_proofs": [
+    "observable allocation and allocator failure semantics preserved",
+    "address and pointer identity preserved or allocation demonstrably unobservable",
+    "moves borrows aliases and affine drop semantics preserved",
+    "all normal unwind panic raise cancellation and early-exit destruction paths preserved",
+    "no stack-backed pointer retained through actor message send or channel transport",
+    "no invalid stack reference across await select implicit suspension or continuation retirement",
+    "FFI callback unsafe and foreign pointers cannot observe vanished storage",
+    "native alloca and frame size bounded with no unguarded dynamic alloca",
+    "deoptimization materializes values and ownership exactly once before guards transfer control",
+    "report provenance bound to binary identity source SHA backend and optimization mode"
+  ],
+  "promotion_gates": {
+    "admission": "real compiler rejects unavailable modes before guest code or artifacts are published",
+    "execution": "run positive source workloads with and without optimization and compare outputs and drops",
+    "sanitizers": "ASan UBSan and backend-specific lifetime checkers exercised on exact heads",
+    "allocation": "allocation and stack frame deltas measured; no elision claims from IR inspection alone",
+    "suspension": "actor send, await, cancellation, hot reload, and FFI failure paths executed",
+    "jit": "guard miss, deoptimization, reoptimization, and materialization executed for speculative mode",
+    "provenance": "record exact build inputs SHA test vectors runner and native binary identity"
+  }
+}
