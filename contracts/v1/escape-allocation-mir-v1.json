@@ -54,6 +54,10 @@
     {
       "id": "local-record-scalar",
       "complete": true,
+      "value_type": "NominalRecord",
+      "size_bytes": 16,
+      "alignment": 8,
+      "allocator_effect_observable": false,
       "effects": [
         "FieldWrite",
         "FieldRead"
@@ -63,6 +67,10 @@
     {
       "id": "proven-local-borrow-stack",
       "complete": true,
+      "value_type": "NominalRecord",
+      "size_bytes": 16,
+      "alignment": 8,
+      "allocator_effect_observable": false,
       "effects": [
         "FieldWrite",
         "LocalBorrow"
