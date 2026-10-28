@@ -1,0 +1,27 @@
+name: Heterogeneous science v1 reference admission
+on:
+  push:
+    paths:
+      - 'contracts/v1/heterogeneous-science/**'
+      - 'docs/HETEROGENEOUS_SCIENCE_V1.md'
+      - 'tests/heterogeneous-science-v1.test.mjs'
+      - '.github/workflows/heterogeneous-science-v1.yml'
+  pull_request:
+    paths:
+      - 'contracts/v1/heterogeneous-science/**'
+      - 'docs/HETEROGENEOUS_SCIENCE_V1.md'
+      - 'tests/heterogeneous-science-v1.test.mjs'
+      - '.github/workflows/heterogeneous-science-v1.yml'
+permissions:
+  contents: read
+jobs:
+  host-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify reference admission and negative controls
+        run: node --test tests/heterogeneous-science-v1.test.mjs
