@@ -106,6 +106,9 @@ function executeOne(program,next) {
 export function simulateOpenQasm3Shots(source,{shots,seed}={}) {
   if(!integer(shots,1,MAX_SHOTS))fail("QASM_RESOURCE_LIMIT");
   const program=parseOpenQasm3Subset(source);
+  // The product bounds worst-case simulation work, not merely memory size.
+  if(BigInt(shots)*BigInt(1<<program.qubits)*BigInt(Math.max(1,program.operations.length))>10000000n)
+    fail("QASM_RESOURCE_LIMIT");
   const next=rng(seed);
   const counts=Object.create(null);
   for(let i=0;i<shots;i++) {
