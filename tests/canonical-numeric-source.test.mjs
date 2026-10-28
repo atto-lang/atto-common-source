@@ -33,8 +33,8 @@ test('numeric source contains only native Oreslang semantics, not privileged imp
   assert.match(source, /define module numeric as/);
   for (const fn of ['min_int', 'max_int', 'clamp_int'])
     assert.match(source, new RegExp('pub fnc ' + fn + '\\('));
-  assert.doesNotMatch(source, /^\\s*import\\s+.*(?:java:|ores\\.std\\/|std\\/)/m);
-  assert.doesNotMatch(source, /(?:^|\\s)(?:do\\s+)?java\\s*\\{/m);
+  assert.doesNotMatch(source, /^\s*import\s+.*(?:java:|ores\.std\/|std\/)/m);
+  assert.doesNotMatch(source, /(?:^|\s)(?:do\s+)?java\s*\{/m);
 });
 
 test('source mutation is detected without claiming successful guest execution', () => {
