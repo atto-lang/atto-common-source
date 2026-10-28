@@ -65,6 +65,33 @@ Oreslang source. The tiny Point parser initializes both fields before reads
 by construction; general MIR must introduce CFG-aware dominance and
 initialization proofs before exposing these optimizations.
 
+### CFG reference tests — source-free only
+
+The draft `tests/test_escape_cfg_reference_v1.py` is a deliberately bounded
+reference model for acyclic, explicitly closed control-flow graphs. It computes
+definitely initialized fields as predecessor intersections and models separate
+normal and exceptional exit paths. It rejects unknown effect kinds, malformed
+node metadata, unverified local borrows, and unsupported cycles. A verifier
+flag must be the literal Boolean `True`; nonempty strings, integers, and
+other truthy values never authorize promotion. Unknown actor/channel/FFI/
+suspension/transfer effects must be represented or rejected, not normalized
+to harmless no-ops.
+
+**This model cannot authenticate its own `certified=True` argument.**
+A production optimizer must receive a compiler-owned, unforgeable proof of
+complete exceptional, cancellation, alias, escape, destructor, and use edges;
+it must never trust a source attribute, JSON flag, or third-party plugin to
+claim graph completeness. Unsupported effects must preserve allocation. The
+model also cannot prove cumulative whole-frame stack usage or generic heap
+elision. Compiler-produced MIR and independently executed backends are the
+release gate.
+
+The existing `.github/workflows/ci.yml` discovers both this reference suite
+and `test_escape_allocation_mir_v1.py` using
+`python3 -m unittest discover -s tests -p 'test_*.py' -v`. A GitHub Actions
+job with no assigned runner or recorded steps provides **no execution
+evidence** and must not count toward qualification.
+
 ## Evidence gate
 
 The JSON contract in `contracts/v1/escape-optimization-cli-v1.json` defines policy vectors and future acceptance requirements. Reference-model tests establish **contract consistency only**. Promotion from unsupported to safe/verify/speculative requires real compiler tests, sanitizer execution, exact-revision build evidence, allocation measurements, stack budget tests, guards/deoptimization, and 5-backend differential cases. A backend lacking a requested tier must fail closed rather than silently downgrade and report success.
