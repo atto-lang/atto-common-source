@@ -9,7 +9,7 @@ const bytes = readFileSync(new URL('../library/ores.core/numeric.ores', import.m
 const sha256 = data => createHash('sha256').update(data).digest('hex');
 const sha1 = data => createHash('sha1').update(data).digest('hex');
 const gitBlob = data => sha1(Buffer.concat([
-  Buffer.from('blob ' + data.length + '\\0', 'utf8'), data]));
+  Buffer.from('blob ' + data.length + String.fromCharCode(0), 'utf8'), data]));
 
 test('canonical native Oreslang numeric source has exact pinned bytes and Git blob identity', () => {
   assert.equal(manifest.schemaVersion, 1);
