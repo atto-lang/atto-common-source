@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "id": "oreslang.heterogeneous-science.v1",
   "status": "REFERENCE_MODEL_ONLY",
   "guest_execution": "NOT_EXECUTED",
