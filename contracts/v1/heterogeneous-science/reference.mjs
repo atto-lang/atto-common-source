@@ -233,8 +233,11 @@ export function fixedOrderSum(values) {
   let level = values.slice();
   while (level.length > 1) {
     const next = [];
-    for (let i = 0; i < level.length; i += 2)
-      next.push(i + 1 < level.length ? level[i] + level[i + 1] : level[i]);
+    for (let i = 0; i < level.length; i += 2) {
+      const value = i + 1 < level.length ? level[i] + level[i + 1] : level[i];
+      requireThat(Number.isFinite(value), "INVALID_NUMERIC");
+      next.push(value);
+    }
     level = next;
   }
   return level[0] ?? 0;
@@ -246,10 +249,13 @@ export class PartitionLedger {
   #inflight = new Map();
   #receipts = new Map();
   #capacity;
-  constructor(epoch, capacity) {
-    requireThat(integer(epoch) && epoch > 0 && integer(capacity) && capacity > 0,
+  #receiptCapacity;
+  constructor(epoch, capacity, receiptCapacity = 1024) {
+    requireThat(integer(epoch) && epoch > 0 && integer(capacity) && capacity > 0 &&
+      integer(receiptCapacity) && receiptCapacity > 0,
       "INVALID_PARTITION");
     this.#epoch = epoch; this.#capacity = capacity;
+    this.#receiptCapacity = receiptCapacity;
   }
   admit(epoch, sequence, digest) {
     requireThat(epoch === this.#epoch, "STALE_PARTITION_EPOCH");
@@ -262,6 +268,9 @@ export class PartitionLedger {
     requireThat(sequence === this.#next && !this.#inflight.has(sequence),
       "DUPLICATE_PARTITION_SEQUENCE");
     requireThat(this.#inflight.size < this.#capacity, "PARTITION_BACKPRESSURE");
+    // Reserve bounded receipt capacity at admission, never fail when ACK needs it.
+    requireThat(this.#receipts.size + this.#inflight.size < this.#receiptCapacity,
+      "PARTITION_RECEIPT_BACKPRESSURE");
     this.#inflight.set(sequence, digest); this.#next++;
     return "admitted";
   }
