@@ -18,7 +18,7 @@ Checked rank/shape/stride/byte-width arithmetic is performed before indexing or 
 
 ## Quantum v1
 
-Do not introduce additional surface syntax until the frontend AST/effect checker can enforce linear Qubit values, measurement effects and target capabilities. First QPU output is OpenQASM 3 for `h`, `cx`, `measure` (reference emitter only); QIR can follow. QPU feedback with coherence-limited deadlines must execute at an admitted controller, not as ordinary cloud-host `await`. Host quantum orchestration remains async, cancellation-aware and capability-gated.
+Do not introduce additional surface syntax until the frontend AST/effect checker can enforce linear Qubit values, measurement effects and target capabilities. A host-only bounded OpenQASM3 subset interpreter in `contracts/v1/heterogeneous-science/qasm3-simulator.mjs` executes H/CX/measurement state-vector trajectories (maximum 12 qubits, 256 gates, 10,000 shots and 10 million state-operation units). A seeded Bell circuit tests outcome correlations, collapse and deterministic sampling; unsupported gates, illegal measurement reuse, classical overwrite, index overflow and unbounded work reject. This proves neither real Oreslang source compilation nor hardware QPU execution. First compiler-owned QPU output is OpenQASM 3 for `h`, `cx`, `measure` (reference emitter only); QIR can follow. QPU feedback with coherence-limited deadlines must execute at an admitted controller, not as ordinary cloud-host `await`. Host quantum orchestration remains async, cancellation-aware and capability-gated.
 
 ## Real-time and HPC
 
