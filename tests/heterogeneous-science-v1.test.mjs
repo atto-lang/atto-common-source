@@ -50,8 +50,8 @@ test("RT admission requires named evidence and a bounded total", () => {
   assert.equal(deadlineAdmission(config).totalUs,87n);
   err(() => deadlineAdmission({...config,timingEvidence:false}), "UNBOUNDED_DEADLINE");
   err(() => deadlineAdmission({...config,wcetUs:90}), "DEADLINE_EXCEEDED");
-  err(() => deadlineAdmission({...config,blockingUs:Number.MAX_SAFE_INTEGER,
-    interferenceUs:Number.MAX_SAFE_INTEGER,jitterUs:Number.MAX_SAFE_INTEGER}), "INTEGER_OVERFLOW");
+  err(() => deadlineAdmission({...config,blockingUs:(1n<<63n)-1n,
+    interferenceUs:1,jitterUs:0}), "INTEGER_OVERFLOW");
 });
 test("GPU dispatch requires exact requested GPU and bounded invocation", () => {
   const config={requestedDevice:"gpu0",availableDevices:[
@@ -103,9 +103,9 @@ test("quantum Bell fixture emits OpenQASM 3 and forbids invalid gate reuse", () 
   const qc=new QuantumCircuit(2);
   qc.h(0); qc.cx(0,1); qc.measure(0); qc.measure(1);
   const qasm=qc.toOpenQasm3();
-  assert.match(qasm,/^OPENQASM 3\\.0;/);
-  assert.match(qasm,/h q\\[0\\];\\ncx q\\[0\\], q\\[1\\];/);
-  assert.match(qasm,/c\\[1\\] = measure q\\[1\\];/);
+  assert.match(qasm,/^OPENQASM 3\.0;/);
+  assert.match(qasm,/h q\[0\];\ncx q\[0\], q\[1\];/);
+  assert.match(qasm,/c\[1\] = measure q\[1\];/);
   err(() => qc.h(0), "QUBIT_ALREADY_MEASURED");
   err(() => qc.measure(1), "QUBIT_ALREADY_MEASURED");
   const separate=new QuantumCircuit(2);
