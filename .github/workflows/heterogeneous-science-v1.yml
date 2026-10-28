@@ -5,12 +5,14 @@ on:
       - 'contracts/v1/heterogeneous-science/**'
       - 'docs/HETEROGENEOUS_SCIENCE_V1.md'
       - 'tests/heterogeneous-science-v1.test.mjs'
+      - 'tests/quantum-qasm3-bell-simulator.test.mjs'
       - '.github/workflows/heterogeneous-science-v1.yml'
   pull_request:
     paths:
       - 'contracts/v1/heterogeneous-science/**'
       - 'docs/HETEROGENEOUS_SCIENCE_V1.md'
       - 'tests/heterogeneous-science-v1.test.mjs'
+      - 'tests/quantum-qasm3-bell-simulator.test.mjs'
       - '.github/workflows/heterogeneous-science-v1.yml'
 permissions:
   contents: read
@@ -19,9 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Verify reference admission and negative controls
-        run: node --test tests/heterogeneous-science-v1.test.mjs
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          node --test tests/heterogeneous-science-v1.test.mjs tests/quantum-qasm3-bell-simulator.test.mjs
