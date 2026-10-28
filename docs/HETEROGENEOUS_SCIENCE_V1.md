@@ -1,6 +1,6 @@
 # Heterogeneous scientific execution v1 — incremental implementation contract
 
-Status **REFERENCE MODEL ONLY**, October 28, 2026. This proposal integrates with the existing [portable compute stdlib](../../docs/PORTABLE_COMPUTE_STDLIB_V1.md), [G2 kernel IR](../../docs/PORTABLE_COMPUTE_KERNEL_G2.md), [tensor/data actor contract](../../docs/TENSOR_DATA_ML_ACTOR_PIPELINES_V1.md), [autodiff actor contract](../../docs/MODEL_ACTOR_AUTODIFF_V1.md), and [hard-real-time contract](../../docs/HARD_REALTIME_V1.md). They remain authoritative within their existing scope; this contract does not replace or retroactively promote them.
+Status **REFERENCE MODEL ONLY**, October 28, 2026. This proposal integrates with the existing [portable compute stdlib](./PORTABLE_COMPUTE_STDLIB_V1.md), [G2 kernel IR](./PORTABLE_COMPUTE_KERNEL_G2.md), [tensor/data actor contract](./TENSOR_DATA_ML_ACTOR_PIPELINES_V1.md), [autodiff actor contract](./MODEL_ACTOR_AUTODIFF_V1.md), and [hard-real-time contract](./HARD_REALTIME_V1.md). They remain authoritative within their existing scope; this contract does not replace or retroactively promote them.
 
 ## Model and non-goals
 
