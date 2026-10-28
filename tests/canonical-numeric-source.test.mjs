@@ -23,6 +23,10 @@ test('canonical native Oreslang numeric source has exact pinned bytes and Git bl
   assert.equal(manifest.semanticsContract, 'contracts/library/v1/core-math-i64.json');
   assert.deepEqual(manifest.canonicalApi, [
     'min_int(int,int):int', 'max_int(int,int):int', 'clamp_int(int,int,int):int']);
+  assert.equal(manifest.policy.publicNamespace, 'ores.core');
+  assert.equal(manifest.policy.noOsImports, true);
+  assert.equal(manifest.policy.noHostInterop, true);
+  assert.equal(manifest.policy.backendSemanticForksForbidden, true);
   assert.equal(manifest.policy.requireByteIdenticalVendorCopy, true);
   assert.equal(manifest.policy.compilersMustCompileOreslangSource, true);
   assert.equal(manifest.policy.backendExecutionEvidenceRequired, true);
@@ -33,8 +37,11 @@ test('numeric source contains only native Oreslang semantics, not privileged imp
   assert.match(source, /define module numeric as/);
   for (const fn of ['min_int', 'max_int', 'clamp_int'])
     assert.match(source, new RegExp('pub fnc ' + fn + '\\('));
-  assert.doesNotMatch(source, /^\s*import\s+.*(?:java:|ores\.std\/|std\/)/m);
-  assert.doesNotMatch(source, /(?:^|\s)(?:do\s+)?java\s*\{/m);
+  const code = source.replace(/\/\/.*$/gm, '');
+  assert.doesNotMatch(code, /^\s*import\b/m);
+  assert.doesNotMatch(code, /(?:^|\s)(?:do\s+)?(?:java|cpu|gpu)\s*\{/m);
+  assert.doesNotMatch(code, /^\s*define\s+(?:ffi|ipc|http|tcp|websocket|proxy)\s+actor\b/m);
+  assert.doesNotMatch(code, /\b(?:await|spawn|suspends)\b/m);
 });
 
 test('source mutation is detected without claiming successful guest execution', () => {
