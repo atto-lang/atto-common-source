@@ -122,6 +122,16 @@ test("fixed reduction tree is deterministic for the same ordered finite inputs",
   assert.equal(fixedOrderSum([1e16,1,-1e16,1]), 0);
   assert.equal(fixedOrderSum([]),0);
   err(() => fixedOrderSum([1,Infinity]),"INVALID_NUMERIC");
+  err(() => fixedOrderSum([Number.MAX_VALUE,Number.MAX_VALUE]),"INVALID_NUMERIC");
+});
+test("retention of partition ACK receipts is bounded and reserved before admission", () => {
+  const p=new PartitionLedger(3,1,2);
+  assert.equal(p.admit(3,0,"sha0"),"admitted");
+  p.ack(3,0,"sha0");
+  assert.equal(p.admit(3,1,"sha1"),"admitted");
+  p.ack(3,1,"sha1");
+  err(() => p.admit(3,2,"sha2"),"PARTITION_RECEIPT_BACKPRESSURE");
+  assert.equal(p.admit(3,0,"sha0"),"duplicate-acked");
 });
 test("partition epochs, ACKs and backpressure fail closed", () => {
   const p=new PartitionLedger(10,1);
