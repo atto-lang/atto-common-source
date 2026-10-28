@@ -65,3 +65,9 @@ test("QASM syntax is not a gateway to arbitrary host computation",()=>{
   const program=bellQasm().replace('h q[0];','h q[0];\nprocess.exit(0);');
   error(()=>simulateOpenQasm3Shots(program,{shots:1,seed:1}),"QASM_UNSUPPORTED_STATEMENT");
 });
+
+test("simulator caps product of shots, state dimension, and gate count",()=>{
+  const header='OPENQASM 3.0;\\ninclude "stdgates.inc";\\nqubit[12] q;\\nbit[12] c;\\n';
+  const expensive=header+'h q[0];\\n'.repeat(16);
+  error(()=>simulateOpenQasm3Shots(expensive,{shots:200,seed:1}),"QASM_RESOURCE_LIMIT");
+});
