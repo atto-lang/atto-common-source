@@ -15,11 +15,15 @@ def analyze_cfg(nodes, edges, *, field_count=2, size_bytes=16,
     preserve = "preserve-allocation"
     if not certified:
         return preserve
-    if (not 0 < field_count <= 64 or size_bytes < field_count or
+    if (any(type(x) is not int for x in (field_count, size_bytes,
+                                         alignment, stack_budget)) or
+            not 0 < field_count <= 64 or size_bytes < field_count or
             alignment <= 0 or alignment > 64 or
             alignment & (alignment - 1) or stack_budget <= 0):
         raise ValueError("invalid allocation layout or budget")
-    if not isinstance(nodes, list) or not 1 <= len(nodes) <= 256 or len(edges) > 512:
+    if (not isinstance(nodes, list) or not isinstance(edges, list) or
+            not 1 <= len(nodes) <= 256 or len(edges) > 512 or
+            any(not isinstance(node, dict) for node in nodes)):
         raise ValueError("invalid CFG bounds")
     ids = [node.get("id") for node in nodes]
     if any(type(i) is not int for i in ids) or len(ids) != len(set(ids)):
@@ -39,6 +43,7 @@ def analyze_cfg(nodes, edges, *, field_count=2, size_bytes=16,
             raise ValueError("spurious lifetime proof")
     for edge in edges:
         if (not isinstance(edge, (tuple, list)) or len(edge) != 2 or
+                type(edge[0]) is not int or type(edge[1]) is not int or
                 edge[0] not in by_id or edge[1] not in by_id or
                 edge[1] in succ[edge[0]]):
             raise ValueError("invalid CFG edge")
@@ -66,6 +71,7 @@ def analyze_cfg(nodes, edges, *, field_count=2, size_bytes=16,
         raise ValueError("all terminal paths require explicit exit")
     definite = {}
     has_borrow = False
+    invalid_borrow = False
     has_barrier = False
     for i in order:
         in_fields = (set.intersection(*(definite[p] for p in pred[i]))
@@ -78,15 +84,16 @@ def analyze_cfg(nodes, edges, *, field_count=2, size_bytes=16,
             raise ValueError("read before definite initialization")
         elif kind == "borrow":
             if node.get("lifetime_proven") is not True or len(in_fields) != field_count:
-                return preserve
-            has_borrow = True
+                invalid_borrow = True
+            else:
+                has_borrow = True
         elif kind in BARRIERS:
             has_barrier = True
         definite[i] = in_fields
     exits = [i for i in ids if by_id[i]["kind"] == "exit"]
     if not exits:
         raise ValueError("missing exit")
-    if any(len(definite[i]) != field_count for i in exits) or has_barrier:
+    if any(len(definite[i]) != field_count for i in exits) or has_barrier or invalid_borrow:
         return preserve
     if not has_borrow:
         return "scalar-candidate"
@@ -144,6 +151,14 @@ class EscapeCfgReferenceTest(unittest.TestCase):
             analyze_cfg(nodes + [{"id": 4, "kind": "bad"}], good + [(2, 4)], certified=True)
         with self.assertRaises(ValueError):
             analyze_cfg(nodes, good, alignment=3, certified=True)
+        with self.assertRaises(ValueError):
+            analyze_cfg(nodes, good, size_bytes=True, certified=True)
+        with self.assertRaises(ValueError):
+            analyze_cfg([None], [], certified=True)
+        with self.assertRaises(ValueError):
+            analyze_cfg(nodes, [(True, 1), (1, 2)], certified=True)
+        with self.assertRaises(ValueError):
+            analyze_cfg(nodes, None, certified=True)
 
 
 if __name__ == "__main__":
