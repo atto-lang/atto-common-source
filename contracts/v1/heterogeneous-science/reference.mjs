@@ -8,6 +8,10 @@ const requireThat = (condition, code) => { if (!condition) die(code); };
 const LIMIT = (1n << 63n) - 1n;
 const integer = n => typeof n === "number" && Number.isSafeInteger(n) && n >= 0;
 function bounded(n) {
+  if (typeof n === "bigint") {
+    requireThat(n >= 0n && n <= LIMIT, "INVALID_NONNEGATIVE_INTEGER");
+    return n;
+  }
   requireThat(integer(n), "INVALID_NONNEGATIVE_INTEGER");
   return BigInt(n);
 }
