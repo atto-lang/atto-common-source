@@ -54,6 +54,8 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 ## Documents
 
+- [Heterogeneous science and quantum v1](docs/HETEROGENEOUS_SCIENCE_V1.md) — G0 host reference admission for data/ML, GPU, HPC, realtime, quantum and robotics; real guest/device backends remain separate gates.
+
 - [Compiler diagnostics v1: five independent errors and actionable source traces](contracts/v1/COMPILER_DIAGNOSTICS_MULTI_ERROR_V1.md) — **proposal only**, pending backend implementation and execution gates.
 
 - [Checked exceptional effects v2](contracts/v2/CHECKED_EXCEPTIONAL_EFFECTS_V2.md) — strict throws/raises/panics propagation, uncatchable panics and conformance gates.
