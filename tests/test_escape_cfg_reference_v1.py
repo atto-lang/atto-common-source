@@ -13,7 +13,8 @@ BARRIERS = {"actor_send", "channel_send", "ffi", "capture", "suspend", "unknown_
 def analyze_cfg(nodes, edges, *, field_count=2, size_bytes=16,
                 alignment=8, stack_budget=4096, certified=False):
     preserve = "preserve-allocation"
-    if not certified:
+    # Only a literal verification attestation permits promotion.
+    if certified is not True:
         return preserve
     if (any(type(x) is not int for x in (field_count, size_bytes,
                                          alignment, stack_budget)) or
@@ -32,7 +33,9 @@ def analyze_cfg(nodes, edges, *, field_count=2, size_bytes=16,
     succ = {i: [] for i in ids}
     pred = {i: [] for i in ids}
     for node in nodes:
-        if node.get("kind") not in ALLOWED or set(node) - {"id", "kind", "field", "lifetime_proven"}:
+        # Malformed/unhashable effects must fail deterministically.
+        if (type(node.get("kind")) is not str or node["kind"] not in ALLOWED or
+                set(node) - {"id", "kind", "field", "lifetime_proven"}):
             raise ValueError("unknown CFG operation")
         if node["kind"] in ("read", "write"):
             if type(node.get("field")) is not int or not 0 <= node["field"] < field_count:
@@ -135,6 +138,30 @@ class EscapeCfgReferenceTest(unittest.TestCase):
                 nodes[2] = {"id": 2, "kind": barrier}
                 self.assertEqual(analyze_cfg(nodes, edges, certified=True), "preserve-allocation")
         self.assertEqual(analyze_cfg(nodes, edges, certified=False), "preserve-allocation")
+
+    def test_certification_requires_literal_boolean_true(self):
+        nodes = [{"id": 0, "kind": "write", "field": 0},
+                 {"id": 1, "kind": "write", "field": 1},
+                 {"id": 2, "kind": "exit"}]
+        edges = [(0, 1), (1, 2)]
+        self.assertEqual(analyze_cfg(nodes, edges, certified=True), "scalar-candidate")
+        for untrusted in ("true", "false", 1, 2, -1, [], {}, None):
+            with self.subTest(untrusted=untrusted):
+                self.assertEqual(analyze_cfg(nodes, edges, certified=untrusted),
+                                 "preserve-allocation")
+
+    def test_invalid_effect_kinds_reject_deterministically(self):
+        nodes = [{"id": 0, "kind": "write", "field": 0},
+                 {"id": 1, "kind": "write", "field": 1},
+                 {"id": 2, "kind": "exit"}]
+        edges = [(0, 1), (1, 2)]
+        for unknown in ("store_global", "identity_observe",
+                        "unsafe_pointer", "transfer", [], {}, 1, None):
+            with self.subTest(unknown=unknown):
+                changed = [dict(item) for item in nodes]
+                changed[1] = {"id": 1, "kind": unknown}
+                with self.assertRaisesRegex(ValueError, "unknown CFG operation"):
+                    analyze_cfg(changed, edges, certified=True)
 
     def test_fail_closed_cfg_shapes(self):
         nodes = [{"id": 0, "kind": "write", "field": 0},
