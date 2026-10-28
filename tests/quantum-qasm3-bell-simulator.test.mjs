@@ -67,7 +67,7 @@ test("QASM syntax is not a gateway to arbitrary host computation",()=>{
 });
 
 test("simulator caps product of shots, state dimension, and gate count",()=>{
-  const header='OPENQASM 3.0;\\ninclude "stdgates.inc";\\nqubit[12] q;\\nbit[12] c;\\n';
-  const expensive=header+'h q[0];\\n'.repeat(16);
+  const header='OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[12] q;\nbit[12] c;\n';
+  const expensive=header+'h q[0];\n'.repeat(16);
   error(()=>simulateOpenQasm3Shots(expensive,{shots:200,seed:1}),"QASM_RESOURCE_LIMIT");
 });
