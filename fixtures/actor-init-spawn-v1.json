@@ -1,0 +1,429 @@
+{
+  "schema": "oreslang.actor-init-spawn.v1",
+  "status": "PROPOSED_SOURCE_FREE_NOT_EXECUTED",
+  "design": {
+    "initialization_hook": "init",
+    "actor_constructor_allowed": false,
+    "initializer_invoked_through": "spawn Actor(named arguments)",
+    "init_before_ref_publication": true,
+    "initialized_state_location": "single compiler-owned state schema",
+    "state_builder": "complete non-escaping compiler-owned value",
+    "mutation_method": "self.handle_state(critical[write] ...)",
+    "reflective_service_locator_allowed": false,
+    "async_init_allowed": false,
+    "hot_reload_reruns_init": false,
+    "durable_restore_reruns_init": false,
+    "implicit_future_or_option_flattening": false,
+    "per_tenant_authority_required": true
+  },
+  "defaults": {
+    "actor_constructor": false,
+    "init_count": 1,
+    "actor_external_init": false,
+    "init_params": [
+      "store",
+      "gateway"
+    ],
+    "spawn_args": [
+      "store",
+      "gateway"
+    ],
+    "arg_types_match": true,
+    "implicit_conversion": false,
+    "dep_generation_valid": true,
+    "dep_tenant_authorized": true,
+    "dep_cross_isolate_brokered": true,
+    "deps_capability_authorized": true,
+    "deps_ownership_safe": true,
+    "init_effect": "pure",
+    "state_keys": [
+      "store",
+      "gateway",
+      "phase"
+    ],
+    "state_return_keys": [
+      "store",
+      "gateway",
+      "phase"
+    ],
+    "state_has_defaults": false,
+    "state_types_match": true,
+    "state_builder_private": true,
+    "published_before_commit": false,
+    "init_runs": 1,
+    "init_failed": false,
+    "rollback_complete": true,
+    "restoring": false,
+    "restore_rebound_authorized": true,
+    "graph_cycle": false,
+    "budget_ok": true,
+    "ambient_resolution": false,
+    "mutation_via_sealed_write": true,
+    "hard_rt": false,
+    "init_bounded": true
+  },
+  "cases": [
+    {
+      "id": "basic-named-spawn",
+      "expected": "accept",
+      "overrides": {}
+    },
+    {
+      "id": "named-arguments-order-independent",
+      "expected": "accept",
+      "overrides": {
+        "spawn_args": [
+          "gateway",
+          "store"
+        ]
+      }
+    },
+    {
+      "id": "no-init-all-defaults",
+      "expected": "accept",
+      "overrides": {
+        "init_count": 0,
+        "init_params": [],
+        "spawn_args": [],
+        "state_has_defaults": true
+      }
+    },
+    {
+      "id": "no-init-empty-state",
+      "expected": "accept",
+      "overrides": {
+        "init_count": 0,
+        "init_params": [],
+        "spawn_args": [],
+        "state_keys": [],
+        "state_has_defaults": true,
+        "state_return_keys": []
+      }
+    },
+    {
+      "id": "actor-constructor-rejected",
+      "expected": "reject",
+      "overrides": {
+        "actor_constructor": true
+      }
+    },
+    {
+      "id": "multiple-init-methods-rejected",
+      "expected": "reject",
+      "overrides": {
+        "init_count": 2
+      }
+    },
+    {
+      "id": "call-init-after-spawn",
+      "expected": "reject",
+      "overrides": {
+        "actor_external_init": true
+      }
+    },
+    {
+      "id": "no-init-but-has-args",
+      "expected": "reject",
+      "overrides": {
+        "init_count": 0,
+        "init_params": [],
+        "state_has_defaults": true
+      }
+    },
+    {
+      "id": "no-init-missing-default",
+      "expected": "reject",
+      "overrides": {
+        "init_count": 0,
+        "init_params": [],
+        "spawn_args": [],
+        "state_has_defaults": false
+      }
+    },
+    {
+      "id": "missing-spawn-argument",
+      "expected": "reject",
+      "overrides": {
+        "spawn_args": [
+          "store"
+        ]
+      }
+    },
+    {
+      "id": "extra-spawn-argument",
+      "expected": "reject",
+      "overrides": {
+        "spawn_args": [
+          "store",
+          "gateway",
+          "logger"
+        ]
+      }
+    },
+    {
+      "id": "duplicate-spawn-label",
+      "expected": "reject",
+      "overrides": {
+        "spawn_args": [
+          "store",
+          "store",
+          "gateway"
+        ]
+      }
+    },
+    {
+      "id": "unknown-argument-type",
+      "expected": "reject",
+      "overrides": {
+        "arg_types_match": false
+      }
+    },
+    {
+      "id": "implicit-conversion",
+      "expected": "reject",
+      "overrides": {
+        "implicit_conversion": true
+      }
+    },
+    {
+      "id": "stale-dependency-ref",
+      "expected": "reject",
+      "overrides": {
+        "dep_generation_valid": false
+      }
+    },
+    {
+      "id": "foreign-tenant-ref",
+      "expected": "reject",
+      "overrides": {
+        "dep_tenant_authorized": false
+      }
+    },
+    {
+      "id": "foreign-isolate-no-broker",
+      "expected": "reject",
+      "overrides": {
+        "dep_cross_isolate_brokered": false
+      }
+    },
+    {
+      "id": "missing-capability",
+      "expected": "reject",
+      "overrides": {
+        "deps_capability_authorized": false
+      }
+    },
+    {
+      "id": "borrowed-dependency-escapes",
+      "expected": "reject",
+      "overrides": {
+        "deps_ownership_safe": false
+      }
+    },
+    {
+      "id": "init-has-await",
+      "expected": "reject",
+      "overrides": {
+        "init_effect": "suspend"
+      }
+    },
+    {
+      "id": "init-performs-io",
+      "expected": "reject",
+      "overrides": {
+        "init_effect": "io"
+      }
+    },
+    {
+      "id": "init-sends-message",
+      "expected": "reject",
+      "overrides": {
+        "init_effect": "send"
+      }
+    },
+    {
+      "id": "init-spawns-child",
+      "expected": "reject",
+      "overrides": {
+        "init_effect": "spawn"
+      }
+    },
+    {
+      "id": "init-tries-handle-state",
+      "expected": "reject",
+      "overrides": {
+        "init_effect": "handle_state"
+      }
+    },
+    {
+      "id": "init-escapes-self",
+      "expected": "reject",
+      "overrides": {
+        "init_effect": "self_escape"
+      }
+    },
+    {
+      "id": "init-return-missing-field",
+      "expected": "reject",
+      "overrides": {
+        "state_return_keys": [
+          "store",
+          "gateway"
+        ]
+      }
+    },
+    {
+      "id": "init-return-duplicate-field",
+      "expected": "reject",
+      "overrides": {
+        "state_return_keys": [
+          "store",
+          "store",
+          "gateway",
+          "phase"
+        ]
+      }
+    },
+    {
+      "id": "init-return-wrong-field",
+      "expected": "reject",
+      "overrides": {
+        "state_return_keys": [
+          "store",
+          "gateway",
+          "unknown"
+        ]
+      }
+    },
+    {
+      "id": "init-return-wrong-type",
+      "expected": "reject",
+      "overrides": {
+        "state_types_match": false
+      }
+    },
+    {
+      "id": "init-returns-public-record",
+      "expected": "reject",
+      "overrides": {
+        "state_builder_private": false
+      }
+    },
+    {
+      "id": "public-ref-before-commit",
+      "expected": "reject",
+      "overrides": {
+        "published_before_commit": true
+      }
+    },
+    {
+      "id": "run-init-twice",
+      "expected": "reject",
+      "overrides": {
+        "init_runs": 2
+      }
+    },
+    {
+      "id": "failed-init-leaked-resources",
+      "expected": "reject",
+      "overrides": {
+        "init_failed": true,
+        "rollback_complete": false
+      }
+    },
+    {
+      "id": "failed-init-clean-rollback",
+      "expected": "accept",
+      "overrides": {
+        "init_failed": true,
+        "rollback_complete": true
+      }
+    },
+    {
+      "id": "restore-skips-init",
+      "expected": "accept",
+      "overrides": {
+        "restoring": true,
+        "init_runs": 0
+      }
+    },
+    {
+      "id": "restore-reruns-init",
+      "expected": "reject",
+      "overrides": {
+        "restoring": true,
+        "init_runs": 1
+      }
+    },
+    {
+      "id": "restore-unfenced-capability",
+      "expected": "reject",
+      "overrides": {
+        "restoring": true,
+        "init_runs": 0,
+        "restore_rebound_authorized": false
+      }
+    },
+    {
+      "id": "graph-cycle-unresolved",
+      "expected": "reject",
+      "overrides": {
+        "graph_cycle": true
+      }
+    },
+    {
+      "id": "graph-budget-exceeded",
+      "expected": "reject",
+      "overrides": {
+        "budget_ok": false
+      }
+    },
+    {
+      "id": "ambient-service-locator",
+      "expected": "reject",
+      "overrides": {
+        "ambient_resolution": true
+      }
+    },
+    {
+      "id": "state-mutation-outside-critical",
+      "expected": "reject",
+      "overrides": {
+        "mutation_via_sealed_write": false
+      }
+    },
+    {
+      "id": "state-mutation-with-critical",
+      "expected": "accept",
+      "overrides": {
+        "mutation_via_sealed_write": true
+      }
+    },
+    {
+      "id": "hardened-rt-bounded-init",
+      "expected": "accept",
+      "overrides": {
+        "hard_rt": true,
+        "init_bounded": true
+      }
+    },
+    {
+      "id": "hardened-rt-unbounded-init",
+      "expected": "reject",
+      "overrides": {
+        "hard_rt": true,
+        "init_bounded": false
+      }
+    }
+  ],
+  "evidence": {
+    "source_compilation": "NOT_EXECUTED",
+    "java_graal": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "dotnet": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED",
+    "reference_model_is_compiler_evidence": false,
+    "private_source_transfer_authorized": false
+  }
+}
