@@ -59,6 +59,11 @@ function compileGraph(input) {
           die("INVALID_DECLARATION");
         for (const old of module.members) {
           if (old.name !== member.name) continue;
+          // A private/file-scoped helper in a different fragment is NOT the
+          // same logical module export binding; preserve its lexical identity.
+          if (old.fileId !== file.id &&
+              (["private","file"].includes(old.scope) || ["private","file"].includes(member.scope)))
+            continue;
           if (old.kind !== member.kind) die("BINDING_KIND_CONFLICT");
           if (old.arity === member.arity) die("DUPLICATE_OVERLOAD_IDENTITY");
         }
@@ -81,7 +86,7 @@ function selected(input, importer, alias, moduleName, fromFile = null) {
   return module.members.filter(m =>
     m.scope === "public" ||
     (m.scope === "pkg" && target === importer) ||
-    (m.scope === "file" && fromFile === m.fileId)
+    (m.scope === "file" && target === importer && fromFile === m.fileId)
   ).map(m => m.name).sort();
 }
 function esmEntry(input, packageId, moduleName) {
@@ -188,4 +193,19 @@ test("scope leaks through a named package alias are not admitted", () => {
   changed.files.find(f=>f.id==="m6").modules[0].scope="pkg";
   changed.files.find(f=>f.id==="m7").modules[0].scope="pkg";
   assert.throws(()=>selected(changed,"consumer@sha:2222","analytics","compute"),/HIDDEN_SELECTED_MODULE/);
+});
+
+test("distinct fragment-private helpers may reuse the same name without joining exports", () => {
+  const changed=mutateFile("m7",f=>{
+    f.modules[0].members.push({name:"hidden",kind:"fnc",arity:0,scope:"private"});
+  });
+  assert.deepEqual(selected(changed,"consumer@sha:2222","analytics","compute"),["add","aggregate","double"]);
+  assert.ok(!esmEntry(changed,"analytics@sha:1111","compute").includes("hidden"));
+});
+test("same-file visibility requires source and package identity; caller cannot spoof a file across packages", () => {
+  const pkg="analytics@sha:1111";
+  assert.deepEqual(selected(spec,pkg,"analytics","compute","m7"),
+    ["add","aggregate","double","file_only","internal"]);
+  assert.deepEqual(selected(spec,"consumer@sha:2222","analytics","compute","m7"),
+    ["add","aggregate","double"]);
 });
