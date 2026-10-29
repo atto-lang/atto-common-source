@@ -20,11 +20,11 @@ unsafe fnc read_register(address: RawPointer<u32>): u32
 end
 ```
 
-At G0, `unsafe` is reserved in all source positions and imports containing a `std.unsafe` segment are intentionally not yet admitted. When G2 publishes `std.unsafe.*`, the parser must recognize `unsafe` as a **qualified import/path segment only**; it must not make the keyword a legal binding, callable, alias, or dynamic property fallback. Once available, importing this namespace alone is permitted for trusted and untrusted actors, but no native operation, permission, or trust upgrade follows from the import. A separate negative fixture ensures untrusted actors are still denied native operations after such an import.
+At G0, `unsafe` is reserved in all source positions and imports containing an `unsafe` standard-library path segment are intentionally not yet admitted. When G2 publishes the `ores.std/unsafe/*` namespace (with only explicitly approved compatibility spellings), the parser must recognize `unsafe` as a **qualified import/path segment only**; it must not make the keyword a legal binding, callable, alias, or dynamic property fallback. **Import visibility is a privileged host-native capability, not a harmless namespace lookup.** Untrusted actors and **all VM-isolates, including trusted guest code**, MUST reject imports, transitive dependencies, aliases, re-exports and dynamic resolution of the unsafe package. A manifest flag, lexical unsafe scope or a parent actor's grants cannot change that. Only a host-authorized trusted native extension domain outside any VM-isolate may eventually resolve it.
 
 The precise block-expression/statement AST grammar is still proposed. The initial keyword reservation must not be mistaken for accepting this example. `unsafe fnc` marks *caller-required* obligations; an `unsafe` block marks a local proof obligation. An ordinary safe function may encapsulate a verified unsafe implementation, but does not thereby acquire grant authority. Importing `std.unsafe` is not sufficient either.
 
-Proposed subpackages: `std.unsafe.memory`, `std.unsafe.pointer`, `std.unsafe.ffi`, `std.unsafe.layout` and `std.unsafe.intrinsics`. No such package is declared implemented by this proposal. Function/method names use snake_case.
+Proposed subpackages: `ores.std/unsafe/memory`, `ores.std/unsafe/pointer`, `ores.std/unsafe/ffi`, `ores.std/unsafe/native`, `ores.std/unsafe/layout`, `ores.std/unsafe/platform` and `ores.std/unsafe/intrinsics`. No such package is declared implemented by this proposal. Function/method names use snake_case.
 
 ## Effect checks and auditing
 
@@ -62,3 +62,22 @@ Related: [LLVM issue #528](https://github.com/ores-truffle-oreslang/oreslang-sou
 ## G0 admission audit, October 27, 2026
 
 The Java Parser accepts public pre-tokenized input; reserve-word checks must not rely exclusively on `Lexer`. An externally constructed `IDENT("unsafe")` is rejected just like a genuine UNSAFE token, while STRING, SYMBOL_LITERAL and TEMPLATE_LITERAL remain data. The LLVM nested parser must report the absolute source offset for unsafe inside interpolations. Positive lexical/compiled-baseline fixtures guard against blanket string/comment/suffix rejection. These tests do **not** authorize lowering of any unsafe operation.
+
+## Unsafe standard-library package isolation (P0 update, October 29, 2026)
+
+The package is the supported **application-facing** interface to native extensions and memory: proposed `ores.std/unsafe/ffi`, `ores.std/unsafe/native`, `ores.std/unsafe/memory`, `ores.std/unsafe/platform`, with core ABI implementation private to the compiler/runtime. Legacy `std/unsafe/*` and dotted/colon spellings are reserved against source/package fallback, not silently accepted as public imports. A package named `unsafe_tools` is distinct from the reserved exact `unsafe` segment. At G0 **all** `unsafe` standard-library imports reject; the implementation is not installed.
+
+Execution domains form a fixed, host-assigned trust boundary: (1) untrusted actors and all VM-isolates have no unsafe module catalog, (2) trusted actors do not automatically receive FFI, (3) a separate explicitly authorized trusted **native host** may receive a library-specific, versioned grant. The host/native extension domain must be distinguished from a Graal guest Context or other VM-isolate; a policy flag cannot upgrade a guest context. Never use a caller-chosen `trusted=true`, environment variable, package manifest or reflection as authority.
+
+The resolver rejects unsafe dependencies before fetching source; typed linked import/effect metadata must reject re-exports, dependency graphs, dynamic imports, macros and code-loading aliases. Linkers and AOT image builders must not emit guest-callable native trampolines, method handles, symbols or dynamic-loader routes. Runtime dispatch and native-loader admission independently recheck immutable host-minted domain identity and exact library+symbol+ABI allowlists, grant lifetime and epoch. Unknown metadata or unsupported backends reject *before* executable/IR emission. No `ffi` or `native` allow flag overrides an isolate ban.
+
+The native ABI should initially be a stable, explicitly versioned C-compatible ABI (C++/Rust use a C wrapper), with generated typed bindings, scoped lifetimes, cancellation, reentrancy and error-return contracts. Raw foreign pointer, function-pointer, symbol handle, privileged closure, and native-memory lease transport through actor messages, generic erasure, channels or serialization is denied. Foreign exceptions must not cross incompatible ABIs. In-process arbitrary foreign code shares process authority and is **not sandboxed** by an Oreslang unsafe import policy: untrusted tenants require a separate process/protection domain for extensions.
+
+Safe Oreslang packages may internally depend on reviewed native code only through a **host-owned safe service facade** with explicit permissions, bounded quotas, verified serialization/ownership and no native pointer exposure. The guest receives typed values or narrowly scoped opaque resource IDs, not the native library or unsafe package. This allows safe std crypto, image, filesystem and network services even when their implementation is native.
+
+### Independent release proof
+
+- Exact-head negative imports for untrusted actor and trusted/untrusted VM guest, direct/transitive/re-exported/dynamic, legacy aliases, package shadowing, crafted AST, reflection and native symbol calls.
+- Exact-head positive native-host-only extension proof with a real allowlisted ABI symbol, lifetime/error/callback/unwind and actor revocation; no positive claim until source compiles and runs.
+- Java/GraalVM Native Image, LLVM AOT, Forge/.NET/WASM negative-first parity, executable source fixtures, private CI runner admission, and sanitizers where native memory is involved.
+- An executed Python contract test is only a reference-model check, never a substitute for Oreslang guest compiler, linker or runtime tests.
