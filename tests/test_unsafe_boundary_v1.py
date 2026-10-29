@@ -30,7 +30,7 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
 
     def test_nonvacuous_positive_and_negative_scenarios(self):
         cases = self.contract["cases"]
-        self.assertEqual(len(cases), 68)
+        self.assertEqual(len(cases), 73)
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
         expected = {case["expected"] for case in cases}
@@ -106,7 +106,12 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
                 "legacy-std-unsafe-path-fallback",
                 "vm-isolate-forged-ffi-call",
                 "untrusted-actor-ffi-result-pointer",
-                "vm-isolate-raw-capability-hidden-in-any"):
+                "vm-isolate-raw-capability-hidden-in-any",
+                "unsafe-stdlib-dot-segment-alias",
+                "unsafe-stdlib-parent-segment-alias",
+                "unsafe-stdlib-duplicate-separator",
+                "unsafe-stdlib-escaped-import-string",
+                "unsafe-stdlib-escape-from-namespace-root"):
             self.assertEqual(cases[case_id]["expected"], "reject", case_id)
         self.assertIn("all VM-isolates", self.doc)
         self.assertIn("native host", self.doc)
