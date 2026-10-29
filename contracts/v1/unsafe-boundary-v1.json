@@ -821,6 +821,39 @@
       "forge": "pending",
       "wasm": "pending",
       "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-relative-dot-prefix",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "Relative ./std/unsafe/ffi or ./ores.std/unsafe/native canonicalizes into a compiler-owned unsafe namespace and must be rejected",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-relative-parent-prefix",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "Relative ../std/unsafe or ../ores.std/unsafe cannot escape guest unsafe admission by leading parent traversal",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-relative-graph-erase",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "A user path like pkg/../std/unsafe/ffi must be rejected before source graph resolution strips intermediate segments",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
     }
   ]
 }
