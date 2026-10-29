@@ -1,0 +1,9 @@
+# PROPOSED manifest v2. Package alias resolution is supplied by the fixture graph.
+schema_version = "2"
+[project]
+name = "consumer"
+root = "."
+[source]
+roots = ["src"]
+[packages.consumer]
+files = ["src/main.ores"]

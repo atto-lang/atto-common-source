@@ -1,0 +1,3 @@
+define pub module data as
+  pub[pkg] fnc store(int arg0): int { return arg0; }
+end

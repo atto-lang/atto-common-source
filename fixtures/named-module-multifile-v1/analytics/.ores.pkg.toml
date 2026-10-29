@@ -1,0 +1,23 @@
+# PROPOSED manifest v2. Not yet runnable with all backends.
+schema_version = "2"
+
+[project]
+name = "analytics"
+root = "."
+
+[source]
+roots = ["src"]
+
+[packages.analytics]
+files = [
+  "src/data/models.ores",
+  "src/data/queries.ores",
+  "src/data/storage.ores",
+  "src/data/validation.ores",
+  "src/compute/math.ores",
+  "src/compute/stats.ores",
+  "src/compute/aggregation.ores",
+  "src/api/routes.ores",
+  "src/api/handlers.ores",
+  "src/api/responses.ores",
+]

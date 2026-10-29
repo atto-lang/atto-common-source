@@ -1,0 +1,7 @@
+// 'analytics' is a pinned package alias supplied by the verified package graph.
+// This proposed pkg: selector is not yet implemented on all backends.
+import module compute from "pkg:analytics";
+
+pub fnc main(): int {
+  return compute.aggregate(compute.double(compute.add(20, 1)));
+}

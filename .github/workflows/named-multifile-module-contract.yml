@@ -4,6 +4,8 @@ on:
     paths:
       - 'contracts/named-module-multifile-js-v1.json'
       - 'tests/named-module-multifile-js-v1.test.mjs'
+      - 'tests/named-module-sources.test.mjs'
+      - 'fixtures/named-module-multifile-v1/**'
       - 'docs/NAMED_MODULE_MULTIFILE_JS_V1.md'
       - '.github/workflows/named-multifile-module-contract.yml'
   workflow_dispatch:
@@ -19,5 +21,5 @@ jobs:
           persist-credentials: false
       - name: Node runtime
         run: node --version
-      - name: Execute 17 namespace reference-model checks
-        run: node --test tests/named-module-multifile-js-v1.test.mjs
+      - name: Execute reference-model and fixture-consistency checks
+        run: node --test tests/named-module-multifile-js-v1.test.mjs tests/named-module-sources.test.mjs

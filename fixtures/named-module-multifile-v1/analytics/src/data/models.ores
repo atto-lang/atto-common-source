@@ -1,0 +1,5 @@
+namespace v1;
+
+define pub module data as
+  pub fnc model(): int { return 1; }
+end

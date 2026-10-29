@@ -1,0 +1,3 @@
+define pub module api as
+  pub fnc response(int arg0): int { return arg0; }
+end
