@@ -126,3 +126,21 @@ Actions failures and source-text/Node reference tests are
 **Future work**: scheduler-enforced concurrent reader admission, writer
 fairness, storage-fenced critical transitions, explicit read-only
 composite projections and independent five-backend runtime conformance.
+
+## Exact-source conformance fixtures
+
+Eight canonical Oreslang fixtures and their source Git blob hashes are
+recorded in [the conformance manifest](../contracts/v1/actor-critical-modes/manifest.json).
+The manifest intentionally declares `draft_not_executed`; expected
+pass/reject outcomes are specifications until a real backend compiler
+and guest executor report results.
+
+The Java/Graal source compiler draft PR #2245 copies the eight fixture
+blobs byte-for-byte into `src/test/resources/parity/actor-critical-modes/`,
+registers `ActorCriticalModeConformanceTest`, and requires a combined
+**36** native JUnit test cases via a pinned GraalVM workflow.
+
+The compiler represents these modes with a dedicated
+`Ast.CriticalStateModeExpr` and closed enum, rather than a forgeable
+guest string. Bare guest string `"critical:write"` may not
+authorize an AST state-loan selector.
