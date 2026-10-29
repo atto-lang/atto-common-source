@@ -30,7 +30,7 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
 
     def test_nonvacuous_positive_and_negative_scenarios(self):
         cases = self.contract["cases"]
-        self.assertEqual(len(cases), 73)
+        self.assertEqual(len(cases), 76)
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
         expected = {case["expected"] for case in cases}
@@ -111,7 +111,10 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
                 "unsafe-stdlib-parent-segment-alias",
                 "unsafe-stdlib-duplicate-separator",
                 "unsafe-stdlib-escaped-import-string",
-                "unsafe-stdlib-escape-from-namespace-root"):
+                "unsafe-stdlib-escape-from-namespace-root",
+                "unsafe-stdlib-relative-dot-prefix",
+                "unsafe-stdlib-relative-parent-prefix",
+                "unsafe-stdlib-relative-graph-erase"):
             self.assertEqual(cases[case_id]["expected"], "reject", case_id)
         self.assertIn("all VM-isolates", self.doc)
         self.assertIn("native host", self.doc)
