@@ -14,7 +14,10 @@
     "hot_reload_reruns_init": false,
     "durable_restore_reruns_init": false,
     "implicit_future_or_option_flattening": false,
-    "per_tenant_authority_required": true
+    "per_tenant_authority_required": true,
+    "init_on_start_coexistence_allowed": false,
+    "dependency_binding_kind": "val",
+    "mutable_business_state_binding_kind": "let"
   },
   "defaults": {
     "actor_constructor": false,
@@ -60,7 +63,9 @@
     "ambient_resolution": false,
     "mutation_via_sealed_write": true,
     "hard_rt": false,
-    "init_bounded": true
+    "init_bounded": true,
+    "has_on_start": false,
+    "rebind_immutable_dependency": false
   },
   "cases": [
     {
@@ -413,6 +418,20 @@
       "overrides": {
         "hard_rt": true,
         "init_bounded": false
+      }
+    },
+    {
+      "id": "init-and-on-start-compete",
+      "expected": "reject",
+      "overrides": {
+        "has_on_start": true
+      }
+    },
+    {
+      "id": "immutable-dependency-rebind",
+      "expected": "reject",
+      "overrides": {
+        "rebind_immutable_dependency": true
       }
     }
   ],
