@@ -8,6 +8,8 @@
 - Explicit arguments to `spawn Actor(...)` supply dependency **values**. They bind by name/position under ordinary Oreslang call rules to exactly one special `init(...)` hook declared in that actor. They do **not** call an actor constructor; constructors for actors remain forbidden.
 - `init` is a **reserved actor lifecycle entrypoint**, not a user-callable method or an actor message. It runs once during a *new* incarnation, after the runtime reserves an actor-owned arena and validates dependencies, but before the `ActorRef` is published and before a mailbox, handler or task can enter guest code.
 - The actor retains its single compiler-owned `state { ... }` schema. **All actor-instance fields, including dependency references and mutable workflow data, live in this state schema.** There is no parallel injected-field store. Initial construction of the complete state value is different from later state mutation; **every later state mutation uses sealed `handle_state(critical[write] ...)`**. A read uses `critical[read]` where required.
+- An actor using `init` MUST NOT also declare the legacy `on_start` startup hook in v1; that would establish competing initialization and effect ordering. Existing actors without `init` may retain `on_start` on supported backends while they migrate. A later post-init lifecycle callback must be specified separately rather than implicitly reusing `on_start`.
+- Dependency state keys are declared immutable using `val`, whereas mutable business state uses `let`; the compiler must reject an attempt to rebind an injected `val` key from any handler. There is no separate dependency field store.
 - No `@Inject`, runtime reflection, service locator, implicit global dependency registry, ambient I/O provider, class constructor, or new `inject` keyword. A composition root can be an ordinary Oreslang function or a library-provided typed actor-graph builder.
 
 ## Illustrative source grammar — not compiler-verified
@@ -21,9 +23,9 @@ import module payments
 
 define isolated actor OrderActor as
     state {
-        store: ActorRef<TenantStore>;
-        gateway: ActorRef<PaymentGateway>;
-        phase: OrderPhase;
+        val ActorRef<TenantStore> store;
+        val ActorRef<PaymentGateway> gateway;
+        let OrderPhase phase;
     }
 
     init(store: ActorRef<TenantStore>,
