@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "status": "draft_not_executed",
+  "language": "Oreslang",
+  "semantics": "critical[read]/critical[write] lexical synchronous void state loans",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "wasm",
+    "forge"
+  ],
+  "cases": [
+    {
+      "id": "write_then_read",
+      "source": "contracts/v1/actor-critical-modes/fixtures/write_then_read.ores",
+      "git_blob_sha": "eb6e15e2670bd003d8106645faf053b82ab53c26",
+      "expected": "run_stdout",
+      "stdout": "critical-modes-ok"
+    },
+    {
+      "id": "reject_read_mutation",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_read_mutation.ores",
+      "git_blob_sha": "66d9f1509bdf09fd5dd88be044c546ecd7b34eb9",
+      "expected": "compile_reject",
+      "diagnostic_category": "readonly"
+    },
+    {
+      "id": "reject_read_mutable_reborrow",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_read_mutable_reborrow.ores",
+      "git_blob_sha": "ca96beecca803cecaa499a2d980334c5438cab5f",
+      "expected": "compile_reject",
+      "diagnostic_category": "borrow"
+    },
+    {
+      "id": "reject_unknown_mode",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_unknown_mode.ores",
+      "git_blob_sha": "c003d3002841e644462c956a1ec96fdd3fe95d39",
+      "expected": "compile_reject",
+      "diagnostic_category": "mode"
+    },
+    {
+      "id": "reject_string_forged_write_mode",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_string_forged_write_mode.ores",
+      "git_blob_sha": "0ab217e3edf944a510659e9ea0e765ffecf5e67f",
+      "expected": "compile_reject",
+      "diagnostic_category": "mode"
+    },
+    {
+      "id": "reject_await_in_write",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_await_in_write.ores",
+      "git_blob_sha": "12c24fa550bfadb1cbc55ee4e6de25308509cc41",
+      "expected": "compile_reject",
+      "diagnostic_category": "effect"
+    },
+    {
+      "id": "reject_state_escape",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_state_escape.ores",
+      "git_blob_sha": "64bf6871b8d222854bce9e2343250923415f50af",
+      "expected": "compile_reject",
+      "diagnostic_category": "lifetime"
+    },
+    {
+      "id": "reject_direct_state_access",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_direct_state_access.ores",
+      "git_blob_sha": "9754b8df89d7eee4cbf99ff6346b8225c5baa74f",
+      "expected": "compile_reject",
+      "diagnostic_category": "sealed"
+    }
+  ]
+}
