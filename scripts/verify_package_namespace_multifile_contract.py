@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import tomllib
 from pathlib import Path
 import sys
 
@@ -109,6 +110,38 @@ def apply_mutation(package: dict, scenario: dict) -> None:
         raise ContractError("unknown-mutation-kind")
 
 
+def verify_source_fixtures(data: dict) -> int:
+    """Check real source fixtures have not drifted from the source-free vector.
+
+    This only inspects UTF-8 files and a TOML manifest; it does NOT parse,
+    compile, link, typecheck or execute Oreslang.
+    """
+    directory = CONTRACT.parent.parent / "fixtures" / "package-namespaces-multifile-v1"
+    with (directory / "checkout" / ".ores.pkg.toml").open("rb") as stream:
+        manifest = tomllib.load(stream)
+    assert manifest["schema_version"] == "2"
+    checkout = next(p for p in data["packages"] if p["id"] == "checkout@sha256:alpha")
+    listed = manifest["packages"]["checkout"]["files"]
+    expected = [source["path"] for source in checkout["files"]]
+    assert len(listed) == len(set(listed)) == 10, "duplicate or missing manifest membership"
+    assert sorted(listed) == sorted(expected), "manifest and source corpus disagree"
+    checks = 0
+    for source in checkout["files"]:
+        path = directory / "checkout" / source["path"]
+        body = path.read_text(encoding="utf-8")
+        assert body.splitlines()[0] == source["header"], source["path"]
+        for symbol in source["exports"]:
+            assert "fnc " + symbol["name"] + "(" in body, (
+                source["path"], symbol["name"])
+        checks += 1
+    within = (directory / "checkout/src/identity/accounts.ores").read_text(encoding="utf-8")
+    outside = (directory / "client/src/main.ores").read_text(encoding="utf-8")
+    assert 'import namespace billing from "+/";' in within
+    assert 'import namespace billing as payments from "checkout";' in outside
+    assert "billing.balance()" in within and "payments.balance()" in outside
+    return checks + 2
+
+
 def main() -> int:
     data = json.loads(CONTRACT.read_text(encoding="utf-8"))
     assert data["contract_version"] == "oreslang.package-namespace-multifile.v1"
@@ -145,7 +178,8 @@ def main() -> int:
             raise AssertionError(f"{case['id']}: failed to reject invalid package")
         cases += 1
 
-    print(f"PASS: {cases} package-namespace source-free reference assertions")
+    fixture_checks = verify_source_fixtures(data)
+    print(f"PASS: {cases} namespace reference cases and {fixture_checks} source fixture consistency checks")
     print("NOT compiler/linker/runtime/LLVM/.NET/Wasm execution evidence")
     return 0
 
