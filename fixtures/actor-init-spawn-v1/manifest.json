@@ -6,7 +6,7 @@
     {
       "id": "positive-named-spawn",
       "path": "positive-named-spawn.ores",
-      "blob_sha": "7d6f9b2bc6a11117aff299f500d4596aba4a8169",
+      "blob_sha": "547f6fefe208d4617494ec775be57a368092266a",
       "expected": "accept",
       "reason": "name-bound complete state init",
       "evidence": "NOT_EXECUTED"
