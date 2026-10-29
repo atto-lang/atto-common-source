@@ -1,3 +1,0 @@
-define pub module data as
-  pub fnc validate(int arg0): int { return arg0; }
-end

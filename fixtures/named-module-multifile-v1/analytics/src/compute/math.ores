@@ -1,5 +1,0 @@
-namespace different_header;
-
-define pub module compute as
-  pub fnc add(int arg0, int arg1): int { return arg0 + arg1; }
-end

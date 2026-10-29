@@ -1,14 +1,11 @@
-# PROPOSED manifest v2. Not yet runnable with all backends.
+# PROPOSED schema v2; no registry lock file is invented by this fixture.
 schema_version = "2"
-
 [project]
-name = "analytics"
+name = "foo"
 root = "."
-
 [source]
 roots = ["src"]
-
-[packages.analytics]
+[packages.foo]
 files = [
   "src/data/models.ores",
   "src/data/queries.ores",
