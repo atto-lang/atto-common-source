@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 
 // SOURCE-FREE MODEL ONLY: not an Oreslang parser, compiler, or actor runtime.
 const contract = JSON.parse(readFileSync(
@@ -119,4 +120,31 @@ test('forbidden init effects fail without running a guest actor', () => {
   for (const effect of ['suspend', 'io', 'send', 'spawn', 'handle_state', 'self_escape']) {
     assert.equal(admit({init_effect: effect}), 'reject', effect);
   }
+});
+
+test('design-target .ores manifest pins exact Git blobs without claiming guest execution', () => {
+  const manifest = JSON.parse(readFileSync(
+    new URL('../fixtures/actor-init-spawn-v1/manifest.json', import.meta.url),
+    'utf8'
+  ));
+  assert.equal(manifest.schema, 'oreslang.actor-init-guest-fixtures.v1');
+  assert.equal(manifest.status, 'DESIGN_TARGET_NOT_EXECUTED');
+  const seen = new Set();
+  for (const row of manifest.cases) {
+    assert.match(row.path, /^[a-z][a-z0-9-]+\\.ores$/);
+    assert.ok(!seen.has(row.path), row.path);
+    seen.add(row.path);
+    assert.ok(['accept', 'reject'].includes(row.expected), row.path);
+    assert.equal(row.evidence, 'NOT_EXECUTED', row.path);
+    const bytes = readFileSync(
+      new URL('../fixtures/actor-init-spawn-v1/' + row.path, import.meta.url)
+    );
+    const hash = createHash('sha1')
+      .update(Buffer.from('blob ' + bytes.length + '\\0'))
+      .update(bytes)
+      .digest('hex');
+    assert.equal(hash, row.blob_sha, 'exact-source blob mismatch: ' + row.path);
+  }
+  assert.equal(seen.size, 6);
+  assert.equal(manifest.cases.filter(row => row.expected === 'accept').length, 1);
 });
