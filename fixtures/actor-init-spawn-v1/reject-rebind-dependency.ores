@@ -23,7 +23,7 @@ define isolated actor OrderActor as
 
     pub begin_order(): void {
         self.handle_state(critical[write] |s| -> {
-            s.store = self.store;
+            s.store = s.store;
             s.phase = 1;
         });
     }
