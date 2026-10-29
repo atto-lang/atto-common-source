@@ -766,6 +766,61 @@
       "forge": "pending",
       "wasm": "pending",
       "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-dot-segment-alias",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "stdlib import std/./unsafe/ffi must be rejected before later resolution normalization",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-parent-segment-alias",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "stdlib import std/service/../unsafe/native cannot launder unsafe namespace",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-duplicate-separator",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "stdlib import ores.std//unsafe/memory is reserved even with redundant path separator",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-escaped-import-string",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "escaped quoted module paths that could decode to unsafe must fail closed before external compiler",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
+    },
+    {
+      "id": "unsafe-stdlib-escape-from-namespace-root",
+      "expected": "reject",
+      "kind": "resolution",
+      "reason": "parent traversal escaping the stdlib namespace cannot become a guest import",
+      "java": "pending",
+      "llvm": "pending",
+      "forge": "pending",
+      "wasm": "pending",
+      "net": "pending"
     }
   ]
 }
