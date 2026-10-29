@@ -21,6 +21,8 @@ function sameUniqueNames(provided, required) {
 function admit(overrides) {
   const a = {...contract.defaults, ...overrides};
   if (a.actor_constructor || a.actor_external_init || ![0, 1].includes(a.init_count)) return 'reject';
+  if (a.init_count === 1 && a.has_on_start) return 'reject';
+  if (a.rebind_immutable_dependency) return 'reject';
   if (!a.arg_types_match || a.implicit_conversion || !a.dep_generation_valid ||
       !a.dep_tenant_authorized || !a.dep_cross_isolate_brokered ||
       !a.deps_capability_authorized || !a.deps_ownership_safe) return 'reject';
@@ -93,6 +95,14 @@ test('actor state retains dependencies and later writes require sealed critical 
   assert.equal(admit({mutation_via_sealed_write: false}), 'reject');
   assert.equal(admit({state_return_keys: ['store', 'gateway']}), 'reject');
   assert.equal(admit({state_return_keys: ['store', 'store', 'gateway', 'phase']}), 'reject');
+});
+
+test('init cannot coexist with on_start or rebind an immutable dependency', () => {
+  assert.equal(contract.design.init_on_start_coexistence_allowed, false);
+  assert.equal(contract.design.dependency_binding_kind, 'val');
+  assert.equal(contract.design.mutable_business_state_binding_kind, 'let');
+  assert.equal(admit({has_on_start: true}), 'reject');
+  assert.equal(admit({rebind_immutable_dependency: true}), 'reject');
 });
 
 test('authorization, ownership, capabilities and graph budget fail closed', () => {
