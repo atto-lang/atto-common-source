@@ -32,6 +32,5 @@ pub async routine main(): void {
     val store = await spawn TenantStore();
     val gateway = await spawn PaymentGateway();
     val orders = await spawn OrderActor(store: store, payment: gateway);
-    orders.begin_order();
     return;
 }
