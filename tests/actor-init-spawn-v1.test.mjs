@@ -131,7 +131,7 @@ test('design-target .ores manifest pins exact Git blobs without claiming guest e
   assert.equal(manifest.status, 'DESIGN_TARGET_NOT_EXECUTED');
   const seen = new Set();
   for (const row of manifest.cases) {
-    assert.match(row.path, /^[a-z][a-z0-9-]+\\.ores$/);
+    assert.match(row.path, /^[a-z][a-z0-9-]+\.ores$/);
     assert.ok(!seen.has(row.path), row.path);
     seen.add(row.path);
     assert.ok(['accept', 'reject'].includes(row.expected), row.path);
@@ -140,7 +140,7 @@ test('design-target .ores manifest pins exact Git blobs without claiming guest e
       new URL('../fixtures/actor-init-spawn-v1/' + row.path, import.meta.url)
     );
     const hash = createHash('sha1')
-      .update(Buffer.from('blob ' + bytes.length + '\\0'))
+      .update(Buffer.from('blob ' + bytes.length + '\0'))
       .update(bytes)
       .digest('hex');
     assert.equal(hash, row.blob_sha, 'exact-source blob mismatch: ' + row.path);
