@@ -209,3 +209,17 @@ test("same-file visibility requires source and package identity; caller cannot s
   assert.deepEqual(selected(spec,"consumer@sha:2222","analytics","compute","m7"),
     ["add","aggregate","double"]);
 });
+
+test("one physical source file may contribute to two distinct module namespaces", () => {
+  const changed=mutateFile("m5",f=>{
+    f.modules.push({name:"data",scope:"public",members:[
+      {name:"math_metadata",kind:"fnc",arity:0,scope:"public"}
+    ]});
+  });
+  const graph=compileGraph(changed);
+  assert.equal(graph.modules.get("analytics@sha:1111\0data").fileIds.size,5);
+  assert.equal(graph.modules.get("analytics@sha:1111\0compute").fileIds.size,3);
+  assert.deepEqual(selected(changed,"consumer@sha:2222","analytics","compute"),["add","aggregate","double"]);
+  assert.deepEqual(selected(changed,"consumer@sha:2222","analytics","data"),
+    ["lookup","math_metadata","model","validate"]);
+});
