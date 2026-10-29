@@ -113,7 +113,7 @@ Actions failures and source-text/Node reference tests are
 - Java/Graal draft PR
   [#2245](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2245)
   contains parser/typechecker/guest-view support with read-only scalar
-  runtime view and eight targeted regression tests; it is not yet
+  runtime view and ten targeted regression tests; it is not yet
   exact-head Maven/Graal executed.
 - Step-function coordinator demo draft PR
   [#10](https://github.com/ores-truffle-oreslang/oreslang-step-function-demo/pull/10)
