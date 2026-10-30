@@ -93,3 +93,39 @@ test('refuses missing thread participation and fake source hashes', () => {
   badSha.source_sha = 'unverified';
   assert.throws(() => verifyStateRegionTrace(badSha), /INVALID_SOURCE_SHA/);
 });
+test('rejects physical double release of an already retired ticket', () => {
+  const bad = insert(positive(3),
+    e => e.op === 'release' && e.ticket === 'r0',
+    { op: 'release', ticket: 'r0', execution: 'e0', execution_generation: 1 });
+  assert.throws(() => verifyStateRegionTrace(bad), /INVALID_OR_DOUBLE_RELEASE/);
+});
+test('rejects duplicate ticket identifiers even before original grant', () => {
+  const bad = insert(positive(3),
+    e => e.op === 'request' && e.ticket === 'r0',
+    { op: 'request', ticket: 'r0', domain: 'd', actor_generation: 1,
+      execution: 'impostor', execution_generation: 1,
+      carrier: 'thread-0', mode: 'read' });
+  assert.throws(() => verifyStateRegionTrace(bad), /DUPLICATE_TICKET/);
+});
+test('rejects reentry after domain retirement', () => {
+  const bad = insert(positive(3), e => e.op === 'retire',
+    { op: 'request', ticket: 'resurrected', domain: 'd', actor_generation: 1,
+      execution: 'new', execution_generation: 1,
+      carrier: 'thread-0', mode: 'read' });
+  assert.throws(() => verifyStateRegionTrace(bad), /REQUEST_AFTER_RETIREMENT/);
+});
+test('rejects a grant after logical retirement', () => {
+  const bad = insert(positive(3),
+    e => e.op === 'release' && e.ticket === 'r2',
+    { op: 'retire', domain: 'd', actor_generation: 1 });
+  assert.throws(() => verifyStateRegionTrace(bad), /INVALID_GRANT/);
+});
+test('rejects forged actor incarnation or cancellation after a grant', () => {
+  const stale = replace(positive(3),
+    e => e.op === 'access' && e.ticket === 'r0', { actor_generation: 99 });
+  assert.throws(() => verifyStateRegionTrace(stale), /FOREIGN_OR_STALE_EXECUTION/);
+  const cancelledActive = insert(positive(3),
+    e => e.op === 'grant' && e.ticket === 'r0',
+    { op: 'cancel', ticket: 'r0' });
+  assert.throws(() => verifyStateRegionTrace(cancelledActive), /INVALID_CANCELLATION/);
+});
