@@ -28,7 +28,7 @@ Canonical Oreslang source spellings are lowercase `bigint`, `decimal`, `float`/`
 - Cross-type comparisons must be exact; never convert bigint to float to compare. Explicit lossless conversion gates and checked narrowing. bigint -> float requires explicit conversion/rounding acknowledgement.
 - Define quotas for bits, operands, output size and CPU work; enforce before catastrophic allocation. Power, shifts, parsing, format and serialization must be bounded and cancellation/cooperation-aware. Constant-time guarantees are NOT implied.
 - Hard-real-time regions may use bigint only when a statically/provably bounded maximum bit width and operation budget are attached to the value/profile. Unbounded bigint is rejected from hard-RT certification rather than pretending arbitrary-precision latency is bounded.
-- Limb storage is an implementation detail; observable behavior must not depend on Java biginteger, .NET biginteger, GMP/Boost, JavaScript bigint, or another host library. Those libraries may serve as independent test oracles, not as the normative specification.
+- Limb storage is an implementation detail; observable behavior must not depend on Java `BigInteger`, .NET `BigInteger`, GMP/Boost, JavaScript `BigInt`, or another host library. Those libraries may serve as independent test oracles, not as the normative specification.
 - Each mutable internal limb buffer has clear actor ownership/arena lifetime and never aliases across isolates; passing bigint between actors uses immutable/copy/take/share rules. Validate resource-lifetime behavior on LLVM and near-zero-GC arena paths in Java.
 
 ## Floating point versus decimal precision
@@ -38,8 +38,8 @@ Canonical Oreslang source spellings are lowercase `bigint`, `decimal`, `float`/`
 - Provide `Math.is_nan`, `Math.is_finite`, `Math.is_infinite`, `Math.signbit`, `Math.next_after`, and `Math.ulp` where supported with cross-target tests.
 - Define `Math.approx_eq(a,b,abs_tol,rel_tol)` using both absolute and relative tolerance and explicit handling of NaNs and infinities; caller chooses tolerances. No universal epsilon.
 - Decimal division that is non-terminating (e.g. 1/3) requires an explicit precision/rounding context or yields a typed nonterminating-expansion error. Default context and scale normalization must be specified before enabling implicit decimal division.
-- `DecimalContext` includes at least precision, rounding mode, and bounded result-scale/digit policy. Hard-real-time use requires all of these bounds to be statically/profile bounded; otherwise Decimal is excluded from hard-RT certification.
-- `float` is never a synonym for Decimal or arbitrary precision. `0.1 + 0.2` therefore follows binary64 behavior; exact decimal source requires an explicit Decimal literal/construction syntax once that type is admitted.
+- `DecimalContext` includes at least precision, rounding mode, and bounded result-scale/digit policy. Hard-real-time use requires all of these bounds to be statically/profile bounded; otherwise `decimal` is excluded from hard-RT certification.
+- `float` is never a synonym for `decimal` or arbitrary precision. `0.1 + 0.2` therefore follows binary64 behavior; exact decimal source requires an explicit `decimal` literal/construction syntax once that type is admitted.
 - Transcendentals (`sin`, `cos`, `log`, `exp`) require documented accuracy and backend evidence; do not promise bitwise parity from different host libm libraries.
 
 ## Required parity fixtures (shared registry)
@@ -49,7 +49,7 @@ Canonical Oreslang source spellings are lowercase `bigint`, `decimal`, `float`/`
 4. Exact bigint 2^64, 2^127, 2^1024; negative values and zero canonicalization; parse/print roundtrip.
 5. bigint division/remainder with all sign combinations; division by zero; checked narrowing.
 6. bigint->f64 explicit precision loss near 2^53; exact mixed bigint comparisons.
-7. Decimal 0.1 + 0.2 = 0.3, 1/3 without context, 1/3 with explicit context, trailing zero/scale and tie-breaking.
+7. decimal 0.1 + 0.2 = 0.3, 1/3 without context, 1/3 with explicit context, trailing zero/scale and tie-breaking.
 8. Negative zero and NaN under comparisons, serialization, optimizer constant folding, AOT, JIT.
 9. Property fuzz: abs(x) >= 0 when representable; neg(neg(x)) == x except MIN in checked mode; bigint a == q*b+r; decimal exact-integer agreement.
 10. Limits: huge exponent/shift, parse bomb, actor cancellation, arena teardown and memory quota; ensure typed errors.
@@ -65,5 +65,5 @@ Canonical Oreslang source spellings are lowercase `bigint`, `decimal`, `float`/`
 ## Open design questions
 - Exact Oreslang spellings for fixed-width, decimal and the typed error class.
 - Whether checked operations use `throw` or `raise` by default; `*_checked` Result methods should not throw.
-- Decimal default context and whether a separate Decimal128 type is warranted.
+- `decimal` default context and whether a separate Decimal128 type is warranted.
 - Required float strictness/permitted host-libm tolerance per target.
