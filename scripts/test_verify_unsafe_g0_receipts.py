@@ -68,6 +68,24 @@ class FailClosedReceiptGate(unittest.TestCase):
     def test_structurally_consistent_fake_records_still_not_attestation(self):
         self.assertEqual(verify(self.contract, self.raw, self.receipt), (5, 15))
 
+    def test_real_contract_inventory_remains_76_with_71_g0_obligations(self):
+        from verify_unsafe_g0_receipts import verify_contract
+        contract_path = Path(__file__).resolve().parents[1] / "contracts/v1/unsafe-boundary-v1.json"
+        if not contract_path.exists():
+            self.skipTest("real common-source contract not staged with local smoke-test")
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+        self.assertEqual(len(contract["cases"]), 76)
+        expected = verify_contract(contract)
+        self.assertEqual(len(expected), 71)
+        self.assertEqual(sum(value == "reject" for value in expected.values()), 63)
+
+    def test_duplicate_g2_contract_case_fails_closed(self):
+        from verify_unsafe_g0_receipts import verify_contract
+        contract = copy.deepcopy(self.contract)
+        contract["cases"].append(contract["cases"][-1].copy())
+        with self.assertRaises(GateError):
+            verify_contract(contract)
+
     def test_zero_step(self):
         self.reject(lambda x: x["profiles"][0]["job"].update(steps=[]))
 
