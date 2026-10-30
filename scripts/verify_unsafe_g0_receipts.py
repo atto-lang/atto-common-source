@@ -72,10 +72,12 @@ def verify_contract(contract: dict) -> dict[str, str]:
     cases = contract.get("cases")
     require(type(cases) is list and cases, "missing contract cases")
     expected = {}
+    seen_ids = set()
     for case in cases:
         require(type(case) is dict and type(case.get("id")) is str, "invalid case")
         key = case["id"]
-        require(key not in expected and key, "duplicate or empty case ID")
+        require(key not in seen_ids and key, "duplicate or empty case ID")
+        seen_ids.add(key)
         value = case.get("expected")
         require(value in ("accept", "reject", "accept_after_g2"), "unknown case expectation")
         if value != "accept_after_g2":
