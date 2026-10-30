@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "oreslang.numeric-backend-status.v1",
+  "status": "evidence-ledger-not-semantic-contract",
+  "rule": "Only exact-head real compiler/runtime execution may set verified_compiled=true. Host/reference models and zero-step workflows never do.",
+  "backends": {
+    "java": {
+      "math_i64": "staged_checked_guest",
+      "float_f64": "staged_binary64_guest",
+      "f32": "fail_closed",
+      "bigint": "reference_class_only",
+      "decimal": "reference_class_only",
+      "strict_conversions": "tracked_java_issue_2194_not_complete",
+      "overflow_error_abi": "host_marker_provisional",
+      "verified_compiled": false
+    },
+    "llvm": {
+      "math_i64": "staged_checked_ast_ir_native",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "tracked_llvm_issue_1111_not_complete",
+      "overflow_error_abi": "native_trap_provisional",
+      "verified_compiled": false
+    },
+    "wasm": {
+      "math_i64": "staged_real_llvm_compiler_gate",
+      "float_f64": "not_claimed",
+      "f32": "not_claimed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "depends_on_pinned_llvm_frontend",
+      "overflow_error_abi": "wasm_trap_provisional",
+      "verified_compiled": false
+    },
+    "net": {
+      "math_i64": "staged_verified_oresir_cil",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "tracked_net_issue_272",
+      "overflow_error_abi": "clr_overflow_exception_provisional",
+      "verified_compiled": false
+    },
+    "forge": {
+      "math_i64": "staged_checked_ir_interpreter_native_codegen",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "tracked_forge_issue_155",
+      "overflow_error_abi": "native_trap_provisional",
+      "verified_compiled": false
+    }
+  },
+  "blockers": [
+    "typed guest ArithmeticOverflowError/effect propagation",
+    "strict explicit-only numeric conversions on every backend",
+    "distinct f32 representation where claimed",
+    "source primitive bigint and decimal representations across all five backends",
+    "exact-head stepful compiler/runtime/AOT evidence"
+  ]
+}
