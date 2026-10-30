@@ -23,6 +23,8 @@ jobs:
           persist-credentials: false
       - name: Python contract tests still awaiting Rust migration
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Unsafe G0 receipt rejection and provenance harness (non-certifying)
+        run: python3 -m unittest discover -s scripts -p 'test_verify_unsafe_g0_receipts.py' -v
       - name: Compile remaining Python contract tools
         run: python3 -m py_compile scripts/*.py
       - name: Verify String/CString ABI v1 reference contract
