@@ -26,8 +26,8 @@
     },
     "wasm": {
       "math_i64": "staged_real_llvm_compiler_gate",
-      "float_f64": "not_claimed",
-      "f32": "not_claimed",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "depends_on_pinned_llvm_frontend",
@@ -60,6 +60,7 @@
     "strict explicit-only numeric conversions on every backend",
     "distinct f32 representation where claimed",
     "source primitive bigint and decimal representations across all five backends",
-    "exact-head stepful compiler/runtime/AOT evidence"
+    "exact-head stepful compiler/runtime/AOT evidence",
+    "independently bound source-to-compiler-binary provenance for cross-backend carrier evidence"
   ]
 }
