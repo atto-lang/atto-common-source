@@ -103,22 +103,32 @@ test("decimal HALF_EVEN context vectors are deterministic",()=>{
   }
 });
 
+function f64Rational(value){
+  const b=new ArrayBuffer(8),v=new DataView(b);v.setFloat64(0,value,false);
+  const raw=v.getBigUint64(0,false);
+  const sign=(raw>>63n)===0n?1n:-1n;
+  const exp=Number((raw>>52n)&0x7ffn), frac=raw&((1n<<52n)-1n);
+  if(exp===0x7ff) throw new Error("non-finite f64");
+  if(exp===0){
+    if(frac===0n)return {num:0n,den:1n};
+    return {num:sign*frac,den:1n<<1074n};
+  }
+  const sig=(1n<<52n)|frac, e2=exp-1023-52;
+  return e2>=0
+    ? {num:sign*sig*(1n<<BigInt(e2)),den:1n}
+    : {num:sign*sig,den:1n<<BigInt(-e2)};
+}
 test("decimal to-f64 contract distinguishes exact from nearest",()=>{
   const bits=value=>{const b=new ArrayBuffer(8),v=new DataView(b);v.setFloat64(0,value,false);return v.getBigUint64(0,false).toString(16).padStart(16,"0");};
   for(const item of contract.conversion_cases){
     const d=parseDecimal(item.operand);
     const n=Number(item.operand);
-    const [num,den]=[d.coeff,pow10(d.scale)];
     if(item.operation==="to_f64_nearest"){
       assert.equal(bits(n),item.expect_bits,item.id);
       continue;
     }
-    const asText=n.toString();
-    const roundTrip=parseDecimal(asText.includes("e")||asText.includes("E")
-      ? n.toLocaleString("en-US",{useGrouping:false,maximumSignificantDigits:21})
-      : asText);
-    const [a,b,scale]=align(d,roundTrip);
-    const exact=a===b;
+    const binary=f64Rational(n);
+    const exact=d.coeff*binary.den===binary.num*pow10(d.scale);
     if(item.error) assert.equal(exact,false,item.id);
     else {
       assert.equal(exact,true,item.id);
