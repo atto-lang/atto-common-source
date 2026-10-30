@@ -50,24 +50,40 @@ function roundHalfEven(value,precision){
   let coeff=value.coeff;
   const sign=coeff<0n?-1n:1n;
   let mag=coeff<0n?-coeff:coeff;
+  if(mag===0n)return value;
   const digits=mag.toString().length;
   if(digits<=precision)return value;
   const drop=digits-precision, divisor=pow10(drop);
   let q=mag/divisor, r=mag%divisor;
   const twice=r*2n;
   if(twice>divisor || (twice===divisor && q%2n===1n)) q++;
-  return {coeff:q*sign,scale:Math.max(0,value.scale-drop)};
+  const newScale=value.scale-drop;
+  if(newScale>=0)return {coeff:q*sign,scale:newScale};
+  return {coeff:q*pow10(-newScale)*sign,scale:0};
+}
+function decimalExponent(num,den){
+  let e=num.toString().length-den.toString().length;
+  if(e>=0){
+    if(num<den*pow10(e)) e--;
+  }else{
+    if(num*pow10(-e)<den) e--;
+  }
+  return e;
 }
 function divideWithPrecision(a,b,precision){
   if(b.coeff===0n)return {error:"DIVISOR_ZERO"};
   let num=a.coeff*pow10(b.scale),den=b.coeff*pow10(a.scale);
   const neg=(num<0n)!==(den<0n);if(num<0n)num=-num;if(den<0n)den=-den;
-  // This contract vector is < 1; generate precision significant fractional digits.
-  const scaled=num*pow10(precision);
-  let q=scaled/den,r=scaled%den;
-  if(r*2n>den || (r*2n===den && q%2n===1n))q++;
+  if(num===0n)return {coeff:0n,scale:0};
+  const exponent=decimalExponent(num,den);
+  const shift=precision-1-exponent;
+  const scaledNum=shift>=0 ? num*pow10(shift) : num;
+  const scaledDen=shift>=0 ? den : den*pow10(-shift);
+  let q=scaledNum/scaledDen,r=scaledNum%scaledDen;
+  if(r*2n>scaledDen || (r*2n===scaledDen && q%2n===1n))q++;
   if(neg)q=-q;
-  return {coeff:q,scale:precision};
+  if(shift>=0)return {coeff:q,scale:shift};
+  return {coeff:q*pow10(-shift),scale:0};
 }
 
 test("decimal contract identity and resource policy are closed",()=>{
