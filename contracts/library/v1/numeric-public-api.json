@@ -16,22 +16,22 @@
     "int": "checked signed fixed-width integer domain",
     "f64": "IEEE-754 binary64",
     "f32": "IEEE-754 binary32; must be a distinct representation or rejected",
-    "BigInt": "arbitrary-precision signed integer subject to explicit resource budgets",
-    "Decimal": "arbitrary-precision/resource-bounded base-10 coefficient plus signed scale",
+    "bigint": "arbitrary-precision signed integer subject to explicit resource budgets",
+    "decimal": "arbitrary-precision/resource-bounded base-10 coefficient plus signed scale",
     "DecimalContext": "immutable explicit precision and rounding policy"
   },
   "math_overloads": {
     "Math.abs": {
       "int": "same type; minimum signed value reports ArithmeticOverflowError",
       "f64": "clear sign bit; -0 -> +0; infinities preserved positive; NaN remains NaN",
-      "BigInt": "exact",
-      "Decimal": "exact and scale preserving"
+      "bigint": "exact",
+      "decimal": "exact and scale preserving"
     },
     "Math.neg": {
       "int": "same type; minimum signed value reports ArithmeticOverflowError",
       "f64": "toggle sign; +0 -> -0; -0 -> +0; NaN remains NaN",
-      "BigInt": "exact",
-      "Decimal": "exact and scale preserving"
+      "bigint": "exact",
+      "decimal": "exact and scale preserving"
     }
   },
   "bigint_api": {
@@ -53,14 +53,51 @@
   },
   "parsing": {
     "BigInt": {
-      "accepted": ["0", "-0", "42", "-42", "9007199254740993"],
-      "canonical_output": ["0", "42", "-42", "9007199254740993"],
-      "rejected": ["", "+1", "01", "-01", "1.0", "1e3", "_1", "1_", "1__0"]
+      "accepted": [
+        "0",
+        "-0",
+        "42",
+        "-42",
+        "9007199254740993"
+      ],
+      "canonical_output": [
+        "0",
+        "42",
+        "-42",
+        "9007199254740993"
+      ],
+      "rejected": [
+        "",
+        "+1",
+        "01",
+        "-01",
+        "1.0",
+        "1e3",
+        "_1",
+        "1_",
+        "1__0"
+      ]
     },
     "Decimal": {
-      "accepted": ["0", "-0", "0.1", "-12.3400", "1e3", "1E-3"],
+      "accepted": [
+        "0",
+        "-0",
+        "0.1",
+        "-12.3400",
+        "1e3",
+        "1E-3"
+      ],
       "exact": true,
-      "rejected": ["", "+1", ".1", "1.", "1__0", "nan", "inf", "-inf"]
+      "rejected": [
+        "",
+        "+1",
+        ".1",
+        "1.",
+        "1__0",
+        "nan",
+        "inf",
+        "-inf"
+      ]
     }
   },
   "rounding_modes": [
@@ -85,6 +122,11 @@
   ],
   "hard_rt": {
     "fixed_int_and_floats": "eligible subject to target profile and WCET proof",
-    "BigInt_and_Decimal": "not hard-real-time by default; require statically bounded operands, allocation and WCET"
+    "bigint_and_decimal": "not hard-real-time by default; require statically bounded operands, allocation and WCET"
+  },
+  "namespaces": {
+    "BigInt": "operations/constructors for values of source type bigint",
+    "Decimal": "operations/constructors for values of source type decimal",
+    "Math": "numeric functions whose dispatch is compiler/type-system owned"
   }
 }
