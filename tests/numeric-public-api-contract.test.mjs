@@ -42,6 +42,13 @@ test("checked conversion and arithmetic error surface is explicit",()=>{
   assert.match(contract.decimal_api.to_f64_exact,/InexactConversionError/);
 });
 
+test("numeric representation changes are explicit-only",()=>{
+  assert.equal(contract.conversions.implicit_numeric_conversions,"none");
+  assert.match(contract.conversions.mixed_numeric_arithmetic,/same numeric representation/);
+  assert.match(contract.integer_api.to_f64_exact,/InexactConversionError/);
+  assert.match(contract.conversions.f64_to_int,/assignment never narrows implicitly/);
+});
+
 test("hard-RT contract never certifies unbounded arbitrary precision",()=>{
   assert.match(contract.hard_rt.bigint_and_decimal,/not hard-real-time by default/);
   assert.match(contract.hard_rt.bigint_and_decimal,/statically bounded/);
