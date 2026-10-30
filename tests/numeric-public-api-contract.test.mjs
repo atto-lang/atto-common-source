@@ -27,6 +27,19 @@ test("numeric public API forbids host-defined guest semantics",()=>{
   ]) assert.ok(forbidden.includes(required),required);
 });
 
+test("BigInt and Decimal namespaces operate on lowercase source value types",()=>{
+  for(const signature of Object.values(contract.bigint_api)){
+    assert.doesNotMatch(signature,/Result<BigInt|: BigInt[>,)]/);
+  }
+  for(const signature of Object.values(contract.decimal_api)){
+    assert.doesNotMatch(signature,/Result<Decimal|: Decimal[>,)]/);
+  }
+  assert.match(contract.bigint_api.parse,/Result<bigint,/);
+  assert.match(contract.decimal_api.parse,/Result<decimal,/);
+  assert.match(contract.decimal_api.divide_exact,/NonterminatingDecimalError/);
+  assert.match(contract.bigint_api.quot,/NumericResourceError/);
+});
+
 test("checked conversion and arithmetic error surface is explicit",()=>{
   const errors=new Set(contract.errors);
   for(const name of [
