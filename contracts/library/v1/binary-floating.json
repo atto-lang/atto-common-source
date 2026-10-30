@@ -18,8 +18,8 @@
     "f32": "IEEE-754 binary32 and must use distinct storage/round-after-each-operation semantics"
   },
   "exact_bit_semantics": {
-    "Math.abs": "clear sign bit",
-    "Math.neg": "toggle sign bit",
+    "Math.abs": "for non-NaN values clear the sign bit exactly; NaN remains NaN and payload portability is not guaranteed",
+    "Math.neg": "for non-NaN values toggle the sign bit exactly; NaN remains NaN and payload portability is not guaranteed",
     "Math.signbit": "observe sign bit including negative zero and NaN",
     "Math.is_nan": "classification only",
     "Math.is_finite": "classification only",
@@ -46,9 +46,23 @@
   "transcendentals": {
     "policy": "A backend must publish and test a finite max-ULP bound per function before declaring portable support. Host libm presence alone is not evidence.",
     "functions": [
-      "sin", "cos", "tan", "asin", "acos", "atan", "atan2",
-      "exp", "exp2", "expm1", "log", "log2", "log10", "log1p",
-      "pow", "cbrt", "hypot"
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan",
+      "atan2",
+      "exp",
+      "exp2",
+      "expm1",
+      "log",
+      "log2",
+      "log10",
+      "log1p",
+      "pow",
+      "cbrt",
+      "hypot"
     ],
     "bitwise_cross_backend_parity": "not required until a shared deterministic Oreslang implementation is adopted"
   },
@@ -62,13 +76,111 @@
     ]
   },
   "cases": [
-    {"id":"abs-negative-zero","operation":"abs","input_bits":"8000000000000000","expect_bits":"0000000000000000"},
-    {"id":"neg-positive-zero","operation":"neg","input_bits":"0000000000000000","expect_bits":"8000000000000000"},
-    {"id":"next-after-zero-up","operation":"next_after","a_bits":"0000000000000000","b_bits":"3ff0000000000000","expect_bits":"0000000000000001"},
-    {"id":"next-after-zero-down","operation":"next_after","a_bits":"0000000000000000","b_bits":"bff0000000000000","expect_bits":"8000000000000001"},
-    {"id":"ulp-one","operation":"ulp","input_bits":"3ff0000000000000","expect_bits":"3cb0000000000000"},
-    {"id":"approx-relative","operation":"approx_eq","a":1000000.0,"b":1000000.5,"abs_tol":0.0,"rel_tol":0.000001,"expect":true},
-    {"id":"approx-absolute-near-zero","operation":"approx_eq","a":0.0,"b":1e-12,"abs_tol":1e-11,"rel_tol":0.0,"expect":true},
-    {"id":"approx-nan","operation":"approx_eq","a":"NaN","b":1.0,"abs_tol":1.0,"rel_tol":1.0,"expect":false}
+    {
+      "id": "abs-negative-zero",
+      "operation": "abs",
+      "input_bits": "8000000000000000",
+      "expect_bits": "0000000000000000"
+    },
+    {
+      "id": "neg-positive-zero",
+      "operation": "neg",
+      "input_bits": "0000000000000000",
+      "expect_bits": "8000000000000000"
+    },
+    {
+      "id": "next-after-zero-up",
+      "operation": "next_after",
+      "a_bits": "0000000000000000",
+      "b_bits": "3ff0000000000000",
+      "expect_bits": "0000000000000001"
+    },
+    {
+      "id": "next-after-zero-down",
+      "operation": "next_after",
+      "a_bits": "0000000000000000",
+      "b_bits": "bff0000000000000",
+      "expect_bits": "8000000000000001"
+    },
+    {
+      "id": "ulp-one",
+      "operation": "ulp",
+      "input_bits": "3ff0000000000000",
+      "expect_bits": "3cb0000000000000"
+    },
+    {
+      "id": "approx-relative",
+      "operation": "approx_eq",
+      "a": 1000000,
+      "b": 1000000.5,
+      "abs_tol": 0,
+      "rel_tol": 0.000001,
+      "expect": true
+    },
+    {
+      "id": "approx-absolute-near-zero",
+      "operation": "approx_eq",
+      "a": 0,
+      "b": 1e-12,
+      "abs_tol": 1e-11,
+      "rel_tol": 0,
+      "expect": true
+    },
+    {
+      "id": "approx-nan",
+      "operation": "approx_eq",
+      "a": "NaN",
+      "b": 1,
+      "abs_tol": 1,
+      "rel_tol": 1,
+      "expect": false
+    },
+    {
+      "id": "abs-negative-smallest-subnormal",
+      "operation": "abs",
+      "input_bits": "8000000000000001",
+      "expect_bits": "0000000000000001"
+    },
+    {
+      "id": "eq-signed-zero",
+      "operation": "eq_bits",
+      "a_bits": "0000000000000000",
+      "b_bits": "8000000000000000",
+      "expect": true
+    },
+    {
+      "id": "nan-equality",
+      "operation": "eq_nan",
+      "a_bits": "7ff8000000000001",
+      "b_bits": "7ff8000000000001",
+      "expect": false
+    },
+    {
+      "id": "nan-ordering",
+      "operation": "lt_nan",
+      "a_bits": "7ff8000000000001",
+      "b_bits": "3ff0000000000000",
+      "expect": false
+    }
+  ],
+  "f32_cases": [
+    {
+      "id": "f32-abs-negative-zero",
+      "operation": "abs",
+      "input_bits": "80000000",
+      "expect_bits": "00000000"
+    },
+    {
+      "id": "f32-neg-positive-zero",
+      "operation": "neg",
+      "input_bits": "00000000",
+      "expect_bits": "80000000"
+    },
+    {
+      "id": "f32-abs-negative-smallest-subnormal",
+      "operation": "abs",
+      "input_bits": "80000001",
+      "expect_bits": "00000001"
+    }
   ]
 }
