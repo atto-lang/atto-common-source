@@ -22,6 +22,9 @@ Canonical Oreslang source spellings are lowercase `bigint`, `decimal`, `float`/`
 - Offer `Math.abs_checked`/`Math.neg_checked` returning Result and `Math.abs_wrapping`/`Math.neg_wrapping` only for fixed-width signed integers, with explicit documentation. Do not accidentally change default checked behavior to saturating.
 - Compiler constant folding, interpreter, JIT, AOT, and intrinsic paths must agree; no optimization-mode exceptions.
 
+## Reference implementation status
+The Java/Graal source repository may carry pure-Oreslang `BigIntValue` and `DecimalValue` reference classes while the primitive `bigint`/`decimal` spellings remain fail-closed. Those classes are executable semantic development aids, not permission to claim primitive-type or five-backend parity. Promotion requires distinct backend representations, the shared registry, and real compiled guest evidence.
+
 ## bigint correctness and security
 - Canonical serialization: signed magnitude rules and byte order MUST be specified before wire compatibility is asserted; decimal text form is normalized ASCII base-10 with optional leading '-' and zero spelled '0'. No leading '+' or redundant leading zero in canonical output.
 - Division semantics: quotient truncates toward zero, remainder has dividend's sign; `a == (a / b) * b + (a % b)` and `abs(r) < abs(b)` for nonzero divisor. Division by zero is a typed error.
