@@ -17,6 +17,35 @@ test("numeric public API separates source types from namespaces",()=>{
   assert.equal("Decimal" in contract.types,false);
 });
 
+function bigIntLexicallyValid(text){
+  return /^-?(?:0|[1-9]\d*)$/.test(text);
+}
+function decimalLexicallyValid(text){
+  return /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(text);
+}
+
+test("numeric parse tables are executable lexical contracts",()=>{
+  for(const text of contract.parsing.BigInt.accepted)
+    assert.equal(bigIntLexicallyValid(text),true,"BigInt accepted "+text);
+  for(const text of contract.parsing.BigInt.rejected)
+    assert.equal(bigIntLexicallyValid(text),false,"BigInt rejected "+text);
+  for(const text of contract.parsing.Decimal.accepted)
+    assert.equal(decimalLexicallyValid(text),true,"Decimal accepted "+text);
+  for(const text of contract.parsing.Decimal.rejected)
+    assert.equal(decimalLexicallyValid(text),false,"Decimal rejected "+text);
+
+  const canonicalBigInt=text=>{
+    const value=BigInt(text);
+    return value.toString();
+  };
+  assert.deepEqual(
+    contract.parsing.BigInt.accepted
+      .filter(text=>text!=="-0")
+      .map(canonicalBigInt),
+    contract.parsing.BigInt.canonical_output);
+  assert.equal(canonicalBigInt("-0"),"0");
+});
+
 test("numeric public API forbids host-defined guest semantics",()=>{
   const forbidden=contract.source_ownership.forbidden.join("\n");
   for(const required of [
