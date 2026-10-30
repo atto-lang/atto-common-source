@@ -3,11 +3,11 @@
 import { readFileSync } from 'node:fs';
 
 const isText = (value) => typeof value === 'string' && value.length > 0;
-const key = (domain, generation) => \`\${domain}\u0000\${generation}\`;
-const ownerKey = (item) => \`\${item.domain}\u0000\${item.actor_generation}\u0000\${item.execution}\u0000\${item.execution_generation}\`;
+const key = (domain, generation) => `${domain}\u0000${generation}`;
+const ownerKey = (item) => `${item.domain}\u0000${item.actor_generation}\u0000${item.execution}\u0000${item.execution_generation}`;
 
 export function verifyStateRegionTrace(trace) {
-  const fail = (code, index) => { throw new Error(\`\${code} at event \${index}\`); };
+  const fail = (code, index) => { throw new Error(`${code} at event ${index}`); };
   if (!trace || trace.schema_version !== 1 || !['java', 'llvm', 'net', 'wasm', 'forge'].includes(trace.backend)) {
     fail('INVALID_TRACE_HEADER', 0);
   }
@@ -115,7 +115,7 @@ export function verifyStateRegionTrace(trace) {
     checked_events: trace.events.length, status: 'trace_consistent_not_guest_verified' };
 }
 
-if (process.argv[1] && import.meta.url === new URL(\`file://\${process.argv[1]}\`).href) {
+if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   if (process.argv.length !== 3) { console.error('usage: node verify-state-region-trace-v1.mjs TRACE.json'); process.exitCode = 2; }
   else {
     try { console.log(JSON.stringify(verifyStateRegionTrace(JSON.parse(readFileSync(process.argv[2], 'utf8'))))); }
