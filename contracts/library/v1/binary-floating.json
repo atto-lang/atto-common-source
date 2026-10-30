@@ -11,7 +11,9 @@
     "infinities": "IEEE-754",
     "nan_comparisons": "unordered",
     "nan_payload_portability": "not guaranteed",
-    "fast_math": "never implicit"
+    "fast_math": "never implicit",
+    "ambient_host_rounding_mode": "must not change portable Oreslang results; basic arithmetic is specified as round-to-nearest-ties-to-even",
+    "floating_environment": "host process rounding/exception flags are not guest-visible numeric policy unless a future explicit nonportable profile says so"
   },
   "types": {
     "f64": "IEEE-754 binary64",
@@ -72,7 +74,8 @@
       "no C/C++ -ffast-math or -Ofast",
       "no target FTZ/DAZ mode unless explicitly selected outside portable Math",
       "no a*b+c contraction into FMA except explicit Math.fma",
-      "constant folding must preserve the same observable result as runtime evaluation"
+      "constant folding must preserve the same observable result as runtime evaluation",
+      "backend JIT/AOT must not inherit ambient host rounding-mode changes into portable Oreslang arithmetic"
     ]
   },
   "cases": [
