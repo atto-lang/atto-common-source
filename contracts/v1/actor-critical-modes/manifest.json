@@ -54,6 +54,13 @@
       "diagnostic_category": "effect"
     },
     {
+      "id": "reject_await_in_read",
+      "source": "contracts/v1/actor-critical-modes/fixtures/reject_await_in_read.ores",
+      "git_blob_sha": "f4d182cef8ab1e376198f84020c45f9dd0e0aba9",
+      "expected": "compile_reject",
+      "diagnostic_category": "effect"
+    },
+    {
       "id": "reject_state_escape",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_state_escape.ores",
       "git_blob_sha": "64bf6871b8d222854bce9e2343250923415f50af",
