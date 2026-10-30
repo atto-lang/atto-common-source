@@ -1,6 +1,6 @@
 # Draft: Native Oreslang numeric and Math contract
 
-Status: PROPOSED, not merged or runtime-verified. Applies to Java/GraalVM, LLVM, WASM, .NET NativeAOT, Forge. No backend may claim parity from this document alone.
+Status: PROPOSED and non-normative; not runtime-verified. Applies to Java/GraalVM, LLVM, WASM, .NET NativeAOT, Forge. No backend may claim parity from this document alone.
 
 ## Numeric families
 - Fixed signed integers `i8/i16/i32/i64` and unsigned `u8/u16/u32/u64` (subject to actual language type spelling): exact within range, default arithmetic checked for overflow in all optimization levels. Never rely on C/C++ signed-overflow undefined behavior, implicit Java wrap, or JS Number coercion.
@@ -53,7 +53,7 @@ Status: PROPOSED, not merged or runtime-verified. Applies to Java/GraalVM, LLVM,
 - Real compiler checking + executable guest output on each of the five backends, with SHA-pinned compiler/source provenance.
 - Debug/release, optimization on/off, host/native AOT where applicable; sanitizer coverage for native implementations.
 - Explicit recorded deviations in float transcendental precision (ULP bounds) rather than claiming impossible universal bitwise equality.
-- Independent review and enforced protected-branch required checks before merge. If source Actions cannot execute, use an explicitly authorized private carrier and verify exact source Git-tree/blob provenance; NEVER transfer private source while the destination allowlist is empty.
+- Independent review and enforced protected-branch required checks before normative adoption or release qualification; merging this proposal does not satisfy those requirements. If source Actions cannot execute, use an explicitly authorized private carrier and verify exact source Git-tree/blob provenance; NEVER transfer private source while the destination allowlist is empty.
 
 ## Open design questions
 - Exact Oreslang spellings for fixed-width, decimal and the typed error class.
