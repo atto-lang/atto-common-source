@@ -128,5 +128,17 @@
     "BigInt": "operations/constructors for values of source type bigint",
     "Decimal": "operations/constructors for values of source type decimal",
     "Math": "numeric functions whose dispatch is compiler/type-system owned"
+  },
+  "conversions": {
+    "implicit_numeric_conversions": "none",
+    "mixed_numeric_arithmetic": "operands must already have the same numeric representation; conversions are explicit",
+    "int_to_f64": "Integer.to_f64_exact(value: int) -> Result<f64, InexactConversionError> or Integer.to_f64_nearest(value: int) -> f64",
+    "f64_to_int": "explicit checked/truncating/rounding API required; assignment never narrows implicitly",
+    "bigint_to_binary_float": "explicit exact or nearest conversion only",
+    "decimal_to_binary_float": "explicit exact or nearest conversion only"
+  },
+  "integer_api": {
+    "to_f64_exact": "Integer.to_f64_exact(value: int) -> Result<f64, InexactConversionError>",
+    "to_f64_nearest": "Integer.to_f64_nearest(value: int) -> f64"
   }
 }
