@@ -38,7 +38,11 @@ jobs:
             contracts/library/v1/decimal-precision.json \
             contracts/library/v1/binary-floating.json \
             contracts/library/v1/numeric-public-api.json \
-            contracts/library/v1/numeric-backend-status.json
+            contracts/library/v1/numeric-backend-status.json \
+            contracts/library/v1/numeric-portable-guests.json \
+            fixtures/numeric-v1/math-i64-ok.ores \
+            fixtures/numeric-v1/math-i64-abs-min.ores \
+            fixtures/numeric-v1/math-i64-neg-min.ores
       - name: Execute numeric semantic reference contracts
         run: |
           node --test \
@@ -47,7 +51,8 @@ jobs:
             tests/decimal-precision-contract.test.mjs \
             tests/binary-floating-contract.test.mjs \
             tests/numeric-public-api-contract.test.mjs \
-            tests/numeric-backend-status.test.mjs
+            tests/numeric-backend-status.test.mjs \
+            tests/numeric-portable-guests.test.mjs
       - name: Format and lint Rust IPC models
         run: |
           cargo fmt --manifest-path tools/ipc-models/Cargo.toml -- --check
