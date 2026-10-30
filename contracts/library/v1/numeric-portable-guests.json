@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "oreslang.numeric-portable-guests.v1",
+  "status": "source-identity-and-expected-semantics-not-execution-proof",
+  "fixtures": [
+    {
+      "id": "math-i64-ok",
+      "path": "fixtures/numeric-v1/math-i64-ok.ores",
+      "git_blob_sha1": "6d02ef593be9888364cc6f64c1c42224dcebbdb9",
+      "expected": {
+        "kind": "value",
+        "i64": "84"
+      }
+    },
+    {
+      "id": "math-i64-abs-min",
+      "path": "fixtures/numeric-v1/math-i64-abs-min.ores",
+      "git_blob_sha1": "f9064fc2ee79a2356dc062841330466c3d0df9c7",
+      "expected": {
+        "kind": "error",
+        "guest_error": "ArithmeticOverflowError",
+        "operation": "abs"
+      }
+    },
+    {
+      "id": "math-i64-neg-min",
+      "path": "fixtures/numeric-v1/math-i64-neg-min.ores",
+      "git_blob_sha1": "c1d1bff1971351814d8161c36c5a5e18d5ae9e26",
+      "expected": {
+        "kind": "error",
+        "guest_error": "ArithmeticOverflowError",
+        "operation": "neg"
+      }
+    }
+  ],
+  "backend_copy_path": "tests/fixtures/numeric-v1",
+  "evidence_rule": "A backend claim must compile and execute these exact blob bytes. Rewritten/inlined equivalents are supplementary only.",
+  "provisional_failure_adapters": {
+    "java": "host marker ORES_I64_OVERFLOW",
+    "llvm": "native trap",
+    "wasm": "wasm/native trap",
+    "net": "CLR OverflowException/sub.ovf",
+    "forge": "native trap/runtime_error"
+  }
+}
