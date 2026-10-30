@@ -174,6 +174,21 @@ context_precision = 10
 rounding = "half_even"
 expect = "0.3333333333"
 
+[type_contract]
+float = "ieee754-binary64"
+f64 = "ieee754-binary64"
+f32 = "ieee754-binary32"
+bigint = "arbitrary-precision-signed-integer-bounded-by-resource-policy"
+decimal = "base10-coefficient-and-scale-with-explicit-rounding-context"
+decimal_negative_zero = false
+decimal_numeric_equality_ignores_trailing_zero_scale = true
+
+[realtime]
+bigint_requires_static_max_bits = true
+bigint_requires_operation_budget = true
+decimal_requires_bounded_context = true
+unbounded_arbitrary_precision_in_hard_rt = false
+
 [requirements]
 default_fixed_width_arithmetic = "checked"
 float_default_rounding = "nearest_ties_even"
