@@ -35,21 +35,21 @@
     }
   },
   "bigint_api": {
-    "parse": "BigInt.parse(text: String) -> Result<BigInt, NumericParseError>",
-    "quot": "BigInt.quot(dividend: BigInt, divisor: BigInt) -> Result<BigInt, DivisionByZeroError>",
-    "rem": "BigInt.rem(dividend: BigInt, divisor: BigInt) -> Result<BigInt, DivisionByZeroError>",
-    "div_rem": "BigInt.div_rem(dividend: BigInt, divisor: BigInt) -> Result<(BigInt, BigInt), DivisionByZeroError>",
-    "to_i64_checked": "BigInt.to_i64_checked(value: BigInt) -> Result<int, ArithmeticOverflowError>",
-    "to_f64_exact": "BigInt.to_f64_exact(value: BigInt) -> Result<f64, InexactConversionError>",
-    "to_f64_nearest": "BigInt.to_f64_nearest(value: BigInt) -> Result<f64, NumericRangeError>"
+    "parse": "BigInt.parse(text: String) -> Result<bigint, NumericParseError | NumericResourceError>",
+    "quot": "BigInt.quot(dividend: bigint, divisor: bigint) -> Result<bigint, DivisionByZeroError | NumericResourceError>",
+    "rem": "BigInt.rem(dividend: bigint, divisor: bigint) -> Result<bigint, DivisionByZeroError | NumericResourceError>",
+    "div_rem": "BigInt.div_rem(dividend: bigint, divisor: bigint) -> Result<(bigint, bigint), DivisionByZeroError | NumericResourceError>",
+    "to_i64_checked": "BigInt.to_i64_checked(value: bigint) -> Result<int, ArithmeticOverflowError>",
+    "to_f64_exact": "BigInt.to_f64_exact(value: bigint) -> Result<f64, InexactConversionError | NumericRangeError>",
+    "to_f64_nearest": "BigInt.to_f64_nearest(value: bigint) -> Result<f64, NumericRangeError>"
   },
   "decimal_api": {
-    "parse": "Decimal.parse(text: String) -> Result<Decimal, NumericParseError>",
-    "divide_exact": "Decimal.divide_exact(a: Decimal, b: Decimal) -> Result<Decimal, DecimalDivisionError>",
-    "divide": "Decimal.divide(a: Decimal, b: Decimal, context: DecimalContext) -> Result<Decimal, DivisionByZeroError>",
-    "round": "Decimal.round(value: Decimal, context: DecimalContext) -> Result<Decimal, NumericContextError>",
-    "to_f64_exact": "Decimal.to_f64_exact(value: Decimal) -> Result<f64, InexactConversionError>",
-    "to_f64_nearest": "Decimal.to_f64_nearest(value: Decimal) -> Result<f64, NumericRangeError>"
+    "parse": "Decimal.parse(text: String) -> Result<decimal, NumericParseError | NumericResourceError>",
+    "divide_exact": "Decimal.divide_exact(a: decimal, b: decimal) -> Result<decimal, DivisionByZeroError | NonterminatingDecimalError | NumericResourceError>",
+    "divide": "Decimal.divide(a: decimal, b: decimal, context: DecimalContext) -> Result<decimal, DivisionByZeroError | NumericContextError | NumericResourceError>",
+    "round": "Decimal.round(value: decimal, context: DecimalContext) -> Result<decimal, NumericContextError | NumericResourceError>",
+    "to_f64_exact": "Decimal.to_f64_exact(value: decimal) -> Result<f64, InexactConversionError | NumericRangeError>",
+    "to_f64_nearest": "Decimal.to_f64_nearest(value: decimal) -> Result<f64, NumericRangeError>"
   },
   "parsing": {
     "BigInt": {
