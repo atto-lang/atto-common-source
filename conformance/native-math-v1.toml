@@ -1,0 +1,200 @@
+version = 1
+contract = "native-math-numeric"
+
+[[case]]
+id = "i64_abs_zero"
+family = "signed_integer"
+op = "abs"
+type = "i64"
+input = "0"
+expect = "0"
+
+[[case]]
+id = "i64_abs_neg_one"
+family = "signed_integer"
+op = "abs"
+type = "i64"
+input = "-1"
+expect = "1"
+
+[[case]]
+id = "i64_abs_min_overflow"
+family = "signed_integer"
+op = "abs"
+type = "i64"
+input = "-9223372036854775808"
+expect_error = "ArithmeticOverflow"
+
+[[case]]
+id = "i64_neg_min_overflow"
+family = "signed_integer"
+op = "neg"
+type = "i64"
+input = "-9223372036854775808"
+expect_error = "ArithmeticOverflow"
+
+[[case]]
+id = "i64_neg_max"
+family = "signed_integer"
+op = "neg"
+type = "i64"
+input = "9223372036854775807"
+expect = "-9223372036854775807"
+
+[[case]]
+id = "u64_abs_max"
+family = "unsigned_integer"
+op = "abs"
+type = "u64"
+input = "18446744073709551615"
+expect = "18446744073709551615"
+
+[[case]]
+id = "u64_neg_rejected"
+family = "unsigned_integer"
+op = "neg"
+type = "u64"
+input = "1"
+expect_error = "TypeError"
+
+[[case]]
+id = "f64_abs_negative_zero"
+family = "binary_float"
+op = "abs"
+type = "f64"
+input_bits = "0x8000000000000000"
+expect_bits = "0x0000000000000000"
+
+[[case]]
+id = "f64_neg_positive_zero"
+family = "binary_float"
+op = "neg"
+type = "f64"
+input_bits = "0x0000000000000000"
+expect_bits = "0x8000000000000000"
+
+[[case]]
+id = "f64_abs_negative_infinity"
+family = "binary_float"
+op = "abs"
+type = "f64"
+input_bits = "0xfff0000000000000"
+expect_bits = "0x7ff0000000000000"
+
+[[case]]
+id = "f64_nan_unordered"
+family = "binary_float"
+op = "compare_self"
+type = "f64"
+input_bits = "0x7ff8000000000000"
+expect = "unordered"
+
+[[case]]
+id = "f64_point_one_plus_point_two"
+family = "binary_float"
+op = "add"
+type = "f64"
+left = "0.1"
+right = "0.2"
+expect_not_exact_decimal = "0.3"
+
+[[case]]
+id = "bigint_pow_2_127"
+family = "bigint"
+op = "parse_print"
+type = "BigInt"
+input = "170141183460469231731687303715884105728"
+expect = "170141183460469231731687303715884105728"
+
+[[case]]
+id = "bigint_div_negative_positive"
+family = "bigint"
+op = "div_rem"
+type = "BigInt"
+left = "-7"
+right = "3"
+expect_quotient = "-2"
+expect_remainder = "-1"
+
+[[case]]
+id = "bigint_div_positive_negative"
+family = "bigint"
+op = "div_rem"
+type = "BigInt"
+left = "7"
+right = "-3"
+expect_quotient = "-2"
+expect_remainder = "1"
+
+[[case]]
+id = "bigint_div_zero"
+family = "bigint"
+op = "div"
+type = "BigInt"
+left = "1"
+right = "0"
+expect_error = "DivisionByZero"
+
+[[case]]
+id = "bigint_f64_precision_boundary"
+family = "bigint"
+op = "to_f64"
+type = "BigInt"
+input = "9007199254740993"
+conversion = "explicit"
+expect_precision_loss = true
+
+[[case]]
+id = "decimal_point_one_plus_point_two"
+family = "decimal"
+op = "add"
+type = "Decimal"
+left = "0.1"
+right = "0.2"
+expect = "0.3"
+
+[[case]]
+id = "decimal_one_third_no_context"
+family = "decimal"
+op = "div"
+type = "Decimal"
+left = "1"
+right = "3"
+context = "none"
+expect_error = "NonTerminatingDecimalExpansion"
+
+[[case]]
+id = "decimal_one_third_precision_10"
+family = "decimal"
+op = "div"
+type = "Decimal"
+left = "1"
+right = "3"
+context_precision = 10
+rounding = "half_even"
+expect = "0.3333333333"
+
+[type_contract]
+float = "ieee754-binary64"
+f64 = "ieee754-binary64"
+f32 = "ieee754-binary32"
+bigint = "arbitrary-precision-signed-integer-bounded-by-resource-policy"
+decimal = "base10-coefficient-and-scale-with-explicit-rounding-context"
+decimal_negative_zero = false
+decimal_numeric_equality_ignores_trailing_zero_scale = true
+
+[realtime]
+bigint_requires_static_max_bits = true
+bigint_requires_operation_budget = true
+decimal_requires_bounded_context = true
+unbounded_arbitrary_precision_in_hard_rt = false
+
+[requirements]
+default_fixed_width_arithmetic = "checked"
+float_default_rounding = "nearest_ties_even"
+fast_math_default = false
+implicit_bigint_to_float = false
+implicit_decimal_to_float = false
+compiler_constant_folding_must_match_runtime = true
+aot_must_match_interpreter = true
+resource_limits_required_for_bigint = true
