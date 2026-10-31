@@ -71,10 +71,32 @@
         "guest_error": "ArithmeticOverflowError",
         "operation": "negate"
       }
+    },
+    {
+      "id": "i64-overflow-catch",
+      "path": "fixtures/numeric-v1/i64-overflow-catch.ores",
+      "git_blob_sha1": "e03db1947bde0d07aa81c35a6bf4ff4d5c4107d5",
+      "expected": {
+        "kind": "caught_error",
+        "guest_error": "ArithmeticOverflowError",
+        "i64": "42",
+        "operation": "add"
+      }
+    },
+    {
+      "id": "i64-overflow-typed-catch",
+      "path": "fixtures/numeric-v1/i64-overflow-typed-catch.ores",
+      "git_blob_sha1": "a885901ffdf0fafca9b4d2e283e8586867187827",
+      "expected": {
+        "kind": "typed_catch",
+        "guest_error": "ArithmeticOverflowError",
+        "i64": "42",
+        "operation": "abs"
+      }
     }
   ],
   "backend_copy_path": "tests/fixtures/numeric-v1",
-  "evidence_rule": "A backend claim must compile and execute these exact blob bytes for ordinary checked i64 arithmetic and Math intrinsics. Rewritten/inlined equivalents are supplementary only.",
+  "evidence_rule": "A backend claim must compile and execute these exact blob bytes. Overflow evidence must prove no wrapping; catch evidence must enter ordinary guest catch as ArithmeticOverflowError, and typed-catch evidence must prove nominal guest identity rather than host exception text. Rewritten/inlined equivalents are supplementary only.",
   "provisional_failure_adapters": {
     "java": "host marker ORES_I64_OVERFLOW",
     "llvm": "native trap",

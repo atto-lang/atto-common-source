@@ -32,3 +32,13 @@ test("numeric resource exhaustion is preflighted and API-shaped",()=>{
   assert.match(contract.errors.NumericResourceError.applies_to.join("\n"),/preflight/);
   assert.match(contract.errors.NumericResourceError.default_effect,/Result\.Err or throw/);
 });
+
+
+test("numeric guest error ABI codes are stable and host-neutral",()=>{
+  assert.equal(contract.error_abi_v1.code_width_bits,32);
+  assert.equal(contract.error_abi_v1.codes.ArithmeticOverflowError,65537);
+  assert.equal(contract.errors.ArithmeticOverflowError.abi_code,65537);
+  assert.match(contract.error_abi_v1.rules,/host exception class, signal, trap opcode or diagnostic string is never sufficient identity/);
+  assert.equal(new Set(Object.values(contract.error_abi_v1.codes)).size,
+    Object.keys(contract.error_abi_v1.codes).length);
+});

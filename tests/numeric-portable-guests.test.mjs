@@ -53,3 +53,15 @@ test("portable default checked i64 operators are byte-pinned typed overflow targ
   }
   assert.match(manifest.evidence_rule,/ordinary checked i64 arithmetic and Math intrinsics/);
 });
+
+
+test("portable overflow catch fixtures require guest error identity",()=>{
+  const byId=Object.fromEntries(manifest.fixtures.map(x=>[x.id,x]));
+  assert.deepEqual(byId["i64-overflow-catch"].expected,{
+    kind:"caught_error",guest_error:"ArithmeticOverflowError",i64:"42",operation:"add"
+  });
+  assert.deepEqual(byId["i64-overflow-typed-catch"].expected,{
+    kind:"typed_catch",guest_error:"ArithmeticOverflowError",i64:"42",operation:"abs"
+  });
+  assert.match(manifest.evidence_rule,/nominal guest identity/);
+});
