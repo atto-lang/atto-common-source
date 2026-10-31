@@ -65,6 +65,13 @@ Define stability by separately versioned language, core/alloc/actor/std, source-
 5. **P1 parity:** separately exercise Java/Graal, LLVM native, Wasm, .NET Native AOT and Forge, and record honestly unsupported combinations. Keep schema/fixture/model tests labelled DESIGN/REFERENCE. A zero-step GitHub Actions result is NOT_EXECUTED.
 6. **Security:** do not copy private source to an unreviewed carrier or different organization; any privately approved exact-tree test runner must independently prove source/ref/branch/tree identity and preserve the protected-main policy.
 
+## Related staged implementation tracks (do not duplicate)
+
+- Common-source [draft PR #198](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/198): inferred outlives, suspension and native zero-GC obligations; authoritative on detailed lifetime semantics pending review.
+- Common-source [draft PR #170](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/170): explicit unsafe/FFI authority boundary; no implicit safe-pointer escape hatch.
+- Common-source [draft PR #173](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/173): escape-analysis/placement optimization admission; not general user-visible emplacement semantics.
+- Java [issue #1455](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/1455) and LLVM [issue #663](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/663): staged typed parameter-default lowering; do not fork the syntax.
+
 ## Machine-readable review corpus
 
 The companion file `contracts/v1/developer-systems-hardening.v1.json` is a **candidate test inventory**, not execution evidence. `tests/developer-systems-hardening-v1.test.mjs` checks that each area has documented accept/reject scenarios and fail-closed evidence rules; it does not compile any `.ores` program. To upgrade an individual case, attach the exact source/tree SHA, backend compiler artifact digest, emitted/linked artifact digest, toolchain/profile, actual observed output/diagnostic and executable run URL. Never change `planned_only` based only on this manifest or schema check.
