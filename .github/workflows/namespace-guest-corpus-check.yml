@@ -6,6 +6,7 @@ on:
       - 'tools/materialize-namespace-guest-case.mjs'
       - 'tests/namespace-guest-gates-v1.test.mjs'
       - 'tools/compare-namespace-backend-corpus.mjs'
+      - 'tools/verify-namespace-authoring-offline.sh'
       - 'tests/namespace-backend-source-identity.test.mjs'
       - 'docs/CROSS_BACKEND_NAMESPACE_GUEST_GATES_V1.md'
       - 'docs/NAMESPACE_GRAMMAR_AUTHORITY_DECISION_RECORD.md'
@@ -26,8 +27,11 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-      - name: Test source-free namespace corpus only
-        run: node --test tests/namespace-guest-gates-v1.test.mjs tests/namespace-backend-source-identity.test.mjs
+      - name: Verify exact-head source blobs and execute Node 22 authoring suite
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash tools/verify-namespace-authoring-offline.sh "$EXPECTED_HEAD"
       - name: Explicit evidence scope
         if: always()
         run: |
