@@ -22,6 +22,8 @@ test('each authored positive or rejection case materializes a closed source inve
       assert.equal(result.evidence,'NOT_EXECUTED');
       assert.equal(result.expected,expected.expected);
       assert.equal(result.code,expected.code);
+      assert.equal(result.expected_exit,expected.expected==='pass'?43:null,
+        'negative compilation must not inherit a successful guest exit oracle');
       const entry = readFileSync(join(result.root,'app/src/main.ores'),'utf8');
       assert.match(entry,/pub fnc main/);
       const alias=JSON.parse(readFileSync(join(result.root,'pinned-aliases.json'),'utf8'));
@@ -37,6 +39,38 @@ test('each authored positive or rejection case materializes a closed source inve
   }
 });
 
+test('cross-package rejection is not caused by absent second namespace',()=>{
+  const c=contract.cases.find(x=>x.id==='colliding-package-pin');
+  const result=materializeCase(contract,c.id);
+  try {
+    const entry=readFileSync(join(result.root,'app/src/main.ores'),'utf8');
+    assert.match(entry,/import ns a from "pkg:foo"/);
+    assert.doesNotMatch(entry,/import ns c|c\.response_delta/);
+    assert.match(entry,/a\.aggregate\(21\)/);
+    assert.equal(JSON.parse(readFileSync(join(result.root,'pinned-aliases.json'),'utf8'))
+      ['app@1'].foo,'other@1');
+    assert.equal(result.expected_exit,null);
+  } finally {rmSync(result.root,{force:true,recursive:true});}
+});
+
+test('duplicate export and init negatives target reachable namespace a',()=>{
+  for(const id of ['duplicate-export','provider-init']){
+    const result=materializeCase(contract,id);
+    try {
+      const c=contract.cases.find(x=>x.id===id);
+      const mutated=readFileSync(join(result.root,c.mutation.file),'utf8');
+      assert.match(mutated,/^namespace a;/);
+      if(id==='duplicate-export'){
+        assert.match(mutated,/pub fnc aggregate\(int value\)/);
+        assert.match(readFileSync(join(result.root,
+          'foo/src/compute/aggregation.ores'),'utf8'),/pub fnc aggregate\(int value\)/);
+      } else {
+        assert.match(mutated,/fnc init\(\): int/);
+      }
+    } finally {rmSync(result.root,{force:true,recursive:true});}
+  }
+});
+
 test('fail closed on fabricated execution receipts or inflated parity status', () => {
   const invalid=structuredClone(contract);
   invalid.backend_evidence.llvm.guest_executed=true;
@@ -44,6 +78,15 @@ test('fail closed on fabricated execution receipts or inflated parity status', (
   const invalid2=structuredClone(contract);
   invalid2.grammar_profiles.manifest_namespace.status='EQUIVALENT';
   assert.throws(()=>validateContract(invalid2),/silently unify/);
+});
+
+test('fail closed on wrong negative classifications and missing cases',()=>{
+  const wrong=structuredClone(contract);
+  wrong.cases.find(x=>x.id==='wrong-arity').code='TYPE_MISMATCH';
+  assert.throws(()=>validateContract(wrong),/classification drift/);
+  const absent=structuredClone(contract);
+  absent.cases.pop();
+  assert.throws(()=>validateContract(absent),/incomplete or ambiguous/);
 });
 
 test('fail closed on duplicate provider file and mutation alias', () => {
