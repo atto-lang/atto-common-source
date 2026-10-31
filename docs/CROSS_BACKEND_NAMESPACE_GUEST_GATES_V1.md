@@ -37,6 +37,27 @@ node tools/materialize-namespace-guest-case.mjs provider-cycle
 
 `materialize` creates a fresh private temporary directory, writes 12 immutable guest files plus a pinned-alias metadata file, and prints a JSON locator. The alias file is **test input metadata**, not evidence of a trusted production manifest or proof that a compiler accepted the source. Consumers must remove the temporary directory afterwards.
 
+## Repeatable cross-backend source identity gate (not a guest run)
+
+Given **independently authorized local checkouts** of the Java and LLVM source
+branches, compare their embedded exact guest fixture bytes without network,
+GitHub tokens or cross-organization source export:
+
+```sh
+node tools/compare-namespace-backend-corpus.mjs \
+  /authorized/java/src/test/java/dev/oreslang/PinnedNamespaceSharedCorpusTest.java \
+  /authorized/llvm/tests/native_pinned_namespace_ir_test.cpp
+```
+
+The tool rejects unlisted, duplicated, re-owned, or changed source units. A
+successful response is explicitly `SOURCE_IDENTITY_ONLY_NOT_COMPILER_OR_GUEST`;
+it does **not** establish compiled or executed parity. The source-only synthetic
+tests are `tests/namespace-backend-source-identity.test.mjs` and must not be
+counted as checking an actual backend checkout. The source snippets were
+verified as 12/12 Java and 12/12 LLVM source/path/owner byte matches against
+the shared contract Git blob
+`34b2f245000bc5965371e0b03f64ea8af0e5d78f`; repeat at every new head.
+
 ## Real backend promotion recipe (not implemented by the source-free materializer)
 
 1. Select the independently reviewed grammar profile and exact backend PR head/tree. Pin the actual production compiler binary/build provenance.
