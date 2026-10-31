@@ -22,6 +22,7 @@ test('each authored positive or rejection case materializes a closed source inve
       assert.equal(result.evidence,'NOT_EXECUTED');
       assert.equal(result.expected,expected.expected);
       assert.equal(result.code,expected.code);
+      assert.equal(result.gate_scope,expected.gate_scope);
       assert.equal(result.expected_exit,expected.expected==='pass'?43:null,
         'negative compilation must not inherit a successful guest exit oracle');
       const entry = readFileSync(join(result.root,'app/src/main.ores'),'utf8');
@@ -78,6 +79,21 @@ test('fail closed on fabricated execution receipts or inflated parity status', (
   const invalid2=structuredClone(contract);
   invalid2.grammar_profiles.manifest_namespace.status='EQUIVALENT';
   assert.throws(()=>validateContract(invalid2),/silently unify/);
+});
+
+test('unsupported scalar ABI is not mislabeled a portable language rejection',()=>{
+  const restricted=['named-arg-call','provider-init','provider-cycle'];
+  for(const id of restricted){
+    assert.equal(contract.cases.find(x=>x.id===id).gate_scope,'profile_capability',id);
+  }
+  const portable=['wrong-arity','wrong-arg-type','duplicate-export',
+    'colliding-package-pin','private-export','ambient-path-selector'];
+  for(const id of portable){
+    assert.equal(contract.cases.find(x=>x.id===id).gate_scope,'portable_semantics',id);
+  }
+  const invalid=structuredClone(contract);
+  invalid.cases.find(x=>x.id==='named-arg-call').gate_scope='portable_semantics';
+  assert.throws(()=>validateContract(invalid),/classification drift/);
 });
 
 test('fail closed on wrong negative classifications and missing cases',()=>{
