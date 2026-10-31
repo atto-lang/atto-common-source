@@ -59,6 +59,19 @@ export function validateContract(contract) {
   }
   const foo = contract.sources.filter(s => s.package_instance_id === 'foo@1');
   assert(foo.length === 10, 'not exactly ten foo source units');
+  // The collision source must actually be a different pinned package. If an
+  // author changes its ownership, a supposed no-fallback negative could pass
+  // for the wrong reason (missing package), invalidating the oracle.
+  const entryUnit = contract.sources.find(s => s.path === 'app/src/main.ores');
+  const collisionUnit = contract.sources.find(s => s.path === 'other/src/collision.ores');
+  assert(entryUnit?.package_instance_id === 'app@1' &&
+    collisionUnit?.package_instance_id === 'other@1' &&
+    collisionUnit.content.startsWith('namespace a;\\n') &&
+    collisionUnit.content.includes('pub fnc add(int a, int b): int'),
+    'entry and same-name collision require exact independent package owners');
+  assert(contract.sources.every(s =>
+    ['foo@1', 'other@1', 'app@1'].includes(s.package_instance_id)),
+    'unlisted package authority in closed guest corpus');
   const counts = {a:0,b:0,c:0};
   for (const s of foo) {
     const m = /^namespace ([abc]);\n/.exec(s.content);
