@@ -8,7 +8,8 @@ const MIN = -(1n<<63n), MAX = (1n<<63n)-1n;
 const OVERFLOW = 65537;
 
 function parseCases() {
-  const blocks=raw.split(/^\[\[case\]\]\s*$/m).slice(1);
+  const caseSection=raw.split(/^\[type_contract\]\s*$/m)[0];
+  const blocks=caseSection.split(/^\[\[case\]\]\s*$/m).slice(1);
   return blocks.map(block=>{
     const v={};
     for(const line of block.split('\n')){
