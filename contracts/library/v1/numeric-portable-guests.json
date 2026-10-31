@@ -31,10 +31,50 @@
         "guest_error": "ArithmeticOverflowError",
         "operation": "neg"
       }
+    },
+    {
+      "id": "i64-add-overflow",
+      "path": "fixtures/numeric-v1/i64-add-overflow.ores",
+      "git_blob_sha1": "2809388a67acaf91ec33e7633bf09a49dae5f715",
+      "expected": {
+        "kind": "error",
+        "guest_error": "ArithmeticOverflowError",
+        "operation": "add"
+      }
+    },
+    {
+      "id": "i64-sub-overflow",
+      "path": "fixtures/numeric-v1/i64-sub-overflow.ores",
+      "git_blob_sha1": "2047d38452d9c7d7fd56b217e216f4e7523939d7",
+      "expected": {
+        "kind": "error",
+        "guest_error": "ArithmeticOverflowError",
+        "operation": "sub"
+      }
+    },
+    {
+      "id": "i64-mul-overflow",
+      "path": "fixtures/numeric-v1/i64-mul-overflow.ores",
+      "git_blob_sha1": "2a8dede7f8af7830e2cc1eb5f19e145cf165dcd4",
+      "expected": {
+        "kind": "error",
+        "guest_error": "ArithmeticOverflowError",
+        "operation": "mul"
+      }
+    },
+    {
+      "id": "i64-neg-overflow",
+      "path": "fixtures/numeric-v1/i64-neg-overflow.ores",
+      "git_blob_sha1": "2c3329c860faa3a3b2ae909a708b84a199929e4a",
+      "expected": {
+        "kind": "error",
+        "guest_error": "ArithmeticOverflowError",
+        "operation": "negate"
+      }
     }
   ],
   "backend_copy_path": "tests/fixtures/numeric-v1",
-  "evidence_rule": "A backend claim must compile and execute these exact blob bytes. Rewritten/inlined equivalents are supplementary only.",
+  "evidence_rule": "A backend claim must compile and execute these exact blob bytes for ordinary checked i64 arithmetic and Math intrinsics. Rewritten/inlined equivalents are supplementary only.",
   "provisional_failure_adapters": {
     "java": "host marker ORES_I64_OVERFLOW",
     "llvm": "native trap",

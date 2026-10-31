@@ -36,3 +36,20 @@ test("provisional backend failures are never mislabeled as guest error parity",(
   for(const adapter of Object.values(manifest.provisional_failure_adapters))
     assert.notEqual(adapter,"ArithmeticOverflowError");
 });
+
+
+test("portable default checked i64 operators are byte-pinned typed overflow targets",()=>{
+  const byId=Object.fromEntries(manifest.fixtures.map(x=>[x.id,x]));
+  const expected={
+    "i64-add-overflow":"add",
+    "i64-sub-overflow":"sub",
+    "i64-mul-overflow":"mul",
+    "i64-neg-overflow":"negate",
+  };
+  for(const [id,operation] of Object.entries(expected)){
+    assert.equal(byId[id].expected.kind,"error",id);
+    assert.equal(byId[id].expected.guest_error,"ArithmeticOverflowError",id);
+    assert.equal(byId[id].expected.operation,operation,id);
+  }
+  assert.match(manifest.evidence_rule,/ordinary checked i64 arithmetic and Math intrinsics/);
+});
