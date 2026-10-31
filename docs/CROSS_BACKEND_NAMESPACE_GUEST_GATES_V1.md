@@ -2,7 +2,7 @@
 
 **Status: authored source corpus, NOT compiler-backed execution evidence.**
 
-This draft adds `contracts/conformance/namespace-guest-gates-v1.json` (a closed 12-source-unit inventory: ten `foo@1` providers across flat namespaces `a`/`b`/`c` with counts 3/4/3, one `other@1` collision, one `app@1` entry). One expected positive compiles/executes with exit 43. Fifteen negative mutation/pin cases must be classified **by a real compiler**, with no emitted artifact in the pinned-scalar profile. Twelve are portable semantic/security rejections; three are explicitly **profile_capability** rejections (provider cycles, provider initialization, named-argument call ABI). Do not generalize those three as language bans. The corpus is self-contained source bytes, not parsed from a private carrier.
+This draft adds `contracts/conformance/namespace-guest-gates-v1.json` (a closed 12-source-unit inventory: ten `foo@1` providers across flat namespaces `a`/`b`/`c` with counts 3/4/3, one `other@1` collision, one `app@1` entry). One expected positive compiles/executes with exit 43. An **additional unpromoted positive** `all-provider-exit-53` now calls namespace `b`'s four functions (1+2+3+4) in addition to the original `a`/`c` path, so all ten provider units contribute to observable work. This extension is not one of the 16 original conformance cases; it has separate explicit `compiler_executed=false` and `guest_executed=false` markers. Fifteen negative mutation/pin cases must be classified **by a real compiler**, with no emitted artifact in the pinned-scalar profile. Twelve are portable semantic/security rejections; three are explicitly **profile_capability** rejections (provider cycles, provider initialization, named-argument call ABI). Do not generalize those three as language bans. The corpus is self-contained source bytes, not parsed from a private carrier.
 
 ## Explicit grammar conflict
 
@@ -49,7 +49,7 @@ node tools/compare-namespace-backend-corpus.mjs \
   /authorized/llvm/tests/native_pinned_namespace_ir_test.cpp
 ```
 
-The tool rejects unlisted, duplicated, re-owned, or changed source units. A
+The tool rejects unlisted, duplicated, re-owned, or changed source units. It also rejects any byte drift in the independently authored Java/LLVM extended exit-53 guest source. A
 successful response is explicitly `SOURCE_IDENTITY_ONLY_NOT_COMPILER_OR_GUEST`;
 it does **not** establish compiled or executed parity. The source-only synthetic
 tests are `tests/namespace-backend-source-identity.test.mjs` and must not be
@@ -62,7 +62,7 @@ the shared contract Git blob
 
 1. Select the independently reviewed grammar profile and exact backend PR head/tree. Pin the actual production compiler binary/build provenance.
 2. Build a source-owned **closed package inventory** and exact dependency manifest/lockfile pins. Reject any input not included by these pins, regardless of file or namespace name.
-3. Compile the untouched `ns-exit-43` case through the shipping backend entry point, not a source-free oracle. Link and execute the generated guest; assert process exit 43, no unexpected output, and no alternate host-executed implementation.
+3. Compile the untouched `ns-exit-43` case through the shipping backend entry point, not a source-free oracle. Link and execute the generated guest; assert process exit 43, no unexpected output, and no alternate host-executed implementation. Then compile the extended positive independently and assert guest exit 53. Neither positive may rely on source-authored or host-computed exit values.
 4. For all 15 negative cases, enforce appropriate compiler-owned rejection code and no emitted executable. Wrong package pin, private/duplicate exports, wrong arity/type, ambient paths, and lexical binding collisions must fail closed as portable semantics. Named-argument ABI, provider initialization, and provider cycles are restricted scalar-profile failures only; a full language compiler may support those constructs with checked semantics.
 5. Repeat with source input order permuted; compare observable results and deterministic ABI/public symbol identities. ABI change in any public provider invalidates dependent cache fingerprints.
 6. Record exact source PR head, source tree SHA, compiler source SHA, binary identity, workflow run+attempt, job IDs, runner IDs, executed steps, actual compiler/native/Wasm/NativeAOT output, and independent review. Source-free authoring checks and zero-step workflow failures never promote `compiler_executed`/`guest_executed`.
