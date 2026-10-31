@@ -152,6 +152,26 @@ export function validateContract(contract) {
   }
   assert(Object.keys(contract.backend_evidence).length === 5,
     'missing backend evidence states');
+  // Extended positive uses all ten provider functions, not only a/c.
+  // It is an authored future native guest oracle, not a compiler receipt.
+  const expectedAllProviders = [
+    'import ns a from "pkg:foo";',
+    'import ns b from "pkg:foo";',
+    'import ns c from "pkg:foo";',
+    'pub fnc main(): int { return a.aggregate(21) + c.response_delta() '
+      + '+ b.model_code() + b.query_code() + b.storage_code() '
+      + '+ b.validation_code(); }'
+  ].join('\n') + '\n';
+  const extended = contract.extended_positive;
+  assert(extended?.id === 'all-provider-exit-53' &&
+    extended.profile === 'pinned_ns' &&
+    extended.entry_source === expectedAllProviders &&
+    extended.expected_exit === 53 &&
+    JSON.stringify(extended.backend_targets) === '["java","llvm"]' &&
+    extended.compiler_executed === false &&
+    extended.guest_executed === false &&
+    extended.evidence === 'NOT_EXECUTED',
+    'all-provider guest oracle drift or unsupported execution claim');
   assert(contract.grammar_profiles?.manifest_namespace?.status ===
     'ALTERNATE_DRAFT_NOT_EQUIVALENT', 'do not silently unify import dialects');
   return true;
