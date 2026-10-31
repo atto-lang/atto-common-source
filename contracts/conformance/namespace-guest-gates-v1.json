@@ -22,7 +22,8 @@
         "oreslang-common-source#189",
         "oreslang-source.llvm#1224",
         "oreslang-source.java#2255"
-      ]
+      ],
+      "capability_scope": "CLOSED_PINNED_SCALAR_ABI: positional int/bool call lowering and no guest initialization/recursion."
     },
     "manifest_namespace": {
       "syntax": "import namespace billing as payments from \"checkout\";",
@@ -100,7 +101,8 @@
     {
       "id": "ns-exit-43",
       "expected": "pass",
-      "code": "EXECUTE"
+      "code": "EXECUTE",
+      "gate_scope": "execution"
     },
     {
       "id": "missing-pin",
@@ -112,7 +114,8 @@
           "import ns a from \"pkg:foo\";",
           "import ns a from \"pkg:missing\";"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "colliding-package-pin",
@@ -129,7 +132,8 @@
           "import ns a from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta(); }\n",
           "import ns a from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21); }\n"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "unknown-export",
@@ -141,7 +145,8 @@
           "a.aggregate(21)",
           "a.absent(21)"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "wrong-arity",
@@ -153,7 +158,8 @@
           "a.aggregate(21)",
           "a.aggregate()"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "wrong-arg-type",
@@ -165,7 +171,8 @@
           "a.aggregate(21)",
           "a.aggregate(true)"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "duplicate-export",
@@ -177,7 +184,8 @@
           "pub fnc add(int a, int b)",
           "pub fnc aggregate(int value): int { return 0; }\npub fnc add(int a, int b)"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "private-export",
@@ -189,7 +197,8 @@
           "pub fnc aggregate",
           "fnc aggregate"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "shadow-import",
@@ -201,7 +210,8 @@
           "pub fnc main(): int {",
           "pub fnc a(): int { return 0; }\npub fnc main(): int {"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "duplicate-import",
@@ -213,7 +223,8 @@
           "import ns a from \"pkg:foo\";",
           "import ns a from \"pkg:foo\";\nimport ns a from \"pkg:foo\";"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "ambient-path-selector",
@@ -225,7 +236,8 @@
           "import ns a from \"pkg:foo\";",
           "import ns a from \"../foo\";"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "provider-cycle",
@@ -237,7 +249,8 @@
           "return a + b;",
           "return aggregate(a);"
         ]
-      }
+      },
+      "gate_scope": "profile_capability"
     },
     {
       "id": "cross-namespace-implicit",
@@ -249,7 +262,8 @@
           "double(value) + 1",
           "model_code() + 1"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     },
     {
       "id": "provider-init",
@@ -261,7 +275,8 @@
           "pub fnc add",
           "fnc init(): int { return 0; }\npub fnc add"
         ]
-      }
+      },
+      "gate_scope": "profile_capability"
     },
     {
       "id": "named-arg-call",
@@ -273,7 +288,8 @@
           "add(value, value)",
           "add(a: value, b: value)"
         ]
-      }
+      },
+      "gate_scope": "profile_capability"
     },
     {
       "id": "wrong-bool-type",
@@ -285,7 +301,8 @@
           "route_ok(code)",
           "route_ok(true)"
         ]
-      }
+      },
+      "gate_scope": "portable_semantics"
     }
   ],
   "backend_evidence": {
@@ -320,5 +337,5 @@
       "namespace_syntax_resolved": false
     }
   },
-  "promotion": "A backend pass requires exact-source compiler and emitted executable / actual guest execution, valid actor/package provenance and nonzero steps. This JSON, model tests, parser admission, simulated output, and host-only checks are insufficient."
+  "promotion": "A backend pass requires exact-source compiler and emitted executable / actual guest execution, valid actor/package provenance and nonzero steps. This JSON, model tests, parser admission, simulated output, and host-only checks are insufficient. Compiler-negative profile_capability results prove only a backend's declared restricted lowering, not universal Oreslang rejection or complete language parity. Named arguments, reachable package initialization and recursive provider calls may be valid beyond the pinned scalar profile."
 }
