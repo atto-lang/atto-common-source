@@ -269,7 +269,7 @@
       "cases": [
         {
           "id": "deployment-1",
-          "expect": "reject",
+          "expect": "accept",
           "description": "General service targets are not forced into strict RT admission"
         },
         {
