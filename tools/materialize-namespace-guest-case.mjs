@@ -8,22 +8,22 @@ import { fileURLToPath } from 'node:url';
 const contractUrl = new URL('../contracts/conformance/namespace-guest-gates-v1.json', import.meta.url);
 const namePattern = /^[a-z][a-z0-9-]{0,63}$/;
 const expectedCaseClasses = Object.freeze({
-  'ns-exit-43': ['pass', 'EXECUTE'],
-  'missing-pin': ['reject', 'UNDECLARED_ALIAS'],
-  'colliding-package-pin': ['reject', 'NO_CROSS_PACKAGE_FALLBACK'],
-  'unknown-export': ['reject', 'UNKNOWN_EXPORT'],
-  'wrong-arity': ['reject', 'WRONG_ARITY'],
-  'wrong-arg-type': ['reject', 'TYPE_MISMATCH'],
-  'duplicate-export': ['reject', 'DUPLICATE_PUBLIC_ARITY'],
-  'private-export': ['reject', 'VISIBILITY_DENIED'],
-  'shadow-import': ['reject', 'SHADOWED_BINDING'],
-  'duplicate-import': ['reject', 'DUPLICATE_IMPORT'],
-  'ambient-path-selector': ['reject', 'INVALID_SELECTOR'],
-  'provider-cycle': ['reject', 'CYCLIC_PROVIDER_CALL'],
-  'cross-namespace-implicit': ['reject', 'NO_IMPLICIT_NAMESPACE'],
-  'provider-init': ['reject', 'UNSUPPORTED_INITIALIZATION'],
-  'named-arg-call': ['reject', 'UNSUPPORTED_ABI'],
-  'wrong-bool-type': ['reject', 'TYPE_MISMATCH'],
+  'ns-exit-43': ['pass', 'EXECUTE', 'execution'],
+  'missing-pin': ['reject', 'UNDECLARED_ALIAS', 'portable_semantics'],
+  'colliding-package-pin': ['reject', 'NO_CROSS_PACKAGE_FALLBACK', 'portable_semantics'],
+  'unknown-export': ['reject', 'UNKNOWN_EXPORT', 'portable_semantics'],
+  'wrong-arity': ['reject', 'WRONG_ARITY', 'portable_semantics'],
+  'wrong-arg-type': ['reject', 'TYPE_MISMATCH', 'portable_semantics'],
+  'duplicate-export': ['reject', 'DUPLICATE_PUBLIC_ARITY', 'portable_semantics'],
+  'private-export': ['reject', 'VISIBILITY_DENIED', 'portable_semantics'],
+  'shadow-import': ['reject', 'SHADOWED_BINDING', 'portable_semantics'],
+  'duplicate-import': ['reject', 'DUPLICATE_IMPORT', 'portable_semantics'],
+  'ambient-path-selector': ['reject', 'INVALID_SELECTOR', 'portable_semantics'],
+  'provider-cycle': ['reject', 'CYCLIC_PROVIDER_CALL', 'profile_capability'],
+  'cross-namespace-implicit': ['reject', 'NO_IMPLICIT_NAMESPACE', 'portable_semantics'],
+  'provider-init': ['reject', 'UNSUPPORTED_INITIALIZATION', 'profile_capability'],
+  'named-arg-call': ['reject', 'UNSUPPORTED_ABI', 'profile_capability'],
+  'wrong-bool-type': ['reject', 'TYPE_MISMATCH', 'portable_semantics'],
 });
 
 function assert(ok, msg) { if (!ok) throw new Error(msg); }
@@ -78,7 +78,8 @@ export function validateContract(contract) {
     ids.add(c.id);
     const expectedClass = expectedCaseClasses[c.id];
     assert(expectedClass && c.expected === expectedClass[0] &&
-      c.code === expectedClass[1], 'case classification drift: ' + c.id);
+      c.code === expectedClass[1] && c.gate_scope === expectedClass[2],
+      'case classification drift: ' + c.id);
     assert(c.expected === 'pass' || c.expected === 'reject', 'invalid expected outcome');
     if (c.expected === 'pass') {
       passing++;
@@ -169,6 +170,7 @@ export function materializeCase(contract, id) {
       // A compile-negative case never has a guest exit oracle; running a
       // leftover executable from another case would be a false pass.
       expected_exit:selected.expected === 'pass' ? 43 : null,
+      gate_scope:selected.gate_scope,
       evidence:'NOT_EXECUTED'};
   } catch(error) {
     rmSync(root,{recursive:true,force:true});
