@@ -27,6 +27,8 @@ jobs:
         run: python3 -m py_compile scripts/*.py
       - name: Verify String/CString ABI v1 reference contract
         run: node tests/verify-string-abi-v1.mjs
+      - name: Verify developer and systems hardening v1 inventory (reference only)
+        run: node tests/developer-systems-hardening-v1.test.mjs
       - name: Format and lint Rust IPC models
         run: |
           cargo fmt --manifest-path tools/ipc-models/Cargo.toml -- --check
