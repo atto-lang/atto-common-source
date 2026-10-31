@@ -54,6 +54,31 @@ export function llvmCorpus(text) {
   return sources;
 }
 
+function stringLiterals(text) {
+  return [...text.matchAll(new RegExp(stringLiteral,'g'))]
+    .map(match => decode(match[0]));
+}
+export function javaExtendedGuest(text) {
+  const from = text.indexOf('void allTenProviderFilesContributeToActualGuestResult53()');
+  if (from < 0 || text.indexOf(
+      'void allTenProviderFilesContributeToActualGuestResult53()', from + 1) !== -1)
+    fail('missing or duplicate Java extended guest');
+  const entry = text.indexOf('corpus.sources().put(ENTRY,', from);
+  const end = text.indexOf('assertEquals(53,', entry);
+  if (entry < 0 || end < 0) fail('missing Java 53 entry oracle');
+  return stringLiterals(text.slice(entry + 'corpus.sources().put(ENTRY,'.length, end)).join('');
+}
+export function llvmExtendedGuest(text) {
+  const from = text.indexOf('if (all_providers) {');
+  if (from < 0 || text.indexOf('if (all_providers) {', from + 1) !== -1)
+    fail('missing or duplicate LLVM extended guest');
+  const entry = text.indexOf('source(program, "app/src/main.ores").source =', from);
+  const end = text.indexOf('return program;', entry);
+  if (entry < 0 || end < 0) fail('missing LLVM 53 entry oracle');
+  return stringLiterals(text.slice(
+    entry + 'source(program, "app/src/main.ores").source ='.length, end)).join('');
+}
+
 export function verifyBackendSourceIdentity(contract, javaText, llvmText) {
   validateContract(contract);
   const expected = new Map(contract.sources.map(s => [s.path, s]));
@@ -72,7 +97,11 @@ export function verifyBackendSourceIdentity(contract, javaText, llvmText) {
       seen.add(unit.path);
     }
   }
-  return {java:expected.size, llvm:expected.size,
+  const guest53 = contract.extended_positive.entry_source;
+  if (javaExtendedGuest(javaText) !== guest53 ||
+      llvmExtendedGuest(llvmText) !== guest53)
+    fail('extended all-provider exit-53 source bytes drift');
+  return {java:expected.size, llvm:expected.size, extended_positive:53,
     evidence:'SOURCE_IDENTITY_ONLY_NOT_COMPILER_OR_GUEST'};
 }
 
