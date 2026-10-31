@@ -39,7 +39,7 @@ test('source-byte and package-owner changes reject cross-backend identity',()=>{
     /llvm source identity or bytes drift/);
 });
 test('missing and duplicate source-unit inventory rejects',()=>{
-  const javaShort=javaMirror().replace(
+  const javaShort=javaMirror().replaceAll(
     'sources.put("foo/src/data/models.ores"', 'sources.put("foo/src/data/unlisted.ores"');
   assert.throws(()=>verifyBackendSourceIdentity(contract,javaShort,llvmMirror()),
     /identity or bytes drift/);
