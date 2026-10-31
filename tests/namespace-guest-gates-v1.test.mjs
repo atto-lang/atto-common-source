@@ -114,6 +114,16 @@ test('fail closed on duplicate provider file and mutation alias', () => {
   assert.throws(()=>validateContract(bad),/mutation target not unique/);
 });
 
+test('colliding namespace remains owned by a separately verified package',()=>{
+  const forged=structuredClone(contract);
+  forged.sources.find(s=>s.path==='other/src/collision.ores').package_instance_id='unlisted@1';
+  assert.throws(()=>validateContract(forged),
+    /entry and same-name collision|unlisted package authority/);
+  const drift=structuredClone(contract);
+  drift.sources.find(s=>s.path==='app/src/main.ores').package_instance_id='unknown@1';
+  assert.throws(()=>validateContract(drift),/exact independent package owners/);
+});
+
 test('source path cannot escape materialized case root', () => {
   const bad=structuredClone(contract);
   bad.sources[0].path='../outside.ores';
