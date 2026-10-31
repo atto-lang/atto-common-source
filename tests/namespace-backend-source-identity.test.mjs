@@ -15,20 +15,29 @@ function javaMirror() {
       'sources.put('+JSON.stringify(s.path)+', '+JSON.stringify(s.content)+');\n' +
       'owners.put('+JSON.stringify(s.path)+', '+
         JSON.stringify(s.package_instance_id)+');').join('\n') +
-    '\nreturn new Corpus(sources, owners);';
+    '\nreturn new Corpus(sources, owners);' +
+    '\nvoid allTenProviderFilesContributeToActualGuestResult53() {' +
+    ' corpus.sources().put(ENTRY,' +
+    JSON.stringify(contract.extended_positive.entry_source) +
+    '); assertEquals(53, execute()); }';
 }
 function llvmMirror() {
   return 'input.sources = {\n' +
     contract.sources.map(s=>'{' + JSON.stringify(s.path) + ', ' +
       JSON.stringify(s.package_instance_id) + ', ' +
       JSON.stringify(s.content) + '}').join(',\n') +
-    '\n};\n    return input;';
+    '\n};\n    return input;' +
+    '\nif (all_providers) {' +
+    ' source(program, "app/src/main.ores").source =' +
+    JSON.stringify(contract.extended_positive.entry_source) +
+    '; return program; }';
 }
 test('synthetic source triples agree exactly with the proposed inventory',()=>{
   assert.equal(javaCorpus(javaMirror()).length,12);
   assert.equal(llvmCorpus(llvmMirror()).length,12);
   assert.deepEqual(verifyBackendSourceIdentity(contract,javaMirror(),llvmMirror()),
-    {java:12,llvm:12,evidence:'SOURCE_IDENTITY_ONLY_NOT_COMPILER_OR_GUEST'});
+    {java:12,llvm:12,extended_positive:53,
+      evidence:'SOURCE_IDENTITY_ONLY_NOT_COMPILER_OR_GUEST'});
 });
 test('source-byte and package-owner changes reject cross-backend identity',()=>{
   const javaWrong=javaMirror().replace('return a + b;', 'return a - b;');
@@ -48,6 +57,15 @@ test('missing and duplicate source-unit inventory rejects',()=>{
   assert.throws(()=>verifyBackendSourceIdentity(contract,javaMirror(),twice),
     /identity or bytes drift/);
 });
+test('the second guest source rejects a changed return or import',()=>{
+  const modifiedJava=javaMirror().replace('a.aggregate(21)', 'a.aggregate(20)');
+  assert.throws(()=>verifyBackendSourceIdentity(contract,modifiedJava,llvmMirror()),
+    /extended all-provider exit-53 source bytes drift/);
+  const modifiedLlvm=llvmMirror().replace('b.storage_code()', 'b.query_code()');
+  assert.throws(()=>verifyBackendSourceIdentity(contract,javaMirror(),modifiedLlvm),
+    /extended all-provider exit-53 source bytes drift/);
+});
+
 test('fixtures cannot be promoted as backend evidence',()=>{
   assert.ok(contract.backend_evidence.java.guest_executed===false &&
     contract.backend_evidence.llvm.guest_executed===false);
