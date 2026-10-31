@@ -27,7 +27,7 @@ The Java/Graal source repository may carry pure-Oreslang `BigIntValue` and `Deci
 
 ## bigint correctness and security
 - Canonical serialization: signed magnitude rules and byte order MUST be specified before wire compatibility is asserted; decimal text form is normalized ASCII base-10 with optional leading '-' and zero spelled '0'. No leading '+' or redundant leading zero in canonical output.
-- Division semantics: quotient truncates toward zero, remainder has dividend's sign; `a == (a / b) * b + (a % b)` and `abs(r) < abs(b)` for nonzero divisor. Division by zero is a typed error.
+- Division semantics: quotient truncates toward zero, remainder has dividend's sign; `a == TruncDiv(a,b) * b + Mod(a,b)` (using explicit integer quotient and named remainder functions; source `%` is forbidden) and `abs(r) < abs(b)` for nonzero divisor. Division by zero is a typed error.
 - Cross-type comparisons must be exact; never convert bigint to float to compare. Explicit lossless conversion gates and checked narrowing. bigint -> float requires explicit conversion/rounding acknowledgement.
 - Define quotas for bits, operands, output size and CPU work; enforce before catastrophic allocation. Power, shifts, parsing, format and serialization must be bounded and cancellation/cooperation-aware. Constant-time guarantees are NOT implied.
 - Hard-real-time regions may use bigint only when a statically/provably bounded maximum bit width and operation budget are attached to the value/profile. Unbounded bigint is rejected from hard-RT certification rather than pretending arbitrary-precision latency is bounded.
