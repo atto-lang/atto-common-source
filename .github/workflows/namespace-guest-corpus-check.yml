@@ -1,0 +1,32 @@
+name: Namespace guest corpus authoring checks (not parity)
+on:
+  pull_request:
+    paths:
+      - 'contracts/conformance/namespace-guest-gates-v1.json'
+      - 'tools/materialize-namespace-guest-case.mjs'
+      - 'tests/namespace-guest-gates-v1.test.mjs'
+      - 'docs/CROSS_BACKEND_NAMESPACE_GUEST_GATES_V1.md'
+      - '.github/workflows/namespace-guest-corpus-check.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  source-corpus-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout corpus
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Test source-free namespace corpus only
+        run: node --test tests/namespace-guest-gates-v1.test.mjs
+      - name: Explicit evidence scope
+        if: always()
+        run: |
+          echo "This workflow checks only authored fixture consistency." >> "$GITHUB_STEP_SUMMARY"
+          echo "It does not compile Oreslang, generate LLVM/CIL/Wasm, execute a guest or authorize any source transfer." >> "$GITHUB_STEP_SUMMARY"
