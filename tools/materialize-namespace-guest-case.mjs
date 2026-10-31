@@ -66,7 +66,7 @@ export function validateContract(contract) {
   const collisionUnit = contract.sources.find(s => s.path === 'other/src/collision.ores');
   assert(entryUnit?.package_instance_id === 'app@1' &&
     collisionUnit?.package_instance_id === 'other@1' &&
-    collisionUnit.content.startsWith('namespace a;\\n') &&
+    collisionUnit.content.startsWith('namespace a;\n') &&
     collisionUnit.content.includes('pub fnc add(int a, int b): int'),
     'entry and same-name collision require exact independent package owners');
   assert(contract.sources.every(s =>
