@@ -118,10 +118,10 @@ test('colliding namespace remains owned by a separately verified package',()=>{
   const forged=structuredClone(contract);
   forged.sources.find(s=>s.path==='other/src/collision.ores').package_instance_id='unlisted@1';
   assert.throws(()=>validateContract(forged),
-    /entry and same-name collision|unlisted package authority/);
+    /closed source inventory path\/package authority drift/);
   const drift=structuredClone(contract);
   drift.sources.find(s=>s.path==='app/src/main.ores').package_instance_id='unknown@1';
-  assert.throws(()=>validateContract(drift),/exact independent package owners/);
+  assert.throws(()=>validateContract(drift),/closed source inventory path\/package authority drift/);
 });
 
 test('closed provider inventory does not accept an renamed or re-owned source',()=>{
