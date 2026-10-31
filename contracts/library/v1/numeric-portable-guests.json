@@ -96,7 +96,7 @@
     }
   ],
   "backend_copy_path": "tests/fixtures/numeric-v1",
-  "evidence_rule": "A backend claim must compile and execute these exact blob bytes. Overflow evidence must prove no wrapping; catch evidence must enter ordinary guest catch as ArithmeticOverflowError, and typed-catch evidence must prove nominal guest identity rather than host exception text. Rewritten/inlined equivalents are supplementary only.",
+  "evidence_rule": "A backend claim must compile and execute these exact blob bytes. Ordinary checked i64 arithmetic and Math intrinsics must produce typed ArithmeticOverflowError rather than silently wrap or host-trap. Catch evidence must enter ordinary guest catch as ArithmeticOverflowError, and typed-catch evidence must prove nominal guest identity rather than host exception text. Rewritten/inlined equivalents are supplementary only.",
   "provisional_failure_adapters": {
     "java": "host marker ORES_I64_OVERFLOW",
     "llvm": "native trap",
