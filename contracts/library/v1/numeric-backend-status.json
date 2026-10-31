@@ -11,7 +11,7 @@
       "bigint": "reference_class_only",
       "decimal": "reference_class_only",
       "strict_conversions": "tracked_java_issue_2194_not_complete",
-      "overflow_error_abi": "host_marker_provisional",
+      "overflow_error_abi": "guest_ArithmeticOverflowError_code_65537_catch_and_trap_staged; explicit source throw/raise/panic still closed",
       "verified_compiled": false
     },
     "llvm": {
@@ -21,7 +21,7 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "tracked_llvm_issue_1111_not_complete",
-      "overflow_error_abi": "native_trap_provisional",
+      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; uncaught overflow still native trap",
       "verified_compiled": false
     },
     "wasm": {
@@ -31,7 +31,7 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "depends_on_pinned_llvm_frontend",
-      "overflow_error_abi": "wasm_trap_provisional",
+      "overflow_error_abi": "wasm_trap_provisional; LLVM typed catch frame deliberately fail_closed",
       "verified_compiled": false
     },
     "net": {
@@ -56,11 +56,14 @@
     }
   },
   "blockers": [
-    "typed guest ArithmeticOverflowError/effect propagation",
+    "full ArithmeticOverflowError effect propagation beyond staged Java catch/trap and restricted LLVM terminal try/catch",
     "strict explicit-only numeric conversions on every backend",
     "distinct f32 representation where claimed",
     "source primitive bigint and decimal representations across all five backends",
     "exact-head stepful compiler/runtime/AOT evidence",
     "independently bound source-to-compiler-binary provenance for cross-backend carrier evidence"
-  ]
+  ],
+  "evidence_notes": {
+    "overflow_error_abi": "Staged semantics are not compiled verification. Java still lacks enabled explicit source throw/raise/panic lowering; LLVM only routes checked-i64 overflow into the typed Throw/code ABI inside its restricted terminal try/catch slice. Outside that slice LLVM and Wasm still trap."
+  }
 }

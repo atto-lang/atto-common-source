@@ -26,9 +26,15 @@ test("unsupported precision families remain explicitly fail-closed or unclaimed"
   assert.equal(ledger.backends.wasm.decimal,"fail_closed");
 });
 
-test("typed overflow and strict conversions remain blocking everywhere",()=>{
+test("typed overflow staging is precise and never upgraded to compiled proof",()=>{
   assert.ok(ledger.blockers.some(x=>x.includes("ArithmeticOverflowError")));
   assert.ok(ledger.blockers.some(x=>x.includes("explicit-only numeric conversions")));
+  assert.match(ledger.backends.java.overflow_error_abi,/ArithmeticOverflowError_code_65537/);
+  assert.match(ledger.backends.java.overflow_error_abi,/source throw\/raise\/panic still closed/);
+  assert.match(ledger.backends.llvm.overflow_error_abi,/typed_Throw_code_65537/);
+  assert.match(ledger.backends.llvm.overflow_error_abi,/uncaught overflow still native trap/);
+  assert.match(ledger.backends.wasm.overflow_error_abi,/fail_closed/);
   for(const backend of Object.values(ledger.backends))
-    assert.match(backend.overflow_error_abi,/provisional/);
+    assert.equal(backend.verified_compiled,false);
+  assert.match(ledger.evidence_notes.overflow_error_abi,/not compiled verification/);
 });
