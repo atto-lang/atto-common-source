@@ -21,7 +21,7 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "tracked_llvm_issue_1111_not_complete",
-      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; nominal_Error_object_identity_fail_closed; uncaught overflow still native trap",
+      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; allocation_free_I64EffectResult_cross_frame_ABI_staged_but_call_codegen_not_wired; nominal_Error_object_identity_fail_closed; uncaught overflow still native trap",
       "verified_compiled": false
     },
     "wasm": {
@@ -41,7 +41,7 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "tracked_net_issue_272",
-      "overflow_error_abi": "clr_overflow_exception_provisional",
+      "overflow_error_abi": "Throw_code_65537_normalized_in_OresIR_and_emitted_CIL_verification; production_generated_CIL_still_uses_CLR_checked_exception_transport; source_catch_not_lowered",
       "verified_compiled": false
     },
     "forge": {
@@ -51,12 +51,12 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "tracked_forge_issue_155",
-      "overflow_error_abi": "native_trap_provisional",
+      "overflow_error_abi": "Throw_code_65537_checked_interpreter_and_effect_aware_x86_64_AArch64_native_ABI_staged; no_handler_native_path_still_traps; source_catch_not_lowered",
       "verified_compiled": false
     }
   },
   "blockers": [
-    "full ArithmeticOverflowError effect propagation beyond staged Java catch/trap and restricted LLVM terminal try/catch",
+    "full ArithmeticOverflowError propagation through production call ABIs, source handlers and actor/root escalation on every backend",
     "strict explicit-only numeric conversions on every backend",
     "distinct f32 representation where claimed",
     "source primitive bigint and decimal representations across all five backends",
@@ -64,6 +64,6 @@
     "independently bound source-to-compiler-binary provenance for cross-backend carrier evidence"
   ],
   "evidence_notes": {
-    "overflow_error_abi": "Staged semantics are not compiled verification. Java stages a guest ArithmeticOverflowError object with Error-root matching but still lacks enabled explicit source throw/raise/panic lowering. LLVM routes checked-i64 overflow into typed Throw/code 65537 only inside its restricted terminal try/catch slice; the exact nominal typed-catch fixture is intentionally rejected until native Error objects/type tests exist. Outside that slice LLVM and Wasm still trap."
+    "overflow_error_abi": "Staged semantics are not compiled verification. Java has a guest ArithmeticOverflowError object with Error-root matching but explicit source throw/raise/panic remains closed. LLVM has terminal checked-overflow catch plus an allocation-free cross-frame i64 effect-result ABI, but ordinary call lowering still returns scalar i64 and uncaught overflow still traps. .NET normalizes CLR overflow to Throw/65537 in OresIR and emitted-CIL verification, while production generated CIL still uses CLR checked-exception transport until a guest handler frame is emitted. Forge has Throw/65537 in the checked interpreter and an opt-in effect-aware x86-64/AArch64 register ABI; its no-handler native emitter still traps. None of these staged bridges establish full source catch/raise/panic parity."
   }
 }
