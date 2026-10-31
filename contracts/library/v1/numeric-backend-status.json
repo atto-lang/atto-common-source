@@ -21,7 +21,7 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "tracked_llvm_issue_1111_not_complete",
-      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; restricted_private_straight_line_i64_call_codegen_uses_value_kind_code_effect_result; cross_frame_leaf_middle_outer_catch_fixture_9d28e45c_staged; nominal_Error_object_identity_fail_closed; uncaught_root_overflow_still_native_trap",
+      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; restricted_private_straight_line_i64_call_codegen_uses_value_kind_code_effect_result; cross_frame_leaf_middle_outer_catch_fixture_9d28e45c_staged; uncaught_cross_frame_root_Throw_to_Raise_to_Panic_exit1_fixture_26768bad_staged; actor_runtime_CONTROL_bridge_promotes_Throw65537_to_Panic_preserving_origin_and_code; source_actor_callback_effect_ABI_not_wired; nominal_Error_object_identity_fail_closed",
       "verified_compiled": false
     },
     "wasm": {
@@ -56,7 +56,7 @@
     }
   },
   "blockers": [
-    "full ArithmeticOverflowError propagation through production call ABIs, source handlers and actor/root escalation on every backend",
+    "full ArithmeticOverflowError propagation through production call ABIs, nominal source handlers, generated source-actor callback effect ABI, and root/actor escalation on every backend",
     "strict explicit-only numeric conversions on every backend",
     "distinct f32 representation where claimed",
     "source primitive bigint and decimal representations across all five backends",
@@ -64,6 +64,6 @@
     "independently bound source-to-compiler-binary provenance for cross-backend carrier evidence"
   ],
   "evidence_notes": {
-    "overflow_error_abi": "Staged semantics are not compiled verification. Java has a guest ArithmeticOverflowError object with Error-root matching but explicit source throw/raise/panic remains closed. LLVM now has restricted native cross-frame propagation for private straight-line scalar helpers: effect-capable helpers return {value,kind,code}, intervening helpers forward non-Return results, and the existing terminal overflow catch can consume exact Throw/65537. The three-function source fixture has Git blob 9d28e45cd65f5500d8b34e01f7f14264a19bac06. Exported/module/method/async/task/pipeline/Wasm/Cortex-M ABIs are intentionally excluded, nominal Error objects are still fail-closed, and an uncaught root overflow still traps. .NET normalizes CLR overflow to Throw/65537 in OresIR and emitted-CIL verification, while production generated CIL still uses CLR checked-exception transport until a guest handler frame is emitted. Forge has Throw/65537 in the checked interpreter and an opt-in effect-aware x86-64/AArch64 register ABI; its no-handler native emitter still traps. None of these staged bridges establish full source catch/raise/panic parity."
+    "overflow_error_abi": "Staged semantics are not compiled verification. Java has a guest ArithmeticOverflowError object with Error-root matching but explicit source throw/raise/panic remains closed. LLVM has restricted native cross-frame propagation for private straight-line scalar helpers. Its native root wrapper now accepts an internal {value,kind,code} guest-main result only when an effect-capable helper actually escapes, performs root-owned teardown first, and stages explicit Throw -> Raise -> Panic process escalation with exit status 1; exact root fixture blob 26768bad4603a12d00f2486ca70a58bb2a2f0b84. The native EffectSupervisorBridge now uses the same escalation helper and tests ArithmeticOverflowError(65537) delivery as supervisor priority CONTROL Panic while preserving origin Throw, code, actor id and parent id; ordinary user mail is not admitted in that turn. This actor evidence is runtime-bridge evidence only: SourceActorBootstrap still uses a plain i64 callback ABI, so compiler-generated source actors cannot yet propagate the effect result into supervision. The three-frame caught source fixture remains blob 9d28e45cd65f5500d8b34e01f7f14264a19bac06. Exported/module/method/async/task/pipeline/Wasm/Cortex-M ABIs remain excluded and nominal Error objects remain fail-closed. .NET normalizes CLR overflow to Throw/65537 in OresIR and emitted-CIL verification, while production generated CIL still uses CLR checked-exception transport until a guest handler frame is emitted. Forge has Throw/65537 in the checked interpreter and an opt-in effect-aware x86-64/AArch64 register ABI; its no-handler native emitter still traps."
   }
 }
