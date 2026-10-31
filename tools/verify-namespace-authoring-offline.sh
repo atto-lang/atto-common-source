@@ -45,8 +45,24 @@ done
 
 printf 'NAMESPACE_AUTHORING_START head=%s tree=%s node=%s scope=SOURCE_ONLY\n' \
   "$actual_head" "$actual_tree" "$(node --version)"
-node --test \
+test_report="$(mktemp "${TMPDIR:-/tmp}/ores-ns-authoring.XXXXXXXX")"
+trap 'rm -f "$test_report"' EXIT
+node --test --test-reporter=tap \
   tests/namespace-guest-gates-v1.test.mjs \
-  tests/namespace-backend-source-identity.test.mjs
-printf 'NAMESPACE_AUTHORING_PASS head=%s tree=%s scope=NOT_COMPILER_OR_GUEST\n' \
+  tests/namespace-backend-source-identity.test.mjs | tee "$test_report"
+# A green process can still contain skipped, cancelled or TODO tests.
+# Lock the independently authored 13 + 5 source-only cases to real execution.
+for expected_line in \
+  '# tests 18' '# pass 18' '# fail 0' \
+  '# cancelled 0' '# skipped 0' '# todo 0'; do
+  if ! grep -Fxq "$expected_line" "$test_report"; then
+    echo "NAMESPACE_AUTHORING_REJECTED: missing TAP summary: $expected_line" >&2
+    exit 1
+  fi
+done
+if [[ -n "$(git status --porcelain=v1 --untracked-files=all)" ]]; then
+  echo 'NAMESPACE_AUTHORING_REJECTED: test execution modified checkout' >&2
+  exit 1
+fi
+printf 'NAMESPACE_AUTHORING_PASS head=%s tree=%s test_count=18 scope=NOT_COMPILER_OR_GUEST\n' \
   "$actual_head" "$actual_tree"
