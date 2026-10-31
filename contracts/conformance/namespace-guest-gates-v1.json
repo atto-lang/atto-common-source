@@ -337,5 +337,18 @@
       "namespace_syntax_resolved": false
     }
   },
-  "promotion": "A backend pass requires exact-source compiler and emitted executable / actual guest execution, valid actor/package provenance and nonzero steps. This JSON, model tests, parser admission, simulated output, and host-only checks are insufficient. Compiler-negative profile_capability results prove only a backend's declared restricted lowering, not universal Oreslang rejection or complete language parity. Named arguments, reachable package initialization and recursive provider calls may be valid beyond the pinned scalar profile."
+  "promotion": "A backend pass requires exact-source compiler and emitted executable / actual guest execution, valid actor/package provenance and nonzero steps. This JSON, model tests, parser admission, simulated output, and host-only checks are insufficient. Compiler-negative profile_capability results prove only a backend's declared restricted lowering, not universal Oreslang rejection or complete language parity. Named arguments, reachable package initialization and recursive provider calls may be valid beyond the pinned scalar profile.",
+  "extended_positive": {
+    "id": "all-provider-exit-53",
+    "profile": "pinned_ns",
+    "entry_source": "import ns a from \"pkg:foo\";\nimport ns b from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta() + b.model_code() + b.query_code() + b.storage_code() + b.validation_code(); }\n",
+    "expected_exit": 53,
+    "backend_targets": [
+      "java",
+      "llvm"
+    ],
+    "compiler_executed": false,
+    "guest_executed": false,
+    "evidence": "NOT_EXECUTED"
+  }
 }
