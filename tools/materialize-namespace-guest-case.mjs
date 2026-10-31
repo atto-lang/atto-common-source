@@ -26,6 +26,21 @@ const expectedCaseClasses = Object.freeze({
   'wrong-bool-type': ['reject', 'TYPE_MISMATCH', 'portable_semantics'],
 });
 
+const pinnedSourceOwners = Object.freeze({
+  "foo/src/compute/math.ores": "foo@1",
+  "foo/src/compute/stats.ores": "foo@1",
+  "foo/src/compute/aggregation.ores": "foo@1",
+  "foo/src/data/models.ores": "foo@1",
+  "foo/src/data/queries.ores": "foo@1",
+  "foo/src/data/storage.ores": "foo@1",
+  "foo/src/data/validation.ores": "foo@1",
+  "foo/src/api/routes.ores": "foo@1",
+  "foo/src/api/handlers.ores": "foo@1",
+  "foo/src/api/responses.ores": "foo@1",
+  "other/src/collision.ores": "other@1",
+  "app/src/main.ores": "app@1",
+});
+
 function assert(ok, msg) { if (!ok) throw new Error(msg); }
 function safeFilePath(path) {
   assert(typeof path === 'string' && /^[A-Za-z0-9_./-]+[.]ores$/.test(path),
@@ -54,6 +69,9 @@ export function validateContract(contract) {
     paths.add(s.path);
     assert(typeof s.content === 'string' && s.content.length > 0 && s.content.length <= 8192,
       'source size invalid');
+    assert(Object.hasOwn(pinnedSourceOwners, s.path) &&
+      pinnedSourceOwners[s.path] === s.package_instance_id,
+      'closed source inventory path/package authority drift');
     assert(namePattern.test(s.package_instance_id.replace('@1', '')),
       'invalid package identity');
   }
