@@ -23,7 +23,8 @@ family = "signed_integer"
 op = "abs"
 type = "i64"
 input = "-9223372036854775808"
-expect_error = "ArithmeticOverflow"
+expect_error = "ArithmeticOverflowError"
+expect_error_code = 65537
 
 [[case]]
 id = "i64_neg_min_overflow"
@@ -31,7 +32,38 @@ family = "signed_integer"
 op = "neg"
 type = "i64"
 input = "-9223372036854775808"
-expect_error = "ArithmeticOverflow"
+expect_error = "ArithmeticOverflowError"
+expect_error_code = 65537
+
+[[case]]
+id = "i64_add_max_overflow"
+family = "signed_integer"
+op = "add"
+type = "i64"
+left = "9223372036854775807"
+right = "1"
+expect_error = "ArithmeticOverflowError"
+expect_error_code = 65537
+
+[[case]]
+id = "i64_sub_min_overflow"
+family = "signed_integer"
+op = "sub"
+type = "i64"
+left = "-9223372036854775808"
+right = "1"
+expect_error = "ArithmeticOverflowError"
+expect_error_code = 65537
+
+[[case]]
+id = "i64_mul_overflow"
+family = "signed_integer"
+op = "mul"
+type = "i64"
+left = "3037000500"
+right = "3037000500"
+expect_error = "ArithmeticOverflowError"
+expect_error_code = 65537
 
 [[case]]
 id = "i64_neg_max"
@@ -198,3 +230,10 @@ implicit_decimal_to_float = false
 compiler_constant_folding_must_match_runtime = true
 aot_must_match_interpreter = true
 resource_limits_required_for_bigint = true
+
+[error_abi]
+registry = "contracts/v1/numeric-error-abi.json"
+arithmetic_overflow_type = "ArithmeticOverflowError"
+arithmetic_overflow_code = 65537
+root_type = "Error"
+trap_alone_satisfies_typed_error = false
