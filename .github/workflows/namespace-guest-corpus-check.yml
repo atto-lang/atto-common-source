@@ -6,6 +6,7 @@ on:
       - 'tools/materialize-namespace-guest-case.mjs'
       - 'tests/namespace-guest-gates-v1.test.mjs'
       - 'docs/CROSS_BACKEND_NAMESPACE_GUEST_GATES_V1.md'
+      - 'docs/NAMESPACE_GRAMMAR_AUTHORITY_DECISION_RECORD.md'
       - '.github/workflows/namespace-guest-corpus-check.yml'
   workflow_dispatch: {}
 permissions:
