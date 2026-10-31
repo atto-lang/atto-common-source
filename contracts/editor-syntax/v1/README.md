@@ -28,3 +28,42 @@ Semantics:
 4. For parser acceptance/rejection, run the actual Java compiler and other backends against exact source fixtures and append independently verified evidence; do not upgrade the lexical document into a parity certificate.
 
 All assertions fail closed; missing CI steps, absent compilers, or unsupported backends are **not** passes.
+
+## Portable compiler-lexical differential corpus (v1)
+
+The additional [compiler-lexical-differential-v1.tsv](compiler-lexical-differential-v1.tsv)
+is a **synthetic 34-input test plan**, not a backend-pass receipt. Its exact
+Git blob is \`eeed64b7d33c262b35120662386435575982a9bc\`. Each noncomment
+record is tab-separated:
+
+\`\`\`text
+fixture_id  UTF16_HEX  JAVA_TOKEN_TYPES_OR_ERROR  SYMBOL_NAME_UTF16_HEX_OR_DASH  ERROR_FRAGMENT_OR_DASH
+\`\`\`
+
+- UTF-16 code units are encoded as exactly four lowercase hexadecimal digits
+  each; this represents even malformed input such as a lone high surrogate,
+  without corrupting an ordinary UTF-8 Git file.
+- The oracle asserts *Java Lexer.scan* token types, an optional decoded and
+  NFC-normalized Symbol name, or a required error-message fragment. It does
+  **not** assert parser/typechecker/runtime acceptance. Every valid case ends
+  in \`EOF\`; 11 cases intentionally fail lexing.
+- The corpus is also vendored byte-identically in the Java PR #2379 test
+  resources and the VS Code/web editor PRs, with a Git blob assertion.
+  Java's **21st JUnit method** runs every case against the actual lexer;
+  it remains **NOT_EXECUTED** until a private runner assigns and runs JDK 25.
+- The public editors run their own scanner/scope checks on the same inputs,
+  but editor tokens are not silently equated with compiler Token.Type.
+  Their actual run IDs belong in [EXECUTION_EVIDENCE.md](EXECUTION_EVIDENCE.md).
+
+[backend-lexical-admission-v1.json](backend-lexical-admission-v1.json)
+identifies Java, LLVM, WASM, .NET, and Forge and separately tracks lexer,
+parser, and runtime evidence. All entries start \`NOT_EXECUTED\`. No field
+is set to \`PASS\` without independently reviewed exact-head CI execution.
+
+The structural validator is
+\`node scripts/validate-backend-lexical-admission.mjs contracts/editor-syntax/v1/backend-lexical-admission-v1.json contracts/editor-syntax/v1/compiler-lexical-differential-v1.tsv\`.
+It verifies the exact Git blob, complete backend inventory, and mandatory
+receipt metadata, and rejects fake green/skip/pending states. **This is only
+a schema and consistency guard**: any future receipt link, tested SHA, and
+CI steps must additionally be verified against the actual GitHub Actions job.
+A plausible-looking receipt JSON alone is not proof of executed conformance.
