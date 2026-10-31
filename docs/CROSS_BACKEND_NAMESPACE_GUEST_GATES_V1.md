@@ -37,6 +37,31 @@ node tools/materialize-namespace-guest-case.mjs provider-cycle
 
 `materialize` creates a fresh private temporary directory, writes 12 immutable guest files plus a pinned-alias metadata file, and prints a JSON locator. The alias file is **test input metadata**, not evidence of a trusted production manifest or proof that a compiler accepted the source. Consumers must remove the temporary directory afterwards.
 
+## Authorized local Node 22 execution when Actions admission is blocked
+
+From a **clean, authorized checkout of this exact PR head**, run:
+
+```bash
+bash tools/verify-namespace-authoring-offline.sh "$(git rev-parse HEAD)"
+```
+
+For independent verification, pass the reviewed exact 40-character PR commit
+instead of deriving it from the local checkout. The script fails closed if the
+Git worktree is dirty, `HEAD` differs from the supplied commit, Node is not
+version 22, or any of the five source corpus/test blobs differs from `HEAD`.
+It prints each Git blob SHA, the exact Git tree and Node version, runs the
+**actual** `node --test` suite, then prints
+`NAMESPACE_AUTHORING_PASS ... scope=NOT_COMPILER_OR_GUEST` only after success.
+
+This path uses no cross-repository checkout, network access, plugin secrets,
+external package manager or GitHub Actions minutes. Its output can serve as a
+*locally executed source-free Node receipt* when accompanied by a reviewed
+exact checkout and captured exit status. It is **never** JUnit, CTest, native
+guest, manifest/lockfile authentication, or runner-admission evidence. The
+script was separately syntax-checked and exercised with two synthetic Node
+fixtures in a disposable clean Git repository; this is not a run of the
+real Oreslang source suite.
+
 ## Repeatable cross-backend source identity gate (not a guest run)
 
 Given **independently authorized local checkouts** of the Java and LLVM source
