@@ -13,7 +13,7 @@
     },
     "source_listing": "closed_host_inventory",
     "no_ambient_filesystem_discovery": true,
-    "note": "This 10-provider-source LLVM pinned-inventory profile cannot be equated to Java's manifest-derived import namespace profile until a reviewed grammar/locator decision."
+    "note": "This 10-provider-source LLVM pinned-inventory profile cannot be equated to Java's manifest-derived import namespace profile until a reviewed grammar/locator decision. Cross-package fallback negative now imports only namespace a to isolate missing a.aggregate in other@1 rather than relying on absence of namespace c."
   },
   "grammar_profiles": {
     "pinned_ns": {
@@ -122,6 +122,13 @@
         "app@1": {
           "foo": "other@1"
         }
+      },
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "import ns a from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta(); }\n",
+          "import ns a from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21); }\n"
+        ]
       }
     },
     {
@@ -165,10 +172,10 @@
       "expected": "reject",
       "code": "DUPLICATE_PUBLIC_ARITY",
       "mutation": {
-        "file": "foo/src/data/validation.ores",
+        "file": "foo/src/compute/math.ores",
         "replace": [
-          "validation_code()",
-          "model_code()"
+          "pub fnc add(int a, int b)",
+          "pub fnc aggregate(int value): int { return 0; }\npub fnc add(int a, int b)"
         ]
       }
     },
@@ -249,10 +256,10 @@
       "expected": "reject",
       "code": "UNSUPPORTED_INITIALIZATION",
       "mutation": {
-        "file": "foo/src/data/models.ores",
+        "file": "foo/src/compute/math.ores",
         "replace": [
-          "pub fnc model_code",
-          "fnc init(): int { return 0; }\npub fnc model_code"
+          "pub fnc add",
+          "fnc init(): int { return 0; }\npub fnc add"
         ]
       }
     },
