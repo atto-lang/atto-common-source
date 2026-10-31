@@ -20,7 +20,7 @@ the compiler or all backends accept the source constructs in the JSON contract.
 | --- | --- | --- | --- |
 | VS Code editor PR #14 | `121f2cb99f6696570ad82332780f05d94efe3e00` | [Actions #41252055310](https://github.com/ores-truffle-oreslang/vscode-plugins/actions/runs/41252055310): 77/77 tests; TextMate/Oniguruma | Editor scanner / grammar only |
 | Web highlighter PR #9 | `255c47fe3aa0d90b4a88b41235fc6818a9f2c125` | [Actions #41252065486](https://github.com/ores-truffle-oreslang/html-js-css-syntax-highlighter/actions/runs/41252065486): 52/52 tests | Web highlighter / shared manifest only |
-| Sublime PR #11 | `41933563c90cd0bacd5cdcfb6ae2d0f979000bed` | [Native Sublime #41252130006](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41252130006) and [package CI #41252130015](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41252130015): both success | Sublime syntax engine build 4215 / package only |
+| Sublime PR #11 | `cecbe33cf1b67378bfae52dc17862403054844f5` | [Native Sublime #41253509349](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253509349) and [package CI #41253509382](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253509382): both success | Sublime syntax engine build 4215 / package only |
 | Java compiler PR #2379 | `ef4345e30ced0b4e9e1322f6f67ee46bae0d8159` | [Focused JUnit #41252087086](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/41252087086): **NOT_EXECUTED**, job `124687528469`, zero steps | 20 JUnit methods implemented, **no compiler result** |
 | Common-source PR #201 | `c26516afa49fe69f6f59ef993a44598fe408d301` (before this evidence note) | Private Actions admission blocked | Manifest/fixture validation pending private run |
 
@@ -36,6 +36,16 @@ treat `éreturn`, `returné`, `中eq`, `eq中`,
 Updated VS Code and web tests now verify full Unicode identifier opacity,
 and separately verify that `return` after a space still tokenizes normally.
 Native Sublime syntax tests also verify the boundary.
+
+### Additional executed negative test: escaped UTF-16 Symbol pairs
+
+Native Sublime [run #41253306962](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253306962) **reproduced** four failures: the grammar incorrectly applied valid Symbol scope to `#"\\uD800"`, `#"\\uDE00"`, `#"\\uDE00\\uD83D"`, and `#"\\uD83D\\u0061"`. These are not accepted by the pinned Java Symbol normalization contract.
+
+The revised regex pairs a high-surrogate escape (`D800..DBFF`) immediately with a low-surrogate escape (`DC00..DFFF`), or accepts a nonsurrogate `\\uXXXX` escape. It rejects escaped lone/reversed/incorrect half-pairs. A first revision passed the native engine but failed the static package validator because the static validator did not expand Sublime variables; the final rule inlines the same expression in both quote forms, and the static Node tests also cover all six new positive/negative inputs.
+
+At exact candidate head `cecbe33cf1b67378bfae52dc17862403054844f5`, the [native syntax run #41253509349](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253509349) executed 6 successful steps and [package CI #41253509382](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253509382) executed 11 successful steps.
+
+The grammar is still an editor preview and **cannot** prove NFC normalization or decoded UTF-8 size admission without compiling through the authoritative Java frontend.
 
 Java draft #2379 has a matching twentieth JUnit test; it cannot be marked
 passed until a GraalVM JDK25 execution run produces a nonzero-step Surefire receipt.
