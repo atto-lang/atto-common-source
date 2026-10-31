@@ -124,6 +124,18 @@ test('colliding namespace remains owned by a separately verified package',()=>{
   assert.throws(()=>validateContract(drift),/exact independent package owners/);
 });
 
+test('closed provider inventory does not accept an renamed or re-owned source',()=>{
+  const renamed=structuredClone(contract);
+  renamed.sources.find(s=>s.path==='foo/src/compute/math.ores').path=
+    'foo/src/compute/alternate.ores';
+  assert.throws(()=>validateContract(renamed),
+    /closed source inventory path\/package authority drift/);
+  const reowned=structuredClone(contract);
+  reowned.sources.find(s=>s.path==='foo/src/data/models.ores').package_instance_id='other@1';
+  assert.throws(()=>validateContract(reowned),
+    /closed source inventory path\/package authority drift/);
+});
+
 test('source path cannot escape materialized case root', () => {
   const bad=structuredClone(contract);
   bad.sources[0].path='../outside.ores';
