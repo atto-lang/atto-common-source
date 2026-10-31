@@ -51,7 +51,7 @@ test('missing and duplicate source-unit inventory rejects',()=>{
   const javaShort=javaMirror().replaceAll(
     'sources.put("foo/src/data/models.ores"', 'sources.put("foo/src/data/unlisted.ores"');
   assert.throws(()=>verifyBackendSourceIdentity(contract,javaShort,llvmMirror()),
-    /identity or bytes drift/);
+    /Java source ownership path disagrees/);
   const twice=llvmMirror().replace('"other/src/collision.ores"',
     '"foo/src/compute/math.ores"');
   assert.throws(()=>verifyBackendSourceIdentity(contract,javaMirror(),twice),
