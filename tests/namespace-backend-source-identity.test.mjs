@@ -58,7 +58,10 @@ test('missing and duplicate source-unit inventory rejects',()=>{
     /identity or bytes drift/);
 });
 test('the second guest source rejects a changed return or import',()=>{
-  const modifiedJava=javaMirror().replace('a.aggregate(21)', 'a.aggregate(20)');
+  const modifiedJava=javaMirror().replace(
+    JSON.stringify(contract.extended_positive.entry_source),
+    JSON.stringify(contract.extended_positive.entry_source
+      .replace('a.aggregate(21)', 'a.aggregate(20)')));
   assert.throws(()=>verifyBackendSourceIdentity(contract,modifiedJava,llvmMirror()),
     /extended all-provider exit-53 source bytes drift/);
   const modifiedLlvm=llvmMirror().replace('b.storage_code()', 'b.query_code()');
