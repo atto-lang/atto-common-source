@@ -7,6 +7,24 @@ import { fileURLToPath } from 'node:url';
 
 const contractUrl = new URL('../contracts/conformance/namespace-guest-gates-v1.json', import.meta.url);
 const namePattern = /^[a-z][a-z0-9-]{0,63}$/;
+const expectedCaseClasses = Object.freeze({
+  'ns-exit-43': ['pass', 'EXECUTE'],
+  'missing-pin': ['reject', 'UNDECLARED_ALIAS'],
+  'colliding-package-pin': ['reject', 'NO_CROSS_PACKAGE_FALLBACK'],
+  'unknown-export': ['reject', 'UNKNOWN_EXPORT'],
+  'wrong-arity': ['reject', 'WRONG_ARITY'],
+  'wrong-arg-type': ['reject', 'TYPE_MISMATCH'],
+  'duplicate-export': ['reject', 'DUPLICATE_PUBLIC_ARITY'],
+  'private-export': ['reject', 'VISIBILITY_DENIED'],
+  'shadow-import': ['reject', 'SHADOWED_BINDING'],
+  'duplicate-import': ['reject', 'DUPLICATE_IMPORT'],
+  'ambient-path-selector': ['reject', 'INVALID_SELECTOR'],
+  'provider-cycle': ['reject', 'CYCLIC_PROVIDER_CALL'],
+  'cross-namespace-implicit': ['reject', 'NO_IMPLICIT_NAMESPACE'],
+  'provider-init': ['reject', 'UNSUPPORTED_INITIALIZATION'],
+  'named-arg-call': ['reject', 'UNSUPPORTED_ABI'],
+  'wrong-bool-type': ['reject', 'TYPE_MISMATCH'],
+});
 
 function assert(ok, msg) { if (!ok) throw new Error(msg); }
 function safeFilePath(path) {
@@ -26,8 +44,9 @@ export function validateContract(contract) {
     'ambient package discovery forbidden');
   assert(Array.isArray(contract.sources) && contract.sources.length === 12,
     'ten providers, collision and entry source required');
-  assert(Array.isArray(contract.cases) && contract.cases.length >= 16,
-    'incomplete conformance gate');
+  assert(Array.isArray(contract.cases) &&
+    contract.cases.length === Object.keys(expectedCaseClasses).length,
+    'incomplete or ambiguous conformance gate');
   const paths = new Set();
   for (const s of contract.sources) {
     safeFilePath(s.path);
@@ -57,6 +76,9 @@ export function validateContract(contract) {
   for (const c of contract.cases) {
     assert(namePattern.test(c.id) && !ids.has(c.id), 'duplicate/invalid case ID');
     ids.add(c.id);
+    const expectedClass = expectedCaseClasses[c.id];
+    assert(expectedClass && c.expected === expectedClass[0] &&
+      c.code === expectedClass[1], 'case classification drift: ' + c.id);
     assert(c.expected === 'pass' || c.expected === 'reject', 'invalid expected outcome');
     if (c.expected === 'pass') {
       passing++;
@@ -82,6 +104,33 @@ export function validateContract(contract) {
     }
   }
   assert(passing === 1 && codes.size >= 10, 'missing negative semantic coverage');
+  // A negative test must not pass for an unrelated missing import, missing
+  // consumer member, or an intentionally unreachable duplicate/init source.
+  const byId = id => contract.cases.find(c => c.id === id);
+  const original = path => contract.sources.find(s => s.path === path)?.content;
+  const afterMutation = id => {
+    const m = byId(id)?.mutation;
+    assert(m && typeof m.file === 'string' && Array.isArray(m.replace),
+      'missing semantic mutation: ' + id);
+    return original(m.file).replace(m.replace[0], m.replace[1]);
+  };
+  const crossed = afterMutation('colliding-package-pin');
+  assert(byId('colliding-package-pin').alias_override?.['app@1']?.foo ===
+    'other@1' && crossed.includes('a.aggregate(21)') &&
+    !crossed.includes('import ns c') && !crossed.includes('c.response_delta'),
+    'cross-package test must isolate forbidden fallback');
+  const duplicate = afterMutation('duplicate-export');
+  assert(byId('duplicate-export').mutation.file.startsWith('foo/') &&
+    /namespace a;/.test(duplicate) &&
+    duplicate.includes('pub fnc aggregate(int value): int { return 0; }') &&
+    original('foo/src/compute/aggregation.ores').includes(
+      'pub fnc aggregate(int value)'),
+    'duplicate-export mutation must collide with reachable provider');
+  const init = afterMutation('provider-init');
+  assert(byId('provider-init').mutation.file.startsWith('foo/') &&
+    init.startsWith('namespace a;') &&
+    init.includes('fnc init(): int { return 0; }'),
+    'init negative must target a reachable namespace');
   for (const [id, state] of Object.entries(contract.backend_evidence ?? {})) {
     assert(['java','llvm','net','wasm','forge'].includes(id) &&
       state.compiler_executed === false && state.guest_executed === false &&
