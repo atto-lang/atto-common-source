@@ -109,8 +109,8 @@
       "mutation": {
         "file": "app/src/main.ores",
         "replace": [
-          "pkg:foo",
-          "pkg:missing"
+          "import ns a from \"pkg:foo\";",
+          "import ns a from \"pkg:missing\";"
         ]
       }
     },
@@ -118,10 +118,6 @@
       "id": "colliding-package-pin",
       "expected": "reject",
       "code": "NO_CROSS_PACKAGE_FALLBACK",
-      "mutation": {
-        "file": "app/src/main.ores",
-        "replace": null
-      },
       "alias_override": {
         "app@1": {
           "foo": "other@1"
@@ -219,8 +215,8 @@
       "mutation": {
         "file": "app/src/main.ores",
         "replace": [
-          "\"pkg:foo\"",
-          "\"../foo\""
+          "import ns a from \"pkg:foo\";",
+          "import ns a from \"../foo\";"
         ]
       }
     },
