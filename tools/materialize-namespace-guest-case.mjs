@@ -165,7 +165,10 @@ export function materializeCase(contract, id) {
     writeFileSync(join(root,'pinned-aliases.json'),
       JSON.stringify(pins,null,2)+'\n',{flag:'wx',mode:0o600});
     return {root, id, expected:selected.expected, code:selected.code,
-      profile:'pinned_ns', entry:'app/src/main.ores', expected_exit:43,
+      profile:'pinned_ns', entry:'app/src/main.ores',
+      // A compile-negative case never has a guest exit oracle; running a
+      // leftover executable from another case would be a false pass.
+      expected_exit:selected.expected === 'pass' ? 43 : null,
       evidence:'NOT_EXECUTED'};
   } catch(error) {
     rmSync(root,{recursive:true,force:true});
