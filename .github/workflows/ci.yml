@@ -27,6 +27,8 @@ jobs:
         run: python3 -m py_compile scripts/*.py
       - name: Verify pinned editor syntax lexical contract v1
         run: node --test tests/verify-editor-lexical-v1.mjs
+      - name: Reject fabricated lexical backend admission receipts
+        run: node --test tests/verify-backend-lexical-admission-v1.mjs
       - name: Verify String/CString ABI v1 reference contract
         run: node tests/verify-string-abi-v1.mjs
       - name: Format and lint Rust IPC models
