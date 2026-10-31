@@ -21,7 +21,7 @@
       "bigint": "fail_closed",
       "decimal": "fail_closed",
       "strict_conversions": "tracked_llvm_issue_1111_not_complete",
-      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; uncaught overflow still native trap",
+      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; nominal_Error_object_identity_fail_closed; uncaught overflow still native trap",
       "verified_compiled": false
     },
     "wasm": {
@@ -64,6 +64,6 @@
     "independently bound source-to-compiler-binary provenance for cross-backend carrier evidence"
   ],
   "evidence_notes": {
-    "overflow_error_abi": "Staged semantics are not compiled verification. Java still lacks enabled explicit source throw/raise/panic lowering; LLVM only routes checked-i64 overflow into the typed Throw/code ABI inside its restricted terminal try/catch slice. Outside that slice LLVM and Wasm still trap."
+    "overflow_error_abi": "Staged semantics are not compiled verification. Java stages a guest ArithmeticOverflowError object with Error-root matching but still lacks enabled explicit source throw/raise/panic lowering. LLVM routes checked-i64 overflow into typed Throw/code 65537 only inside its restricted terminal try/catch slice; the exact nominal typed-catch fixture is intentionally rejected until native Error objects/type tests exist. Outside that slice LLVM and Wasm still trap."
   }
 }

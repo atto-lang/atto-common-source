@@ -32,6 +32,7 @@ test("typed overflow staging is precise and never upgraded to compiled proof",()
   assert.match(ledger.backends.java.overflow_error_abi,/ArithmeticOverflowError_code_65537/);
   assert.match(ledger.backends.java.overflow_error_abi,/source throw\/raise\/panic still closed/);
   assert.match(ledger.backends.llvm.overflow_error_abi,/typed_Throw_code_65537/);
+  assert.match(ledger.backends.llvm.overflow_error_abi,/nominal_Error_object_identity_fail_closed/);
   assert.match(ledger.backends.llvm.overflow_error_abi,/uncaught overflow still native trap/);
   assert.match(ledger.backends.wasm.overflow_error_abi,/fail_closed/);
   for(const backend of Object.values(ledger.backends))
