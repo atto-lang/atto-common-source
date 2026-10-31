@@ -2,6 +2,10 @@
 
 **Status: proposed shared contract and review checklist; NOT compiler implementation, tested parity, or a conformance certification.** The repository's independent frontends and the existing feature-specific contracts remain authoritative until explicitly superseded. This document is a consolidation of Rust-related ergonomics and systems requirements, not permission to broaden the safe language without proofs.
 
+## Rust comparison caveat (October 2026)
+
+The source complaint list is a useful design checklist, **not** an exact snapshot of Rust's current state. Rust adopted the [FLS](https://github.com/rust-lang/fls) for toolchain qualification work in 2025 (it is not a complete formal proof of the language), and the Rust language team announced an [experimental nightly overloading feature](https://blog.rust-lang.org/inside-rust/2026/08/19/overloading-experiment/) in August 2026. Oreslang should compete on verified capabilities and developer experience, not claim that no specification work or overloading exploration exists in Rust.
+
 ## Non-negotiable acceptance rule
 
 A feature moves from `proposed` to `implemented` only after the **real Oreslang source compiler** accepts positive fixtures, rejects negative fixtures with the required diagnostics, and runs target-appropriate executable cases. Separate parser, type/effect/ownership, interpreter/AOT, and runtime behavior. Simulated binders, schemas, mocked host code, docs, IR string assertions and workflows that never started a step are **not** execution evidence.
