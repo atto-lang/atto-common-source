@@ -1,0 +1,288 @@
+{
+  "schema": "oreslang/developer-systems-hardening/v1",
+  "status": "proposal-fixtures-not-execution",
+  "target_backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "net",
+    "forge"
+  ],
+  "required_execution_receipt": [
+    "case_id",
+    "backend",
+    "source_tree_sha",
+    "compiler_artifact_sha",
+    "linked_artifact_sha",
+    "target_profile",
+    "observed_result",
+    "run_url"
+  ],
+  "admission_policy": {
+    "planned_only": "design-only",
+    "model_only": "reference-only",
+    "zero_step_workflow": "not-executed",
+    "unsupported": "explicit-rejection",
+    "all_backends_required_for_full_parity": true
+  },
+  "features": [
+    {
+      "id": "calls",
+      "tier": "P0",
+      "test_kind": "guest",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "calls-1",
+          "expect": "accept",
+          "description": "Typed named calls with default/optional slots bind once in lexical expression order"
+        },
+        {
+          "id": "calls-2",
+          "expect": "accept",
+          "description": "Eligible nominal enum methods select uniquely after expanded arity"
+        },
+        {
+          "id": "calls-3",
+          "expect": "reject",
+          "description": "Overlapping effective arities from defaults/rest or same-arity primitive overloads reject"
+        },
+        {
+          "id": "calls-4",
+          "expect": "accept",
+          "description": "Explicit supplied None never conflates with omission"
+        }
+      ]
+    },
+    {
+      "id": "external-abi",
+      "tier": "P0",
+      "test_kind": "interop",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "external-abi-1",
+          "expect": "accept",
+          "description": "Version-compatible component loads with explicit owned handle close"
+        },
+        {
+          "id": "external-abi-2",
+          "expect": "accept",
+          "description": "C/WIT external adapter honors string, Result, Option and pinned-borrow contract"
+        },
+        {
+          "id": "external-abi-3",
+          "expect": "reject",
+          "description": "Consumer with wrong ABI major or missing finalizer rejects before call"
+        }
+      ]
+    },
+    {
+      "id": "specification",
+      "tier": "P0",
+      "test_kind": "spec",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "specification-1",
+          "expect": "accept",
+          "description": "Published normative grammar and matching source fixture agree"
+        },
+        {
+          "id": "specification-2",
+          "expect": "accept",
+          "description": "Move/borrow/drop and actor lifecycle rules have traceable diagnostics"
+        },
+        {
+          "id": "specification-3",
+          "expect": "reject",
+          "description": "Ambiguous grammar or unspecified observable error order cannot be called conformant"
+        }
+      ]
+    },
+    {
+      "id": "oop",
+      "tier": "P1",
+      "test_kind": "guest",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "oop-1",
+          "expect": "accept",
+          "description": "Disjoint inherited method arities and explicit overrides are accepted"
+        },
+        {
+          "id": "oop-2",
+          "expect": "accept",
+          "description": "Sealed state is reachable only through checked state access"
+        },
+        {
+          "id": "oop-3",
+          "expect": "reject",
+          "description": "Ambiguous inherited same-slot method or private weakening of public override rejects"
+        }
+      ]
+    },
+    {
+      "id": "placement",
+      "tier": "P0",
+      "test_kind": "memory",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "placement-1",
+          "expect": "accept",
+          "description": "Aligned region emplacement publishes exactly one fully initialized object"
+        },
+        {
+          "id": "placement-2",
+          "expect": "accept",
+          "description": "Partial constructor failure cleans only initialized fields once"
+        },
+        {
+          "id": "placement-3",
+          "expect": "reject",
+          "description": "Escaping raw self pointer or moving a pinned initialized object rejects"
+        }
+      ]
+    },
+    {
+      "id": "borrow",
+      "tier": "P0",
+      "test_kind": "guest",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "borrow-1",
+          "expect": "accept",
+          "description": "Non-escaping reborrow with inferred lexical lifetime is accepted"
+        },
+        {
+          "id": "borrow-2",
+          "expect": "reject",
+          "description": "Move while borrowed and mutable aliasing reject"
+        },
+        {
+          "id": "borrow-3",
+          "expect": "reject",
+          "description": "Unpinned loan across suspension or actor handoff rejects"
+        }
+      ]
+    },
+    {
+      "id": "cyclic-graphs",
+      "tier": "P0",
+      "test_kind": "memory",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "cyclic-graphs-1",
+          "expect": "accept",
+          "description": "Arena-owned doubly-linked graph uses non-owning generation handles without tracing GC"
+        },
+        {
+          "id": "cyclic-graphs-2",
+          "expect": "reject",
+          "description": "Stale handle after slot reuse or actor arena retirement rejects"
+        },
+        {
+          "id": "cyclic-graphs-3",
+          "expect": "reject",
+          "description": "Memory release before physical child task and FFI quiescence rejects"
+        }
+      ]
+    },
+    {
+      "id": "incremental-build",
+      "tier": "P1",
+      "test_kind": "build",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "incremental-build-1",
+          "expect": "accept",
+          "description": "No-op edit reuses validated cache result with matching compiler and target"
+        },
+        {
+          "id": "incremental-build-2",
+          "expect": "reject",
+          "description": "Body-only edit does not force retyping uninlined dependent"
+        },
+        {
+          "id": "incremental-build-3",
+          "expect": "reject",
+          "description": "Signature or effect change invalidates dependent and corrupted cache rejects"
+        }
+      ]
+    },
+    {
+      "id": "packages",
+      "tier": "P1",
+      "test_kind": "build",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "packages-1",
+          "expect": "accept",
+          "description": "Strict locked offline build reproduces dependency closure with hashes"
+        },
+        {
+          "id": "packages-2",
+          "expect": "accept",
+          "description": "Source-root plus import resolves under declared package boundary"
+        },
+        {
+          "id": "packages-3",
+          "expect": "reject",
+          "description": "Unpinned network transitive dependency or changed artifact hash rejects"
+        }
+      ]
+    },
+    {
+      "id": "compatibility",
+      "tier": "P2",
+      "test_kind": "release",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "compatibility-1",
+          "expect": "accept",
+          "description": "Semver-compatible library upgrade keeps public callable and ABI signatures"
+        },
+        {
+          "id": "compatibility-2",
+          "expect": "reject",
+          "description": "Public breaking change requires explicit major/feature gate"
+        },
+        {
+          "id": "compatibility-3",
+          "expect": "reject",
+          "description": "Release lacking real guest execution evidence remains unverified"
+        }
+      ]
+    },
+    {
+      "id": "deployment",
+      "tier": "P2",
+      "test_kind": "policy",
+      "coverage_status": "planned_only",
+      "cases": [
+        {
+          "id": "deployment-1",
+          "expect": "reject",
+          "description": "General service targets are not forced into strict RT admission"
+        },
+        {
+          "id": "deployment-2",
+          "expect": "accept",
+          "description": "Strict RT target with fully proven closure may be evaluated for certification"
+        },
+        {
+          "id": "deployment-3",
+          "expect": "reject",
+          "description": "Unknown WCET/FFI/no-GC closure cannot be declared hard real time"
+        }
+      ]
+    }
+  ]
+}
