@@ -15,6 +15,18 @@ Two draft language profiles currently exist:
 
 Both must derive namespace identity from **(PackageInstanceId, NamespaceName)**. They do **not** have identical source spelling, alias semantics, or manifest admission mechanisms. This new corpus tests only the pinned `ns` profile. Ratify one grammar or explicit dual-grammar semantics before cross-backend parity certification. Do not quietly convert one into the other.
 
+**Recommended migration direction (pending independent language-contract approval):**
+Use `import ns a from "pkg:foo";` as the canonical exact-pinned form. The
+`pkg:foo` selector must be a manifest/lockfile-resolved package alias owned
+by the importing package, not a filesystem location, global package name, or
+compiler-supplied guessed module. Preserve `import namespace` only as an
+explicitly documented draft/compatibility profile until its dependency-graph
+semantics can be reconciled; do not silently reinterpret existing code.
+A local alias, if later admitted, must be an explicitly type-checked lexical
+binding that cannot shadow imports, locals, functions or reserved names.
+No existing compiler is claimed to support this migration automatically.
+
+
 ## Source-free authoring checks
 
 ```sh
