@@ -124,6 +124,18 @@ test('colliding namespace remains owned by a separately verified package',()=>{
   assert.throws(()=>validateContract(drift),/closed source inventory path\/package authority drift/);
 });
 
+test('exit-43 and namespace provider source bytes are immutable',()=>{
+  for(const path of ['app/src/main.ores','foo/src/compute/math.ores',
+    'foo/src/data/models.ores','other/src/collision.ores']){
+    const changed=structuredClone(contract);
+    const unit=changed.sources.find(x=>x.path===path);
+    unit.content=unit.content.replace('return', 'return ');
+    assert.throws(()=>validateContract(changed),
+      /baseline source bytes drift from exact exit-43 oracle/,
+      'source body edit changed the promised guest result without a new oracle');
+  }
+});
+
 test('closed provider inventory does not accept an renamed or re-owned source',()=>{
   const renamed=structuredClone(contract);
   renamed.sources.find(s=>s.path==='foo/src/compute/math.ores').path=
