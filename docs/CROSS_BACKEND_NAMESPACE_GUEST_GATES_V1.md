@@ -50,7 +50,9 @@ instead of deriving it from the local checkout. The script fails closed if the
 Git worktree is dirty, `HEAD` differs from the supplied commit, Node is not
 version 22, or any of the five source corpus/test blobs differs from `HEAD`.
 It prints each Git blob SHA, the exact Git tree and Node version, runs the
-**actual** `node --test` suite, then prints
+**actual** `node --test` suite, rejects skipped/cancelled/TODO tests or a
+changed checkout after execution, and requires exactly **18 passed, zero failed**
+TAP results before printing
 `NAMESPACE_AUTHORING_PASS ... scope=NOT_COMPILER_OR_GUEST` only after success.
 
 This path uses no cross-repository checkout, network access, plugin secrets,
