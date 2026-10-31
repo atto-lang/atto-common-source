@@ -18,10 +18,10 @@ the compiler or all backends accept the source constructs in the JSON contract.
 
 | Surface | Exact candidate HEAD | Executed evidence | Scope |
 | --- | --- | --- | --- |
-| VS Code editor PR #14 | `121f2cb99f6696570ad82332780f05d94efe3e00` | [Actions #41252055310](https://github.com/ores-truffle-oreslang/vscode-plugins/actions/runs/41252055310): 77/77 tests; TextMate/Oniguruma | Editor scanner / grammar only |
-| Web highlighter PR #9 | `255c47fe3aa0d90b4a88b41235fc6818a9f2c125` | [Actions #41252065486](https://github.com/ores-truffle-oreslang/html-js-css-syntax-highlighter/actions/runs/41252065486): 52/52 tests | Web highlighter / shared manifest only |
+| VS Code editor PR #14 | `04e88fca2708436260a34d2d5373f82cdd3429c2` | [Actions #41254157707](https://github.com/ores-truffle-oreslang/vscode-plugins/actions/runs/41254157707): 80/80 tests; 34-case synthetic oracle and TextMate/Oniguruma | Editor scanner / grammar only |
+| Web highlighter PR #9 | `ecde34edb83be861533bef9cd5fc8aba210b3f58` | [Actions #41254044515](https://github.com/ores-truffle-oreslang/html-js-css-syntax-highlighter/actions/runs/41254044515): 59/59 tests, including 34-case oracle and anti-fake-receipt gate | Web highlighter / schema only |
 | Sublime PR #11 | `cecbe33cf1b67378bfae52dc17862403054844f5` | [Native Sublime #41253509349](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253509349) and [package CI #41253509382](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/41253509382): both success | Sublime syntax engine build 4215 / package only |
-| Java compiler PR #2379 | `ef4345e30ced0b4e9e1322f6f67ee46bae0d8159` | [Focused JUnit #41252087086](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/41252087086): **NOT_EXECUTED**, job `124687528469`, zero steps | 20 JUnit methods implemented, **no compiler result** |
+| Java compiler PR #2379 | `81e28c9a863a940fa32959f32dd2152b8ab98fc1` | [Focused JUnit #41253982123](https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/41253982123): **NOT_EXECUTED**, job `124693137523`, zero steps | 21 JUnit methods implemented, including 34-case exact oracle; **no compiler result** |
 | Common-source PR #201 | `c26516afa49fe69f6f59ef993a44598fe408d301` (before this evidence note) | Private Actions admission blocked | Manifest/fixture validation pending private run |
 
 All editor test cases are *independently executable evidence about their editor implementation*. They do **not** prove production parser/compiler behavior. Java test source is the only candidate containing the actual `Lexer.scan()` / `Parser.parse()` checks, and remains unexecuted.
@@ -47,8 +47,37 @@ At exact candidate head `cecbe33cf1b67378bfae52dc17862403054844f5`, the [native 
 
 The grammar is still an editor preview and **cannot** prove NFC normalization or decoded UTF-8 size admission without compiling through the authoritative Java frontend.
 
-Java draft #2379 has a matching twentieth JUnit test; it cannot be marked
+Java draft #2379 now has 21 JUnit methods; it cannot be marked
 passed until a GraalVM JDK25 execution run produces a nonzero-step Surefire receipt.
+
+## Differential source and evidence gate (new)
+
+The shared \`compiler-lexical-differential-v1.tsv\` contains exactly **34
+synthetic source cases**. Each source is represented as UTF-16 code-unit hex,
+so malformed input can be carried unambiguously. The pinned Git blob SHA
+is \`eeed64b7d33c262b35120662386435575982a9bc\`, verified byte-for-byte
+in the Java draft JUnit resources, VS Code, and the web highlighter.
+
+- Real public execution: web CI run 41254044515 **59/59** pass and VS Code
+  run 41254157707 **80/80** pass, each with actual CI steps and logs.
+  These test lexer-*adjacent* editor properties, not full compiler token types.
+- Java PR #2379 has a **21st JUnit method** that loads the same exact corpus,
+  checks its Git blob, and compares actual Java \`Lexer.scan()\` types,
+  normalized Symbols, and exception fragments for 23 valid / 11 negative cases.
+  It **has not executed**: the latest private Actions focused run 41253982123
+  ended at job 124693137523 with zero executed steps.
+- \`backend-lexical-admission-v1.json\` declares the five backend identities
+  and tracks **lexer, parser, runtime** independently. Each is deliberately
+  \`NOT_EXECUTED\`; none is represented as unsupported or passed without
+  checked evidence.
+- \`scripts/validate-backend-lexical-admission.mjs\` checks the exact corpus
+  SHA, backend inventory, status vocabulary, and execution-receipt structure.
+  Its anti-fabrication tests were actually run by the public web job above.
+  It is a **structural guard**, not cryptographic authentication of a CI run.
+  Independent review must verify actual GitHub job logs and source SHAs.
+- The private common-source CI itself also remains **NOT_EXECUTED**:
+  [run 41254180721](https://github.com/ores-truffle-oreslang/oreslang-common-source/actions/runs/41254180721)
+  failed pre-runner at job 124693729567, with zero steps.
 
 ## Promotion gates
 
@@ -60,7 +89,7 @@ passed until a GraalVM JDK25 execution run produces a nonzero-step Surefire rece
    Git-tree mirror is **still a transfer** and cannot bypass source-policy review.
 3. Execute Java PR #2379 on its exact HEAD with GraalVM JDK25, retain
    `target/surefire-reports/dev.oreslang.parser.EditorLexicalParserAdmissionTest.txt`,
-   and require `Tests run: 20, Failures: 0, Errors: 0, Skipped: 0`.
+   and require `Tests run: 21, Failures: 0, Errors: 0, Skipped: 0`.
 4. Execute common-source contract verifier at the candidate source SHA and
    retain its own nonzero-step result.
 5. Separately collect LLVM, WASM (with exact LLVM compiler artifact), .NET
