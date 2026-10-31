@@ -41,6 +41,21 @@ const pinnedSourceOwners = Object.freeze({
   "app/src/main.ores": "app@1",
 });
 
+const pinnedSourceContents = Object.freeze({
+  "foo/src/compute/math.ores": "namespace a;\npub fnc add(int a, int b): int { return a + b; }\n",
+  "foo/src/compute/stats.ores": "namespace a;\npub fnc double(int value): int { return add(value, value); }\n",
+  "foo/src/compute/aggregation.ores": "namespace a;\npub fnc aggregate(int value): int { return double(value) + 1; }\n",
+  "foo/src/data/models.ores": "namespace b;\npub fnc model_code(): int { return 1; }\n",
+  "foo/src/data/queries.ores": "namespace b;\npub fnc query_code(): int { return 2; }\n",
+  "foo/src/data/storage.ores": "namespace b;\npub fnc storage_code(): int { return 3; }\n",
+  "foo/src/data/validation.ores": "namespace b;\npub fnc validation_code(): int { return 4; }\n",
+  "foo/src/api/routes.ores": "namespace c;\npub fnc route_ok(int code): bool { return code eq 43; }\n",
+  "foo/src/api/handlers.ores": "namespace c;\npub fnc handler_ok(int code): bool { return route_ok(code); }\n",
+  "foo/src/api/responses.ores": "namespace c;\npub fnc response_delta(): int { return handler_ok(43) ? 0 : 1; }\n",
+  "other/src/collision.ores": "namespace a;\npub fnc add(int a, int b): int { return 99; }\n",
+  "app/src/main.ores": "import ns a from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta(); }\n",
+});
+
 function assert(ok, msg) { if (!ok) throw new Error(msg); }
 function safeFilePath(path) {
   assert(typeof path === 'string' && /^[A-Za-z0-9_./-]+[.]ores$/.test(path),
@@ -72,6 +87,8 @@ export function validateContract(contract) {
     assert(Object.hasOwn(pinnedSourceOwners, s.path) &&
       pinnedSourceOwners[s.path] === s.package_instance_id,
       'closed source inventory path/package authority drift');
+    assert(s.content === pinnedSourceContents[s.path],
+      'baseline source bytes drift from exact exit-43 oracle');
     assert(namePattern.test(s.package_instance_id.replace('@1', '')),
       'invalid package identity');
   }
