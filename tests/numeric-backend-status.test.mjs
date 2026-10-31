@@ -33,9 +33,9 @@ test("typed overflow staging is precise and never upgraded to compiled proof",()
   assert.match(ledger.backends.java.overflow_error_abi,/source throw\/raise\/panic still closed/);
   assert.match(ledger.backends.llvm.overflow_error_abi,/typed_Throw_code_65537/);
   assert.match(ledger.backends.llvm.overflow_error_abi,/nominal_Error_object_identity_fail_closed/);
-  assert.match(ledger.backends.llvm.overflow_error_abi,/I64EffectResult_cross_frame_ABI_staged/);
-  assert.match(ledger.backends.llvm.overflow_error_abi,/call_codegen_not_wired/);
-  assert.match(ledger.backends.llvm.overflow_error_abi,/uncaught overflow still native trap/);
+  assert.match(ledger.backends.llvm.overflow_error_abi,/restricted_private_straight_line_i64_call_codegen/);
+  assert.match(ledger.backends.llvm.overflow_error_abi,/cross_frame_leaf_middle_outer_catch_fixture_9d28e45c_staged/);
+  assert.match(ledger.backends.llvm.overflow_error_abi,/uncaught_root_overflow_still_native_trap/);
   assert.match(ledger.backends.net.overflow_error_abi,/Throw_code_65537/);
   assert.match(ledger.backends.net.overflow_error_abi,/production_generated_CIL_still_uses_CLR_checked_exception_transport/);
   assert.match(ledger.backends.forge.overflow_error_abi,/Throw_code_65537/);
