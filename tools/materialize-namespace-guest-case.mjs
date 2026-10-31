@@ -1,0 +1,137 @@
+#!/usr/bin/env node
+// A source-fixture materializer, not an Oreslang compiler or parity oracle.
+import { readFileSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const contractUrl = new URL('../contracts/conformance/namespace-guest-gates-v1.json', import.meta.url);
+const namePattern = /^[a-z][a-z0-9-]{0,63}$/;
+
+function assert(ok, msg) { if (!ok) throw new Error(msg); }
+function safeFilePath(path) {
+  assert(typeof path === 'string' && /^[A-Za-z0-9_./-]+[.]ores$/.test(path),
+    'unsafe source file path');
+  const parts = path.split('/');
+  assert(parts.every(p => p && p !== '.' && p !== '..'), 'noncanonical source file path');
+  return path;
+}
+
+export function validateContract(contract) {
+  assert(contract?.schema === 'oreslang-cross-backend-namespace-guest-gates-v1',
+    'wrong source corpus contract');
+  assert(contract.status === 'PROPOSED_SOURCE_CORPUS_NOT_EXECUTION_EVIDENCE',
+    'contract must not claim execution');
+  assert(contract.authority?.no_ambient_filesystem_discovery === true,
+    'ambient package discovery forbidden');
+  assert(Array.isArray(contract.sources) && contract.sources.length === 12,
+    'ten providers, collision and entry source required');
+  assert(Array.isArray(contract.cases) && contract.cases.length >= 16,
+    'incomplete conformance gate');
+  const paths = new Set();
+  for (const s of contract.sources) {
+    safeFilePath(s.path);
+    assert(!paths.has(s.path), 'duplicate source path');
+    paths.add(s.path);
+    assert(typeof s.content === 'string' && s.content.length > 0 && s.content.length <= 8192,
+      'source size invalid');
+    assert(namePattern.test(s.package_instance_id.replace('@1', '')),
+      'invalid package identity');
+  }
+  const foo = contract.sources.filter(s => s.package_instance_id === 'foo@1');
+  assert(foo.length === 10, 'not exactly ten foo source units');
+  const counts = {a:0,b:0,c:0};
+  for (const s of foo) {
+    const m = /^namespace ([abc]);\n/.exec(s.content);
+    assert(m !== null, 'provider namespace declaration missing or invalid');
+    counts[m[1]]++;
+  }
+  assert(counts.a === 3 && counts.b === 4 && counts.c === 3,
+    'unexpected namespace membership breakdown');
+  assert(contract.authority?.alias_pins?.['app@1']?.foo === 'foo@1',
+    'base alias pin not exact');
+  assert(contract.sources.find(s => s.path === 'app/src/main.ores')?.content.includes(
+    'import ns a from "pkg:foo";'), 'missing qualified source import');
+  const ids = new Set(), codes = new Set();
+  let passing = 0;
+  for (const c of contract.cases) {
+    assert(namePattern.test(c.id) && !ids.has(c.id), 'duplicate/invalid case ID');
+    ids.add(c.id);
+    assert(c.expected === 'pass' || c.expected === 'reject', 'invalid expected outcome');
+    if (c.expected === 'pass') {
+      passing++;
+      assert(c.code === 'EXECUTE' && c.id === 'ns-exit-43',
+        'unexpected positive proof expectation');
+    } else {
+      assert(/^[A-Z_]+$/.test(c.code) && c.code !== 'EXECUTE',
+        'missing negative classification');
+      codes.add(c.code);
+    }
+    if (c.mutation) {
+      assert(paths.has(c.mutation.file), 'mutation file absent from closed source set');
+      const [before, after] = c.mutation.replace ?? [];
+      assert(typeof before === 'string' && before.length && typeof after === 'string',
+        'mutation must have one exact replacement');
+      const source = contract.sources.find(s => s.path === c.mutation.file).content;
+      assert(source.split(before).length === 2, 'mutation target not unique');
+    }
+    if (c.alias_override) {
+      assert(c.id === 'colliding-package-pin' &&
+        c.alias_override?.['app@1']?.foo === 'other@1',
+        'unauthorized alias override');
+    }
+  }
+  assert(passing === 1 && codes.size >= 10, 'missing negative semantic coverage');
+  for (const [id, state] of Object.entries(contract.backend_evidence ?? {})) {
+    assert(['java','llvm','net','wasm','forge'].includes(id) &&
+      state.compiler_executed === false && state.guest_executed === false &&
+      state.exact_head_verified === false, 'unsupported parity assertion');
+  }
+  assert(Object.keys(contract.backend_evidence).length === 5,
+    'missing backend evidence states');
+  assert(contract.grammar_profiles?.manifest_namespace?.status ===
+    'ALTERNATE_DRAFT_NOT_EQUIVALENT', 'do not silently unify import dialects');
+  return true;
+}
+
+export function materializeCase(contract, id) {
+  validateContract(contract);
+  const selected = contract.cases.find(c => c.id === id);
+  assert(selected, 'unknown case id');
+  const root = mkdtempSync(join(tmpdir(), 'ores-ns-guest-'));
+  try {
+    for (const source of contract.sources) {
+      const relative = safeFilePath(source.path);
+      const abs = resolve(root, relative);
+      assert(abs.startsWith(root + sep), 'source escaped temporary root');
+      mkdirSync(dirname(abs), {recursive:true});
+      let bytes = source.content;
+      if (selected.mutation?.file === relative) {
+        const [before, after] = selected.mutation.replace;
+        bytes = bytes.replace(before, after);
+      }
+      writeFileSync(abs, bytes, {flag:'wx', mode:0o600});
+    }
+    const pins = selected.alias_override ?? contract.authority.alias_pins;
+    writeFileSync(join(root,'pinned-aliases.json'),
+      JSON.stringify(pins,null,2)+'\n',{flag:'wx',mode:0o600});
+    return {root, id, expected:selected.expected, code:selected.code,
+      profile:'pinned_ns', entry:'app/src/main.ores', expected_exit:43,
+      evidence:'NOT_EXECUTED'};
+  } catch(error) {
+    rmSync(root,{recursive:true,force:true});
+    throw error;
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  try {
+    assert(process.argv.length === 3, 'usage: node tools/materialize-namespace-guest-case.mjs <case-id>');
+    const contract = JSON.parse(readFileSync(contractUrl,'utf8'));
+    const materialized = materializeCase(contract,process.argv[2]);
+    process.stdout.write(JSON.stringify(materialized)+'\n');
+  } catch (error) {
+    process.stderr.write('NAMESPACE_FIXTURE_REJECTED: '+error.message+'\n');
+    process.exitCode = 1;
+  }
+}
