@@ -5,6 +5,8 @@ on:
       - 'contracts/conformance/namespace-guest-gates-v1.json'
       - 'tools/materialize-namespace-guest-case.mjs'
       - 'tests/namespace-guest-gates-v1.test.mjs'
+      - 'tools/compare-namespace-backend-corpus.mjs'
+      - 'tests/namespace-backend-source-identity.test.mjs'
       - 'docs/CROSS_BACKEND_NAMESPACE_GUEST_GATES_V1.md'
       - 'docs/NAMESPACE_GRAMMAR_AUTHORITY_DECISION_RECORD.md'
       - '.github/workflows/namespace-guest-corpus-check.yml'
@@ -25,7 +27,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test source-free namespace corpus only
-        run: node --test tests/namespace-guest-gates-v1.test.mjs
+        run: node --test tests/namespace-guest-gates-v1.test.mjs tests/namespace-backend-source-identity.test.mjs
       - name: Explicit evidence scope
         if: always()
         run: |
