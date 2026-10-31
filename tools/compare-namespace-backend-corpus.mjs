@@ -36,20 +36,20 @@ export function javaCorpus(text) {
     if (path !== ownerPath) fail('Java source ownership path disagrees');
     sources.push({path, content: source, package_instance_id: owner});
   }
-  if ((block.match(/sources\\.put\\(/g) ?? []).length !== sources.length ||
-      (block.match(/owners\\.put\\(/g) ?? []).length !== sources.length)
+  if ((block.match(/sources\.put\(/g) ?? []).length !== sources.length ||
+      (block.match(/owners\.put\(/g) ?? []).length !== sources.length)
     fail('unparsed Java source/owner binding');
   return sources;
 }
 
 export function llvmCorpus(text) {
-  const block = segment(text, 'input.sources = {', '};\\n    return input;');
+  const block = segment(text, 'input.sources = {', '};\n    return input;');
   const sources = [];
   for (const match of block.matchAll(cppPattern)) {
     const [path, owner, source] = match.slice(1).map(decode);
     sources.push({path, content: source, package_instance_id: owner});
   }
-  if ((block.match(/\\{\\s*"/g) ?? []).length !== sources.length)
+  if ((block.match(/\{\s*"/g) ?? []).length !== sources.length)
     fail('unparsed LLVM pinned source binding');
   return sources;
 }
@@ -77,7 +77,7 @@ export function verifyBackendSourceIdentity(contract, javaText, llvmText) {
 }
 
 function readPinnedRegularFile(path) {
-  if (typeof path !== 'string' || !path || path.includes('\\0'))
+  if (typeof path !== 'string' || !path || path.includes('\0'))
     fail('missing or invalid local fixture filename');
   if (!Number.isInteger(constants.O_NOFOLLOW) ||
       !Number.isInteger(constants.O_NONBLOCK))
@@ -108,9 +108,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const result = verifyBackendSourceIdentity(contract,
       readPinnedRegularFile(process.argv[2]),
       readPinnedRegularFile(process.argv[3]));
-    process.stdout.write(JSON.stringify(result)+'\\n');
+    process.stdout.write(JSON.stringify(result)+'\n');
   } catch(error) {
-    process.stderr.write(String(error.message)+'\\n');
+    process.stderr.write(String(error.message)+'\n');
     process.exitCode=1;
   }
 }
