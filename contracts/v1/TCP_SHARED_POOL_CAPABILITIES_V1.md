@@ -234,7 +234,7 @@ native results, not just copied contracts or zero-step GitHub Actions runs.
 | Java | [#2404](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2404) | Selector/TLS I/O exclusive gate, trusted host generational ledger, quarantine until physical-close attestation; JUnit tests authored | JDK 25 JIT/AOT actual socket pool and guest actor routing |
 | LLVM | [#1255](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1255) | Linux epoll FD/dup-alias admission fence and native tests authored; isolated Linux inode assumption checked with ASan/UBSan | exact-head C++ sanitizer suite, manager-crossing aliases and hard-RT proof |
 | WASM | [#229](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/229) | 15 unsupported TCP pool options rejected before source/byte admission in a source-only JS check | physical reactor, bounded worker bridge, guest TCP |
-| Cranelift | [#30](https://github.com/ores-truffle-oreslang/oreslang-source.cranelift/pull/30) | Stage-0 scalar JIT rejects guest actor/TCP-pool/ownership forms; CLI tests authored | Cargo test execution and **all** network/actor functionality |
+| Cranelift | [#39](https://github.com/ores-truffle-oreslang/oreslang-source.cranelift/pull/39) | Stage-0 scalar JIT rejects guest actor/TCP-pool/ownership forms; CLI tests authored | Cargo test execution and **all** network/actor functionality |
 | .NET | [#291](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/291) | Trusted host generational ledger, nonparking acquisition, policy-epoch and idle-socket quarantine, 1,024-cycle tests authored | .NET 10 compilation, NativeAOT guest and physical TCP connections |
 
 This table is an **evidence taxonomy, not a parity certificate**. Unsupported features must remain compiler/runtime admission failures until verified. The Java and .NET ledgers are **host-authority prerequisites**, not transport socket managers; they lack protocol framing, physical close acknowledgements wired to real sockets, bounded MPSC descriptors, fair scheduling and actual zero-copy pinned buffers.
@@ -244,3 +244,22 @@ The critical cross-backend invariant is:
 Neither cancelling a future nor removing an actor mailbox grants permission to recycle a physical TCP socket. Policy-epoch changes must quarantine even idle, pre-connected sockets.
 
 The reference-model and seed-interleaving tests are independent source-only evidence. Runner jobs with zero steps or no runner allocation are not compile/test failures and cannot be credited as native passes.
+
+
+### Source-model, live I/O and promotion distinctions (2026-11-01)
+- Guest-owned JavaScript arrays are not immutable transport-region authority.
+  The source model reads each own **data descriptor once**, validates octets
+  and snapshots those same values. Accessor getters and inherited sparse
+  indexes are rejected, preventing a validation-to-copy mismatch. Production
+  backends still need independent physical shared-memory publication proof.
+- An empty userspace frame queue does **not** guarantee a peer cannot deliver
+  a delayed response from an earlier actor's lease. Only a registered trusted
+  protocol codec with validated response correlation may release cleanly.
+  Unknown or mismatched late frames poison the socket.
+- Node.js framed TCP loopback is a HOST reference oracle. Java and .NET real
+  loopback tests cover their HOST ledgers and physical-close acknowledgements;
+  LLVM AF_INET epoll readiness covers HOST descriptor identity. None is
+  compiled guest pool, asynchronous language lowering, zero-copy or AOT proof.
+  LLVM actor-owned watch/completion ACK remains a separate integration gate.
+- Require exact source HEAD, allocated runner and **nonempty executed steps**,
+  compiler/runtime version, and named positive/negative tests before promotion.
