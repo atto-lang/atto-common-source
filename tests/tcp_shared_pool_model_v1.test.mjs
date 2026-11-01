@@ -6,7 +6,21 @@ class FrozenBytes {
   // A read requires a one-use-capability-backed, explicit live pin.
   #values; #pins = 0; #retiring = false; #freed = false;
   #activePins = new WeakSet();
-  constructor(values) { this.#values = Object.freeze(Array.from(values)); }
+  constructor(values) {
+    // A frozen outer Array is not an immutable byte slab if an entry can
+    // be an object, NaN or a mutable view. Copy only primitive octets.
+    // Charge a bounded slab budget before accepting the next element.
+    if(values == null || typeof values[Symbol.iterator] !== "function")
+      throw Error("invalid-byte-buffer");
+    const copied=[];
+    for(const byte of values) {
+      if(copied.length === 1024*1024)throw Error("buffer-capacity");
+      if(!Number.isInteger(byte) || byte < 0 || byte > 255)
+        throw Error("invalid-byte");
+      copied.push(byte);
+    }
+    this.#values = Object.freeze(copied);
+  }
   get pins() { return this.#pins; }
   get freed() { return this.#freed; }
   pin() {
