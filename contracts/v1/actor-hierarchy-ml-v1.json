@@ -139,7 +139,9 @@
           {
             "kind": "actor",
             "name": "Parent",
-            "domain": "shared"
+            "domain": "shared",
+            "linked": true,
+            "nominal_id": "pkg/v1::Parent"
           }
         ],
         "inherited_state_count": 1,
@@ -218,7 +220,23 @@
     {
       "id": "actor-ref-interface-narrow",
       "override": {
-        "actor_ref_cast": "verified_interface"
+        "actor_ref_cast": "verified_interface",
+        "interfaces": [
+          {
+            "name": "Stage",
+            "fields": [],
+            "methods": [
+              {
+                "name": "handle",
+                "arity": 1,
+                "params": [
+                  "Msg"
+                ],
+                "result": "void"
+              }
+            ]
+          }
+        ]
       },
       "expected": "accept"
     },
@@ -279,7 +297,9 @@
           {
             "kind": "actor",
             "name": "IsoParent",
-            "domain": "private"
+            "domain": "private",
+            "linked": true,
+            "nominal_id": "pkg/v1::IsoParent"
           }
         ]
       },
@@ -293,7 +313,9 @@
             "kind": "actor",
             "name": "FinalParent",
             "domain": "shared",
-            "final": true
+            "final": true,
+            "linked": true,
+            "nominal_id": "pkg/v1::FinalParent"
           }
         ]
       },
@@ -310,7 +332,9 @@
             "sealed": true,
             "permits": [
               "Other"
-            ]
+            ],
+            "linked": true,
+            "nominal_id": "pkg/v1::SealedParent"
           }
         ]
       },
@@ -323,7 +347,9 @@
           {
             "kind": "actor",
             "name": "Parent",
-            "domain": "shared"
+            "domain": "shared",
+            "linked": true,
+            "nominal_id": "pkg/v1::Parent"
           }
         ],
         "ancestry": [
@@ -582,6 +608,162 @@
             ],
             "default_effects": [
               "pure"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "sealed-permitted-parent",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "Parent",
+            "domain": "shared",
+            "linked": true,
+            "nominal_id": "pkg/v1::Parent",
+            "sealed": true,
+            "permits": [
+              "A1"
+            ]
+          }
+        ]
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "forged-actor-root",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor_root",
+            "name": "FakeActor",
+            "domain": "shared"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "wrong-domain-actor-root",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor_root",
+            "name": "IsoActor",
+            "domain": "shared"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "unlinked-actor-parent",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "Parent",
+            "domain": "shared"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "actorref-interface-not-implemented",
+      "override": {
+        "actor_ref_cast": "verified_interface"
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "two-traits-conflict",
+      "override": {
+        "traits": [
+          {
+            "name": "Left",
+            "fields": [],
+            "default_effects": [
+              "pure"
+            ],
+            "methods": [
+              {
+                "name": "normalize",
+                "arity": 1
+              }
+            ]
+          },
+          {
+            "name": "Right",
+            "fields": [],
+            "default_effects": [
+              "pure"
+            ],
+            "methods": [
+              {
+                "name": "normalize",
+                "arity": 1
+              }
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "unresolved-abstract-method",
+      "override": {
+        "abstract_methods": [
+          {
+            "name": "missing",
+            "arity": 1,
+            "params": [
+              "Msg"
+            ],
+            "result": "int"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "duplicate-class-method-slot",
+      "override": {
+        "methods": [
+          {
+            "name": "handle",
+            "arity": 1,
+            "visibility": "public",
+            "params": [
+              "Msg"
+            ],
+            "result": "void"
+          },
+          {
+            "name": "handle",
+            "arity": 1,
+            "visibility": "private",
+            "params": [
+              "int"
+            ],
+            "result": "void"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "default-trait-impure",
+      "override": {
+        "traits": [
+          {
+            "name": "Bad",
+            "fields": [],
+            "default_effects": [
+              "nondeterministic"
             ]
           }
         ]
