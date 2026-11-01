@@ -68,8 +68,13 @@ class ExclusiveSlot {
   constructor(port) { this.port = port; this.generation = 0; this.socket = null;
     this.reader = null; this.current = null; this.active = false; this.stopped = false; }
   async open() {
-    if (this.stopped || this.current || this.socket) throw Error('slot-not-retired');
+    if (this.stopped || this.current || this.socket || this.retiring)
+      throw Error('slot-not-retired');
     this.socket = await dial(this.port);
+    // Remember the actual close event BEFORE a cancellation may destroy the
+    // socket. Node's socket.destroyed flag alone is not physical quiescence.
+    this.closeObserved = new Promise(resolve =>
+      this.socket.once('close', resolve));
     this.reader = new Frames(this.socket);
     this.generation++;
   }
@@ -104,9 +109,23 @@ class ExclusiveSlot {
     return true;
   }
   async retire() {
-    this.socket?.destroy();
-    if (this.socket && !this.socket.destroyed) throw Error('not-closed');
-    this.socket = null; this.reader = null; this.current = null;
+    if (this.retiring) return this.retiring;
+    const socket = this.socket;
+    const closeObserved = this.closeObserved;
+    if (!socket) { this.reader = null; this.current = null; return; }
+    // Do not return a quarantined slot to open() until the OS-close event
+    // has actually been delivered. Concurrent retire() calls join the same
+    // promise; none can clear a newer generation's socket.
+    this.retiring = (async () => {
+      socket.destroy();
+      await closeObserved;
+      if (this.socket === socket) {
+        this.socket = null; this.closeObserved = null;
+        this.reader = null; this.current = null;
+      }
+    })();
+    try { await this.retiring; }
+    finally { this.retiring = null; }
   }
   async stop() { this.stopped = true; await this.retire(); }
 }
@@ -160,7 +179,10 @@ test('aborted exchange destroys socket; old late response cannot reach new actor
   await assert.rejects(pending,/cancelled/);
   assert.equal(slot.release(a,99),true);
   assert.equal(slot.acquire(2),null,'closed socket cannot be reused');
-  await slot.retire(); await slot.open();
+  const closePending = slot.retire();
+  await assert.rejects(slot.open(),/slot-not-retired/,
+    'new dial is blocked until the old physical close event');
+  await closePending; await slot.open();
   const b=slot.acquire(2);assert.ok(b);
   assert.deepEqual([...await slot.exchange(b,2,2)],[2,2]);
   assert.equal(slot.release(b,2),true);
