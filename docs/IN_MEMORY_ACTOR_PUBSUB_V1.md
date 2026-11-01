@@ -1,6 +1,6 @@
 # Typed in-memory actor PubSub and multi-ActorGroup contract (proposed v1)
 
-**Status: SOURCE_CONTRACT_ONLY / NOT IMPLEMENTED OR VERIFIED ACROSS BACKENDS.** This RFC defines a target API and conformance requirements. The snippets are *illustrative*, not presently accepted Oreslang syntax. Do not advertise Java/LLVM/Cran(e)lift/.NET/Wasm/Forge guest-language support based on host APIs or these fixtures alone.
+**Status: SOURCE_CONTRACT_ONLY / NOT IMPLEMENTED OR VERIFIED ACROSS BACKENDS.** This RFC defines a target API and conformance requirements. The snippets are *illustrative*, not presently accepted Oreslang syntax. Do not advertise Java/LLVM/Cranelift/.NET/Wasm/Forge guest-language support based on host APIs or these fixtures alone.
 
 ## Decision
 
@@ -15,6 +15,8 @@ Provide runtime-owned, in-memory, nonblocking, typed topic capabilities:
 - \`PublishReceipt\`: local fanout/admission outcome; it is **not** acknowledgement of subscriber processing.
 
 Scope two primary namespaces: \`runtime\` (within one runtime and authorized namespace; not cross-process) and \`group\` (within an ActorGroup incarnation). A topic key is at least (runtime id, scope kind, namespace/group id + generation, nominal schema id, topic name). Topic names alone never imply authority. Multiple topics can use the same human-readable name when namespace or schema differs; no accidental cross-delivery.
+
+In v1, the topic manager chooses the delivery policy at topic definition, and each subscriber chooses only a capacity up to the topic's limit and a delivery mode. Publisher-specific `ObservableActor` observer policies are a separate, existing draft contract.
 
 ### Proposed guest surface (not yet compiler-accepted)
 
@@ -36,7 +38,7 @@ let result: Result<PublishReceipt, PublishError> =
 
 // Inside the dashboard actor's own turn:
 let sub = dashboard_read.subscribe(
-    SubscribeOptions(policy=#latest, capacity=1, delivery=#pull)
+    SubscribeOptions(capacity=1, delivery=#pull)
 );
 let next_event: Option<Event<PriceTick>> = await sub.next();
 sub.cancel();
