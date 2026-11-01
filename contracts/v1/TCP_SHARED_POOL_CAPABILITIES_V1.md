@@ -143,6 +143,11 @@ intended behavior, not established language signatures.
 - Cancellation/actor STOP while read or partial write is pending: revoke
   new commands; keep slot/pins until trusted completion; never recycle as
   clean or double-unpin.
+- Concurrent cold dials on one slot must be single-flight: reserve the
+  CONNECTING state *before* awaiting socket creation or dialing. A STOP
+  racing connect must prevent late socket publication, close any eventually
+  connected candidate and await physical-close completion before retirement.
+  Neither a `destroyed` flag nor a cancelled Future proves OS close.
 - Pool stop before dial, during multiple writes, and after quiescence is
   irreversible. Reject stale reopen attempts even after complete drain.
 - Raw-TCP multiplex permission without a codec is rejected. Forged,
