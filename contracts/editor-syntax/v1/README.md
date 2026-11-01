@@ -56,7 +56,7 @@ fixture_id  UTF16_HEX  JAVA_TOKEN_TYPES_OR_ERROR  SYMBOL_NAME_UTF16_HEX_OR_DASH 
   Their actual run IDs belong in [EXECUTION_EVIDENCE.md](EXECUTION_EVIDENCE.md).
 
 [backend-lexical-admission-v1.json](backend-lexical-admission-v1.json)
-identifies Java, LLVM, WASM, .NET, and Forge and separately tracks lexer,
+identifies Java, LLVM, WASM, Cranelift, .NET, and Forge as six distinct\nbackends and separately tracks lexer,
 parser, and runtime evidence. All entries start \`NOT_EXECUTED\`. No field
 is set to \`PASS\` without independently reviewed exact-head CI execution.
 
@@ -67,3 +67,12 @@ receipt metadata, and rejects fake green/skip/pending states. **This is only
 a schema and consistency guard**: any future receipt link, tested SHA, and
 CI steps must additionally be verified against the actual GitHub Actions job.
 A plausible-looking receipt JSON alone is not proof of executed conformance.
+
+## Cranelift parity boundary
+
+Cranelift is an independent backend, not an alias of LLVM or Forge. The
+admission **test plan** enumerates all six engines, without representing
+lexer, parser or runtime support as established. The synthetic 34-case corpus
+and its immutable Git blob SHA remain unchanged. Offline Cranelift receipt
+comparison is explicitly `UNTRUSTED_COMPARISON_ONLY` and cannot establish
+production toolchain execution without independently authenticated CI evidence.
