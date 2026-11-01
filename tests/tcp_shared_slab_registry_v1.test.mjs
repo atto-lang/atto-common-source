@@ -50,11 +50,20 @@ class SlabRegistry {
     if (!Array.isArray(bytes) || !Number.isSafeInteger(bytes.length) ||
       bytes.length > this.limits.slabBytes || !bytes.length)
       throw Error('invalid-slab-length');
+    // Read each own DATA descriptor exactly once. A getter can return a
+    // valid octet during validation and an object or changed value when
+    // Array.from reads it again. Never execute guest accessors here and
+    // never validate different bytes than the ones actually published.
+    const snapshot=[];
     for (let i=0;i<bytes.length;i++) {
-      if (!Object.hasOwn(bytes,i) || !Number.isInteger(bytes[i]) ||
-        bytes[i] < 0 || bytes[i] > 255) throw Error('invalid-slab-byte');
+      const descriptor=Object.getOwnPropertyDescriptor(bytes,i);
+      if (!descriptor || !Object.hasOwn(descriptor,'value') ||
+        !Number.isInteger(descriptor.value) ||
+        descriptor.value < 0 || descriptor.value > 255)
+        throw Error('invalid-slab-byte');
+      snapshot.push(descriptor.value);
     }
-    if (bytes.length > this.limits.totalBytes - this.#usedBytes)
+    if (snapshot.length > this.limits.totalBytes - this.#usedBytes)
       throw Error('slab-byte-budget');
     const slot=this.#slots.findIndex(entry=>entry===null);
     if (slot<0) throw Error('slab-slot-budget');
@@ -62,7 +71,7 @@ class SlabRegistry {
       throw Error('slab-generation-exhausted');
     const handle=Object.freeze({});
     const record={pool:this.#pool,slot,generation:++this.#nextGeneration,
-      owner,bytes:Object.freeze(Array.from(bytes)),state:'published',pins:0,handle};
+      owner,bytes:Object.freeze(snapshot),state:'published',pins:0,handle};
     this.#slots[slot]=record;
     this.#records.set(handle,record);
     this.#usedBytes+=record.bytes.length;
@@ -134,6 +143,31 @@ const person=(actor='a',incarnation=1,tenant='t',domain='shared') =>
   ({actor,incarnation,tenant,domain});
 const a=person(), b=person('b'), foreign=person('f',1,'other');
 const fresh=limits=>new SlabRegistry(limits);
+test('accessor-backed array cannot smuggle a mutable byte after validation',()=>{
+  const r=fresh(),input=[1,2];
+  let calls=0;
+  Object.defineProperty(input,0,{configurable:true,enumerable:true,
+    get(){calls++;return calls===1?42:{mutable:true};}});
+  deny(()=>r.publish(input,a),'invalid-slab-byte');
+  assert(calls===0 && r.accounting.usedBytes===0 &&
+    r.accounting.liveSlabs===0,'untrusted getter was never invoked');
+});
+test('snapshot contains precisely the validated own data descriptors',()=>{
+  const r=fresh(),input=[4,5,6];
+  const h=r.publish(input,a),p=r.pin(h,b);
+  input[0]=7;input[1]=8;input[2]=9;
+  assert(r.read_at(h,p,b,0)===4 && r.read_at(h,p,b,1)===5 &&
+    r.read_at(h,p,b,2)===6,'snapshot cannot be mutated by producer');
+  r.release_pin(h,p,b);r.retire(h,a);
+  assert(r.accounting.usedBytes===0);
+});
+test('inherited sparse indexes are not accepted as guest-owned bytes',()=>{
+  const r=fresh(),array=new Array(2);
+  array[0]=1;
+  Object.setPrototypeOf(array,{1:2});
+  deny(()=>r.publish(array,a),'invalid-slab-byte');
+  assert(r.accounting.liveSlabs===0);
+});
 test('publication always copies producer bytes',()=>{
   const r=fresh(),src=[1,2,3],h=r.publish(src,a);src[1]=77;
   const pin=r.pin(h,b);assert(r.read_at(h,pin,b,1)===2);
