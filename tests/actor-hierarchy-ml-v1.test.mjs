@@ -255,7 +255,7 @@ test('same no-argument scalar guest is byte-pinned and remains explicitly unexec
   const bytes = readFileSync(new URL('../' + f.path, import.meta.url));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), f.sha256);
   assert.equal(f.source_blob_sha, '5affedebfcc7bf6aab2bdd6451f80ea5a71a5624');
-  assert.equal(bytes.toString('utf8'), 'pub fnc main(): int { return 2 - 1 * (2 * 1 - 42) * 1; }\\n');
+  assert.equal(bytes.toString('utf8'), 'pub fnc main(): int { return 2 - 1 * (2 * 1 - 42) * 1; }\n');
   assert.equal(f.expected_result, 42);
   assert.equal(f.execution_status, 'NOT_EXECUTED');
   assert.deepEqual(f.backends, spec.backends.map(x => x.name));
