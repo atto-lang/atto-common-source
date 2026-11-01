@@ -73,7 +73,15 @@ entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
    to read using some other actor's pin. Unpin invalidates that exact token;
    other reader pins continue independently until their own release. A read-only pointer
    alone is insufficient: it does not guarantee lifetime, revocation, bounds
-   or cross-isolate safety. No mutable aliasing of socket input, TLS buffers,
+   or cross-isolate safety. **Physical backing reclamation:** once retirement and the final
+   trusted reader/I/O pin have both completed, drop the private backing
+   allocation or release it to the backend's owned-region allocator.
+   Exposing `freed=true` while retaining an otherwise unreachable
+   one-MiB backing array is not sufficient. Preserve immutable length
+   metadata separately. Host JS/JVM/.NET collection eligibility does not
+   guarantee immediate zeroization or hard-real-time deallocation; native
+   deallocation on a real-time carrier requires deferred reclamation.
+   No mutable aliasing of socket input, TLS buffers,
    scatter/gather vectors, or parser state. For untrusted or remote isolates
    use bounded copies even if that costs more.
 7. **Cancellation and linearizable retirement.** Pool slots move
