@@ -310,6 +310,7 @@ test('cold dial admission is single-flight and STOP drains pending connects',
   await assert.rejects(first.open(),/slot-not-retired/,
     'one physical slot cannot dial twice concurrently');
   await admitted;
+  await delay(10); // let the listening peer observe the accepted connection
   assert.equal(srv.count(),1,'only one real connection admitted');
   await first.stop();
   assert.equal(first.socket,null,'physical close completed before STOP returns');
