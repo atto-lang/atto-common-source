@@ -29,14 +29,14 @@
       "expected": "accept",
       "category": "critical",
       "lowering_pending": true,
-      "source": "pub critical fnc inc(): void { counter = counter + 1; }"
+      "source": "pub critical fnc inc(): int { return 7; }"
     },
     {
       "id": "critical-block",
       "expected": "accept",
       "category": "critical",
       "lowering_pending": true,
-      "source": "pub suspends fnc inc(): void { critical { counter = counter + 1; } }"
+      "source": "pub suspends fnc inc(): int { critical { return 7; } }"
     },
     {
       "id": "try-critical",
@@ -141,14 +141,14 @@
       "expected": "accept",
       "category": "critical",
       "lowering_pending": true,
-      "source": "pub suspends fnc process(): void { let result = await fetch(); critical { store(result); } }"
+      "source": "pub suspends fnc fetch(): int { return 7; } pub suspends fnc process(): int { let value = await fetch(); critical { return value; } }"
     },
     {
       "id": "await-after-critical",
       "expected": "accept",
       "category": "critical",
       "lowering_pending": true,
-      "source": "pub suspends fnc process(): void { critical { mutate(); } await publish(); }"
+      "source": "pub suspends fnc fetch(): int { return 7; } pub suspends fnc process(): int { critical { val int x = 1; } return await fetch(); }"
     },
     {
       "id": "channel-wait-critical",
@@ -162,7 +162,7 @@
       "expected": "reject",
       "category": "sync-acquisition",
       "lowering_pending": false,
-      "source": "pub fnc invalid(): void { critical { mutate(); } }"
+      "source": "pub fnc invalid(): int { critical { return 7; } }"
     },
     {
       "id": "async-actor-method",
