@@ -354,6 +354,13 @@
       "expected": "accept",
       "assertion": "publisher-scoped observation filters before fanout quota reservation",
       "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_system_publish_not_general",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "A general Topic handle must not expose an unauthenticated publishSystem or equivalent host/supervisor publication bypass",
+      "status": "pending_backend_execution"
     }
   ]
 }
