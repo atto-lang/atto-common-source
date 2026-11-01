@@ -56,7 +56,7 @@ export function compareUntrustedLexicalReceipt(corpusBytes, receipt) {
   requireValid(receipt && typeof receipt === 'object' && !Array.isArray(receipt) &&
     receipt.schema === 'oreslang-lexical-case-receipt-v1',
   'unsupported receipt schema');
-  requireValid(['java','llvm','wasm','net','forge'].includes(receipt.backend),
+  requireValid(['java','llvm','wasm','cranelift','net','forge'].includes(receipt.backend),
     'unknown backend');
   requireValid(receipt.corpusBlobSha === gitBlob, 'receipt corpus mismatch');
   requireValid(receipt.tokenModel === 'java-lexical-token-types-v1',
