@@ -1,9 +1,12 @@
 // Review-only, source-free reference oracle. NOT an Oreslang compiler or runtime.
 // A held logical actor turn is intentionally not a held critical guard.
 export class CriticalAdmissionModel {
-  constructor(generation = 1) {
+  constructor(generation = 1, {maxQueued = 1024} = {}) {
     if (!Number.isSafeInteger(generation) || generation < 1) throw Error("invalid generation");
+    if (!Number.isSafeInteger(maxQueued) || maxQueued < 1 || maxQueued > 65536)
+      throw Error("invalid critical queue capacity");
     this.generation = generation;
+    this.maxQueued = maxQueued;
     this.current = null;
     this.queue = [];
     this.nextSequence = 1;
@@ -17,6 +20,11 @@ export class CriticalAdmissionModel {
       throw Error("invalid deadline");
     }
     if (deadlineMs !== null && nowMs >= deadlineMs) return {status:"expired"};
+    // Fail closed on same-task recursive admission rather than deadlocking
+    // behind the task's own guard or minting duplicate queue tickets.
+    if ((this.current?.task === task && this.current.generation === generation) ||
+        this.queue.some(t => t.task === task && t.generation === generation))
+      throw Error("E_CRITICAL_NESTED");
     // A queued waiter owns priority even if no current guard has yet been installed.
     if (this.current === null && this.queue.length === 0) {
       const ticket = this.#ticket(task, generation, "held");
@@ -24,6 +32,7 @@ export class CriticalAdmissionModel {
       return ticket;
     }
     if (tryOnly) return {status:"busy"};
+    if (this.queue.length >= this.maxQueued) return {status:"saturated"};
     const ticket = this.#ticket(task, generation, "queued");
     this.queue.push(ticket);
     // This models suspension of a continuation: NO carrier is blocked.
@@ -47,8 +56,17 @@ export class CriticalAdmissionModel {
   expire(nowMs, deadlineBySequence) {
     if (!Number.isSafeInteger(nowMs) || nowMs < 0) throw Error("invalid clock");
     if (typeof deadlineBySequence !== "function") throw Error("deadline accessor required");
-    for (const ticket of [...this.queue]) {
-      const deadline = deadlineBySequence(ticket.sequence);
+    // Evaluate all deadline descriptors before mutating tickets, so a
+    // malformed comparator cannot cause a half-applied expiry transition.
+    const deadlines = this.queue.map(ticket => ({
+      ticket, deadline:deadlineBySequence(ticket.sequence)
+    }));
+    for (const {deadline} of deadlines) {
+      if (deadline !== null && deadline !== undefined &&
+          (!Number.isSafeInteger(deadline) || deadline < 0))
+        throw Error("invalid deadline");
+    }
+    for (const {ticket, deadline} of deadlines) {
       if (deadline !== null && deadline !== undefined && nowMs >= deadline) {
         this.queue = this.queue.filter(x => x !== ticket);
         ticket.status = "expired";
@@ -93,7 +111,12 @@ export class CriticalAdmissionModel {
 }
 
 export class NonreentrantActorTurnModel {
-  constructor(generation = 1) {
+  constructor(generation = 1, {maxQueued = 1024} = {}) {
+    if (!Number.isSafeInteger(generation) || generation < 1)
+      throw Error("invalid actor generation");
+    if (!Number.isSafeInteger(maxQueued) || maxQueued < 1 || maxQueued > 65536)
+      throw Error("invalid actor queue capacity");
+    this.maxQueued = maxQueued;
     this.generation = generation;
     this.turn = null;
     this.dataQueue = [];
@@ -104,6 +127,13 @@ export class NonreentrantActorTurnModel {
     if (generation !== this.generation) throw Error("STALE_ACTOR");
     if (typeof task !== "string" || task.length === 0) throw Error("invalid task");
     if (this.turn !== null) {
+      // A task may not synchronously wait for another admission to the
+      // nonreentrant turn it owns. This is distinct from a contended guard.
+      if (this.turn.task === task && this.turn.generation === generation)
+        throw Error("E_ACTOR_SELF_WAIT");
+      if (this.dataQueue.some(t => t.task === task && t.generation === generation))
+        throw Error("E_ACTOR_DUPLICATE_TICKET");
+      if (this.dataQueue.length >= this.maxQueued) return "saturated";
       this.dataQueue.push({task,generation});
       return "queued";
     }
