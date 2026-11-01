@@ -42,6 +42,29 @@ function check_invariants(pool) {
     assert(slot.leases.size > 0, "leased slot must have live capabilities");
   }
 }
+test("frozen slab rejects object references and non-octet values", () => {
+  for(const value of [NaN,Infinity,-1,256,1.5,"42",{value:42},null]) {
+    deny(()=>new FrozenBytes([value]),"invalid-byte");
+  }
+  deny(()=>new FrozenBytes(null),"invalid-byte-buffer");
+  deny(()=>new FrozenBytes({length:1}),"invalid-byte-buffer");
+});
+test("frozen slab copies a caller-owned typed array", () => {
+  const source=Uint8Array.from([1,2,255]),slab=new FrozenBytes(source);
+  source[1]=99;
+  const pin=slab.pin();
+  assert(slab.read_at(1,pin)===2);
+  slab.release_pin(pin);slab.retire();
+  assert(slab.freed);
+});
+test("frozen slab refuses unbounded iterables before extra publication", () => {
+  const oversized={
+    *[Symbol.iterator]() {
+      for(let i=0;i<=1024*1024;i++)yield 0;
+    }
+  };
+  deny(()=>new FrozenBytes(oversized),"buffer-capacity");
+});
 test("caller mutation cannot change a frozen slab", () => {
   const source=[10,20,30], slab=new FrozenBytes(source);
   source[1]=99;
