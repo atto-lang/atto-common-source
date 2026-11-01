@@ -23,7 +23,9 @@ entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
    streams) may admit multiple independent logical exchanges and must own
    complete matching, framing, flow control, ordering, and cancellation.
    PostgreSQL transactions, protocol upgrades, blocking or subscription
-   connections always use an exclusive/dedicated lane.
+   connections always use an exclusive/dedicated lane. The codec must be
+   registered and trusted: a guest cannot enable multiplexing by setting
+   a Boolean on an unframed TCP byte stream.
 3. **Direct submission, not actor mailbox serialization.** Trusted actors
    may enqueue fixed-size immutable **descriptors** into a bounded MPSC
    transport-shard command ring or reserve per-shard slots by CAS. Descriptors
@@ -72,6 +74,14 @@ entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
    I/O has stopped. Physical free, buffer unpin and slot reuse wait for
    readiness cancellation, all I/O callbacks and buffer/lease pins to retire.
    Generation increments on slot reuse and never silently wraps.
+   **Pool shutdown is terminal**: draining outstanding I/O may complete,
+   but a RETIRED socket must never be reopened by the stopped pool.
+   Individual multiplexed stream cancellation may preserve unrelated
+   streams only after the trusted codec has emitted and confirmed a safe
+   stream-reset completion, all stream-specific writes have quiesced,
+   and a one-use, unforgeable host receipt is consumed. Actor-supplied
+   Boolean/string/reset tokens are not authority. Without that evidence,
+   poison and drain the full physical connection.
 8. **No blocking locks across suspension.** A shared metadata lock may
    protect brief bounded admission bookkeeping but must not cover network
    syscalls, TLS processing, guest callbacks, critical sections, or `await`.
@@ -119,6 +129,16 @@ intended behavior, not established language signatures.
 - Cancellation/actor STOP while read or partial write is pending: revoke
   new commands; keep slot/pins until trusted completion; never recycle as
   clean or double-unpin.
+- Pool stop before dial, during multiple writes, and after quiescence is
+  irreversible. Reject stale reopen attempts even after complete drain.
+- Raw-TCP multiplex permission without a codec is rejected. Forged,
+  duplicate, wrong-stream and cross-pool stream-reset receipts are rejected.
+  A proven HTTP/2/QUIC stream reset may preserve another live stream.
+- On native Linux, multiple numeric FDs can alias one socket via dup/dup2.
+  Fence physical-transport aliases within the authoritative reactor manager;
+  preserve independent socketpair peers and pipe read/write endpoints.
+  Host code must not prematurely close/reuse a registered FD, and separate
+  manager instances require a shared authority boundary.
 - Double release, release by a different actor, slow consumer, bounded queue
   full, expired deadline, connection reset, TLS renegotiation/error, half
   close, pool shutdown, slot generation exhaustion: fail closed with exact
