@@ -79,6 +79,39 @@ in the Java draft JUnit resources, VS Code, and the web highlighter.
   [run 41254180721](https://github.com/ores-truffle-oreslang/oreslang-common-source/actions/runs/41254180721)
   failed pre-runner at job 124693729567, with zero steps.
 
+## Case-level receipts and LLVM native-front-end gap (2026-10-31)
+
+- The shared \`scripts/compare-lexical-case-receipts.mjs\` enforces exactly
+  34 distinct results, the fixed corpus Git blob, Java-v1 token vocabulary,
+  NFC Symbol name hex, and exact diagnostic substrings. It produces only
+  \`UNTRUSTED_COMPARISON_ONLY\`, never a verified backend \`PASS\`.
+- The \`scripts/llvm-lexical-probe-adapter.mjs\` is a bounded, shell-free
+  subprocess transport. It requires a native CLI capability handshake and
+  per-case UTF-16-hex JSON responses from the production compiler. If the
+  interface is absent it reports \`INTERFACE_UNAVAILABLE\` with **zero**
+  executed cases; no fallbacks or synthetic native token dumps are counted.
+- Real public CI [web run 41262379199](https://github.com/ores-truffle-oreslang/html-js-css-syntax-highlighter/actions/runs/41262379199)
+  actually executed **67 tests, 67 pass, 0 fail** for the parser/editor
+  fixtures, case comparator, native-probe transport with a separately labeled
+  **mock**, and negative evidence-forgery checks.
+- The **test-plan** matrix verifier now rejects every \`PASS\` or \`FAIL\`
+  claim regardless of how plausible its GitHub URL, SHA and receipt hash look.
+  Native execution promotion requires a *separate authenticated* evidence
+  schema and independent verification of GitHub CI logs. The static plan
+  cannot certify its own execution.
+- Native LLVM [draft PR #1251](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1251)
+  now pins the exact shared fixture and documents production lexer gaps
+  confirmed by source inspection: ASCII-only identifier lexer,
+  coarse native token kinds, \`nb-select\` tokenization difference,
+  missing Java-equivalent hash Symbol NFC source admission, and no lexical
+  JSON CLI. Its integration document explicitly requires a genuine native
+  driver before testing or claiming LLVM lexical parity.
+- LLVM source CI job 124717820873 (run 41262286636) did get a runner,
+  checkout, configure, and native compile step; its overall result was
+  still pending when this evidence snapshot was authored. Those job steps
+  are *not lexical-protocol execution*. Java and common-source private
+  Actions still have zero-step admission failures.
+
 ## Promotion gates
 
 1. Recover private-repository GitHub Actions admission:
