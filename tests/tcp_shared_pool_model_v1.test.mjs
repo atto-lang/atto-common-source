@@ -2,11 +2,31 @@
 // NOT a production socket pool, concurrent host proof, or backend parity test.
 // Execute with: node tests/tcp_shared_pool_model_v1.test.mjs
 class FrozenBytes {
-  constructor(values){ this.values=Array.from(values); this.pins=0; this.retiring=false; this.freed=false; }
-  pin(){if(this.retiring || this.freed)throw Error("revoked-buffer"); this.pins++;}
-  release_pin(){if(!this.pins)throw Error("pin-underflow");this.pins--;if(this.retiring && !this.pins)this.freed=true;}
-  retire(){this.retiring=true;if(!this.pins)this.freed=true;}
-  read_at(i){if(this.freed || i<0 || i>=this.values.length)throw Error("invalid-read");return this.values[i];}
+  // Frozen input is copied in this reference model. A production native
+  // transport can use a proven frozen/pinned shared region instead.
+  #values; #pins = 0; #retiring = false; #freed = false;
+  constructor(values) { this.#values = Object.freeze(Array.from(values)); }
+  get pins() { return this.#pins; }
+  get freed() { return this.#freed; }
+  pin() {
+    if (this.#retiring || this.#freed) throw Error("revoked-buffer");
+    if (this.#pins >= Number.MAX_SAFE_INTEGER) throw Error("pin-overflow");
+    this.#pins++;
+  }
+  release_pin() {
+    if (!this.#pins) throw Error("pin-underflow");
+    this.#pins--;
+    if (this.#retiring && !this.#pins) this.#freed = true;
+  }
+  retire() {
+    this.#retiring = true;
+    if (!this.#pins) this.#freed = true;
+  }
+  read_at(index) {
+    if (this.#freed || !Number.isSafeInteger(index)
+        || index < 0 || index >= this.#values.length) throw Error("invalid-read");
+    return this.#values[index];
+  }
 }
 class LeaseLedger {
   constructor({partition="authority/tls/tenant",tenant="tenant",epoch=1,multiplex=false,streams=1,descriptors=2}={}){
@@ -180,4 +200,5 @@ function run_tests(){
   });
   return count;
 }
+export { FrozenBytes, LeaseLedger, assert, deny, run_tests };
 console.log("TCP shared pool model scenarios passed:", run_tests());
