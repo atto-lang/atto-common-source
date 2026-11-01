@@ -32,14 +32,16 @@ class LeaseLedger {
   constructor({partition="authority/tls/tenant",tenant="tenant",epoch=1,multiplex=false,streams=1,descriptors=2}={}){
     this.partition=partition;this.tenant=tenant;this.epoch=epoch;this.multiplex=multiplex;
     this.streams=streams;this.maxDescriptors=descriptors;this.descriptors=0;this.generation=0;
-    this.slot=null;this.tokens=new Map();
+    this.slot=null;this.tokens=new Map();this.stopped=false;
   }
   open(){
+    if(this.stopped)throw Error("pool-stopped");
     if(this.slot && this.slot.state!=="retired")throw Error("slot-not-retired");
     if(this.generation===Number.MAX_SAFE_INTEGER)throw Error("generation-exhausted");
     this.slot={generation:++this.generation,state:"idle",active:0,leases:new Set(),epoch:this.epoch};
   }
   acquire(identity){
+    if(this.stopped)throw Error("pool-stopped");
     const s=this.slot;
     if(!s || !["idle","leased"].includes(s.state))throw Error("not-available");
     if(identity.partition!==this.partition || identity.tenant!==this.tenant ||
@@ -99,7 +101,13 @@ class LeaseLedger {
     this.epoch=epoch;
     if(this.slot && this.slot.state!=="retired"){this.slot.state="draining";this.settle();}
   }
-  shutdown(){if(this.slot && this.slot.state!=="retired"){this.slot.state="draining";this.settle();}}
+  shutdown(){
+    this.stopped=true;
+    if(this.slot && this.slot.state!=="retired"){
+      this.slot.state="draining";
+      this.settle();
+    }
+  }
 }
 function assert(condition,msg="failed assertion"){if(!condition)throw Error(msg);}
 function deny(fn,message){let seen;try{fn();}catch(e){seen=e.message;}assert(seen===message,`wanted ${message}, saw ${seen}`);}
@@ -193,10 +201,23 @@ function run_tests(){
     deny(()=>p.begin(a,identity(),b),"revoked-buffer");assert(p.descriptors===0 && p.slot.active===0);p.release(a,identity());
   });
   test("generation counter must not wrap",()=>{
-    const p=fresh();p.shutdown();p.generation=Number.MAX_SAFE_INTEGER;deny(()=>p.open(),"generation-exhausted");
+    const p=fresh(),a=p.acquire(identity());p.cancel(a,identity());p.generation=Number.MAX_SAFE_INTEGER;deny(()=>p.open(),"generation-exhausted");
   });
   test("policy epoch must increase monotonically",()=>{
     const p=fresh();deny(()=>p.revoke_epoch(1),"epoch-not-monotonic");
+  });
+  test("shutdown cannot resurrect retired physical slots",()=>{
+    const p=fresh(),a=p.acquire(identity());
+    p.shutdown();p.trusted_revoke(a);
+    assert(p.slot.state==="retired" && p.stopped);
+    deny(()=>p.open(),"pool-stopped");
+    deny(()=>p.acquire(identity()),"pool-stopped");
+    p.shutdown();assert(p.slot.state==="retired");
+  });
+  test("shutdown before physical creation permanently rejects dial",()=>{
+    const p=new LeaseLedger();p.shutdown();
+    deny(()=>p.open(),"pool-stopped");
+    deny(()=>p.acquire(identity()),"pool-stopped");
   });
   return count;
 }
