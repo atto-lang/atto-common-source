@@ -1,4 +1,4 @@
-name: TCP shared pool source-free reference v1
+name: TCP shared pool host and source reference v1
 
 on:
   pull_request:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   reference:
-    name: source-only reference (NOT native TCP execution)
+    name: Node host loopback and source model (NOT Oreslang guest)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
