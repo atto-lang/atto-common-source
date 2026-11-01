@@ -35,11 +35,24 @@
     "No compiler may admit critical source until scoped guard and transitive no-suspension checks are implemented"
   ],
   "backend_state": {
-    "java": "host-runtime-substrate-only",
+    "java": "AST nodes parsed; bounded conservative effect checks; type/ownership/runtime execution fail closed; host gate implemented; no guest execution",
     "llvm": "host-runtime-substrate-only",
     "dotnet": "host-runtime-substrate-only",
     "wasm": "javascript-host-runtime-substrate-only; not Wasmtime guest",
     "cranelift": "rust-host-runtime-substrate-only"
   },
-  "evidence": "No native Oreslang guest execution claimed"
+  "evidence": "No native Oreslang guest execution claimed",
+  "compiler_admission": {
+    "java": {
+      "critical_block": "parsed into Ast.CriticalStmt; source type/ownership gate rejects until scheduler lowering",
+      "try_critical": "parsed into Ast.TryCriticalStmt with mandatory else; source gate rejects until immediate ticket/lexical cleanup",
+      "effect_check": "bounded conservative AST preflight; all unverified calls, FFI, awaits, channels and nested gates rejected",
+      "evaluation": "both synchronous and suspended paths reject unlowered critical AST",
+      "evidence": "exact-head Java focused GitHub Actions job had zero executed steps; tests unverified"
+    },
+    "llvm": "host runtime ticket substrate only; source critical remains rejected",
+    "dotnet": "host runtime ticket substrate only; source critical remains rejected",
+    "cranelift": "host runtime ticket substrate only; source critical remains rejected",
+    "wasm": "JS host ticket substrate only; source critical remains rejected"
+  }
 }
