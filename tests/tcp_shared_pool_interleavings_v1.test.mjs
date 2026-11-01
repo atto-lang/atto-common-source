@@ -45,10 +45,13 @@ function check_invariants(pool) {
 test("caller mutation cannot change a frozen slab", () => {
   const source=[10,20,30], slab=new FrozenBytes(source);
   source[1]=99;
-  assert(slab.read_at(1)===20);
+  const pin=slab.pin();
+  assert(slab.read_at(1,pin)===20);
   assert(!Object.hasOwn(slab,"values"), "slab must not expose mutable backing array");
-  deny(()=>slab.read_at(0.5),"invalid-read");
-  deny(()=>slab.read_at(Number.MAX_SAFE_INTEGER),"invalid-read");
+  deny(()=>slab.read_at(0.5,pin),"invalid-read");
+  deny(()=>slab.read_at(Number.MAX_SAFE_INTEGER,pin),"invalid-read");
+  deny(()=>slab.read_at(0,Object.freeze({})),"buffer-access-denied");
+  slab.release_pin(pin);
 });
 test("one stream cancellation retains other stream pins", () => {
   const p=fresh({multiplex:true,codec:"http2",streams:2,descriptors:2});
@@ -92,17 +95,18 @@ test("wrong epoch cannot steal an existing stream's credits", () => {
   p.release(a,identity());
 });
 test("repeated retirement cannot double-unpin", () => {
-  const b=new FrozenBytes([0]);b.pin();b.retire();b.retire();
+  const b=new FrozenBytes([0]),pin=b.pin();b.retire();b.retire();
   assert(b.pins===1 && !b.freed);
-  b.release_pin();b.retire();
+  b.release_pin(pin);b.retire();
   assert(b.freed && b.pins===0);
-  deny(()=>b.release_pin(),"pin-underflow");
+  deny(()=>b.release_pin(pin),"pin-underflow");
 });
 test("an existing pin may read after retire, new pins cannot", () => {
-  const b=new FrozenBytes([5,6]);b.pin();b.retire();
-  assert(b.read_at(0)===5);
+  const b=new FrozenBytes([5,6]),pin=b.pin();b.retire();
+  assert(b.read_at(0,pin)===5);
   deny(()=>b.pin(),"revoked-buffer");
-  b.release_pin();deny(()=>b.read_at(0),"invalid-read");
+  b.release_pin(pin);
+  deny(()=>b.read_at(0,pin),"buffer-access-denied");
 });
 test("failed pin admission leaves descriptor credits untouched", () => {
   const p=fresh(),a=p.acquire(identity()),b=new FrozenBytes([2]);b.retire();
@@ -184,6 +188,20 @@ test("trusted stream reset after completion preserves an unrelated in-flight str
   p.complete(b);p.release(b,identity("b"));
   assert(p.slot.state==="idle");
 });
+test("active socket buffer pin cannot grant unrelated actor a read capability",()=>{
+  const p=fresh({multiplex:true,codec:"http2",streams:2});
+  const a=p.acquire(identity()),b=p.acquire(identity("b"));
+  const frozen=new FrozenBytes([11,22,33]);
+  p.begin(a,identity(),frozen);
+  deny(()=>frozen.read_at(1,Object.freeze({})),"buffer-access-denied");
+  const valid=p.tokens.get(a).bufferPin;
+  assert(frozen.read_at(1,valid)===22);
+  deny(()=>frozen.read_at(1,p.tokens.get(b).bufferPin),
+    "buffer-access-denied");
+  p.complete(a);p.release(a,identity());
+  deny(()=>frozen.read_at(1,valid),"buffer-access-denied");
+  p.release(b,identity("b"));
+});
 // 64 deterministic schedules * 300 transitions. No wall-clock nondeterminism,
 // no sleeps, no unbounded asynchronous work. Seeds make failures reproducible.
 for (let seed=1;seed<=64;seed++) {
@@ -237,4 +255,4 @@ for (let seed=1;seed<=64;seed++) {
   });
 }
 console.log("TCP shared pool additional scenarios passed:", cases,
-            "(16 targeted + 64 seeded interleavings; 19,200 transitions)");
+            "(17 targeted + 64 seeded interleavings; 19,200 transitions)");
