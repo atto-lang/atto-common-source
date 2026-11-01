@@ -133,8 +133,13 @@ class Stage {
     assert.equal(this.cancelled,false,'cancelled');
     assert.equal(this.sealed,false,'already prepared');
     assert.equal(this.microbatches.size,spec.ml.planned_microbatches,'incomplete cohort');
+    // Floating-point addition is non-associative: determinism requires a
+    // canonical microbatch order as well as canonical per-edge order. Map
+    // insertion order is transport scheduling, never a numerical contract.
     let total=0;
-    for (const ctx of this.contexts.values()) {
+    const contexts=[...this.contexts.values()]
+      .sort((a,b)=>a.microbatch-b.microbatch);
+    for (const ctx of contexts) {
       assert.equal(ctx.contributions.size,spec.ml.expected_edges.length,'missing fan-in');
       for (const edge of spec.ml.expected_edges) {
         assert.ok(ctx.contributions.has(edge));
@@ -342,4 +347,35 @@ test('gradient arrivals are commutative at the expected-edge ledger, not transpo
   assert.equal(leftToRight.s.commit(leftToRight.s.prepare()),4);
   assert.equal(rightToLeft.commit(rightToLeft.prepare()),4);
   assert.equal(leftToRight.s.version,rightToLeft.version);
+});
+
+test('gradient accumulation is invariant to forward microbatch admission order', () => {
+  // An unsorted Map accumulates the same contributions in different orders:
+  // (1e16 + -1e16) + 1 = 1, but (1e16 + 1) + -1e16 = 0.
+  // The expected ordering is microbatch ID ascending, then expected_edges.
+  const fill=(order)=>{
+    const s=new Stage();
+    const tickets=new Map();
+    for (const id of order) tickets.set(id,s.forward(id));
+    for (const id of [10,11]) {
+      s.backward(tickets.get(id),'left', id===10 ? 1e16 : -1e16);
+      s.backward(tickets.get(id),'right', id===10 ? 1 : 0);
+    }
+    return s.commit(s.prepare());
+  };
+  assert.equal(fill([10,11]),4);
+  assert.equal(fill([11,10]),4);
+});
+test('backward edge delivery order is numerically irrelevant to optimizer commit', () => {
+  const fill=(order)=>{
+    const s=new Stage(),a=s.forward(10),b=s.forward(11);
+    const tickets=new Map([[10,a],[11,b]]);
+    const values=new Map([['10:left',1e16],['10:right',1],
+      ['11:left',-1e16],['11:right',0]]);
+    for(const [id,edge] of order)
+      s.backward(tickets.get(id),edge,values.get(id+':'+edge));
+    return s.commit(s.prepare());
+  };
+  const sequence=[[10,'left'],[10,'right'],[11,'left'],[11,'right']];
+  assert.equal(fill(sequence),fill([...sequence].reverse()));
 });
