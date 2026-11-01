@@ -44,6 +44,7 @@ test('pubsub-v1 mandatory ownership, security and fanout scenarios are registere
     'topic_non_sendable', 'topic_grant_forged_id', 'topic_grant_wrong_incarnation',
     'topic_reliable_atomic_failure', 'topic_latest_replace', 'topic_lossy_drop',
     'topic_fanout_lock_safe', 'topic_control_priority',
+    'topic_system_publish_not_general',
     'topic_lease_cancel_idempotent', 'topic_1000_way_race',
     'topic_private_domain_unimplemented', 'topic_hard_rt_bounds',
     'topic_observable_actor_separate', 'topic_address_bus_separate',
