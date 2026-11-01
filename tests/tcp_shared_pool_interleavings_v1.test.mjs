@@ -165,7 +165,8 @@ test("stop before dial is terminal and cannot allocate a lease",()=>{
 });
 test("unsupported protocol cannot use independent stream reset",()=>{
   const p=fresh({multiplex:true,codec:"framed-rpc",streams:2}),a=p.acquire(identity());
-  deny(()=>p.complete_stream_reset(a,identity(),"trusted-reset-complete"),
+  deny(()=>p.trusted_record_stream_reset(a),"stream-reset-unproven");
+  deny(()=>p.complete_stream_reset(a,identity(),Object.freeze({})),
     "stream-reset-unproven");
   p.cancel(a,identity());
   assert(p.slot.state==="retired");
@@ -174,10 +175,10 @@ test("trusted stream reset after completion preserves an unrelated in-flight str
   const p=fresh({multiplex:true,codec:"http2",streams:2});
   const a=p.acquire(identity()),b=p.acquire(identity("b"));
   p.begin(a,identity());p.begin(b,identity("b"));
-  deny(()=>p.complete_stream_reset(a,identity(),"trusted-reset-complete"),
+  deny(()=>p.complete_stream_reset(a,identity(),Object.freeze({})),
     "stream-reset-unproven");
   p.complete(a);
-  p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+  p.complete_stream_reset(a,identity(),p.trusted_record_stream_reset(a));
   assert(p.slot.leases.size===1 && p.slot.state==="leased"
     && p.slot.active===1);
   p.complete(b);p.release(b,identity("b"));
