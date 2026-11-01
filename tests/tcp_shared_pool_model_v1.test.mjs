@@ -29,7 +29,13 @@ class FrozenBytes {
   }
 }
 class LeaseLedger {
-  constructor({partition="authority/tls/tenant",tenant="tenant",epoch=1,multiplex=false,streams=1,descriptors=2}={}){
+  constructor({partition="authority/tls/tenant",tenant="tenant",epoch=1,multiplex=false,codec="raw-tcp",streams=1,descriptors=2}={}){
+    // Raw TCP has no stream IDs or response demultiplexer. Multiplexing
+    // must be approved by an actual trusted protocol codec.
+    if(multiplex && !["http2","quic","framed-rpc"].includes(codec))
+      throw Error("multiplex-codec-required");
+    if(!multiplex && streams!==1)throw Error("exclusive-stream-capacity");
+    this.codec=codec;
     this.partition=partition;this.tenant=tenant;this.epoch=epoch;this.multiplex=multiplex;
     this.streams=streams;this.maxDescriptors=descriptors;this.descriptors=0;this.generation=0;
     this.slot=null;this.tokens=new Map();this.stopped=false;
@@ -85,6 +91,17 @@ class LeaseLedger {
     l.released=true;this.slot.state="draining";
     if(!l.active)this.drop(token);
   }
+  // Called only after the TRUSTED protocol engine proves stream-reset
+  // completion and all physical writes/reads are quiescent for this stream.
+  // Actor caller bits must never supply the proof themselves.
+  complete_stream_reset(token,identity,proof){
+    const l=this.validated(token,identity);
+    if(!this.multiplex || !["http2","quic"].includes(this.codec)
+        || proof!=="trusted-reset-complete" || l.active)
+      throw Error("stream-reset-unproven");
+    l.released=true;
+    this.drop(token);
+  }
   trusted_revoke(token){
     const l=this.tokens.get(token);
     if(!l)throw Error("stale-token");
@@ -121,7 +138,7 @@ function run_tests(){
     p.release(a,identity());assert(p.slot.state==="idle");p.release(p.acquire(identity("actor-b")),identity("actor-b"));
   });
   test("multiplex requires explicit configuration and separate stream slots",()=>{
-    const p=fresh({multiplex:true,streams:2}),a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
+    const p=fresh({multiplex:true,codec:"http2",streams:2}),a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
     deny(()=>p.acquire(identity("actor-c")),"stream-capacity");p.release(a,identity());p.release(b,identity("actor-b"));
   });
   test("forged token rejected",()=>{
@@ -147,7 +164,7 @@ function run_tests(){
     deny(()=>p.begin(a,identity()),"overlap");p.complete(a);p.release(a,identity());assert(p.slot.state==="idle");
   });
   test("full descriptor ring denies without blocking or pinning",()=>{
-    const p=fresh({multiplex:true,streams:2,descriptors:1}),a=p.acquire(identity()),b=p.acquire(identity("b"));
+    const p=fresh({multiplex:true,codec:"http2",streams:2,descriptors:1}),a=p.acquire(identity()),b=p.acquire(identity("b"));
     const buf=new FrozenBytes([3]);p.begin(a,identity(),buf);
     deny(()=>p.begin(b,identity("b"),buf),"queue-full");assert(buf.pins===1);
     p.complete(a);p.begin(b,identity("b"));p.complete(b);p.release(a,identity());p.release(b,identity("b"));
@@ -218,6 +235,55 @@ function run_tests(){
     const p=new LeaseLedger();p.shutdown();
     deny(()=>p.open(),"pool-stopped");
     deny(()=>p.acquire(identity()),"pool-stopped");
+  });
+  test("raw TCP can never opt into arbitrary stream multiplexing",()=>{
+    deny(()=>new LeaseLedger({multiplex:true,codec:"raw-tcp",streams:2}),
+      "multiplex-codec-required");
+    deny(()=>new LeaseLedger({multiplex:true,streams:2}),
+      "multiplex-codec-required");
+    deny(()=>new LeaseLedger({multiplex:false,streams:2}),
+      "exclusive-stream-capacity");
+  });
+  test("protocol-reset receipt is mandatory for safe independent stream cancel",()=>{
+    const p=fresh({multiplex:true,codec:"http2",streams:2});
+    const a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
+    deny(()=>p.complete_stream_reset(a,identity(),null),"stream-reset-unproven");
+    deny(()=>p.complete_stream_reset(a,identity("actor-b"),
+      "trusted-reset-complete"),"wrong-actor");
+    assert(p.slot.leases.size===2 && p.slot.state==="leased");
+    p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+    assert(p.slot.state==="leased" && p.slot.leases.size===1);
+    p.begin(b,identity("actor-b"));p.complete(b);
+    p.release(b,identity("actor-b"));
+    assert(p.slot.state==="idle");
+  });
+  test("in-flight partial stream reset cannot release the socket prematurely",()=>{
+    const p=fresh({multiplex:true,codec:"http2",streams:2});
+    const a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
+    p.begin(a,identity());
+    deny(()=>p.complete_stream_reset(a,identity(),
+      "trusted-reset-complete"),"stream-reset-unproven");
+    p.complete(a);
+    p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+    assert(p.slot.state==="leased" && p.slot.leases.size===1);
+    p.release(b,identity("actor-b"));
+    assert(p.slot.state==="idle");
+  });
+  test("quic stream cancellation requires trusted reset just like http2",()=>{
+    const p=fresh({multiplex:true,codec:"quic",streams:2});
+    const a=p.acquire(identity());
+    deny(()=>p.complete_stream_reset(a,identity(),"guest-fabricated"),
+      "stream-reset-unproven");
+    p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+    assert(p.slot.state==="idle");
+  });
+  test("framed RPC remains fail-closed without independent reset proof",()=>{
+    const p=fresh({multiplex:true,codec:"framed-rpc",streams:2});
+    const a=p.acquire(identity());
+    deny(()=>p.complete_stream_reset(a,identity(),"trusted-reset-complete"),
+      "stream-reset-unproven");
+    p.cancel(a,identity());
+    assert(p.slot.state==="retired");
   });
   return count;
 }
