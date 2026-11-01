@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
-const EXACT_BACKENDS = ['java', 'llvm', 'wasm', 'net', 'forge'];
+const EXACT_BACKENDS = ['java', 'llvm', 'wasm', 'cranelift', 'net', 'forge'];
 const DIMENSIONS = ['lexer', 'parser', 'runtime'];
 const statuses = new Set(['NOT_EXECUTED', 'PASS', 'FAIL', 'UNSUPPORTED']);
 const SHA40 = /^[a-f0-9]{40}$/;
