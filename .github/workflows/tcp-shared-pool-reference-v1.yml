@@ -3,12 +3,12 @@ name: TCP shared pool source-free reference v1
 on:
   pull_request:
     paths:
-      - 'tests/tcp_shared_pool_*.test.mjs'
+      - 'tests/tcp_shared_*.test.mjs'
       - 'contracts/v1/TCP_SHARED_POOL_CAPABILITIES_V1.md'
       - '.github/workflows/tcp-shared-pool-reference-v1.yml'
   push:
     paths:
-      - 'tests/tcp_shared_pool_*.test.mjs'
+      - 'tests/tcp_shared_*.test.mjs'
       - 'contracts/v1/TCP_SHARED_POOL_CAPABILITIES_V1.md'
       - '.github/workflows/tcp-shared-pool-reference-v1.yml'
   workflow_dispatch:
@@ -32,7 +32,9 @@ jobs:
         run: |
           node --check tests/tcp_shared_pool_model_v1.test.mjs
           node --check tests/tcp_shared_pool_interleavings_v1.test.mjs
+          node --check tests/tcp_shared_slab_registry_v1.test.mjs
       - name: Model conformance (no socket syscall)
         run: |
           node tests/tcp_shared_pool_model_v1.test.mjs
           node tests/tcp_shared_pool_interleavings_v1.test.mjs
+          node tests/tcp_shared_slab_registry_v1.test.mjs
