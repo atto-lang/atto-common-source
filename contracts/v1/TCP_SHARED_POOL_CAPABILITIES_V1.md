@@ -14,6 +14,16 @@ entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
    response demultiplexer and physical retirement. Actor heaps and ActorRefs
    never own or dereference those objects. Sharing the *right to submit work*
    does not transfer physical ownership.
+
+   **Completion ABA fence:** the v1 Java and .NET host ledgers admit a
+   **single physical operation per v1 lease**, even if its first completion
+   succeeded, because they currently complete by lease identity alone.
+   Allowing another operation under the same lease would let a delayed
+   duplicate callback falsely complete the newer operation. Multi-operation
+   leases require a separate unforgeable, one-use, generation-scoped
+   **operation completion receipt** and corresponding conformance tests,
+   not simply resetting an `active` Boolean.
+
 2. **No generic concurrent TCP reads.** Raw TCP is an ordered byte stream,
    not a multiplexer. The default pool issues exactly one **exclusive
    logical-session lease** per physical connection. Different actors may reuse
