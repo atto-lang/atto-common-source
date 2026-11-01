@@ -34,6 +34,7 @@ jobs:
           node --check tests/tcp_shared_pool_interleavings_v1.test.mjs
           node --check tests/tcp_shared_slab_registry_v1.test.mjs
           node --check tests/tcp_shared_pool_loopback_v1.test.mjs
+          node --check tests/tcp_frozen_slab_portable_v1.test.mjs
       - name: Model conformance (no socket syscall)
         run: |
           node tests/tcp_shared_pool_model_v1.test.mjs
@@ -41,3 +42,5 @@ jobs:
           node tests/tcp_shared_slab_registry_v1.test.mjs
       - name: Real loopback TCP safety oracle (Node host only, NOT Oreslang guest)
         run: node --test tests/tcp_shared_pool_loopback_v1.test.mjs
+      - name: Portable frozen byte-slab fixture (model only)
+        run: node --test tests/tcp_frozen_slab_portable_v1.test.mjs
