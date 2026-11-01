@@ -225,3 +225,22 @@ executed file. This is **not** a thread-race, native IO or guest-compiler proof.
 pooling/zero-copy readonly slabs by this document. Backend implementation
 must consume the same negative-first corpus and produce executed, exact-head
 native results, not just copied contracts or zero-step GitHub Actions runs.
+
+
+## Five-backend source integration status (2026-11-01)
+
+| Backend | Draft change | Admission and lifetime evidence | Not yet proven |
+| --- | --- | --- | --- |
+| Java | [#2404](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2404) | Selector/TLS I/O exclusive gate, trusted host generational ledger, quarantine until physical-close attestation; JUnit tests authored | JDK 25 JIT/AOT actual socket pool and guest actor routing |
+| LLVM | [#1255](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1255) | Linux epoll FD/dup-alias admission fence and native tests authored; isolated Linux inode assumption checked with ASan/UBSan | exact-head C++ sanitizer suite, manager-crossing aliases and hard-RT proof |
+| WASM | [#229](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/229) | 15 unsupported TCP pool options rejected before source/byte admission in a source-only JS check | physical reactor, bounded worker bridge, guest TCP |
+| Cranelift | [#30](https://github.com/ores-truffle-oreslang/oreslang-source.cranelift/pull/30) | Stage-0 scalar JIT rejects guest actor/TCP-pool/ownership forms; CLI tests authored | Cargo test execution and **all** network/actor functionality |
+| .NET | [#291](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/291) | Trusted host generational ledger, nonparking acquisition, policy-epoch and idle-socket quarantine, 1,024-cycle tests authored | .NET 10 compilation, NativeAOT guest and physical TCP connections |
+
+This table is an **evidence taxonomy, not a parity certificate**. Unsupported features must remain compiler/runtime admission failures until verified. The Java and .NET ledgers are **host-authority prerequisites**, not transport socket managers; they lack protocol framing, physical close acknowledgements wired to real sockets, bounded MPSC descriptors, fair scheduling and actual zero-copy pinned buffers.
+
+The critical cross-backend invariant is:
+`actor release/cancel -> revoke lease -> finish I/O -> physical-close acknowledgement -> rearm quarantined slot`.
+Neither cancelling a future nor removing an actor mailbox grants permission to recycle a physical TCP socket. Policy-epoch changes must quarantine even idle, pre-connected sockets.
+
+The reference-model and seed-interleaving tests are independent source-only evidence. Runner jobs with zero steps or no runner allocation are not compile/test failures and cannot be credited as native passes.
