@@ -24,12 +24,16 @@ function admit(input) {
   const p = a.parents[0];
   if (p && !['actor', 'actor_root'].includes(p.kind)) return false;
   if (p && p.domain !== a.domain) return false;
+  const roots = {shared:'Actor',private:'IsoActor',untrusted:'UntrustedActor'};
+  if (p?.kind === 'actor_root' && p.name !== roots[a.domain]) return false;
+  if (p?.kind === 'actor' && (!p.linked || !p.nominal_id)) return false;
   if (p && p.final) return false;
   if (p && p.sealed && !p.permits?.includes(a.name)) return false;
   if (a.ancestry.includes(a.name)) return false;
   if (a.state_count + a.inherited_state_count > 1) return false;
   if (a.share && (!a.send || !a.sync)) return false;
-  if (a.actor_ref_cast && a.actor_ref_cast !== 'verified_interface') return false;
+  if (a.actor_ref_cast &&
+      (a.actor_ref_cast !== 'verified_interface' || !a.interfaces.length)) return false;
   const slots = new Map();
   for (const m of a.methods) {
     if (m.name.startsWith(spec.hierarchy.runtime_reserved_prefix)) return false;
@@ -44,9 +48,18 @@ function admit(input) {
       if (signature(required) !== signature(provided)) return false;
     }
   }
+  const traitSlots = new Set();
   for (const tr of a.traits) {
     if (tr.fields.length || tr.mutable_static) return false;
     if (tr.default_effects.some(effect => effect !== 'pure')) return false;
+    for (const method of tr.methods ?? []) {
+      if (traitSlots.has(key(method))) return false;
+      traitSlots.add(key(method));
+    }
+  }
+  for (const method of a.abstract_methods ?? []) {
+    const implemented = slots.get(key(method));
+    if (!implemented || signature(implemented) !== signature(method)) return false;
   }
   for (const m of a.overrides) {
     if (m.base_visibility === 'public' && m.visibility !== 'public') return false;
