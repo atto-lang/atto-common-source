@@ -68,15 +68,27 @@ class ExclusiveSlot {
   constructor(port) { this.port = port; this.generation = 0; this.socket = null;
     this.reader = null; this.current = null; this.active = false; this.stopped = false; }
   async open() {
-    if (this.stopped || this.current || this.socket || this.retiring)
+    if (this.stopped || this.current || this.socket || this.retiring || this.opening)
       throw Error('slot-not-retired');
-    this.socket = await dial(this.port);
-    // Remember the actual close event BEFORE a cancellation may destroy the
-    // socket. Node's socket.destroyed flag alone is not physical quiescence.
-    this.closeObserved = new Promise(resolve =>
-      this.socket.once('close', resolve));
-    this.reader = new Frames(this.socket);
-    this.generation++;
+    // Reserve the cold dial before awaiting its connection. Without this,
+    // simultaneous callers can open two physical sockets for one slot.
+    const opening = (async () => {
+      const candidate = await dial(this.port);
+      if (this.stopped || this.retiring || this.current || this.socket) {
+        const closed = new Promise(resolve => candidate.once('close', resolve));
+        candidate.destroy();
+        await closed;
+        throw Error('slot-not-retired');
+      }
+      this.socket = candidate;
+      this.closeObserved = new Promise(resolve =>
+        candidate.once('close', resolve));
+      this.reader = new Frames(candidate);
+      this.generation++;
+    })();
+    this.opening = opening;
+    try { await opening; }
+    finally { if (this.opening === opening) this.opening = null; }
   }
   acquire(actor) {
     if (this.stopped || !this.socket || this.socket.destroyed || this.current || !this.reader.clean()) return null;
@@ -110,19 +122,23 @@ class ExclusiveSlot {
   }
   async retire() {
     if (this.retiring) return this.retiring;
-    const socket = this.socket;
-    const closeObserved = this.closeObserved;
-    if (!socket) { this.reader = null; this.current = null; return; }
-    // Do not return a quarantined slot to open() until the OS-close event
-    // has actually been delivered. Concurrent retire() calls join the same
-    // promise; none can clear a newer generation's socket.
+    const pendingDial = this.opening;
+    // STOP must also drain a connect() that had not yet produced a socket.
+    // open() sees retiring/stopped and destroys the candidate after connect;
+    // never report retired while that candidate can still become live.
     this.retiring = (async () => {
-      socket.destroy();
-      await closeObserved;
-      if (this.socket === socket) {
-        this.socket = null; this.closeObserved = null;
-        this.reader = null; this.current = null;
+      if (pendingDial) await pendingDial.catch(() => {});
+      const socket = this.socket;
+      const closeObserved = this.closeObserved;
+      if (socket) {
+        socket.destroy();
+        await closeObserved;
+        if (this.socket === socket) {
+          this.socket = null;
+          this.closeObserved = null;
+        }
       }
+      this.reader = null; this.current = null;
     })();
     try { await this.retiring; }
     finally { this.retiring = null; }
@@ -283,4 +299,26 @@ test('late frame from former lease cannot satisfy another actor exchange', {time
   assert.equal(slot.release(second,2),true);
   assert.equal(slot.acquire(3),null,'mismatched delayed response quarantines socket');
   assert.equal(srv.count(),1,'no hidden second connection');
+});
+
+
+test('cold dial admission is single-flight and STOP drains pending connects',
+  {timeout:5000}, async t => {
+  const srv=await serverFor(t,echoServer);
+  const first=new ExclusiveSlot(srv.port);t.after(()=>first.stop());
+  const admitted=first.open();
+  await assert.rejects(first.open(),/slot-not-retired/,
+    'one physical slot cannot dial twice concurrently');
+  await admitted;
+  assert.equal(srv.count(),1,'only one real connection admitted');
+  await first.stop();
+  assert.equal(first.socket,null,'physical close completed before STOP returns');
+  const second=new ExclusiveSlot(srv.port);t.after(()=>second.stop());
+  const dialing=second.open();
+  const stopping=second.stop();
+  await assert.rejects(dialing,/slot-not-retired/,
+    'STOP during connect must reject the late dial');
+  await stopping;
+  assert.equal(second.socket,null,'no post-STOP physical socket');
+  await assert.rejects(second.open(),/slot-not-retired/);
 });
