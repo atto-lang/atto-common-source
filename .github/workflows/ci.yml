@@ -29,6 +29,8 @@ jobs:
         run: node --test tests/verify-editor-lexical-v1.mjs
       - name: Reject fabricated lexical backend admission receipts
         run: node --test tests/verify-backend-lexical-admission-v1.mjs
+      - name: Validate full lexical case comparisons and LLVM adapter fail-closed protocol
+        run: node --test tests/verify-lexical-case-receipts-v1.mjs tests/verify-llvm-lexical-probe-adapter-v1.mjs
       - name: Verify String/CString ABI v1 reference contract
         run: node tests/verify-string-abi-v1.mjs
       - name: Format and lint Rust IPC models
