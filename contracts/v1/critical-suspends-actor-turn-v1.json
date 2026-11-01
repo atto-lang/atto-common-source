@@ -1,0 +1,262 @@
+{
+  "schema": "oreslang.critical-suspends-actor-turn/1",
+  "status": "DRAFT_NOT_EXECUTED",
+  "authority": "review_pending",
+  "scope": "target_language_semantics",
+  "backendStatus": {
+    "java-graal": "PENDING_GUEST_PROOF",
+    "llvm": "PENDING_GUEST_PROOF",
+    "wasm": "PENDING_GUEST_PROOF",
+    "net": "PENDING_GUEST_PROOF",
+    "cranelift": "PENDING_GUEST_PROOF"
+  },
+  "diagnosticsAreProposed": true,
+  "cases": [
+    {
+      "id": "sync-fnc",
+      "kind": "compiler",
+      "expected": "accept",
+      "diagnostic": null,
+      "source": "fnc plain(): int { return 7; }"
+    },
+    {
+      "id": "suspends-fnc",
+      "kind": "compiler",
+      "expected": "accept",
+      "diagnostic": null,
+      "source": "suspends fnc fetch_value(): int { return 7; }"
+    },
+    {
+      "id": "actor-critical-method",
+      "kind": "compiler",
+      "expected": "accept",
+      "diagnostic": null,
+      "source": "define isolated actor Counter as\n  state count: int = 0\n  pub critical increment(): int { return 1; }\nend"
+    },
+    {
+      "id": "reject-critical-suspends",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CALLABLE_MODIFIERS",
+      "source": "critical suspends fnc bad(): void { }"
+    },
+    {
+      "id": "reject-suspends-critical",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CALLABLE_MODIFIERS",
+      "source": "suspends critical fnc bad(): void { }"
+    },
+    {
+      "id": "reject-async-function-modifier",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CALLABLE_MODIFIERS",
+      "source": "async fnc bad(): int { return 1; }"
+    },
+    {
+      "id": "suspends-critical-block",
+      "kind": "compiler",
+      "expected": "accept",
+      "diagnostic": null,
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { let result = 1; } }\nend"
+    },
+    {
+      "id": "reject-sync-critical-block",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_SUSPENDS_REQUIRED",
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub apply(): void { critical { let result = 1; } }\nend"
+    },
+    {
+      "id": "try-critical-in-sync",
+      "kind": "compiler",
+      "expected": "accept",
+      "diagnostic": null,
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub attempt(): bool { try critical { return true; } else { return false; } }\nend"
+    },
+    {
+      "id": "reject-await-in-critical",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_SUSPENSION",
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { await fetch_value(); } }\nend\nsuspends fnc fetch_value(): int { return 3; }"
+    },
+    {
+      "id": "reject-indirect-suspends",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_SUSPENSION",
+      "source": "suspends fnc helper(): int { return 1; }\ndefine isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { let x = helper(); } }\nend"
+    },
+    {
+      "id": "reject-effectful-callback",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_SUSPENSION",
+      "source": "suspends fnc fetch_value(): int { return 1; }\ndefine isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { let value = (suspends || -> fetch_value())(); } }\nend"
+    },
+    {
+      "id": "reject-blocking-ffi",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_BLOCKING",
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { blocking_ffi_call(); } }\nend"
+    },
+    {
+      "id": "reject-untrusted-call",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_EFFECT_UNKNOWN",
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { opaque_plugin_call(); } }\nend"
+    },
+    {
+      "id": "reject-unsafe-recursive-acquire",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_NESTED",
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { try critical { let x = 1; } else { } } }\nend"
+    },
+    {
+      "id": "reject-unguarded-plain-critical",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_OWNER",
+      "source": "suspends fnc no_guard(): void { critical { let x = 1; } }"
+    },
+    {
+      "id": "reject-unguarded-critical-fnc",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_CRITICAL_OWNER",
+      "source": "critical fnc no_guard(): void { let x = 1; }"
+    },
+    {
+      "id": "reject-direct-actor-call",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_ACTOR_ADMISSION",
+      "source": "define isolated actor Worker as\n  state count: int = 0\n  pub critical increment(): int { return 1; }\nend\nfnc invalid(worker: Worker): int { return worker.increment(); }"
+    },
+    {
+      "id": "nested-future-explicit-await",
+      "kind": "compiler",
+      "expected": "accept",
+      "diagnostic": null,
+      "source": "suspends fnc unwrap_two(outer: Future<Future<int>>): int {\n  let Future<int> inner = await outer;\n  return await inner;\n}"
+    },
+    {
+      "id": "reject-sync-calls-suspends",
+      "kind": "compiler",
+      "expected": "reject",
+      "diagnostic": "E_SUSPENDS_REQUIRED",
+      "source": "suspends fnc source(): int { return 1; }\nfnc caller(): int { return source(); }"
+    },
+    {
+      "id": "critical-uncontended",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "immediate guard acquisition; no suspension"
+    },
+    {
+      "id": "critical-contended",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "FIFO continuation ticket; zero carrier blocking"
+    },
+    {
+      "id": "critical-try-busy",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "immediate else branch; no queue"
+    },
+    {
+      "id": "critical-fifo",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "queued arrival order preserved; no barging"
+    },
+    {
+      "id": "critical-cancel-queued",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "cancelled queued ticket never executes"
+    },
+    {
+      "id": "critical-cancel-granted",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "granted body retains guard until synchronous unwind"
+    },
+    {
+      "id": "critical-trap",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "guard released once after trap; no implicit rollback"
+    },
+    {
+      "id": "critical-queue-deadline",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "expired ticket never obtains guard"
+    },
+    {
+      "id": "critical-restart-stale",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "stale actor-generation admission rejected"
+    },
+    {
+      "id": "critical-retirement-drain",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "held old-generation guard physically retires before new grant"
+    },
+    {
+      "id": "actor-suspended-turn",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "DATA nonreentrant across await without a carrier lock"
+    },
+    {
+      "id": "actor-control-stop",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "CONTROL can request cancellation during suspended DATA"
+    },
+    {
+      "id": "actor-self-await-cycle",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "self-await/cycle rejected or bounded error"
+    },
+    {
+      "id": "critical-deadline-no-preempt",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "critical body never forcibly interrupted mid-mutation"
+    },
+    {
+      "id": "critical-concurrent-increments",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "no lost updates under contended admission"
+    },
+    {
+      "id": "critical-release-return",
+      "kind": "runtime",
+      "expected": "observe",
+      "oracle": "guard released on early return exactly once"
+    }
+  ],
+  "evidence": {
+    "hostSourceContractAloneSufficient": false,
+    "requiresIdenticalSourceBlobs": true,
+    "requiresExactHead": true,
+    "requiresExecutedCompilerAndGuest": true,
+    "requiresNoSkippedTests": true,
+    "zeroStepCountsAsEvidence": false,
+    "unrelatedFailureCountsAsRejectedCase": false,
+    "requiresNativeBackendExecution": true
+  }
+}
