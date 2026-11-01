@@ -249,3 +249,53 @@ test('portable scalar gradient fixture has exact bytes and independent hand-deri
   assert.equal(f.overflow_args.length, 4);
   // Executing this arithmetic in Node is NOT an Oreslang backend pass.
 });
+
+test('same no-argument scalar guest is byte-pinned and remains explicitly unexecuted', () => {
+  const f = spec.ml.portable_noargs_scalar_guest;
+  const bytes = readFileSync(new URL('../' + f.path, import.meta.url));
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), f.sha256);
+  assert.equal(f.source_blob_sha, '5affedebfcc7bf6aab2bdd6451f80ea5a71a5624');
+  assert.equal(bytes.toString('utf8'), 'pub fnc main(): int { return 2 - 1 * (2 * 1 - 42) * 1; }\\n');
+  assert.equal(f.expected_result, 42);
+  assert.equal(f.execution_status, 'NOT_EXECUTED');
+  assert.deepEqual(f.backends, spec.backends.map(x => x.name));
+});
+
+function lossTwoLayer(x,w1,w2,target) {
+  const hidden=w1*x;
+  const residual=w2*hidden-target;
+  return 0.5*residual*residual;
+}
+test('two-layer scalar backprop VJP matches independent symmetric finite differences', () => {
+  const x=2, w1=3, w2=4, target=20;
+  const hidden=w1*x, residual=w2*hidden-target;
+  const analyticW1=residual*w2*x, analyticW2=residual*hidden;
+  assert.equal(lossTwoLayer(x,w1,w2,target), 8);
+  assert.equal(analyticW1,32);
+  assert.equal(analyticW2,24);
+  const eps=1e-5;
+  const fdW1=(lossTwoLayer(x,w1+eps,w2,target)-
+              lossTwoLayer(x,w1-eps,w2,target))/(2*eps);
+  const fdW2=(lossTwoLayer(x,w1,w2+eps,target)-
+              lossTwoLayer(x,w1,w2-eps,target))/(2*eps);
+  assert.ok(Math.abs(fdW1-analyticW1)<1e-7);
+  assert.ok(Math.abs(fdW2-analyticW2)<1e-7);
+});
+test('shared tensor operand has two separately admitted backward contributions', () => {
+  const s=new Stage(), ticket=s.forward(10);
+  s.backward(ticket,'left',3);
+  s.backward(ticket,'right',3);
+  assert.equal(s.contexts.get(ticket).contributions.size,2);
+  assert.equal([...s.contexts.get(ticket).contributions.values()].reduce((a,b)=>a+b,0),6);
+  assert.throws(()=>s.backward(ticket,'right',3),/duplicate gradient/);
+});
+test('out-of-order gradient deliveries still complete exact edge ledger once', () => {
+  const s=new Stage(),a=s.forward(10),b=s.forward(11);
+  s.backward(b,'right',4);
+  s.backward(a,'right',2);
+  s.backward(b,'left',3);
+  s.backward(a,'left',1);
+  const receipt=s.prepare();
+  assert.equal(s.commit(receipt),4);
+  assert.equal(s.version,4);
+});
