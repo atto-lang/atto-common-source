@@ -35,6 +35,7 @@ class FrozenBytes {
   }
 }
 class LeaseLedger {
+  #resetReceipts = new WeakMap();
   constructor({partition="authority/tls/tenant",tenant="tenant",epoch=1,multiplex=false,codec="raw-tcp",streams=1,descriptors=2}={}){
     // Raw TCP has no stream IDs or response demultiplexer. Multiplexing
     // must be approved by an actual trusted protocol codec.
@@ -45,7 +46,6 @@ class LeaseLedger {
     this.partition=partition;this.tenant=tenant;this.epoch=epoch;this.multiplex=multiplex;
     this.streams=streams;this.maxDescriptors=descriptors;this.descriptors=0;this.generation=0;
     this.slot=null;this.tokens=new Map();this.stopped=false;
-    this.resetReceipts=new WeakMap();
   }
   open(){
     if(this.stopped)throw Error("pool-stopped");
@@ -108,15 +108,15 @@ class LeaseLedger {
         !this.multiplex || !["http2","quic"].includes(this.codec))
       throw Error("stream-reset-unproven");
     const receipt=Object.freeze({});
-    this.resetReceipts.set(receipt,token);
+    this.#resetReceipts.set(receipt,token);
     return receipt;
   }
   complete_stream_reset(token,identity,receipt){
     const l=this.validated(token,identity);
     if(l.active || !this.multiplex || !["http2","quic"].includes(this.codec)
-        || this.resetReceipts.get(receipt)!==token)
+        || this.#resetReceipts.get(receipt)!==token)
       throw Error("stream-reset-unproven");
-    this.resetReceipts.delete(receipt);
+    this.#resetReceipts.delete(receipt);
     l.released=true;
     this.drop(token);
   }
@@ -337,6 +337,15 @@ function run_tests(){
     a.release_pin(proof);
     deny(()=>a.read_at(0,proof),"buffer-access-denied");
     deny(()=>a.release_pin(proof),"pin-underflow");
+  });
+  test("stream reset ledger cannot be patched through a public WeakMap",()=>{
+    const p=fresh({multiplex:true,codec:"http2",streams:2});
+    const a=p.acquire(identity());
+    assert(!Object.hasOwn(p,"resetReceipts"));
+    deny(()=>p.complete_stream_reset(a,identity(),Object.freeze({})),
+      "stream-reset-unproven");
+    p.complete_stream_reset(a,identity(),p.trusted_record_stream_reset(a));
+    assert(p.slot.state==="idle");
   });
   return count;
 }
