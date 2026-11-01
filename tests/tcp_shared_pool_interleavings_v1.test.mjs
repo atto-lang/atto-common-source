@@ -32,6 +32,8 @@ function check_invariants(pool) {
     if (lease.active) active++;
   }
   assert(slot.active === active, "every physical operation has one live lease");
+  if (pool.stopped) assert(slot.state==="draining" || slot.state==="retired",
+         "shutdown must never leave a reusable connection");
   if (slot.state === "idle" || slot.state === "retired") {
     assert(slot.active === 0 && slot.leases.size === 0,
            "idle or retired slot cannot own a logical exchange");
@@ -142,6 +144,25 @@ function rng(seed) {
     return value>>>0;
   };
 }
+test("stop forbids resurrection even after all reactor completions",()=>{
+  const p=fresh({multiplex:true,streams:2});
+  const a=p.acquire(identity()), b=p.acquire(identity("b"));
+  p.begin(a,identity());p.begin(b,identity("b"));
+  p.shutdown();
+  p.trusted_revoke(a);p.trusted_revoke(b);
+  p.complete(a);p.complete(b);
+  check_invariants(p);
+  assert(p.slot.state==="retired");
+  deny(()=>p.open(),"pool-stopped");
+  deny(()=>p.acquire(identity("c")),"pool-stopped");
+  p.shutdown();check_invariants(p);
+});
+test("stop before dial is terminal and cannot allocate a lease",()=>{
+  const p=new LeaseLedger();
+  p.shutdown();
+  deny(()=>p.open(),"pool-stopped");
+  deny(()=>p.acquire(identity()),"pool-stopped");
+});
 // 64 deterministic schedules * 300 transitions. No wall-clock nondeterminism,
 // no sleeps, no unbounded asynchronous work. Seeds make failures reproducible.
 for (let seed=1;seed<=64;seed++) {
@@ -157,7 +178,7 @@ for (let seed=1;seed<=64;seed++) {
       if (operation===0) {
         try { p.acquire(identity("actor-"+(++next_actor),1,p.epoch)); }
         catch (e) {
-          assert(["exclusive-busy","stream-capacity","not-available"]
+          assert(["exclusive-busy","stream-capacity","not-available","pool-stopped"]
             .includes(e.message), "unexpected acquisition failure: "+e.message);
         }
       } else if (operation===1 && lease && !lease.released
@@ -177,7 +198,7 @@ for (let seed=1;seed<=64;seed++) {
         p.trusted_revoke(token);
       } else if (operation===6 && (next()%19===0)) {
         p.revoke_epoch(p.epoch+1);
-      } else if (operation===7 && p.slot.state==="retired") {
+      } else if (operation===7 && p.slot.state==="retired" && !p.stopped) {
         p.open();
       } else if (operation===8 && (next()%41===0)) {
         p.shutdown();
@@ -195,4 +216,4 @@ for (let seed=1;seed<=64;seed++) {
   });
 }
 console.log("TCP shared pool additional scenarios passed:", cases,
-            "(12 targeted + 64 seeded interleavings; 19,200 transitions)");
+            "(14 targeted + 64 seeded interleavings; 19,200 transitions)");
