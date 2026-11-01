@@ -44,6 +44,17 @@
       "receiptSha256": null
     },
     {
+      "id": "cranelift",
+      "lexer": "NOT_EXECUTED",
+      "parser": "NOT_EXECUTED",
+      "runtime": "NOT_EXECUTED",
+      "testedHead": null,
+      "runUrl": null,
+      "executedSteps": 0,
+      "executedCases": 0,
+      "receiptSha256": null
+    },
+    {
       "id": "net",
       "lexer": "NOT_EXECUTED",
       "parser": "NOT_EXECUTED",
