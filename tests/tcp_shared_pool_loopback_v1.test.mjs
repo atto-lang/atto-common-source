@@ -261,3 +261,26 @@ test('cross-actor response identity mismatch poisons connection', {timeout:5000}
   assert.equal(slot.release(a,1),true);
   assert.equal(slot.acquire(2),null,'mismatched response forbids future actor lease');
 });
+
+
+test('late frame from former lease cannot satisfy another actor exchange', {timeout:5000}, async t => {
+  // A clean userspace frame queue at release is not evidence that the
+  // peer will never emit another response. The new owner must validate
+  // an independently associated response and retire on any mismatch.
+  const srv=await serverFor(t,(socket,incoming)=>{(async()=>{
+    const first=await incoming.read();
+    socket.write(frame(first));
+    await delay(80);
+    if (!socket.destroyed) socket.write(frame(first));
+  })().catch(()=>socket.destroy());});
+  const slot=new ExclusiveSlot(srv.port);t.after(()=>slot.stop());
+  await slot.open();
+  const first=slot.acquire(1);assert.ok(first);
+  assert.deepEqual([...await slot.exchange(first,1,13)],[1,13]);
+  assert.equal(slot.release(first,1),true);
+  const second=slot.acquire(2);assert.ok(second);
+  await assert.rejects(()=>slot.exchange(second,2,14),/response-owner-mismatch/);
+  assert.equal(slot.release(second,2),true);
+  assert.equal(slot.acquire(3),null,'mismatched delayed response quarantines socket');
+  assert.equal(srv.count(),1,'no hidden second connection');
+});
