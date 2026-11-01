@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "kind": "target-guest-source-cases",
+  "backend_status": "not-verified",
+  "cases": [
+    {
+      "id": "sync-callable",
+      "expected": "accept",
+      "category": "baseline",
+      "lowering_pending": false,
+      "source": "pub fnc value(): int { return 7; }"
+    },
+    {
+      "id": "suspends-callable",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends fnc value(): int { return 7; }"
+    },
+    {
+      "id": "suspends-routine",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends routine value(): int { return 7; }"
+    },
+    {
+      "id": "critical-callable",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source": "pub critical fnc inc(): void { counter = counter + 1; }"
+    },
+    {
+      "id": "critical-block",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source": "pub suspends fnc inc(): void { critical { counter = counter + 1; } }"
+    },
+    {
+      "id": "try-critical",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source": "pub fnc inc(): bool { try critical { return true; } else { return false; } }"
+    },
+    {
+      "id": "async-fnc",
+      "expected": "reject",
+      "category": "async",
+      "lowering_pending": false,
+      "source": "pub async fnc invalid(): int { return 7; }"
+    },
+    {
+      "id": "async-routine",
+      "expected": "reject",
+      "category": "async",
+      "lowering_pending": false,
+      "source": "pub async routine invalid(): int { return 7; }"
+    },
+    {
+      "id": "mixed-async-suspends",
+      "expected": "reject",
+      "category": "async",
+      "lowering_pending": false,
+      "source": "pub async suspends fnc invalid(): int { return 7; }"
+    },
+    {
+      "id": "critical-suspends-fnc",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub critical suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "suspends-critical-fnc",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub suspends critical fnc invalid(): void { return; }"
+    },
+    {
+      "id": "critical-suspends-routine",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub critical suspends routine invalid(): void { return; }"
+    },
+    {
+      "id": "await-in-critical",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub suspends fnc invalid(): void { critical { await fetch(); } }"
+    },
+    {
+      "id": "indirect-await-in-critical",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub suspends fnc fetch(): int { return 7; } pub suspends fnc invalid(): int { critical { return fetch(); } }"
+    },
+    {
+      "id": "sync-critical-contention",
+      "expected": "reject",
+      "category": "sync-acquisition",
+      "lowering_pending": false,
+      "source": "pub fnc invalid(): void { critical { mutate(); } }"
+    },
+    {
+      "id": "nested-critical",
+      "expected": "reject",
+      "category": "nested-critical",
+      "lowering_pending": false,
+      "source": "pub suspends fnc invalid(): void { critical { critical { mutate(); } } }"
+    },
+    {
+      "id": "blocking-ffi-critical",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub suspends fnc invalid(): void { critical { blocking_host_read(); } }"
+    },
+    {
+      "id": "actor-critical-suspends",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "define isolated actor Worker as pub critical suspends run(): void { return; } end"
+    },
+    {
+      "id": "actor-critical-method",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source": "define isolated actor Worker as state count: int = 0; pub critical increment(): void { state.count = state.count + 1; } end"
+    },
+    {
+      "id": "await-before-critical",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source": "pub suspends fnc process(): void { let result = await fetch(); critical { store(result); } }"
+    },
+    {
+      "id": "await-after-critical",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source": "pub suspends fnc process(): void { critical { mutate(); } await publish(); }"
+    },
+    {
+      "id": "channel-wait-critical",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub suspends fnc invalid(): void { critical { await readch ch; } }"
+    },
+    {
+      "id": "critical-block-in-sync",
+      "expected": "reject",
+      "category": "sync-acquisition",
+      "lowering_pending": false,
+      "source": "pub fnc invalid(): void { critical { mutate(); } }"
+    },
+    {
+      "id": "async-actor-method",
+      "expected": "reject",
+      "category": "async",
+      "lowering_pending": false,
+      "source": "define isolated actor Worker as pub async handle(): void { return; } end"
+    }
+  ]
+}
