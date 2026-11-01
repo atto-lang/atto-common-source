@@ -76,3 +76,13 @@ test('reject an altered or missing corpus even if a receipt looks complete', () 
   assert.throws(()=>compareUntrustedLexicalReceipt(mutated,synthetic()),
     /corpus Git blob mismatch/);
 });
+
+test('Cranelift lexical comparisons are supported but never authenticate a compiler', () => {
+  const receipt = synthetic();
+  receipt.backend = 'cranelift';
+  const result = compareUntrustedLexicalReceipt(corpus, receipt);
+  assert.equal(result.backend, 'cranelift');
+  assert.equal(result.checkedCases, 34);
+  assert.equal(result.matchedCases, 34);
+  assert.equal(result.verification, 'UNTRUSTED_COMPARISON_ONLY');
+});
