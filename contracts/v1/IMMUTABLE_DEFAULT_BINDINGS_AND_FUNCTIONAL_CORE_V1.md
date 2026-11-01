@@ -17,14 +17,24 @@ const int x = 7;
 const x: int = 7;
 ```
 
-All four forms MUST infer/resolve the same `int` type and yield the same
-single-assignment, readonly binding semantics. This is semantic equivalence,
-not necessarily identical diagnostics/source spans. Both `int x = 7` and
+All four forms MUST infer/resolve the same `int` type and produce the same
+readonly *observable value* for this compile-time literal. **Important
+compatibility qualification:** Java's current `docs/LANGUAGE.md` defines
+standalone `const` as compile-time constant, while `val` is runtime
+single-assignment. The new bare typed `int x = expression` MUST be
+readonly single-assignment even when the initializer is runtime-dependent;
+it is **not** universally interchangeable with standalone `const`.
+The four forms above are equivalent for the literal value 7, not for every
+possible initializer. No changes to the existing standalone constant-expression
+restrictions are implied. Both `int x = 7` and
 `const x = 7` are **new proposed admissions**; existing backends must not be
 assumed to accept either spelling.
 
-The long-form `const int x = 7` and existing `const x: int = 7` are
-normalization targets. Omission of `const` is NOT permission for mutation.
+The new typed-default binding has a runtime single-assignment kind
+(`readonly val` semantics for a referent), while explicit standalone `const`
+retains compile-time constant requirements. For a proven constant initializer,
+all four forms may share a folded scalar value/SSA representation without
+erasing the semantic distinction in typed HIR. Omission of `const` is NOT permission for mutation.
 A type-only local initializer is never a second spelling of `let`.
 
 ```ores
@@ -44,9 +54,9 @@ a declaration because its value looks like a type.
 
 | Local binding form | Rebind the name? | Write through the referent? |
 | --- | --- | --- |
-| `T x = value` (new) | No | No, readonly view |
-| `const T x = value`, `const x: T = value` | No | No, readonly view |
-| `const x = value` (new inferred type) | No | No, readonly view |
+| `T x = value` (new) | No | No, readonly view; runtime initializer allowed |
+| `const T x = value`, `const x: T = value` | No | No, readonly view; standalone initializer compile-time constant |
+| `const x = value` (inferred type where admitted) | No | No, readonly view; standalone initializer compile-time constant |
 | `val T x = value` | No | Existing mutable-referent permission; still needs exclusive ownership |
 | `let T x = value` | Yes | No, readonly view |
 | `let mut T x = value` | Yes | Yes, only with proven ownership |
@@ -58,10 +68,14 @@ not automatic deep-frozen storage. Retain existing legacy `val`, `let`,
 migration is approved. For an `int` Copy value, a mutable-referent permission
 is not a loophole for reassigning a `const` binding.
 
-`const` does not imply a compile-time-evaluated initializer, global import-time
-execution, runtime-free storage, atomicity, deep freezing, or referential purity.
-Compile-time file/module constant declarations retain their separate checked
-import/no-execution contract (common-source issue #23).
+`const` standalone locals retain the established compile-time constant
+initializer rule. This is not a claim of global import-time execution,
+runtime-free storage, atomicity, deep freezing, or referential purity.
+The new *typed-default* local may use a checked runtime initializer, as may
+explicit `val`. Destructured `const` and for-of `const` keep their existing
+documented runtime-binding exceptions; do not silently standardize them into
+new standalone semantics. Compile-time file/module constants retain their
+separate checked import/no-execution contract (common-source issue #23).
 
 ## Readonly semantics and alias safety
 
@@ -98,17 +112,20 @@ import/no-execution contract (common-source issue #23).
 1. Add a typed-local-declaration AST node / canonical HIR flag
    `binding_rebindable=false, referent_mutable=false` when the syntax is
    `T x = expr`. Keep source spans, spelled syntax and diagnostics.
-2. Add inferred `const x = expr` only when inference can determine exactly one
-   stable non-unknown static type. No implicit conversions and no inference from
+2. Retain inferred standalone `const x = expr` only with a proven
+   compile-time constant initializer and exactly one stable static type.
+   For runtime-dependent immutable inference use explicit `val x = expr`
+   in current grammar, or a separately reviewed inferred-default syntax. No implicit conversions and no inference from
    runtime values. Reject missing initializers, circular inference, ambiguous
    or unresolved type names and unsound generic inference.
 3. Parse declarations in a well-defined statement context and distinguish
    `Foo bar = ...` from `Foo(bar)` and ordinary expressions without
    value-dependent disambiguation. Report a stable parse/name-resolution
    error rather than falling back to a mutable binding.
-4. Normalize all four equivalent forms into one checked binding kind before
-   ownership, effect, closure-capture, definite-assignment, ABI, and lowering.
-   Type-first syntax is not a distinct runtime ABI or storage allocation.
+4. Normalize the four *constant scalar examples* into equivalent immutable
+   runtime values while preserving in HIR whether a declaration explicitly
+   requires a compile-time constant (`const`) or accepts a runtime initializer
+   (bare typed/default). The type-first spelling is not a new runtime ABI.
 5. Enforce readonly checks after name resolution for assignments, compound
    assignments, indexed/member writes, mutating receiver calls, mutable loans,
    pattern capture and indirect alias escape.
@@ -154,7 +171,7 @@ names describe required fixtures; they are **not** assertions of executed tests.
 | IDB-26 | Actor state updated without checked critical/state API | Compile fail |
 | IDB-27 | `const` does not authorize shared mutable reference | Compile fail |
 | IDB-28 | Mutability attempt hidden inside a generic or method | Compile fail |
-| IDB-29 | Effectful initializer of immutable binding | Allowed only in effect-permitted context; no false `pure` inference |
+| IDB-29 | Effectful initializer of typed-default/`val` binding | Allowed only in effect-permitted context; standalone `const` rejected |
 | IDB-30 | Local `int x` native vs Java/Graal behavior | Differential parity: values, errors, ownership |
 
 A source-grep test, host-only arithmetic check, zero-step workflow or
@@ -194,8 +211,9 @@ host-tested, compiler-backed guest-tested, and cross-backend parity-verified:
 
 `pure` must remain a compiler-enforced, transitive effect contract rather
 than being inferred from `const` alone. A pure function may use locally
-owned mutation if it cannot escape; an immutable binding may have an effectful
-initializer in a permitted context. Respect the existing design in the Java
+owned mutation if it cannot escape; a typed-default / `val` immutable binding
+may have an effectful initializer in a permitted context, while standalone
+`const` retains compile-time constant requirements. Respect the existing design in the Java
 reference `docs/PURE.md`, and the shared ownership contract
 `docs/OWNERSHIP_SYNTAX.md`.
 
@@ -215,3 +233,16 @@ Java issue #817 (`const mut` vs rebind), Java draft PR #1079 (persistent HAMT
 and pure actor proposal), Java `docs/PURE.md`, and
 common-source `docs/OWNERSHIP_SYNTAX.md`. Do not double-credit runtime
 prototypes as implemented source-language functionality.
+
+## Audit correction — Java binding compatibility (2026-11-01)
+
+The Java reference `docs/LANGUAGE.md` explicitly defines standalone
+`const` as compile-time and `val` as runtime single-assignment. This
+proposal **must not** accidentally reinterpret all `const` initializers as
+runtime expressions. The equivalence requested by the user is valid for
+`int x = 7` versus `const x = 7`: both expose immutable integer 7.
+For nonconstant `f()`, accept `int x = f()` only if its effects are allowed;
+reject `const x = f()` unless `f()` has a separately verified compile-time
+constant-evaluation contract. Reconcile with current Java #2405, LLVM #1256
+and .NET #282 before implementing generic `const` inference; those drafts
+must not silently override the existing language compatibility rule.
