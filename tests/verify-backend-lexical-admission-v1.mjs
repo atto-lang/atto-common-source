@@ -70,7 +70,7 @@ test('reject missing backends, invalid corpus content, and unsupported without e
   unsupported.backends[3].lexer = 'UNSUPPORTED';
   assert.throws(() => validateAdmission(unsupported, corpus), /explicit reason/);
   unsupported.backends[3].unsupportedReason = 'No checked native lexer execution or supported frontend found';
-  assert.equal(validateAdmission(unsupported, corpus).checkedBackends, 5);
+  assert.equal(validateAdmission(unsupported, corpus).checkedBackends, 6);
 });
 
 test('Cranelift cannot claim green lexer, parser or runtime evidence in a static plan', () => {
