@@ -20,7 +20,21 @@
     "public_actor_protocol": "runtime_mailbox_only",
     "actor_ref_narrowing": "verified_nominal_interface_only",
     "supervisor_control": "runtime_private",
-    "runtime_reserved_prefix": "__runtime_"
+    "runtime_reserved_prefix": "__runtime_",
+    "portable_counter_target": {
+      "path": "fixtures/actor-hierarchy-ml/v1/actor_counter.ores",
+      "git_blob_sha1": "c49780b4b42251db20ae9ac864eb8606bf7da922",
+      "backends": [
+        "java",
+        "llvm",
+        "wasm",
+        "cranelift",
+        "net"
+      ],
+      "sealed_state_contract": "handle_state(critical-read |s| -> ...) and handle_state(critical-write |s| -> ...)",
+      "status": "TARGET_SYNTAX_NOT_GUEST_EXECUTED",
+      "release_gate": "EXACT_SOURCE_GUEST_SPAWN_DISPATCH_STATE_LOAN_SUPERVISION"
+    }
   },
   "ml": {
     "stage_placement": "coarse_actor_per_stage_or_shard",
