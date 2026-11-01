@@ -246,3 +246,32 @@ reject `const x = f()` unless `f()` has a separately verified compile-time
 constant-evaluation contract. Reconcile with current Java #2405, LLVM #1256
 and .NET #282 before implementing generic `const` inference; those drafts
 must not silently override the existing language compatibility rule.
+
+## Implementation inventory (2026-11-01, not release evidence)
+
+- Java/Graal: source parser + typed/borrow and real guest **authored** tests,
+  `oreslang-source.java#2414`, separate inference/cast `#2405`.
+- LLVM: native scalar type-first parser + Rust CTest for six real linked
+  guest executions and seven compile-negative programs,
+  `oreslang-source.llvm#1266` stacked on inference/cast `#1256`.
+- Wasm: eighteen LLVM-bridge real-guest test targets `oreslang-source.wasm#227`.
+- Cranelift: bounded native JIT immutable scalar local slice `oreslang-source.cranelift#21`.
+- .NET: experimental structured parser adds distinct runtime readonly binding
+  kind and typed CFG/CIL checks in `oreslang-source.net#298`, stacked on
+  `#282`; shipping parser stays fail-closed through `#287`.
+- Shared source conformance: 32 real .ores fixture files in
+  `oreslang-platform-conformance#271`. The 32/32 exact-byte readback is
+  **source integrity only**, not compilation or runtime test evidence.
+
+**Open correctness gate:** Java and LLVM first slices reuse existing
+`CONST`/const-like readonly AST metadata, while .NET already distinguishes
+`Readonly` from compile-time `Const`. Before accepting runtime-dependent
+or effectful bare typed initializers in production, Java and LLVM MUST
+represent runtime-readonly binding provenance independently of compile-time
+constant evaluation; otherwise `int x = input + 1` could be incorrectly
+promoted as a compile-time constant. The same distinction must be preserved
+across branch merges, generic inference, closure capture and actor ownership.
+A source-local parser acceptance test is not a proof of this guarantee.
+
+No current patch claims complete functional-programming feature coverage,
+whole-object deep freezing, or five-backend exact-head passing execution.
