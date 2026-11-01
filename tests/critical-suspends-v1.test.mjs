@@ -43,3 +43,20 @@ test("lowering-dependent positives are not misreported as native passes", () => 
   assert.ok(manifest.cases.some(x => x.expected === "reject"));
   assert.ok(manifest.cases.filter(x => x.category === "critical-suspends").length >= 3);
 });
+
+test("critical ticket ABI preserves nonparking acquisition across runtimes", () => {
+  const path = new URL("../contracts/v1/critical-suspends-v1/runtime-gate.json", import.meta.url);
+  const abi = JSON.parse(readFileSync(fileURLToPath(path), "utf8"));
+  assert.equal(abi.version, 1);
+  assert.equal(abi.admission.max_waiters_per_gate, 8192);
+  assert.equal(abi.admission.queue_discipline, "FIFO");
+  assert.equal(abi.admission.try_while_contended, "EMPTY");
+  assert.equal(abi.language_effects.critical_body_suspends, false);
+  assert.equal(abi.language_effects.critical_entry_may_suspend, true);
+  assert.equal(abi.language_effects.async_callable_modifier, false);
+  for (const op of ["request", "try_request", "release", "holds", "retire"])
+    assert.ok(abi.operations[op]?.length > 30, op);
+  for (const backend of ["java", "llvm", "dotnet", "wasm", "cranelift"])
+    assert.ok(abi.backend_state[backend], backend);
+  assert.match(abi.evidence, /No native Oreslang guest execution/);
+});
