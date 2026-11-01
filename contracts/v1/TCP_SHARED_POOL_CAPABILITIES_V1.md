@@ -278,3 +278,22 @@ The reference-model and seed-interleaving tests are independent source-only evid
   LLVM actor-owned watch/completion ACK remains a separate integration gate.
 - Require exact source HEAD, allocated runner and **nonempty executed steps**,
   compiler/runtime version, and named positive/negative tests before promotion.
+
+
+## Portable frozen-buffer host slice (November 1, 2026)
+
+The five toolchains share `contracts/v1/tcp-frozen-slab-portable-v1.json`. The source-level portable API is an **immutable host byte snapshot**, with a cap of 1 MiB, unsigned 0–255 octet reads, opaque single-use pin receipts, retirement that denies new pins, and reclamation eligibility only after all outstanding pins release. It copies caller input at publication; **it is not a physical TCP connection pool or a zero-copy network receive path**. An existing pin can read during retirement; after release it cannot read again. Wrong-slab, forged, double-released, or out-of-bounds receipts must fail closed.
+
+| Toolchain | Authored host implementation and executable test | Evidence level |
+| --- | --- | --- |
+| Java | `oreslang-source.java/src/main/java/dev/oreslang/runtime/FrozenTcpSlab.java`, `src/test/java/dev/oreslang/runtime/FrozenTcpSlabTest.java` | Exact-byte Java class compiled locally under JDK 21 and host smoke passed; JDK 25 JUnit and guest execution unverified |
+| LLVM | `oreslang-source.llvm/src/main/cpp/oreslang/runtime/FrozenTcpSlab.hpp`, `tests/frozen_tcp_slab_test.cpp`; run `bash scripts/test-frozen-tcp-slab-host-sanitizers.sh` | Exact-blob GCC 14 and Clang C++20 host regression passed with ASan/UBSan; this mutex/heap model is NOT yet RT-safe |
+| WASM | `oreslang-source.wasm/src/frozen-tcp-slab.mjs`, `tests/frozen-tcp-slab.test.mjs`; run `node --test tests/frozen-tcp-slab.test.mjs` | Exact-blob Node 22.16.0 host tests 4/4 passed; guest WebAssembly remains zero host imports / no TCP |
+| Cranelift | `oreslang-source.cranelift/src/frozen_tcp_slab.rs`, tests in module; run `cargo test --locked --all-targets` | Source authored and included in native host build; no local Rust toolchain or executed cargo evidence; guest remains scalar-only |
+| .NET | `oreslang-source.net/runtime/Ores.Net.Runtime/Net/FrozenTcpSlab.cs`, `verification/Ores.Net.Tests/FrozenTcpSlabSelfTest.cs` wired to test runner | Source authored, but dotnet SDK 10 / NativeAOT execution is still unverified |
+
+**Important:** A host pin is never a guest pointer or ownership authority for the physical TCP socket. Production integration must revalidate actor incarnation, tenant, TLS/ALPN identity, deadlines, policy epoch, and reactor generations. The host MUST delay releasing the final transport pin and rearming a physical socket until all outstanding I/O, framing and cancellation continuations have completed. The `freed` query means *logically reclaimable after retirement and zero pins*, not that the platform allocator has already freed physical storage.
+
+These implementations establish source-level equivalence of a **host immutable buffer** where verified; they do not establish full compiled Oreslang-language support or safe live shared TCP sockets on all five backends. WASM and Cranelift networking must remain explicit fail-closed until a real guest actor/transport bridge exists. LLVM's hard-real-time profile requires a separate preallocated nonparking region-lease implementation; the C++ `shared_ptr`/mutex host slab is not suitable for hard-RT datapaths.
+
+Promotion gate: (1) run each actual host test on the exact branch head, (2) run Java JIT/GraalVM native and .NET Linux/Windows Native AOT, LLVM GCC/Clang ASan/UBSan and RT allocation audit, WASM Node/Wasmtime module admission and Cranelift cargo JIT, (3) prove loopback framed TCP, streaming cancellation and physical socket close quiescence with verified tenant partitioning, (4) only then build the actor-visible opaque shared-buffer ABI and compare data-plane latency/allocations to mailbox payload serialization. Do not transfer private source to an unapproved alternate org or promote zero-step workflows as test passes.
