@@ -1,0 +1,542 @@
+{
+  "schema": "oreslang.actor-hierarchy-ml.v1",
+  "status": "CONTRACT_ONLY_NOT_GUEST_EXECUTED",
+  "actor_root": "Actor",
+  "default_domain": "shared",
+  "roots": [
+    "Actor",
+    "IsoActor",
+    "UntrustedActor"
+  ],
+  "hierarchy": {
+    "max_concrete_parents": 1,
+    "single_effective_state_schema": true,
+    "trait_instance_fields": false,
+    "interface_instance_fields": false,
+    "share_requires": [
+      "Send",
+      "Sync"
+    ],
+    "public_actor_protocol": "runtime_mailbox_only",
+    "actor_ref_narrowing": "verified_nominal_interface_only",
+    "supervisor_control": "runtime_private",
+    "runtime_reserved_prefix": "__runtime_"
+  },
+  "ml": {
+    "stage_placement": "coarse_actor_per_stage_or_shard",
+    "default_schedule": "fill_drain",
+    "backward_key": [
+      "run",
+      "incarnation",
+      "graph_generation",
+      "step",
+      "microbatch",
+      "weight_version",
+      "edge",
+      "activation_ticket"
+    ],
+    "all_expected_edges_required": true,
+    "weights_and_optimizer_publish_together": true,
+    "max_inflight_contexts": 2,
+    "initial_weight": 5,
+    "initial_weight_version": 3,
+    "learning_rate": 0.1,
+    "planned_microbatches": 2,
+    "expected_edges": [
+      "left",
+      "right"
+    ],
+    "allow_replay": false,
+    "required_evidence": "REAL_EXECUTED_GUEST_EXACT_HEAD"
+  },
+  "backends": [
+    {
+      "name": "java",
+      "guest_execution": "NOT_EXECUTED",
+      "outcome": "NOT_CLAIMED"
+    },
+    {
+      "name": "llvm",
+      "guest_execution": "NOT_EXECUTED",
+      "outcome": "NOT_CLAIMED"
+    },
+    {
+      "name": "wasm",
+      "guest_execution": "NOT_EXECUTED",
+      "outcome": "NOT_CLAIMED"
+    },
+    {
+      "name": "cranelift",
+      "guest_execution": "NOT_EXECUTED",
+      "outcome": "NOT_CLAIMED"
+    },
+    {
+      "name": "net",
+      "guest_execution": "NOT_EXECUTED",
+      "outcome": "NOT_CLAIMED"
+    }
+  ],
+  "cases": [
+    {
+      "id": "implicit-actor-root",
+      "override": {},
+      "expected": "accept"
+    },
+    {
+      "id": "actor-child-same-domain",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "Parent",
+            "domain": "shared"
+          }
+        ],
+        "inherited_state_count": 1,
+        "state_count": 0
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "actor-implements-interface",
+      "override": {
+        "interfaces": [
+          {
+            "name": "Stage",
+            "fields": [],
+            "methods": [
+              {
+                "name": "handle",
+                "arity": 1,
+                "params": [
+                  "Msg"
+                ],
+                "result": "void"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "actor-pure-trait",
+      "override": {
+        "traits": [
+          {
+            "name": "Finite",
+            "fields": [],
+            "default_effects": [
+              "pure"
+            ]
+          }
+        ]
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "checked-share",
+      "override": {
+        "share": true,
+        "send": true,
+        "sync": true
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "inherited-public-override",
+      "override": {
+        "overrides": [
+          {
+            "name": "handle",
+            "arity": 1,
+            "params": [
+              "Msg"
+            ],
+            "result": "void",
+            "visibility": "public",
+            "base_visibility": "public",
+            "base_result": "void",
+            "base_params": [
+              "Msg"
+            ]
+          }
+        ]
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "actor-ref-interface-narrow",
+      "override": {
+        "actor_ref_cast": "verified_interface"
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "class-as-actor-normalized",
+      "override": {
+        "kind": "class_extends_actor_root"
+      },
+      "expected": "accept"
+    },
+    {
+      "id": "two-concrete-parents",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "A",
+            "domain": "shared"
+          },
+          {
+            "kind": "actor",
+            "name": "B",
+            "domain": "shared"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "plain-class-parent",
+      "override": {
+        "parents": [
+          {
+            "kind": "class",
+            "name": "Base"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "supervisor-parent",
+      "override": {
+        "parents": [
+          {
+            "kind": "supervisor",
+            "name": "S1",
+            "domain": "shared"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "isolation-domain-change",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "IsoParent",
+            "domain": "private"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "final-parent",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "FinalParent",
+            "domain": "shared",
+            "final": true
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "sealed-without-permit",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "SealedParent",
+            "domain": "shared",
+            "sealed": true,
+            "permits": [
+              "Other"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "cycle",
+      "override": {
+        "parents": [
+          {
+            "kind": "actor",
+            "name": "Parent",
+            "domain": "shared"
+          }
+        ],
+        "ancestry": [
+          "A1"
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "two-state-schemas",
+      "override": {
+        "inherited_state_count": 1,
+        "state_count": 1
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "trait-fields",
+      "override": {
+        "traits": [
+          {
+            "name": "Bad",
+            "fields": [
+              "secret"
+            ],
+            "default_effects": [
+              "pure"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "trait-unsafe-default",
+      "override": {
+        "traits": [
+          {
+            "name": "Bad",
+            "fields": [],
+            "default_effects": [
+              "mailbox_direct"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "trait-mutating-static",
+      "override": {
+        "traits": [
+          {
+            "name": "Bad",
+            "fields": [],
+            "default_effects": [
+              "pure"
+            ],
+            "mutable_static": true
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "interface-has-fields",
+      "override": {
+        "interfaces": [
+          {
+            "name": "Bad",
+            "fields": [
+              "x"
+            ],
+            "methods": []
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "missing-interface-method",
+      "override": {
+        "interfaces": [
+          {
+            "name": "Read",
+            "fields": [],
+            "methods": [
+              {
+                "name": "read",
+                "arity": 0,
+                "params": [],
+                "result": "int"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "wrong-interface-return",
+      "override": {
+        "interfaces": [
+          {
+            "name": "Read",
+            "fields": [],
+            "methods": [
+              {
+                "name": "handle",
+                "arity": 1,
+                "params": [
+                  "Msg"
+                ],
+                "result": "int"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "private-implementation",
+      "override": {
+        "interfaces": [
+          {
+            "name": "Read",
+            "fields": [],
+            "methods": [
+              {
+                "name": "handle",
+                "arity": 1,
+                "params": [
+                  "Msg"
+                ],
+                "result": "void"
+              }
+            ]
+          }
+        ],
+        "methods": [
+          {
+            "name": "handle",
+            "arity": 1,
+            "visibility": "private",
+            "params": [
+              "Msg"
+            ],
+            "result": "void"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "narrow-public-override",
+      "override": {
+        "overrides": [
+          {
+            "name": "handle",
+            "arity": 1,
+            "params": [
+              "Msg"
+            ],
+            "result": "void",
+            "visibility": "private",
+            "base_visibility": "public",
+            "base_result": "void",
+            "base_params": [
+              "Msg"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "change-override-type",
+      "override": {
+        "overrides": [
+          {
+            "name": "handle",
+            "arity": 1,
+            "params": [
+              "int"
+            ],
+            "result": "void",
+            "visibility": "public",
+            "base_visibility": "public",
+            "base_result": "void",
+            "base_params": [
+              "Msg"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "forge-lifecycle",
+      "override": {
+        "methods": [
+          {
+            "name": "__runtime_control",
+            "arity": 0,
+            "visibility": "public",
+            "params": [],
+            "result": "void"
+          }
+        ]
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "share-without-send",
+      "override": {
+        "share": true,
+        "send": false,
+        "sync": true
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "share-without-sync",
+      "override": {
+        "share": true,
+        "send": true,
+        "sync": false
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "actor-ref-forged-downcast",
+      "override": {
+        "actor_ref_cast": "unchecked_downcast"
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "untrusted-cross-shared-parent",
+      "override": {
+        "domain": "untrusted"
+      },
+      "expected": "reject"
+    },
+    {
+      "id": "hidden-parent-state",
+      "override": {
+        "inherited_state_count": 1,
+        "state_count": 1,
+        "traits": [
+          {
+            "name": "Bad",
+            "fields": [
+              "state"
+            ],
+            "default_effects": [
+              "pure"
+            ]
+          }
+        ]
+      },
+      "expected": "reject"
+    }
+  ]
+}
