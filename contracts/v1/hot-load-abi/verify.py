@@ -19,7 +19,7 @@ class UpgradeModel:
         self.abi, self.state_schema, self.ets_schema = "msg-v1", "state-v1", "ets-v1"
         self.capabilities, self.placement = frozenset({"send"}), "trusted"
         self.state, self.rows, self.on_start_count = 42, {"n": 7}, 1
-        self.owner, self.heir = ("worker", 1), ("custodian", 1)
+        self.owner, self.heir = object(), object()  # Runtime-minted, not strings.
         self.transfer, self.table_open = None, True
         self.frozen, self.stopped = False, False
         self.txn = None
@@ -127,15 +127,15 @@ class UpgradeModel:
         self.retired.remove(generation)
 
     def write_table(self, owner, key, value):
-        if not self.table_open or self.transfer is not None or owner != self.owner:
+        if not self.table_open or self.transfer is not None or owner is not self.owner:
             raise Denied("table owner not live/acknowledged")
         if self.frozen:
             raise Denied("table write during upgrade freeze")
         self.rows[key] = value
 
     def owner_died(self, *, heir_alive=True, heir_tenant="tenant-a"):
-        if not self.table_open:
-            raise Denied("table closed")
+        if not self.table_open or self.owner is None or self.transfer is not None:
+            raise Denied("table closed or previous handoff still pending")
         self.owner = None              # Fence the dead owner before any handoff.
         self.table_epoch += 1
         if (not heir_alive or heir_tenant != self.tenant
@@ -147,7 +147,7 @@ class UpgradeModel:
 
     def acknowledge_heir(self, ticket, heir, tenant):
         if (self.transfer is None or ticket is not self.transfer
-                or heir != self.heir or tenant != self.tenant):
+                or heir is not self.heir or tenant != self.tenant):
             raise Denied("stale, duplicate or foreign table transfer")
         self.owner = self.heir
         self.transfer = None
@@ -294,6 +294,15 @@ class UniversalHotLoadTests(unittest.TestCase):
         s.write_table(s.heir, "n", 9)
         self.assertEqual(s.rows["n"], 9)
         self.rejects(lambda: s.acknowledge_heir(receipt, s.heir, s.tenant))
+
+    def test_duplicate_owner_death_does_not_rotate_pending_receipt(self):
+        s = self.s
+        ticket = s.owner_died()
+        before_epoch = s.table_epoch
+        self.rejects(s.owner_died)
+        self.assertEqual(s.table_epoch, before_epoch)
+        self.assertIs(s.transfer, ticket)
+        s.acknowledge_heir(ticket, s.heir, s.tenant)
 
     def test_heir_cross_tenant_and_dead_heir_fail_closed(self):
         for kwargs in ({"heir_tenant": "other"}, {"heir_alive": False}):
