@@ -74,7 +74,7 @@ class ExclusiveSlot {
     this.generation++;
   }
   acquire(actor) {
-    if (this.stopped || !this.socket || this.current || !this.reader.clean()) return null;
+    if (this.stopped || !this.socket || this.socket.destroyed || this.current || !this.reader.clean()) return null;
     const token = Object.freeze({});
     this.current = {actor, token, generation:this.generation};
     return token;
@@ -192,4 +192,50 @@ test('shutdown is terminal and stale generation tokens never regain authority', 
   await slot.stop();
   assert.equal(slot.acquire(2),null);
   await assert.rejects(slot.open(),/slot-not-retired/);
+});
+
+test('fragmented header and body preserve exact frame boundary across actor leases', {timeout:5000}, async t => {
+  const srv=await serverFor(t,(socket,incoming)=>{(async()=>{
+    while (!socket.destroyed) {
+      const body=await incoming.read();
+      const packed=frame(body);
+      socket.write(packed.subarray(0,1));
+      await delay(1);
+      socket.write(packed.subarray(1,3));
+      await delay(1);
+      socket.write(packed.subarray(3));
+    }
+  })().catch(()=>socket.destroy());});
+  const slot=new ExclusiveSlot(srv.port);t.after(()=>slot.stop());
+  await slot.open();
+  for (let actor=1;actor<=8;actor++) {
+    const lease=slot.acquire(actor);assert.ok(lease);
+    assert.deepEqual([...await slot.exchange(lease,actor,actor+20)],[actor,actor+20]);
+    assert.equal(slot.release(lease,actor),true);
+  }
+  assert.equal(srv.count(),1);
+});
+
+test('unexpected duplicate frames cannot be reinterpreted as the next actor response', {timeout:5000}, async t => {
+  const srv=await serverFor(t,(socket,incoming)=>{(async()=>{
+    const body=await incoming.read();
+    socket.write(Buffer.concat([frame(body),frame(body)]));
+  })().catch(()=>socket.destroy());});
+  const slot=new ExclusiveSlot(srv.port);t.after(()=>slot.stop());
+  await slot.open();const a=slot.acquire(1);
+  assert.deepEqual([...await slot.exchange(a,1,22)],[1,22]);
+  assert.equal(slot.release(a,1),true);
+  assert.equal(slot.acquire(2),null,'unsolicited frame forbids socket reuse');
+});
+
+test('cross-actor response identity mismatch poisons connection', {timeout:5000}, async t => {
+  const srv=await serverFor(t,(socket,incoming)=>{(async()=>{
+    const body=await incoming.read();
+    socket.write(frame(Buffer.from([body[0]+1,body[1]])));
+  })().catch(()=>socket.destroy());});
+  const slot=new ExclusiveSlot(srv.port);t.after(()=>slot.stop());
+  await slot.open();const a=slot.acquire(1);
+  await assert.rejects(slot.exchange(a,1,4),/response-owner-mismatch/);
+  assert.equal(slot.release(a,1),true);
+  assert.equal(slot.acquire(2),null,'mismatched response forbids future actor lease');
 });
