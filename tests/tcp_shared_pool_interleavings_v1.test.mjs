@@ -51,7 +51,7 @@ test("caller mutation cannot change a frozen slab", () => {
   deny(()=>slab.read_at(Number.MAX_SAFE_INTEGER),"invalid-read");
 });
 test("one stream cancellation retains other stream pins", () => {
-  const p=fresh({multiplex:true,streams:2,descriptors:2});
+  const p=fresh({multiplex:true,codec:"http2",streams:2,descriptors:2});
   const a=p.acquire(identity()), b=p.acquire(identity("b"));
   const left=new FrozenBytes([10]), right=new FrozenBytes([20]);
   p.begin(a,identity(),left);p.begin(b,identity("b"),right);
@@ -65,7 +65,7 @@ test("one stream cancellation retains other stream pins", () => {
   assert(p.slot.state==="retired");
 });
 test("clean completion of one multiplexed stream preserves the other", () => {
-  const p=fresh({multiplex:true,streams:2});
+  const p=fresh({multiplex:true,codec:"http2",streams:2});
   const a=p.acquire(identity()),b=p.acquire(identity("b"));
   p.begin(a,identity());p.complete(a);p.release(a,identity());
   assert(p.slot.state==="leased" && p.slot.leases.size===1);
@@ -112,7 +112,7 @@ test("failed pin admission leaves descriptor credits untouched", () => {
   assert(p.slot.state==="idle");
 });
 test("multiplexed slot cannot recycle before final stream retirement", () => {
-  const p=fresh({multiplex:true,streams:2});
+  const p=fresh({multiplex:true,codec:"http2",streams:2});
   const a=p.acquire(identity()),b=p.acquire(identity("b"));
   p.begin(a,identity());p.cancel(a,identity());p.complete(a);
   assert(p.slot.state==="draining" && p.slot.leases.size===1);
@@ -121,7 +121,7 @@ test("multiplexed slot cannot recycle before final stream retirement", () => {
   p.open();assert(p.slot.state==="idle" && p.generation===2);
 });
 test("shutdown waits for all three outstanding completions", () => {
-  const p=fresh({multiplex:true,streams:3,descriptors:3});
+  const p=fresh({multiplex:true,codec:"http2",streams:3,descriptors:3});
   const ids=[identity(),identity("b"),identity("c")];
   const tokens=ids.map(who=>p.acquire(who));
   tokens.forEach((token,i)=>p.begin(token,ids[i]));
@@ -145,7 +145,7 @@ function rng(seed) {
   };
 }
 test("stop forbids resurrection even after all reactor completions",()=>{
-  const p=fresh({multiplex:true,streams:2});
+  const p=fresh({multiplex:true,codec:"http2",streams:2});
   const a=p.acquire(identity()), b=p.acquire(identity("b"));
   p.begin(a,identity());p.begin(b,identity("b"));
   p.shutdown();
@@ -163,12 +163,32 @@ test("stop before dial is terminal and cannot allocate a lease",()=>{
   deny(()=>p.open(),"pool-stopped");
   deny(()=>p.acquire(identity()),"pool-stopped");
 });
+test("unsupported protocol cannot use independent stream reset",()=>{
+  const p=fresh({multiplex:true,codec:"framed-rpc",streams:2}),a=p.acquire(identity());
+  deny(()=>p.complete_stream_reset(a,identity(),"trusted-reset-complete"),
+    "stream-reset-unproven");
+  p.cancel(a,identity());
+  assert(p.slot.state==="retired");
+});
+test("trusted stream reset after completion preserves an unrelated in-flight stream",()=>{
+  const p=fresh({multiplex:true,codec:"http2",streams:2});
+  const a=p.acquire(identity()),b=p.acquire(identity("b"));
+  p.begin(a,identity());p.begin(b,identity("b"));
+  deny(()=>p.complete_stream_reset(a,identity(),"trusted-reset-complete"),
+    "stream-reset-unproven");
+  p.complete(a);
+  p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+  assert(p.slot.leases.size===1 && p.slot.state==="leased"
+    && p.slot.active===1);
+  p.complete(b);p.release(b,identity("b"));
+  assert(p.slot.state==="idle");
+});
 // 64 deterministic schedules * 300 transitions. No wall-clock nondeterminism,
 // no sleeps, no unbounded asynchronous work. Seeds make failures reproducible.
 for (let seed=1;seed<=64;seed++) {
   test("interleaving seed " + seed, () => {
     const next=rng(seed), multiplex=(seed&1)===0;
-    const p=fresh({multiplex,streams:multiplex?3:1,descriptors:2});
+    const p=fresh({multiplex,codec:multiplex?"http2":"raw-tcp",streams:multiplex?3:1,descriptors:2});
     let next_actor=0;
     for(let step=0;step<300;step++) {
       const operation=next()%9;
@@ -216,4 +236,4 @@ for (let seed=1;seed<=64;seed++) {
   });
 }
 console.log("TCP shared pool additional scenarios passed:", cases,
-            "(14 targeted + 64 seeded interleavings; 19,200 transitions)");
+            "(16 targeted + 64 seeded interleavings; 19,200 transitions)");
