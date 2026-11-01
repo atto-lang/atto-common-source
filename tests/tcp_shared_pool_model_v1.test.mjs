@@ -35,11 +35,17 @@ class FrozenBytes {
     if (!this.#activePins.has(receipt)) throw Error("pin-underflow");
     this.#activePins.delete(receipt);
     this.#pins--;
-    if (this.#retiring && !this.#pins) this.#freed = true;
+    this.#finalize();
   }
   retire() {
     this.#retiring = true;
-    if (!this.#pins) this.#freed = true;
+    this.#finalize();
+  }
+  #finalize() {
+    if (this.#retiring && this.#pins === 0) {
+      this.#values = null; // Drop backing allocation; not secure zeroization.
+      this.#freed = true;
+    }
   }
   read_at(index,receipt) {
     if (!this.#activePins.has(receipt)) throw Error("buffer-access-denied");
