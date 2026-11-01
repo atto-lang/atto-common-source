@@ -33,8 +33,11 @@ jobs:
           node --check tests/tcp_shared_pool_model_v1.test.mjs
           node --check tests/tcp_shared_pool_interleavings_v1.test.mjs
           node --check tests/tcp_shared_slab_registry_v1.test.mjs
+          node --check tests/tcp_shared_pool_loopback_v1.test.mjs
       - name: Model conformance (no socket syscall)
         run: |
           node tests/tcp_shared_pool_model_v1.test.mjs
           node tests/tcp_shared_pool_interleavings_v1.test.mjs
           node tests/tcp_shared_slab_registry_v1.test.mjs
+      - name: Real loopback TCP safety oracle (Node host only, NOT Oreslang guest)
+        run: node --test tests/tcp_shared_pool_loopback_v1.test.mjs
