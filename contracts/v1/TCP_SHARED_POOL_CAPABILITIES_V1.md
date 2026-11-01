@@ -2,7 +2,7 @@
 
 Status: **proposed contract / not guest-implemented** (2026-11-01).
 This document does **not** claim a production pool or backend parity. Applies to
-Java/GraalVM, LLVM, Wasm, Forge and .NET. The Java HTTP/1.1 pinned transport
+Java/GraalVM, LLVM, Wasm, Cranelift, .NET and Forge. The Java HTTP/1.1 pinned transport
 currently uses `Connection: close`; its shared connection **budget** is not a
 physical socket pool. Java's request-local selector must not be concurrently
 entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
@@ -98,7 +98,7 @@ entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
    resources. No unbounded allocation, lock wait, DNS, TLS handshake, or
    reactor thread creation on hard-RT carriers. Use a fixed/admitted profile
    for native hard-RT operation; report unsupported capability explicitly.
-10. **Fail-closed backend parity.** All five backends share the semantic
+10. **Fail-closed backend parity.** All supported backends share the semantic
     contract, not pointer or FD representation. Implement and execute native
     positive cases on each backend before feature-parity claims. A reference
     model or source-level conformance fixture alone is never native proof.
@@ -163,7 +163,7 @@ intended behavior, not established language signatures.
 3. Wire typed guest `Future<Result<...>>` operations and actor-incarnation
    capability checks; prove clean-release vs drain under cancellation.
 4. Only then enable protocol-aware multiplexing, immutable zero-copy slabs,
-   and five-backend native conformance.
+   and native conformance across all supported backends.
 5. Benchmark descriptor submission vs mailbox serialization with payload
    sizes 64 B, 4 KiB, 64 KiB and 1 MiB, 1/8/64 actors, and p50/p99 latency,
    copy count, allocations, throughput and cancellation cost. Require
@@ -172,3 +172,56 @@ intended behavior, not established language signatures.
 Related: `docs/SHARED_ACTOR_ARENAS_V1.md`,
 `docs/TRANSPORT-ACTOR-CONTRACT.md`, Java `PinnedHttpTransport`,
 `SelectorTransportConnection`, LLVM `NativeEpollReactorManager`.
+
+## Bounded immutable-slab admission (source-only testable contract)
+
+New reference oracle: `tests/tcp_shared_slab_registry_v1.test.mjs`.
+The 54 local deterministic **source-only** scenarios (22 targeted, 32 seeded
+retirement orders) passed with Node 22.16.0 on 2026-11-01; the exact file
+content was read back from GitHub and its Git blob SHA matched the locally
+executed file. This is **not** a thread-race, native IO or guest-compiler proof.
+
+- **Precharge** fixed slab slots, per-slab byte size, aggregate live slab
+  bytes, max active pin count and aggregate pin-slice bytes before publication
+  or pin admission. Invalid, sparse, oversized and unbounded input fails
+  without granting a handle or reservation. Total bytes stay charged while
+  the slab is retiring and any reader or I/O pin remains live.
+- Each opaque host-issued pin is scoped to an exact slab incarnation, actor ID
+  and incarnation, tenant, trust domain, offset and length. Verify the pin
+  again on *every* read and release. Exact-once release rejects forged,
+  cross-pool, cross-actor, replayed and stale-generation receipts. Pinning
+  does **not** imply permission to mutate a slab.
+- Publication must either take exclusive ownership of a provably frozen
+  immutable backing allocation or copy into a private region. A read-only
+  Java ByteBuffer view, .NET ReadOnlyMemory, Rust shared reference, Wasm
+  memory view or C/C++ const pointer alone does **not** prove absence of a
+  mutable alias. The reference oracle **copies on publish**; it does not
+  model production zero-copy. A same-domain zero-copy implementation must
+  separately prove producer freeze/ownership transfer and memory ordering.
+- Retiring prevents fresh pins, preserves already admitted reads, and frees
+  storage only when every pin has been released. The trusted host must
+  invoke retirement only **after** real outbound I/O callbacks, kernel
+  accesses, DMA, TLS writes and completion handoff have physically quiesced.
+  The reference registry does **not** attest that quiescence; a Future's
+  cancellation is insufficient.
+- The identity values in this test are *trusted host inputs*. A real guest
+  must not be able to supply its own actor incarnation, tenant, domain or
+  slot owner. The implementation must derive them from the OresVM scheduler
+  and capability registry. Shared slabs are disallowed across untrusted
+  isolates without an explicit bounded copy and reauthorization.
+
+### Runtime implementation and proof status
+
+| Backend | Minimum host proof required before actor-shared pool can be enabled |
+| --- | --- |
+| Java/GraalVM | Connect VM selector to opaque exclusive leases, ownership/pin registry, real loopback framing, JDK 25/JUnit and Native Image. PR #2404's selector gate is only a prerequisite. |
+| LLVM | Connect epoll owner table to leases, no-GC preallocated slabs and physical drain; run GCC/Clang ASan/UBSan plus compiled guest. Dup-alias exclusion in PR #1255 is only a prerequisite. |
+| Wasm | Typed capability broker for browser/Node/Wasmtime worker, bounded copy across untrusted isolates, detached/transferred buffer handling and worker-stop tests. No naked guest linear-memory pointer may escape. |
+| Cranelift | Until actor, async and socket runtime exist, reject TCP-pool operations **before native IR** with nonzero exit, no guest IR and a diagnostic. PRs #26/#30 provide negative-first candidate tests only. |
+| .NET Native AOT | Trusted socket owner, single-flight exclusive lease, immutable-owner memory region/pins and cancellation drain; test Native AOT on Windows and Linux. A ReadOnlyMemory view is insufficient. |
+| Forge | Preserve fail-closed capability I/O and bring up native reactor/host-owned slab pin receipts; run GCC/Clang sanitizer, AOT and guest actor evidence separately. |
+
+**Release blocker:** no backend is certified for guest actor-shared TCP
+pooling/zero-copy readonly slabs by this document. Backend implementation
+must consume the same negative-first corpus and produce executed, exact-head
+native results, not just copied contracts or zero-step GitHub Actions runs.
