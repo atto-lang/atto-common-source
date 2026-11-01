@@ -252,7 +252,7 @@ test('slot exhaustion cannot overwrite pinned old storage',()=>{
   r.retire(h,a);deny(()=>r.publish([2],b),'slab-slot-budget');
   r.release_pin(h,p,a);const next=r.publish([2],b);r.retire(next,b);
 });
-test('generation exhaustion fails before resource reservation',()=>{
+test('private generation counter is not exposed as guest state',()=>{
   const r=fresh();
   // Private generation counter is deliberately inaccessible to guest code.
   assert(!Object.hasOwn(r,'nextGeneration'));
