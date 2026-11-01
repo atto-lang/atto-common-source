@@ -47,7 +47,57 @@
       "right"
     ],
     "allow_replay": false,
-    "required_evidence": "REAL_EXECUTED_GUEST_EXACT_HEAD"
+    "required_evidence": "REAL_EXECUTED_GUEST_EXACT_HEAD",
+    "scalar_i64_guest_fixture": {
+      "path": "fixtures/actor-hierarchy-ml/v1/scalar_backward_update.ores",
+      "sha256": "2597e802808244335aef275eb6f823bc153843abf16adbf3db4b89bfa1f30271",
+      "dtype": "signed_i64",
+      "scope": "hand_derived_numeric_intersection_only",
+      "cases": [
+        {
+          "args": [
+            5,
+            2,
+            6,
+            1
+          ],
+          "result": -3
+        },
+        {
+          "args": [
+            3,
+            1,
+            5,
+            1
+          ],
+          "result": 5
+        },
+        {
+          "args": [
+            0,
+            3,
+            6,
+            1
+          ],
+          "result": 18
+        },
+        {
+          "args": [
+            7,
+            0,
+            6,
+            1
+          ],
+          "result": 7
+        }
+      ],
+      "overflow_args": [
+        9223372036854776000,
+        2,
+        0,
+        1
+      ]
+    }
   },
   "backends": [
     {
