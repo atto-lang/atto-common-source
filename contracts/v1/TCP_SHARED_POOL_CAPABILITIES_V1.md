@@ -57,7 +57,11 @@ entered by actors. LLVM's per-manager FD watch exclusion is not a pool.
    is frozen before publication and is immutable until completion. It has
    an opaque generation-fenced handle, independent shared-region lifetime,
    bounds and rights checks, producer release/consumer acquire ordering,
-   pinned-byte accounting and completion-owned unpin. A read-only pointer
+   pinned-byte accounting and completion-owned unpin. **Every read**, not
+   merely every pin, must verify a currently live, unforgeable, reader-scoped
+   lease. A frozen buffer must not expose its backing array or permit an actor
+   to read using some other actor's pin. Unpin invalidates that exact token;
+   other reader pins continue independently until their own release. A read-only pointer
    alone is insufficient: it does not guarantee lifetime, revocation, bounds
    or cross-isolate safety. No mutable aliasing of socket input, TLS buffers,
    scatter/gather vectors, or parser state. For untrusted or remote isolates
@@ -144,8 +148,9 @@ intended behavior, not established language signatures.
   close, pool shutdown, slot generation exhaustion: fail closed with exact
   physical retirement/accounting assertions.
 - Frozen slice can be consumed by two trusted readers without a copy if both
-  retain valid pinned leases; writer mutation and read after last unpin are
-  forbidden. Cross-isolate ingress performs bounded copy.
+  retain valid pinned leases; writer mutation, forged/foreign/replayed pin
+  receipts and read after *that reader's* unpin are forbidden, even when
+  another reader still holds its own pin. Cross-isolate ingress performs bounded copy.
 - Validate against real loopback servers, fragmentation, ALPN/HTTP2,
   PostgreSQL/Redis sessions and ASan/UBSan (native), GraalVM Native Image,
   Wasm worker isolation, .NET Native AOT, and actor STOP/deadline stress.
