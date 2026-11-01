@@ -1,0 +1,45 @@
+{
+  "id": "oreslang.critical-gate.v1",
+  "version": 1,
+  "status": "target-runtime-internal-contract",
+  "note": "Host runtime substrates exist in Java, LLVM and .NET but guest source lowering/continuation scheduling is not proven",
+  "language_effects": {
+    "critical_body_suspends": false,
+    "critical_entry_may_suspend": true,
+    "suspends_means_may_suspend": true,
+    "async_callable_modifier": false,
+    "actor_turn_reservation_is_physical_lock": false
+  },
+  "admission": {
+    "uncontended": "ACQUIRED",
+    "contended": "QUEUED",
+    "try_while_contended": "EMPTY",
+    "queue_discipline": "FIFO",
+    "max_waiters_per_gate": 8192
+  },
+  "operations": {
+    "request": "Allocate an opaque unique ticket, immediately acquire or return queued; never wait for active guest body",
+    "try_request": "Immediate attempt; no enqueue, no wait on internal bookkeeping mutex; return EMPTY on contention",
+    "release": "Release owner and return next FIFO token, or cancel queued token; idempotent for stale same-gate tokens",
+    "holds": "Check active same-gate ownership before guest body; separately verify task and actor generation",
+    "retire": "Close gate, revoke owner and queued tickets after physical body quiescence; deny new admission"
+  },
+  "safety_invariants": [
+    "No physical mutex spans guest execution or any await",
+    "No guest callback is executed by request/release/retire or under metadata synchronization",
+    "Cancellation versus owner release never admits a cancelled continuation",
+    "A token from a retired actor generation never resumes in the new incarnation",
+    "Cross-tenant/isolate capability checks are independent of token identity",
+    "Retirement must not interrupt an active mutation or claim transactional rollback",
+    "Queue timeout, cancellation and supervisor shutdown are scheduler responsibilities",
+    "No compiler may admit critical source until scoped guard and transitive no-suspension checks are implemented"
+  ],
+  "backend_state": {
+    "java": "host-runtime-substrate-only",
+    "llvm": "host-runtime-substrate-only",
+    "dotnet": "host-runtime-substrate-only",
+    "wasm": "source-rejection-only",
+    "cranelift": "source-rejection-only"
+  },
+  "evidence": "No native Oreslang guest execution claimed"
+}
