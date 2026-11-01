@@ -11,6 +11,8 @@ extern "C" {
 #endif
 
 #define ORES_HOT_LOAD_ABI_VERSION 1u
+/* Stable host-native dynamic symbol, never imported into untrusted guest code. */
+#define ORES_HOT_LOAD_ENTRY_SYMBOL "ores_hot_query_api_v1"
 #define ORES_HOT_FEAT_CODE_ONLY           (UINT64_C(1) << 0)
 #define ORES_HOT_FEAT_STATE_MIGRATION     (UINT64_C(1) << 1)
 #define ORES_HOT_FEAT_SUPERVISED_SUBTREE  (UINT64_C(1) << 2)
@@ -123,6 +125,13 @@ typedef struct ores_hot_api_v1 {
  * The function table is immutable for the duration of its runtime lease.
  */
 typedef ores_hot_status_v1 (*ores_hot_query_api_v1_fn)(
+    uint32_t requested_version, ores_hot_api_v1 *inout_api);
+
+/* Trusted adapters exporting this host-native API use this exact unmangled
+ * name. Its binary ABI is architecture-specific; it is NOT a Wasm or wire ABI.
+ * Explicit export maps / __declspec(dllexport) are required by the build.
+ */
+ores_hot_status_v1 ores_hot_query_api_v1(
     uint32_t requested_version, ores_hot_api_v1 *inout_api);
 
 #ifdef __cplusplus
