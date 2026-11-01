@@ -55,6 +55,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 ## Documents
 
 - [Compiler diagnostics v1: five independent errors and actionable source traces](contracts/v1/COMPILER_DIAGNOSTICS_MULTI_ERROR_V1.md) — **proposal only**, pending backend implementation and execution gates.
+- [Critical / suspends / actor-turn v1](contracts/v1/CRITICAL_SUSPENDS_ACTOR_TURN_V1.md) — **review-pending** separation of nonblocking critical guards, suspending effects and nonreentrant logical actor turns; [36 target vectors](contracts/v1/critical-suspends-actor-turn-v1.json), no guest execution claimed.
 
 - [Checked exceptional effects v2](contracts/v2/CHECKED_EXCEPTIONAL_EFFECTS_V2.md) — strict throws/raises/panics propagation, uncatchable panics and conformance gates.
 
