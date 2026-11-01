@@ -39,6 +39,7 @@ class LeaseLedger {
     this.partition=partition;this.tenant=tenant;this.epoch=epoch;this.multiplex=multiplex;
     this.streams=streams;this.maxDescriptors=descriptors;this.descriptors=0;this.generation=0;
     this.slot=null;this.tokens=new Map();this.stopped=false;
+    this.resetReceipts=new WeakMap();
   }
   open(){
     if(this.stopped)throw Error("pool-stopped");
@@ -91,14 +92,24 @@ class LeaseLedger {
     l.released=true;this.slot.state="draining";
     if(!l.active)this.drop(token);
   }
-  // Called only after the TRUSTED protocol engine proves stream-reset
-  // completion and all physical writes/reads are quiescent for this stream.
-  // Actor caller bits must never supply the proof themselves.
-  complete_stream_reset(token,identity,proof){
-    const l=this.validated(token,identity);
-    if(!this.multiplex || !["http2","quic"].includes(this.codec)
-        || proof!=="trusted-reset-complete" || l.active)
+  // Host-only: protocol codec mints a one-use receipt AFTER wire reset and
+  // quiescence. Actor callers cannot mint receipts or serialize them.
+  trusted_record_stream_reset(token){
+    const l=this.tokens.get(token);
+    if(!l || l.active || l.released || this.stopped ||
+        this.slot.state!=="leased" ||
+        !this.multiplex || !["http2","quic"].includes(this.codec))
       throw Error("stream-reset-unproven");
+    const receipt=Object.freeze({});
+    this.resetReceipts.set(receipt,token);
+    return receipt;
+  }
+  complete_stream_reset(token,identity,receipt){
+    const l=this.validated(token,identity);
+    if(l.active || !this.multiplex || !["http2","quic"].includes(this.codec)
+        || this.resetReceipts.get(receipt)!==token)
+      throw Error("stream-reset-unproven");
+    this.resetReceipts.delete(receipt);
     l.released=true;
     this.drop(token);
   }
@@ -248,10 +259,12 @@ function run_tests(){
     const p=fresh({multiplex:true,codec:"http2",streams:2});
     const a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
     deny(()=>p.complete_stream_reset(a,identity(),null),"stream-reset-unproven");
+    const proof=p.trusted_record_stream_reset(a);
     deny(()=>p.complete_stream_reset(a,identity("actor-b"),
-      "trusted-reset-complete"),"wrong-actor");
+      proof),"wrong-actor");
     assert(p.slot.leases.size===2 && p.slot.state==="leased");
-    p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+    p.complete_stream_reset(a,identity(),proof);
+    deny(()=>p.complete_stream_reset(a,identity(),proof),"stale-token");
     assert(p.slot.state==="leased" && p.slot.leases.size===1);
     p.begin(b,identity("actor-b"));p.complete(b);
     p.release(b,identity("actor-b"));
@@ -261,10 +274,11 @@ function run_tests(){
     const p=fresh({multiplex:true,codec:"http2",streams:2});
     const a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
     p.begin(a,identity());
+    deny(()=>p.trusted_record_stream_reset(a),"stream-reset-unproven");
     deny(()=>p.complete_stream_reset(a,identity(),
-      "trusted-reset-complete"),"stream-reset-unproven");
+      Object.freeze({})),"stream-reset-unproven");
     p.complete(a);
-    p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+    p.complete_stream_reset(a,identity(),p.trusted_record_stream_reset(a));
     assert(p.slot.state==="leased" && p.slot.leases.size===1);
     p.release(b,identity("actor-b"));
     assert(p.slot.state==="idle");
@@ -274,16 +288,32 @@ function run_tests(){
     const a=p.acquire(identity());
     deny(()=>p.complete_stream_reset(a,identity(),"guest-fabricated"),
       "stream-reset-unproven");
-    p.complete_stream_reset(a,identity(),"trusted-reset-complete");
+    p.complete_stream_reset(a,identity(),p.trusted_record_stream_reset(a));
     assert(p.slot.state==="idle");
   });
   test("framed RPC remains fail-closed without independent reset proof",()=>{
     const p=fresh({multiplex:true,codec:"framed-rpc",streams:2});
     const a=p.acquire(identity());
-    deny(()=>p.complete_stream_reset(a,identity(),"trusted-reset-complete"),
+    deny(()=>p.trusted_record_stream_reset(a),"stream-reset-unproven");
+    deny(()=>p.complete_stream_reset(a,identity(),Object.freeze({})),
       "stream-reset-unproven");
     p.cancel(a,identity());
     assert(p.slot.state==="retired");
+  });
+  test("trusted reset receipts cannot cross pools or logical streams",()=>{
+    const p=fresh({multiplex:true,codec:"http2",streams:2});
+    const q=fresh({multiplex:true,codec:"http2",streams:2});
+    const a=p.acquire(identity()),b=p.acquire(identity("actor-b"));
+    const foreign=q.acquire(identity());
+    const proof=p.trusted_record_stream_reset(a);
+    deny(()=>p.complete_stream_reset(b,identity("actor-b"),proof),
+      "stream-reset-unproven");
+    deny(()=>q.complete_stream_reset(foreign,identity(),proof),
+      "stream-reset-unproven");
+    p.complete_stream_reset(a,identity(),proof);
+    deny(()=>p.complete_stream_reset(a,identity(),proof),"stale-token");
+    p.release(b,identity("actor-b"));
+    q.release(foreign,identity());
   });
   return count;
 }
