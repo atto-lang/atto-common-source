@@ -299,3 +299,47 @@ test('out-of-order gradient deliveries still complete exact edge ledger once', (
   assert.equal(s.commit(receipt),4);
   assert.equal(s.version,4);
 });
+
+test('non-finite optimizer candidate never prepares, publishes or changes weight', () => {
+  const s=new Stage(), a=s.forward(10), b=s.forward(11);
+  for (const ticket of [a,b]) {
+    s.backward(ticket,'left',1e308);
+    s.backward(ticket,'right',1e308);
+  }
+  assert.throws(()=>s.prepare(),/invalid candidate/);
+  assert.equal(s.weight,5);
+  assert.equal(s.version,3);
+  assert.equal(s.sealed,false);
+  assert.equal(s.prepared,null);
+  s.cancel();
+  assert.throws(()=>s.prepare(),/cancelled/);
+});
+test('failed incomplete prepare cannot be used as a commit receipt', () => {
+  const s=new Stage(), a=s.forward(10);
+  s.backward(a,'left',1);
+  assert.throws(()=>s.prepare(),/incomplete cohort/);
+  assert.throws(()=>s.commit(Object.freeze({oldVersion:3,revision:2,nextWeight:0})),
+    /unissued prepare receipt/);
+  assert.equal(s.weight,5);
+  assert.equal(s.version,3);
+  assert.equal(s.committed,false);
+});
+test('cancellation permanently revokes activation tickets and any future admission', () => {
+  const s=new Stage(),a=s.forward(10);
+  s.cancel();
+  assert.throws(()=>s.backward(a,'left',1),/cancelled|unknown or forged/);
+  assert.throws(()=>s.forward(11),/cancelled run/);
+  assert.equal(s.version,3);
+  assert.equal(s.weight,5);
+});
+test('gradient arrivals are commutative at the expected-edge ledger, not transport order', () => {
+  const leftToRight=full(), rightToLeft=new Stage();
+  const a=rightToLeft.forward(10),b=rightToLeft.forward(11);
+  rightToLeft.backward(b,'right',4);
+  rightToLeft.backward(a,'left',1);
+  rightToLeft.backward(b,'left',3);
+  rightToLeft.backward(a,'right',2);
+  assert.equal(leftToRight.s.commit(leftToRight.s.prepare()),4);
+  assert.equal(rightToLeft.commit(rightToLeft.prepare()),4);
+  assert.equal(leftToRight.s.version,rightToLeft.version);
+});
