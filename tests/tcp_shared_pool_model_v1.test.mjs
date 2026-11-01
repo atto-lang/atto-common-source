@@ -2,19 +2,24 @@
 // NOT a production socket pool, concurrent host proof, or backend parity test.
 // Execute with: node tests/tcp_shared_pool_model_v1.test.mjs
 class FrozenBytes {
-  // Frozen input is copied in this reference model. A production native
-  // transport can use a proven frozen/pinned shared region instead.
+  // Host-owned immutable snapshot; guest code never receives this object.
+  // A read requires a one-use-capability-backed, explicit live pin.
   #values; #pins = 0; #retiring = false; #freed = false;
+  #activePins = new WeakSet();
   constructor(values) { this.#values = Object.freeze(Array.from(values)); }
   get pins() { return this.#pins; }
   get freed() { return this.#freed; }
   pin() {
     if (this.#retiring || this.#freed) throw Error("revoked-buffer");
     if (this.#pins >= Number.MAX_SAFE_INTEGER) throw Error("pin-overflow");
+    const receipt = Object.freeze({});
+    this.#activePins.add(receipt);
     this.#pins++;
+    return receipt;
   }
-  release_pin() {
-    if (!this.#pins) throw Error("pin-underflow");
+  release_pin(receipt) {
+    if (!this.#activePins.has(receipt)) throw Error("pin-underflow");
+    this.#activePins.delete(receipt);
     this.#pins--;
     if (this.#retiring && !this.#pins) this.#freed = true;
   }
@@ -22,7 +27,8 @@ class FrozenBytes {
     this.#retiring = true;
     if (!this.#pins) this.#freed = true;
   }
-  read_at(index) {
+  read_at(index,receipt) {
+    if (!this.#activePins.has(receipt)) throw Error("buffer-access-denied");
     if (this.#freed || !Number.isSafeInteger(index)
         || index < 0 || index >= this.#values.length) throw Error("invalid-read");
     return this.#values[index];
@@ -56,7 +62,7 @@ class LeaseLedger {
     if(!this.multiplex && s.leases.size)throw Error("exclusive-busy");
     if(s.leases.size>=this.streams)throw Error("stream-capacity");
     const token=Object.freeze({});
-    this.tokens.set(token,{identity:{...identity},generation:s.generation,active:false,released:false,buffer:null});
+    this.tokens.set(token,{identity:{...identity},generation:s.generation,active:false,released:false,buffer:null,bufferPin:null});
     s.leases.add(token);s.state="leased";return token;
   }
   validated(token,identity){
@@ -70,15 +76,16 @@ class LeaseLedger {
     const l=this.validated(token,identity);
     if(l.active)throw Error("overlap");
     if(this.descriptors>=this.maxDescriptors)throw Error("queue-full");
-    if(buffer)buffer.pin();
-    l.active=true;l.buffer=buffer;this.slot.active++;this.descriptors++;
+    const pin=buffer ? buffer.pin() : null;
+    l.active=true;l.buffer=buffer;l.bufferPin=pin;
+    this.slot.active++;this.descriptors++;
   }
   complete(token){
     const l=this.tokens.get(token);
     if(!l || !l.active)throw Error("duplicate-completion");
     l.active=false;this.slot.active--;this.descriptors--;
-    if(l.buffer)l.buffer.release_pin();
-    l.buffer=null;
+    if(l.buffer)l.buffer.release_pin(l.bufferPin);
+    l.buffer=null;l.bufferPin=null;
     if(l.released)this.drop(token);
   }
   release(token,identity){
@@ -219,10 +226,16 @@ function run_tests(){
     deny(()=>p.complete(a),"duplicate-completion");p.release(a,identity());deny(()=>p.release(a,identity()),"stale-token");
   });
   test("shared frozen byte lifetime requires all pins to unwind",()=>{
-    const b=new FrozenBytes([1,2,3]);b.pin();b.pin();b.retire();
-    assert(b.read_at(2)===3 && !b.freed && typeof b.write==="undefined");
-    b.release_pin();assert(!b.freed);b.release_pin();assert(b.freed);
-    deny(()=>b.read_at(0),"invalid-read");deny(()=>b.pin(),"revoked-buffer");deny(()=>b.release_pin(),"pin-underflow");
+    const b=new FrozenBytes([1,2,3]);
+    const a=b.pin(),c=b.pin();
+    b.retire();
+    assert(b.read_at(2,a)===3 && !b.freed && typeof b.write==="undefined");
+    b.release_pin(a);assert(!b.freed);
+    deny(()=>b.read_at(0,a),"buffer-access-denied");
+    b.release_pin(c);assert(b.freed);
+    deny(()=>b.read_at(0,c),"buffer-access-denied");
+    deny(()=>b.pin(),"revoked-buffer");
+    deny(()=>b.release_pin(a),"pin-underflow");
   });
   test("stale mutable buffer cannot be pinned for fresh IO",()=>{
     const p=fresh(),a=p.acquire(identity()),b=new FrozenBytes([5]);b.retire();
@@ -314,6 +327,16 @@ function run_tests(){
     deny(()=>p.complete_stream_reset(a,identity(),proof),"stale-token");
     p.release(b,identity("actor-b"));
     q.release(foreign,identity());
+  });
+  test("pin receipts cannot be forged or borrowed from a foreign buffer",()=>{
+    const a=new FrozenBytes([7]),b=new FrozenBytes([8]);
+    const proof=a.pin();
+    deny(()=>a.read_at(0,Object.freeze({})),"buffer-access-denied");
+    deny(()=>b.read_at(0,proof),"buffer-access-denied");
+    assert(a.read_at(0,proof)===7);
+    a.release_pin(proof);
+    deny(()=>a.read_at(0,proof),"buffer-access-denied");
+    deny(()=>a.release_pin(proof),"pin-underflow");
   });
   return count;
 }
