@@ -97,6 +97,23 @@
         "0",
         "1"
       ]
+    },
+    "portable_noargs_scalar_guest": {
+      "path": "fixtures/actor-hierarchy-ml/v1/scalar_step_guest.ores",
+      "source_blob_sha": "5affedebfcc7bf6aab2bdd6451f80ea5a71a5624",
+      "sha256": "37dfb0ba856762dc656b628a085684558e5ac1d0392ccd6947d6ccdc35ed7d8e",
+      "expected_result": 42,
+      "semantics": "signed_i64_scalar_only_not_autograd_or_actor_runtime",
+      "backends": [
+        "java",
+        "llvm",
+        "wasm",
+        "cranelift",
+        "net"
+      ],
+      "source_identity_verified": "SAME_GIT_BLOB_ALL_FIVE_TOOLCHAINS",
+      "execution_status": "NOT_EXECUTED",
+      "release_gate": "REAL_COMPILER_AND_GUEST_EXACT_HEAD"
     }
   },
   "backends": [
