@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 
 const spec = JSON.parse(readFileSync(
   new URL('../contracts/v1/actor-hierarchy-ml-v1.json', import.meta.url),
@@ -219,4 +220,19 @@ test('version overflow refuses candidate before publication', () => {
   s.version=Number.MAX_SAFE_INTEGER;
   assert.throws(()=>s.prepare(),/version overflow/);
   assert.equal(s.weight,5);
+});
+
+test('portable scalar gradient fixture has exact bytes and independent hand-derived numeric outputs', () => {
+  const f = spec.ml.scalar_i64_guest_fixture;
+  const bytes = readFileSync(new URL('../' + f.path, import.meta.url));
+  const actual = createHash('sha256').update(bytes).digest('hex');
+  assert.equal(actual, f.sha256, 'source drift would invalidate exact-head guest identity');
+  assert.equal(bytes.toString('utf8').trim(), 'fnc main(w:int,x:int,t:int,rate:int):int{return w-rate*(w*x-t)*x;}');
+  assert.equal(f.scope, 'hand_derived_numeric_intersection_only');
+  for (const x of f.cases) {
+    const [w, input, target, rate] = x.args;
+    assert.equal(w - rate * (w * input - target) * input, x.result);
+  }
+  assert.equal(f.overflow_args.length, 4);
+  // Executing this arithmetic in Node is NOT an Oreslang backend pass.
 });
