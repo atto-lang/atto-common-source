@@ -90,8 +90,8 @@ in the Java draft JUnit resources, VS Code, and the web highlighter.
   per-case UTF-16-hex JSON responses from the production compiler. If the
   interface is absent it reports \`INTERFACE_UNAVAILABLE\` with **zero**
   executed cases; no fallbacks or synthetic native token dumps are counted.
-- Real public CI [web run 41262379199](https://github.com/ores-truffle-oreslang/html-js-css-syntax-highlighter/actions/runs/41262379199)
-  actually executed **67 tests, 67 pass, 0 fail** for the parser/editor
+- Real public CI [web run 41262560337](https://github.com/ores-truffle-oreslang/html-js-css-syntax-highlighter/actions/runs/41262560337)
+  actually executed **68 tests, 68 pass, 0 fail** for the parser/editor
   fixtures, case comparator, native-probe transport with a separately labeled
   **mock**, and negative evidence-forgery checks.
 - The **test-plan** matrix verifier now rejects every \`PASS\` or \`FAIL\`
