@@ -2,7 +2,7 @@
   "id": "oreslang.critical-gate.v1",
   "version": 1,
   "status": "target-runtime-internal-contract",
-  "note": "Host runtime substrates exist in Java, LLVM and .NET but guest source lowering/continuation scheduling is not proven",
+  "note": "Java, LLVM, .NET, Cranelift and Wasm JS host now expose critical-ticket substrates. No guest source-level critical lowering is proven.",
   "language_effects": {
     "critical_body_suspends": false,
     "critical_entry_may_suspend": true,
@@ -38,8 +38,8 @@
     "java": "host-runtime-substrate-only",
     "llvm": "host-runtime-substrate-only",
     "dotnet": "host-runtime-substrate-only",
-    "wasm": "source-rejection-only",
-    "cranelift": "source-rejection-only"
+    "wasm": "javascript-host-runtime-substrate-only; not Wasmtime guest",
+    "cranelift": "rust-host-runtime-substrate-only"
   },
   "evidence": "No native Oreslang guest execution claimed"
 }
