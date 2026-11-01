@@ -379,3 +379,18 @@ test('backward edge delivery order is numerically irrelevant to optimizer commit
   const sequence=[[10,'left'],[10,'right'],[11,'left'],[11,'right']];
   assert.equal(fill(sequence),fill([...sequence].reverse()));
 });
+
+test('identical sealed Counter actor is pinned but cannot certify guest execution', () => {
+  const f = spec.hierarchy.portable_counter_target;
+  const source = readFileSync(new URL('../' + f.path, import.meta.url));
+  const hash = createHash('sha1')
+    .update(Buffer.from('blob ' + source.length + String.fromCharCode(0)))
+    .update(source).digest('hex');
+  assert.equal(hash, 'c49780b4b42251db20ae9ac864eb8606bf7da922');
+  assert.equal(f.git_blob_sha1,hash);
+  assert.deepEqual(f.backends,spec.backends.map(x=>x.name));
+  assert.equal(f.status,'TARGET_SYNTAX_NOT_GUEST_EXECUTED');
+  assert.match(source.toString('utf8'),/define actor Counter as/);
+  assert.match(source.toString('utf8'),/handle_state\(critical-read/);
+  assert.match(source.toString('utf8'),/handle_state\(critical-write/);
+});
