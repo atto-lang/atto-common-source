@@ -94,7 +94,7 @@
       "kind": "compiler",
       "expected": "reject",
       "diagnostic": "E_CRITICAL_SUSPENSION",
-      "source": "suspends fnc fetch_value(): int { return 1; }\ndefine isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { let value = (suspends || -> fetch_value())(); } }\nend"
+      "source": "suspends fnc fetch_value(): int { return 1; }\ndefine isolated actor Worker as\n  state count: int = 0\n  pub suspends apply(): void { critical { let value = (suspends |int arg| -> fetch_value())(1); } }\nend"
     },
     {
       "id": "reject-blocking-ffi",
