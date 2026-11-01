@@ -8,10 +8,10 @@ const load = () => JSON.parse(fs.readFileSync(
 const corpus = fs.readFileSync(new URL(
   '../contracts/editor-syntax/v1/compiler-lexical-differential-v1.tsv', import.meta.url));
 
-test('five-backend matrix validates the exact Git blob but claims no execution', () => {
+test('six-backend matrix validates the exact Git blob but claims no execution', () => {
   const matrix = load();
   assert.deepEqual(validateAdmission(matrix, corpus), {
-    checkedBackends: 5,
+    checkedBackends: 6,
     expectedCases: 34,
     actualCorpusBlob: 'eeed64b7d33c262b35120662386435575982a9bc'
   });
@@ -53,6 +53,16 @@ test('reject missing backends, invalid corpus content, and unsupported without e
   const missing = load();
   missing.backends.pop();
   assert.throws(() => validateAdmission(missing, corpus), /backend identities/);
+  // Cranelift is an independent backend: do not alias LLVM or Forge.
+  assert.deepEqual(load().backends.map(b => b.id),
+    ['java', 'llvm', 'wasm', 'cranelift', 'net', 'forge']);
+  const duplicated = load();
+  duplicated.backends[3].id = 'llvm';
+  assert.throws(() => validateAdmission(duplicated, corpus), /backend identities/);
+  const reordered = load();
+  [reordered.backends[2], reordered.backends[3]] =
+    [reordered.backends[3], reordered.backends[2]];
+  assert.throws(() => validateAdmission(reordered, corpus), /backend identities/);
   const altered = Buffer.from(corpus);
   altered[altered.length-2] ^= 1;
   assert.throws(() => validateAdmission(load(), altered), /blob mismatch/);
@@ -61,4 +71,19 @@ test('reject missing backends, invalid corpus content, and unsupported without e
   assert.throws(() => validateAdmission(unsupported, corpus), /explicit reason/);
   unsupported.backends[3].unsupportedReason = 'No checked native lexer execution or supported frontend found';
   assert.equal(validateAdmission(unsupported, corpus).checkedBackends, 5);
+});
+
+test('Cranelift cannot claim green lexer, parser or runtime evidence in a static plan', () => {
+  for (const dimension of ['lexer', 'parser', 'runtime']) {
+    const forged = load();
+    const cranelift = forged.backends.find(b => b.id === 'cranelift');
+    cranelift[dimension] = 'PASS';
+    cranelift.testedHead = 'a'.repeat(40);
+    cranelift.runUrl = 'https://github.com/ores-truffle-oreslang/oreslang-source.cranelift/actions/runs/123';
+    cranelift.executedSteps = 9;
+    cranelift.executedCases = 34;
+    cranelift.receiptSha256 = 'f'.repeat(64);
+    assert.throws(() => validateAdmission(forged, corpus),
+      /test-plan cannot claim executed PASS\/FAIL evidence/);
+  }
 });
