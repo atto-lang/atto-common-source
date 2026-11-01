@@ -118,8 +118,8 @@ class Stage {
     return ticket;
   }
   backward(ticket,edge,gradient,version=this.version) {
-    assert.equal(this.sealed,false,'sealed forward/backward phase');
     assert.equal(this.cancelled,false,'cancelled');
+    assert.equal(this.sealed,false,'sealed forward/backward phase');
     const ctx=this.contexts.get(ticket);
     assert.ok(ctx,'unknown or forged activation ticket');
     assert.equal(version,ctx.version,'wrong activation version');
