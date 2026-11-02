@@ -98,6 +98,13 @@
       "expected": "execute",
       "expected_stdout": "42",
       "source": "fnc main() -> int { return 42; }\n"
+    },
+    {
+      "id": "MA008",
+      "expected": "reject",
+      "diagnostic_family": "MACRO_DUPLICATE_UNPROVEN_BINDING",
+      "source": "define macro twice(Syntax<Expr> value) -> Syntax<Expr> { return quote(unquote(value) + unquote(value)); }\nfnc main(int input) -> int { return twice!(syntax expr input); }\n",
+      "evidence_note": "Bare name syntax is not proof of Copy. Reject duplicate unquote before ownership/type checker or guest IR. A proven Copy-aware future macro API requires an explicit admissible proof."
     }
   ],
   "minimum_matrix": {
@@ -115,7 +122,8 @@
       "MA004",
       "MA005",
       "MA006",
-      "MA007"
+      "MA007",
+      "MA008"
     ],
     "jit_differential_when_available": [
       "MA001",
