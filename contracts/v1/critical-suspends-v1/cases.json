@@ -170,6 +170,16 @@
       "category": "async",
       "lowering_pending": false,
       "source": "define isolated actor Worker as pub async handle(): void { return; } end"
+    },
+    {
+      "id": "actor-critical-scalar-receive",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source_file": "contracts/v1/critical-suspends-v1/actor-critical-scalar.ores",
+      "expected_output": "42",
+      "source": "define actor CriticalWorker as suspends receive(ActorMail<String> mail): void { let int value = 40; critical { value = value + 2; } self.send(value); self.end(); return; } end",
+      "test_evidence": "Java source and Graal guest test authored; no executed CI job step; all backends unverified"
     }
   ]
 }
