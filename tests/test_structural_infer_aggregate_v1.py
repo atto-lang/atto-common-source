@@ -22,6 +22,16 @@ class StructuralInferAggregateContractTests(unittest.TestCase):
         for case in cases:
             self.assertIn("fnc ", case["source"])
             self.assertIn(case["expect"], {"accept", "reject"})
+            if "source_file" in case:
+                fixture_root = (ROOT / "fixtures/structural-infer-aggregate-v1").resolve()
+                path = (ROOT / case["source_file"]).resolve()
+                self.assertEqual(".atto", path.suffix)
+                self.assertTrue(path.is_relative_to(fixture_root),
+                    "fixture cannot escape canonical aggregate corpus")
+                self.assertEqual(case["source"] + "\\n",
+                    path.read_text(encoding="utf-8"),
+                    "manifest source and .atto fixture must remain byte-identical")
+
             if case["expect"] == "accept":
                 self.assertEqual(42, case["exit_code"])
             else:
