@@ -21,13 +21,15 @@
       "id": "p01_infer_struct_spread",
       "expect": "accept",
       "source": "pub fnc main():int { const a=infer struct{x:20}; const b=infer struct{...a,y:22}; return b.x+b.y; }",
-      "exit_code": 42
+      "exit_code": 42,
+      "source_file": "fixtures/structural-infer-aggregate-v1/positive/struct-spread42.atto"
     },
     {
       "id": "p02_infer_record_spread",
       "expect": "accept",
       "source": "pub fnc main():int { const a=infer record{value:20}; const b=infer record{...a,extra:22}; return b.value+b.extra; }",
-      "exit_code": 42
+      "exit_code": 42,
+      "source_file": "fixtures/structural-infer-aggregate-v1/positive/record-spread42.atto"
     },
     {
       "id": "p03_record_compat",
@@ -60,7 +62,8 @@
     {
       "id": "n03_unbound_spread",
       "expect": "reject",
-      "source": "fnc bad():void{const x=infer record{...unknown,y:2};return;}"
+      "source": "fnc bad():void{const x=infer record{...unknown,y:2};return;}",
+      "source_file": "fixtures/structural-infer-aggregate-v1/negative/unbound-spread.atto"
     },
     {
       "id": "n04_struct_nominal_width",
