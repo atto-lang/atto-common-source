@@ -34,3 +34,10 @@ No cross-org private-source mirroring is authorized by this patch.
 
 To check source-free tests: `node --test tests/macro-aot-jit-evidence-v1.test.mjs`.
 To validate *reported shape only*: `node tools/verify-macro-aot-jit-evidence.mjs receipt.json`.
+
+**Fail-closed CLI behavior:** because supplied receipt JSON is not authenticated against
+GitHub or artifact bytes, the command always exits nonzero, even for
+`STRUCTURALLY_COMPLETE_UNAUTHENTICATED`. It can inspect shape and report
+reasons, but never act as a release PASS gate. A future authenticated runner
+adapter must independently verify job steps/attempt, checkout commit/tree,
+compiler-produced guest receipts, target binary hashes and source digests.
