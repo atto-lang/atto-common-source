@@ -88,7 +88,9 @@ export function classifyReceipt(receipt,contract) {
  for(const c of contract.cases)fail(seen.has(c.id),"missing case "+c.id);
  if(errors.length)return {classification:"EVIDENCE_INVALID",errors};
  if(unsupported)return {classification:"UNSUPPORTED_OR_INCOMPLETE",errors:["unsupported is not parity"]};
- return {classification:"STRUCTURALLY_COMPLETE_UNAUTHENTICATED",errors:[]};
+ return {classification:receipt.mode==="aot"?"AOT_STRUCTURAL_UNAUTHENTICATED":
+ receipt.mode==="jit"?"JIT_ONLY_STRUCTURAL_UNAUTHENTICATED":
+ "HYBRID_STRUCTURAL_UNAUTHENTICATED",release_qualified:false,errors:[]};
 }
 export const contractFromDisk=()=>JSON.parse(readFileSync(fileURLToPath(CONTRACT_URL),'utf8'));
 if(process.argv[1] && fileURLToPath(import.meta.url)===process.argv[1]) {
