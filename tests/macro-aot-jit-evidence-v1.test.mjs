@@ -134,3 +134,77 @@ test('missing the repeated identifier ownership fixture is not backend parity',(
  r.cases=r.cases.filter(x=>x.id!=='MA008');
  assert.equal(classify(r),'EVIDENCE_INVALID');
 });
+
+function structuralCarrierReceipt(){
+ const r=valid('cranelift','aot');
+ const carrierRepo='scintilla-run/scintilla-e2e',carrierId=19000001;
+ const carrierHead='d'.repeat(40);
+ r.job.repository=carrierRepo;
+ r.job.head_sha=carrierHead;
+ r.mirror={
+  source_repository:r.source_repo,
+  destination_repository:carrierRepo,
+  source_repo_id:123456,
+  destination_repo_id:carrierId,
+  destination_private:true,
+  source_tree_sha:r.source_tree,
+  destination_subtree_sha:r.source_tree,
+  destination_commit_sha:carrierHead,
+  checkout_uses_local_token_only:true,
+  approval:{
+   status:'INDEPENDENTLY_REVIEWED',review_id:1234,
+   governance_commit_sha:'e'.repeat(40),
+   attestation_sha256:'f'.repeat(64),
+   enforcement:'v3_exact_review_attestation',
+   source_head_sha:r.source_head,destination_repo_id:carrierId
+  }
+ };
+ return r;
+}
+test('synthetic private carrier evidence stays separately unauthenticated',()=>{
+ const r=structuralCarrierReceipt();
+ const result=classifyReceipt(r,c);
+ assert.equal(result.classification,'AOT_CARRIER_STRUCTURAL_UNAUTHENTICATED');
+ assert.equal(result.release_qualified,false);
+ assert.match(result.note,/independent external verification/);
+});
+const carrierAttacks=[
+ ['transfer not independently approved',r=>delete r.mirror.approval],
+ ['approval lacks independent review',r=>delete r.mirror.approval.review_id],
+ ['wrong governance SHA',r=>r.mirror.approval.governance_commit_sha='not-a-sha'],
+ ['unprotected and unattested policy',r=>r.mirror.approval.enforcement='none'],
+ ['approval points at other source head',r=>r.mirror.approval.source_head_sha='a'.repeat(40).replace(/a/g,'b')],
+ ['dest repo numeric ID drift',r=>r.mirror.approval.destination_repo_id++],
+ ['source tree changed',r=>r.mirror.destination_subtree_sha='f'.repeat(40)],
+ ['carrier branch run head drift',r=>r.job.head_sha='f'.repeat(40)],
+ ['source checkout needed cross-org token',r=>r.mirror.checkout_uses_local_token_only=false],
+ ['destination became public',r=>r.mirror.destination_private=false],
+ ['missing numeric source repo ID',r=>delete r.mirror.source_repo_id],
+ ['destination slug mismatch',r=>r.mirror.destination_repository='other/private']
+];
+for(const [name,mutate] of carrierAttacks)
+ test('carrier fail closed: '+name,()=>{
+  const r=structuralCarrierReceipt();mutate(r);
+  assert.equal(classify(r),'EVIDENCE_INVALID');
+ });
+test('carrier with no executed steps remains NOT_EXECUTED',()=>{
+ const r=structuralCarrierReceipt();r.job.steps=null;
+ assert.equal(classify(r),'NOT_EXECUTED');
+});
+test('CLI never exits zero for a self-attested carrier approval',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const {mkdtempSync,writeFileSync,rmSync}=await import('node:fs');
+ const {tmpdir}=await import('node:os');
+ const {join}=await import('node:path');
+ const {fileURLToPath}=await import('node:url');
+ const dir=mkdtempSync(join(tmpdir(),'atto-carrier-'));
+ try {
+  const file=join(dir,'forged-approval.json');
+  writeFileSync(file,JSON.stringify(structuralCarrierReceipt()));
+  const script=fileURLToPath(new URL('../tools/verify-macro-aot-jit-evidence.mjs',import.meta.url));
+  const result=spawnSync(process.execPath,[script,file],{encoding:'utf8',timeout:4000});
+  assert.equal(result.error,undefined);
+  assert.equal(result.status,1);
+  assert.match(result.stdout,/AOT_CARRIER_STRUCTURAL_UNAUTHENTICATED/);
+ } finally {rmSync(dir,{recursive:true,force:true});}
+});
