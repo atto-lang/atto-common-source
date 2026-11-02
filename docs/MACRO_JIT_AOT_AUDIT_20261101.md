@@ -46,3 +46,13 @@ The verifier also distinguishes `JIT_ONLY_STRUCTURAL_UNAUTHENTICATED` and
 `HYBRID_STRUCTURAL_UNAUTHENTICATED` from AOT shape. All three remain
 `release_qualified=false` and exit nonzero: optional JIT cannot be silently
 credited to the full-AOT release gate.
+
+## AOT link-closure hardening
+
+A native Cranelift `.o` / LLVM object file is useful **guest AOT object**
+evidence, but does not qualify the full AOT release gate. The stricter
+validator demands `artifact_kind=standalone_guest_executable` and a linked
+guest entrypoint execution receipt for ELF/Mach-O/PE targets; the Wasm backend
+must instead report `closed_guest_wasm_module`. Both paths still require
+independent verification and do not obtain a release PASS from JSON alone.
+Cranelift #83 currently implements the scalar object step only.

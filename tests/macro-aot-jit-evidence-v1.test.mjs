@@ -12,6 +12,8 @@ function valid(backend='llvm',mode='aot'){
  source_compiler_not_in_guest_runtime:true,macro_expander_not_in_guest_runtime:true,guest_interpreter_fallback_disabled:true,
  no_runtime_authority_minting:true,runtime_jit_required:false,executable_sha256:'c'.repeat(64),
  artifact_format:backend==='wasm'?'WASM':'ELF',native_image_of_interpreter:false,
+ artifact_kind:backend==='wasm'?'closed_guest_wasm_module':'standalone_guest_executable',
+ linked_guest_entry_executed:true,
  precompiled_aot_baseline:true,jit_disabled_equivalence:true},
  cases:c.cases.map(row=>({id:row.id,source_sha256:sourceDigest(row),
  ...(row.expected==='execute'?{result:'PASS',layer:'guest_execution',exit_code:0,stdout:row.expected_stdout,compiled_guest:true}:
@@ -94,4 +96,16 @@ test('hybrid structural receipt is separately labelled and never release-qualifi
  const out=classifyReceipt(r,c);
  assert.equal(out.classification,'HYBRID_STRUCTURAL_UNAUTHENTICATED');
  assert.equal(out.release_qualified,false);
+});
+
+test('native object alone cannot masquerade as complete program-specific guest AOT',()=>{
+ const r=valid('cranelift','aot');
+ r.build.artifact_kind='relocatable_guest_object';
+ assert.equal(classify(r),'EVIDENCE_INVALID');
+ const wasm=valid('wasm','aot'); wasm.build.artifact_kind='standalone_guest_executable';
+ assert.equal(classify(wasm),'EVIDENCE_INVALID');
+});
+test('a fabricated linker digest without executed linked entrypoint is rejected',()=>{
+ const r=valid();r.build.linked_guest_entry_executed=false;
+ assert.equal(classify(r),'EVIDENCE_INVALID');
 });

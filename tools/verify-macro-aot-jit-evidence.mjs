@@ -45,6 +45,12 @@ export function classifyReceipt(receipt,contract) {
   fail(build[name]===true,"unproven build property "+name);
  if(receipt.mode==="aot") {
   fail(build.runtime_jit_required===false,"AOT requires JIT disabled");
+  // An ELF/Mach-O/COFF relocatable object is not a linked executable.
+  // Wasm is a separately classified closed guest module, not native host AOT.
+  fail(build.artifact_kind===(receipt.backend==="wasm"?
+      "closed_guest_wasm_module":"standalone_guest_executable"),
+      "AOT artifact is only an object or host image; full guest closure unproven");
+  fail(build.linked_guest_entry_executed===true,"no linked guest entrypoint receipt");
   fail(is64(build.executable_sha256),"artifact SHA256 missing");
   fail(["ELF","Mach-O","PE","WASM"].includes(build.artifact_format),"unsupported artifact format");
   fail(build.native_image_of_interpreter===false,"interpreter image is not guest AOT");
