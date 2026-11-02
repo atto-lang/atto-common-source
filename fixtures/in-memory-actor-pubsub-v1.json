@@ -361,6 +361,20 @@
       "expected": "reject",
       "assertion": "A general Topic handle must not expose an unauthenticated publishSystem or equivalent host/supervisor publication bypass",
       "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_registry_shutdown_fence",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "Closing the pubsub runtime registry invalidates cached group/topic/subscription handles, releases registrations, and prevents actor reincarnation in the closed registry",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_handle_constructor_forgery",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "An exported host class, predictable group identifier, caller-made Symbol, or foreign runtime reference cannot construct a usable group/topic capability handle",
+      "status": "pending_backend_execution"
     }
   ]
 }
