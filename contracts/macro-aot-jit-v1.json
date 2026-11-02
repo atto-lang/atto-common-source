@@ -138,6 +138,10 @@
     "wasm_guest_module_not_equivalent_to_aot_host_machine_image": true,
     "structural_receipt_validation_not_authentication": true,
     "native_scalar_object_does_not_qualify_full_aot": true,
-    "wasm_module_is_guest_aot_not_native_host_image": true
+    "wasm_module_is_guest_aot_not_native_host_image": true,
+    "carrier_never_authorizes_transfer": true,
+    "carrier_structural_receipt_requires_independent_external_authentication": true,
+    "private_tree_mirroring_requires_enforced_independent_review": true,
+    "macro_duplicate_name_without_copy_proof_reject": true
   }
 }
