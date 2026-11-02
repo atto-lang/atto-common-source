@@ -28,7 +28,7 @@ class StructuralInferAggregateContractTests(unittest.TestCase):
                 self.assertEqual(".atto", path.suffix)
                 self.assertTrue(path.is_relative_to(fixture_root),
                     "fixture cannot escape canonical aggregate corpus")
-                self.assertEqual(case["source"] + "\\n",
+                self.assertEqual(case["source"] + "\n",
                     path.read_text(encoding="utf-8"),
                     "manifest source and .atto fixture must remain byte-identical")
 
