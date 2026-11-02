@@ -2,7 +2,7 @@
   "id": "oreslang.critical-gate.v1",
   "version": 1,
   "status": "target-runtime-internal-contract",
-  "note": "Java, LLVM, .NET, Cranelift and Wasm JS host now expose critical-ticket substrates. No guest source-level critical lowering is proven.",
+  "note": "Java restricted actor-scalar critical compiler/runtime lowering and real .ores guest fixture authored; exact-head Java compilation and guest test still unverified. LLVM/.NET/Cranelift/Wasm guest critical lowering not implemented.",
   "language_effects": {
     "critical_body_suspends": false,
     "critical_entry_may_suspend": true,
@@ -32,10 +32,10 @@
     "Cross-tenant/isolate capability checks are independent of token identity",
     "Retirement must not interrupt an active mutation or claim transactional rollback",
     "Queue timeout, cancellation and supervisor shutdown are scheduler responsibilities",
-    "No compiler may admit critical source until scoped guard and transitive no-suspension checks are implemented"
+    "Compiler may admit only statically proven non-suspending bodies: restricted scalar subset initially; direct/indirect calls, FFI and unknown effects remain forbidden"
   ],
   "backend_state": {
-    "java": "ActorCell incarnation-scoped CriticalGate; source parser/AST, bounded fail-closed effect checks, OresFuture queue/handoff, staged SourceTask; guest authorization still denied; CI stepful proof missing",
+    "java": "restricted suspending actor-method scalar-body source lowering authored; exact AST+Program+ownership epoch permit, incarnation-scoped gate and SourceTask await/release; native guest JUnit not executed because steps=null",
     "llvm": "host-runtime-substrate-only",
     "dotnet": "host-runtime-substrate-only",
     "wasm": "javascript-host-runtime-substrate-only; not Wasmtime guest",
@@ -44,17 +44,18 @@
   "evidence": "No native Oreslang guest execution claimed",
   "compiler_admission": {
     "java": {
-      "critical_block": "parsed into Ast.CriticalStmt; source type/ownership gate rejects until scheduler lowering",
+      "critical_block": "restricted suspending actor instance methods only; typed+ownership checked bounded scalar bodies admitted through exact AST+Program+epoch proof",
       "try_critical": "parsed into Ast.TryCriticalStmt with mandatory else; source gate rejects until immediate ticket/lexical cleanup",
       "effect_check": "bounded conservative AST preflight; all unverified calls, FFI, awaits, channels and nested gates rejected",
-      "evaluation": "both synchronous and suspended paths reject unlowered critical AST",
-      "evidence": "authored tests unverified: GitHub Actions runner admission has zero steps",
+      "evaluation": "SourceTask scheduler-awaitable FIFO gate and lexical guard cleanup implemented for restricted actor bodies; ordinary sync evaluator remains fail-closed",
+      "evidence": "Java workflow step-null runner failure; no compile or guest pass recorded",
       "scheduler": "staged SourceTask awaits CriticalGate.requestAwaitable via OresScheduler; cancellation frames release granted tickets",
-      "runtime_authorization": "explicitly DENIED without identity-bound checked AST/actor-resource proof",
+      "runtime_authorization": "Ast.CheckedCriticalBlocks.require(program, node, epoch) before ticket; actor runtime/identity and gate revalidated on resume; no authority in detached task or lambda",
       "actor_identity": "critical gate lazily owned by exact ActorCell incarnation, shared across that actor's code sites but isolated from other actors; STOP and re-incarnation fenced",
       "retirement": "atomic retireIfQuiescent after source physical cleanup; live owner or queued future quarantines instead of falsely finalizing",
       "resume_fence": "revalidate ActorRuntime instance + ActorId + live cell gate after scheduler Future await",
-      "race_tests": "late cancellation cannot revoke an already granted ticket; first holder must release before FIFO successor"
+      "race_tests": "late cancellation cannot revoke an already granted ticket; first holder must release before FIFO successor",
+      "guest_case": "actor-critical-scalar.ores expected stdout 42; authored Graal guest JUnit, no observed run"
     },
     "llvm": "host runtime ticket substrate only; source critical remains rejected",
     "dotnet": "host runtime ticket substrate only; source critical remains rejected",
