@@ -48,14 +48,14 @@
       "try_critical": "parsed into Ast.TryCriticalStmt with mandatory else; source gate rejects until immediate ticket/lexical cleanup",
       "effect_check": "bounded conservative AST preflight; all unverified calls, FFI, awaits, channels and nested gates rejected",
       "evaluation": "SourceTask scheduler-awaitable FIFO gate and lexical guard cleanup implemented for restricted actor bodies; ordinary sync evaluator remains fail-closed",
-      "evidence": "Java workflow step-null runner failure; no compile or guest pass recorded",
+      "evidence": "focused run at Java PR head 0bfb05bfe8c94a255abe483cbcc4f31287153194 ended steps=null; host tests and native .ores fixture compilation remain unverified",
       "scheduler": "staged SourceTask awaits CriticalGate.requestAwaitable via OresScheduler; cancellation frames release granted tickets",
       "runtime_authorization": "Ast.CheckedCriticalBlocks.require(program, node, epoch) before ticket; actor runtime/identity and gate revalidated on resume; no authority in detached task or lambda",
       "actor_identity": "critical gate lazily owned by exact ActorCell incarnation, shared across that actor's code sites but isolated from other actors; STOP and re-incarnation fenced",
       "retirement": "atomic retireIfQuiescent after source physical cleanup; live owner or queued future quarantines instead of falsely finalizing",
       "resume_fence": "revalidate ActorRuntime instance + ActorId + live cell gate after scheduler Future await",
       "race_tests": "late cancellation cannot revoke an already granted ticket; first holder must release before FIFO successor",
-      "guest_case": "actor-critical-scalar.ores expected stdout 42; authored Graal guest JUnit, no observed run"
+      "guest_case": "Two native .ores guest fixtures authored: actor-critical-scalar.ores expects stdout 42; actor-critical-early-return.ores expects returned and actor finalization; neither executed in CI"
     },
     "llvm": "host runtime ticket substrate only; source critical remains rejected",
     "dotnet": "host runtime ticket substrate only; source critical remains rejected",
