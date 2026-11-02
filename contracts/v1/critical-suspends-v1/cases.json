@@ -180,6 +180,16 @@
       "expected_output": "42",
       "source": "define actor CriticalWorker as suspends receive(ActorMail<String> mail): void { let int value = 40; critical { value = value + 2; } self.send(value); self.end(); return; } end",
       "test_evidence": "Java source and Graal guest test authored; no executed CI job step; all backends unverified"
+    },
+    {
+      "id": "actor-critical-return-cleanup",
+      "expected": "accept",
+      "category": "critical",
+      "lowering_pending": true,
+      "source_file": "contracts/v1/critical-suspends-v1/actor-critical-early-return.ores",
+      "expected_output": "returned",
+      "source": "define actor CriticalReturnWorker as suspends receive(ActorMail<String> mail): void { self.send(\"returned\"); critical { return; } } end",
+      "test_evidence": "Java native .ores guest fixture and Graal test authored; runner admission steps=null, no verified pass"
     }
   ]
 }
