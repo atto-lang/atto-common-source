@@ -37,6 +37,23 @@ test("critical/suspends v1 source-case manifest is complete and unambiguous", ()
   }
 });
 
+test("native .ores critical fixtures are present but not certified", () => {
+  const fixtureCases = manifest.cases.filter(x => x.source_file);
+  assert.ok(fixtureCases.length >= 2);
+  for (const item of fixtureCases) {
+    assert.equal(item.expected, "accept");
+    assert.equal(item.lowering_pending, true,
+      "no fixture may become a claimed pass without executed compiler evidence");
+    assert.match(item.source_file, /^contracts\/v1\/critical-suspends-v1\/[a-z0-9-]+\.ores$/);
+    assert.equal(typeof item.expected_output, "string");
+    assert.ok(item.expected_output.length > 0);
+    const code = readFileSync(
+      fileURLToPath(new URL("../" + item.source_file, import.meta.url)), "utf8");
+    assert.match(code, /critical\s*\{/);
+    assert.match(code, /suspends\s+receive/);
+  }
+});
+
 test("lowering-dependent positives are not misreported as native passes", () => {
   assert.ok(manifest.cases.some(x => x.expected === "accept" && x.lowering_pending));
   assert.ok(manifest.cases.some(x => x.expected === "accept" && !x.lowering_pending));
