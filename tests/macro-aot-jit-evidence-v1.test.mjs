@@ -109,3 +109,28 @@ test('a fabricated linker digest without executed linked entrypoint is rejected'
  const r=valid();r.build.linked_guest_entry_executed=false;
  assert.equal(classify(r),'EVIDENCE_INVALID');
 });
+
+test('unproven identifier duplication must be a compiler rejection in every AOT backend',()=>{
+ const row=c.cases.find(x=>x.id==='MA008');
+ assert.ok(row);
+ assert.equal(row.expected,'reject');
+ assert.equal(row.diagnostic_family,'MACRO_DUPLICATE_UNPROVEN_BINDING');
+ assert.match(row.source,/unquote\(value\).*unquote\(value\)/);
+ assert.match(row.source,/syntax expr input/);
+ assert.ok(c.minimum_matrix.aot_cases.includes(row.id));
+ for(const backend of Object.keys(c.backend_repositories)){
+  const r=valid(backend);
+  const actual=r.cases.find(x=>x.id==='MA008');
+  assert.equal(actual.result,'EXPECTED_REJECT');
+  assert.equal(actual.partial_artifact,false);
+  actual.result='PASS';
+  actual.layer='guest_execution';
+  actual.exit_code=0;
+  assert.equal(classify(r),'EVIDENCE_INVALID');
+ }
+});
+test('missing the repeated identifier ownership fixture is not backend parity',()=>{
+ const r=valid();
+ r.cases=r.cases.filter(x=>x.id!=='MA008');
+ assert.equal(classify(r),'EVIDENCE_INVALID');
+});
