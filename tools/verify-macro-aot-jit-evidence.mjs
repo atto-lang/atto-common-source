@@ -93,6 +93,7 @@ export function classifyReceipt(receipt,contract) {
 export const contractFromDisk=()=>JSON.parse(readFileSync(fileURLToPath(CONTRACT_URL),'utf8'));
 if(process.argv[1] && fileURLToPath(import.meta.url)===process.argv[1]) {
  if(process.argv.length!==3){console.error('usage: node tools/verify-macro-aot-jit-evidence.mjs <receipt.json>');process.exit(2);}
- try{const report=JSON.parse(readFileSync(process.argv[2],'utf8'));const result=classifyReceipt(report,contractFromDisk());console.log(JSON.stringify(result));process.exit(result.classification==='STRUCTURALLY_COMPLETE_UNAUTHENTICATED'?0:1);}
+ try{const report=JSON.parse(readFileSync(process.argv[2],'utf8'));const result=classifyReceipt(report,contractFromDisk());console.log(JSON.stringify(result));// Structural-only, self-supplied evidence must NEVER satisfy a release gate.
+  process.exit(1);}
  catch(e){console.error('EVIDENCE_INVALID: '+e.message);process.exit(1);}
 }
