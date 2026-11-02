@@ -35,7 +35,7 @@
     "No compiler may admit critical source until scoped guard and transitive no-suspension checks are implemented"
   ],
   "backend_state": {
-    "java": "Java parser/AST + conservative effect preflight; runtime has gate OresFuture bridge and staged SourceTask lexical cleanup; executable source remains denied until identity-bound ownership admission",
+    "java": "ActorCell incarnation-scoped CriticalGate; source parser/AST, bounded fail-closed effect checks, OresFuture queue/handoff, staged SourceTask; guest authorization still denied; CI stepful proof missing",
     "llvm": "host-runtime-substrate-only",
     "dotnet": "host-runtime-substrate-only",
     "wasm": "javascript-host-runtime-substrate-only; not Wasmtime guest",
@@ -48,9 +48,13 @@
       "try_critical": "parsed into Ast.TryCriticalStmt with mandatory else; source gate rejects until immediate ticket/lexical cleanup",
       "effect_check": "bounded conservative AST preflight; all unverified calls, FFI, awaits, channels and nested gates rejected",
       "evaluation": "both synchronous and suspended paths reject unlowered critical AST",
-      "evidence": "focused GitHub Actions at PR head d2a89d27ec02bad5a38cea3060afacddbe28a80d had steps=null; runtime host tests and guest compilation unverified",
+      "evidence": "authored tests unverified: GitHub Actions runner admission has zero steps",
       "scheduler": "staged SourceTask awaits CriticalGate.requestAwaitable via OresScheduler; cancellation frames release granted tickets",
-      "runtime_authorization": "explicitly DENIED without identity-bound checked AST/actor-resource proof"
+      "runtime_authorization": "explicitly DENIED without identity-bound checked AST/actor-resource proof",
+      "actor_identity": "critical gate lazily owned by exact ActorCell incarnation, shared across that actor's code sites but isolated from other actors; STOP and re-incarnation fenced",
+      "retirement": "atomic retireIfQuiescent after source physical cleanup; live owner or queued future quarantines instead of falsely finalizing",
+      "resume_fence": "revalidate ActorRuntime instance + ActorId + live cell gate after scheduler Future await",
+      "race_tests": "late cancellation cannot revoke an already granted ticket; first holder must release before FIFO successor"
     },
     "llvm": "host runtime ticket substrate only; source critical remains rejected",
     "dotnet": "host runtime ticket substrate only; source critical remains rejected",
