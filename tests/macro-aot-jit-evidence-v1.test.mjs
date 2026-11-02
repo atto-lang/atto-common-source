@@ -27,7 +27,7 @@ test('contract pins all five backends and honest evidence layers',()=>{
 });
 test('synthetic receipts have only unauthenticated status, never verified pass',()=>{
  for(const backend of Object.keys(c.backend_repositories))
-  assert.equal(classify(valid(backend)),'STRUCTURALLY_COMPLETE_UNAUTHENTICATED');
+  assert.equal(classify(valid(backend)),'AOT_STRUCTURAL_UNAUTHENTICATED');
 });
 test('zero/null steps are NOT_EXECUTED, even if all case claims say PASS',()=>{
  for(const steps of [[],null]){const r=valid();r.job.steps=steps;assert.equal(classify(r),'NOT_EXECUTED');}
@@ -53,14 +53,14 @@ const attacks=[
  ['no artifact digest',r=>delete r.build.executable_sha256]
 ];
 for(const [name,mutate] of attacks)
- test('fail closed: '+name,()=>{const r=valid();mutate(r);assert.notEqual(classify(r),'STRUCTURALLY_COMPLETE_UNAUTHENTICATED');});
+ test('fail closed: '+name,()=>{const r=valid();mutate(r);assert.notEqual(classify(r),'AOT_STRUCTURAL_UNAUTHENTICATED');});
 test('unsupported positive is not a pass',()=>{
  const r=valid();Object.assign(r.cases[0],{result:'UNSUPPORTED',layer:'compiler_admission',exit_code:1,partial_artifact:false});
  assert.equal(classify(r),'UNSUPPORTED_OR_INCOMPLETE');
 });
 test('JIT is a separate optional class, never binary-AOT credit',()=>{
  const r=valid('cranelift','jit');r.job.steps.pop();delete r.build.executable_sha256;
- assert.equal(classify(r),'STRUCTURALLY_COMPLETE_UNAUTHENTICATED');
+ assert.equal(classify(r),'JIT_ONLY_STRUCTURAL_UNAUTHENTICATED');
  assert.equal(r.mode,'jit');
 });
 test('hybrid requires proven JIT-off AOT baseline',()=>{
@@ -85,6 +85,13 @@ test('CLI never exits green merely from self-declared structural completeness', 
   const run=spawnSync(process.execPath,[script,report],{encoding:'utf8',timeout:4000});
   assert.equal(run.error,undefined);
   assert.equal(run.status,1,'untrusted report must not make CI green');
-  assert.match(run.stdout,/STRUCTURALLY_COMPLETE_UNAUTHENTICATED/);
+  assert.match(run.stdout,/AOT_STRUCTURAL_UNAUTHENTICATED/);
  } finally {rmSync(dir,{recursive:true,force:true});}
+});
+
+test('hybrid structural receipt is separately labelled and never release-qualified',()=>{
+ const r=valid('java-graal','hybrid');r.job.steps.pop();
+ const out=classifyReceipt(r,c);
+ assert.equal(out.classification,'HYBRID_STRUCTURAL_UNAUTHENTICATED');
+ assert.equal(out.release_qualified,false);
 });
