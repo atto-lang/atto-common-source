@@ -19,7 +19,7 @@ Each compiler must classify an unimplemented positive as UNSUPPORTED rather than
 ## Verified distinction
 
 The Node tests validate manifest shape and adversarial classification logic only. The validator reports
-`STRUCTURALLY_COMPLETE_UNAUTHENTICATED`, not PASS, for self-claimed complete evidence.
+`AOT_STRUCTURAL_UNAUTHENTICATED`, not PASS, for self-claimed complete evidence.
 Independent GitHub job/run-attempt/readback, exact source tree, executed steps, native binary bytes
 and real compiled-guest receipts are necessary. Empty steps remain NOT_EXECUTED.
 No cross-org private-source mirroring is authorized by this patch.
@@ -37,7 +37,12 @@ To validate *reported shape only*: `node tools/verify-macro-aot-jit-evidence.mjs
 
 **Fail-closed CLI behavior:** because supplied receipt JSON is not authenticated against
 GitHub or artifact bytes, the command always exits nonzero, even for
-`STRUCTURALLY_COMPLETE_UNAUTHENTICATED`. It can inspect shape and report
+`AOT_STRUCTURAL_UNAUTHENTICATED`. It can inspect shape and report
 reasons, but never act as a release PASS gate. A future authenticated runner
 adapter must independently verify job steps/attempt, checkout commit/tree,
 compiler-produced guest receipts, target binary hashes and source digests.
+
+The verifier also distinguishes `JIT_ONLY_STRUCTURAL_UNAUTHENTICATED` and
+`HYBRID_STRUCTURAL_UNAUTHENTICATED` from AOT shape. All three remain
+`release_qualified=false` and exit nonzero: optional JIT cannot be silently
+credited to the full-AOT release gate.
