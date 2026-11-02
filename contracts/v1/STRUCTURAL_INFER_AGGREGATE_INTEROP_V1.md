@@ -7,21 +7,21 @@ Its fixture matrix is a target, not a claim that an existing compiler passes.
 
 ## Orthogonal keywords
 
-- **\`infer\`** requests compile-time creation/capture of an exact, closed inline
-  struct or readonly record type. \`infer struct{...}\` is the canonical anonymous
-  struct constructor; \`infer record{...}\` explicitly documents inference for
-  a record. The existing \`record{...}\` shorthand remains valid and infers its
+- **`infer`** requests compile-time creation/capture of an exact, closed inline
+  struct or readonly record type. `infer struct{...}` is the canonical anonymous
+  struct constructor; `infer record{...}` explicitly documents inference for
+  a record. The existing `record{...}` shorthand remains valid and infers its
   record shape; do not silently break existing programs.
-- **\`structural\`** means explicit readonly structural matching for a parameter,
+- **`structural`** means explicit readonly structural matching for a parameter,
   match pattern or callable contract. It is **not** a constructor, an ownership
   qualifier, or implicit conversion from a nominal declaration. Unmarked
   parameters stay nominal. A structural view cannot be stored, sent, mutated,
   returned as an escaped borrow, or held across suspension.
-- **\`...\`** inside an aggregate initializer is a field spread, not tuple
+- **`...`** inside an aggregate initializer is a field spread, not tuple
   argument expansion. The operand's complete, accessible, closed schema must
   be known statically, even if its runtime representation is not an object.
 
-\`\`\`ores
+```ores
 define interface HasId
     id: int;
 end
@@ -36,11 +36,11 @@ pub fnc main(): int {
     const row = infer record{...next, id: 42};
     return read_id(row);
 }
-\`\`\`
+```
 
 ## Result type inference
 
-For each named field \`k: expression\`, infer the checked expression type. For
+For each named field `k: expression`, infer the checked expression type. For
 each spread operand, merge its statically admitted visible fields. Process
 elements left-to-right; the **last assignment wins**, even when its type differs.
 A new exact row type is computed from the final map, not from the base type.
@@ -53,9 +53,9 @@ subsequent writes override a value; no partial result is published on failure.
   A nominal named struct retains its declared identity. Explicit declared
   shapes must match exactly and preserve specified field types.
 - A **record** is a readonly, structurally compared value. Field order does not
-  change shape equality. \`infer<T>\` and short lexical aliases may bind a
+  change shape equality. `infer<T>` and short lexical aliases may bind a
   generated shape only under existing name-resolution and scope rules.
-- A \`structural Shape\` parameter can project *public* matching fields of an
+- A `structural Shape` parameter can project *public* matching fields of an
   inferred value as a scoped readonly loan, if a backend proves visibility,
   field-type compatibility, and lifetime safety. A view whose known schema is
   narrower than its runtime carrier may spread only the statically exposed
@@ -64,32 +64,32 @@ subsequent writes override a value; no partial result is published on failure.
 ## Ownership and allocation: Box / Arc / dyn
 
 **None is needed for ordinary scalar inline fields or scalar Copy-safe spreads.**
-\`infer\` is a static type operation, not a heap-allocation request.
+`infer` is a static type operation, not a heap-allocation request.
 
-- \`Box<T>\`: explicit owned heap indirection when the value must be boxed, e.g.
+- `Box<T>`: explicit owned heap indirection when the value must be boxed, e.g.
   recursive or long-lived shapes. It never authorizes an implicit clone or an
   actor-heap escape. A spread of non-Copy boxed fields needs an explicit,
   checked copy, share or ownership transfer.
-- \`Arc<T>\`: explicit shared immutable ownership when multiple live owners
+- `Arc<T>`: explicit shared immutable ownership when multiple live owners
   require it; any underlying allocation and reference count must live in a
   domain safe for all owners. An actor's private arena cannot be kept alive
   merely by fabricating an Arc. Destruction, cycles, atomicity and actor-send
   checks belong to the ownership/runtime contracts.
-- \`dyn\` / dynamic open rows: **not** a substitute for \`infer\`. A \`dyn\` value
+- `dyn` / dynamic open rows: **not** a substitute for `infer`. A `dyn` value
   with an unknown schema must fail aggregate-spread admission. An explicit
   statically checked shape projection may be added in a future version; no
   runtime reflection, dictionary lookup, or unsafe type erasure is permitted
   by this contract.
 
-For non-Copy fields, use existing \`rt copy\`, \`rt share\`, \`rt take\` rules only
+For non-Copy fields, use existing `rt copy`, `rt share`, `rt take` rules only
 when checker proofs allow them. Transactional cleanup must release acquired
 fields exactly once on throw, raise, panic, cancel and allocation failure.
 Do not implicitly use tracing GC, dynamically boxed host objects, or a global
-shared arena. All actor-domain, \`Sendable\` and zero-GC limits still apply.
+shared arena. All actor-domain, `Sendable` and zero-GC limits still apply.
 
 ## Shared implementation / proof interface
 
-1. Parse \`infer\`, \`structural\`, object literal kind and each spread as separate
+1. Parse `infer`, `structural`, object literal kind and each spread as separate
    AST data; never use a sentinel field, magic string or host Map.
 2. Type check the complete unit, compute a closed shape, mark lexical aliases,
    and reject unknown/invalid fields, nominal mismatches or wrong borrow modes.
