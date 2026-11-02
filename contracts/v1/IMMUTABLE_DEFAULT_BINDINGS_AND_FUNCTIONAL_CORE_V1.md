@@ -274,3 +274,30 @@ acceptance test is not a proof of this guarantee.
 
 No current patch claims complete functional-programming feature coverage,
 whole-object deep freezing, or five-backend exact-head passing execution.
+
+## November 1 branch-reconciliation audit (latest)
+
+The inference/cast parent branches received new primitive type-first parser
+implementations while their separate immutable-default children were open.
+We reconciled by **preserving the newer parent compiler code**, rather than
+merging stale duplicate parser branches:
+
+- Java `oreslang-source.java#2405` already has the more precise
+  `looksLikePrimitiveTypeFirstImmutableBinding` lookahead; child
+  `#2449` adds dedicated readonly tests and actual Graal guest tests.
+  Superseded duplicate parser `#2414` was closed unmerged.
+- LLVM `oreslang-source.llvm#1256` already has a guarded
+  `type_first_scalar_local()` body-loop and scalar handling; new stacked
+  `#1301` contributes bounded source-to-IR-to-Clang native guest tests.
+  Old divergent `#1266` was closed unmerged; test compiler and linker subprocesses
+  are limited to 20 seconds and 1 MiB output each. Readonly assignment and
+  duplicate-name rejection require compiler-owned diagnostic wording.
+- .NET `oreslang-source.net#282` now admits primitive type-first locals.
+  Stacked `#333` adds *distinct* `Readonly` binding metadata and
+  structured CFG/CIL execution plus helper-parameter runtime-value tests.
+  Previous divergent `#298` was closed unmerged.
+
+**These repairs are source changes and authored tests, not CI passes.**
+The current mainline for each backend is unmodified by draft PRs;
+full semantic and toolchain parity remains blocked by exact-head executed CI
+and the compile-time-`const` vs runtime-readonly HIR mismatch tracked in #204.
