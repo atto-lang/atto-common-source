@@ -70,3 +70,21 @@ test('hybrid requires proven JIT-off AOT baseline',()=>{
 test('malformed case collection fails closed instead of crashing',()=>{
  const r=valid();r.cases={forged:true};assert.equal(classify(r),'EVIDENCE_INVALID');
 });
+
+test('CLI never exits green merely from self-declared structural completeness', async () => {
+ const {spawnSync}=await import('node:child_process');
+ const {mkdtempSync,writeFileSync,rmSync}=await import('node:fs');
+ const {tmpdir}=await import('node:os');
+ const {join}=await import('node:path');
+ const {fileURLToPath}=await import('node:url');
+ const dir=mkdtempSync(join(tmpdir(),'atto-macro-evidence-'));
+ try{
+  const report=join(dir,'self-attested.json');
+  writeFileSync(report,JSON.stringify(valid()));
+  const script=fileURLToPath(new URL('../tools/verify-macro-aot-jit-evidence.mjs',import.meta.url));
+  const run=spawnSync(process.execPath,[script,report],{encoding:'utf8',timeout:4000});
+  assert.equal(run.error,undefined);
+  assert.equal(run.status,1,'untrusted report must not make CI green');
+  assert.match(run.stdout,/STRUCTURALLY_COMPLETE_UNAUTHENTICATED/);
+ } finally {rmSync(dir,{recursive:true,force:true});}
+});
