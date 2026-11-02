@@ -20,8 +20,33 @@ export function classifyReceipt(receipt,contract) {
  fail(is40(receipt.source_tree),"source tree SHA missing or malformed");
  fail(receipt.source_repo===repo,"source repo mismatch");
  const job=receipt.job||{};
- fail(job.repository===repo,"source-local runner required: no cross-org source transfer authorization");
- fail(job.head_sha===receipt.source_head,"job head SHA mismatch");
+ // A carrier declaration is NOT transfer authorization. It is only a
+ // self-attested structural claim; an external source-policy verifier must
+ // independently authenticate the review, repository IDs and Git trees.
+ const carrier=job.repository!==repo;
+ if(carrier) {
+  const mirror=receipt.mirror||{},approval=mirror.approval||{};
+  fail(mirror.source_repository===repo,"carrier source repo mismatch");
+  fail(mirror.destination_repository===job.repository,"carrier destination repo mismatch");
+  fail(Number.isSafeInteger(mirror.source_repo_id)&&mirror.source_repo_id>0,"source numeric repo ID missing");
+  fail(Number.isSafeInteger(mirror.destination_repo_id)&&mirror.destination_repo_id>0,"destination numeric repo ID missing");
+  fail(mirror.destination_private===true,"carrier must stay private");
+  fail(mirror.source_tree_sha===receipt.source_tree,"source tree claim mismatch");
+  fail(mirror.destination_subtree_sha===receipt.source_tree,"mirror is not exact source Git tree");
+  fail(is40(mirror.destination_commit_sha),"carrier commit SHA missing");
+  fail(job.head_sha===mirror.destination_commit_sha,"carrier run head mismatch");
+  fail(mirror.checkout_uses_local_token_only===true,"cross-org source checkout forbidden");
+  fail(approval.status==="INDEPENDENTLY_REVIEWED","carrier has no independent approval claim");
+  fail(Number.isSafeInteger(approval.review_id)&&approval.review_id>0,"independent review ID absent");
+  fail(is40(approval.governance_commit_sha),"governance commit SHA missing");
+  fail(is64(approval.attestation_sha256),"independent review attestation missing");
+  fail(["protected_main","v3_exact_review_attestation"].includes(approval.enforcement),
+       "review enforcement not specified");
+  fail(approval.source_head_sha===receipt.source_head,"approval not tied to exact source head");
+  fail(approval.destination_repo_id===mirror.destination_repo_id,"review did not bind destination ID");
+ } else {
+  fail(job.head_sha===receipt.source_head,"job head SHA mismatch");
+ }
  fail(Number.isSafeInteger(job.run_id)&&job.run_id>0,"missing run ID");
  fail(Number.isSafeInteger(job.job_id)&&job.job_id>0,"missing job ID");
  fail(Number.isSafeInteger(job.attempt)&&job.attempt>0,"missing run attempt");
@@ -94,9 +119,12 @@ export function classifyReceipt(receipt,contract) {
  for(const c of contract.cases)fail(seen.has(c.id),"missing case "+c.id);
  if(errors.length)return {classification:"EVIDENCE_INVALID",errors};
  if(unsupported)return {classification:"UNSUPPORTED_OR_INCOMPLETE",errors:["unsupported is not parity"]};
- return {classification:receipt.mode==="aot"?"AOT_STRUCTURAL_UNAUTHENTICATED":
+ const classification=receipt.mode==="aot"?"AOT_STRUCTURAL_UNAUTHENTICATED":
  receipt.mode==="jit"?"JIT_ONLY_STRUCTURAL_UNAUTHENTICATED":
- "HYBRID_STRUCTURAL_UNAUTHENTICATED",release_qualified:false,errors:[]};
+ "HYBRID_STRUCTURAL_UNAUTHENTICATED";
+ return {classification:carrier?classification.replace("_STRUCTURAL_","_CARRIER_STRUCTURAL_"):
+ classification,release_qualified:false,errors:[],
+ note:carrier?"Carrier transfer approval and CI integrity require independent external verification":"Self-asserted source-local evidence is not authenticated"};
 }
 export const contractFromDisk=()=>JSON.parse(readFileSync(fileURLToPath(CONTRACT_URL),'utf8'));
 if(process.argv[1] && fileURLToPath(import.meta.url)===process.argv[1]) {
