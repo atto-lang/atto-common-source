@@ -1,8 +1,8 @@
-# Oreslang common source
+# AttoLang common source
 
 **Status: future architecture and planning only. No shared compiler implementation exists in this repository yet.**
 
-This repository is the intended home for Oreslang's future common semantic compiler layer: **HIR → MIR**, before backend-specific lowering to LLVM and Java/Graal.
+This repository is the intended home for AttoLang's future common semantic compiler layer: **HIR → MIR**, before backend-specific lowering to LLVM and Java/Graal.
 
 For now, the existing implementations remain separate:
 
@@ -12,7 +12,9 @@ For now, the existing implementations remain separate:
 | [oreslang-source.llvm](https://github.com/ores-truffle-oreslang/oreslang-source.llvm) | Independent LLVM compiler and native runtime work; later consumes the common representation through its own adapter |
 | **oreslang-common-source** | Future shared semantic representations, HIR → MIR transformations, verifiers, and compatibility contracts |
 
-Creating this repository does not merge the other repositories, change their compiler pins, or establish feature parity.
+Creating this repository does not merge the other repositories, change their compiler pins, or establish feature parity. The current public language name is **AttoLang** (formerly Oreslang); old repository names, package coordinates, commands, ABI and protocol identifiers remain compatibility interfaces until separately versioned migrations ship.
+
+The versioned, machine-readable naming and source-compatibility policy is [AttoLang Brand Compatibility v1](contracts/v1/attolang-brand-compat-v1.json). It deliberately distinguishes the public brand from compiler capabilities: `.atto` is the preferred new source extension, but admission and execution must be proven independently in each backend. Existing `.ores` source remains compatible while that work proceeds.
 
 ## Core decisions
 
