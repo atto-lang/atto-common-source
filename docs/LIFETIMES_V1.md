@@ -8,7 +8,7 @@ than replaces, [ownership boundaries](OWNERSHIP_BOUNDARY_AUDIT.md) and
 
 ## Language direction
 
-Oreslang values own their storage by default; there is no public `owned`
+AttoLang values own their storage by default; there is no public `owned`
 keyword. A lifetime is a compiler-verified **outlives relation**, not a
 wall-clock timeout or a reference count. Safe source must never rely on a
 tracing collector to keep an otherwise dangling borrowed address alive.
@@ -16,7 +16,7 @@ tracing collector to keep an otherwise dangling borrowed address alive.
 - Local lifetimes are **inferred and nonlexical**: a loan ends after its last
   valid use or the compiler-issued release, subject to cleanup requirements.
 - `borrow T` and `borrow mut T` distinguish shared and exclusive loans.
-  Canonical operations remain `rt borrow`, `rt borrow mut`, `rt take`,
+  Canonical operations remain `rt borrow`, `rt mut borrow`, `rt take`,
   `rt copy`, `rt share`. No public Rust `&T` or `'a` syntax is required.
 - API signatures may need a named relation between an input owner and a
   borrowed output, and between several input borrows. Preserve named
@@ -48,7 +48,7 @@ Required MIR events: `alloc`, `borrow_shared`, `borrow_exclusive`,
 `reborrow`, `release`, `move`, `drop`, `region_exit`,
 `task_admit`, `suspend`, `resume`, `cancel`, `actor_stop`,
 `ffi_enter` and `ffi_complete`. Events are **internal typed IR**;
-these spellings are not proposed Oreslang syntax.
+these spellings are not proposed AttoLang syntax.
 
 At any `suspend`/blocking/select/yield/cooperate boundary, either:
 
@@ -83,6 +83,11 @@ for all descendant/task/loan epochs to retire, not just a STOP flag.
 - FFI and linked libraries must be audited transitively. Native `malloc`
   is not itself a tracing GC, but allocation/copy/synchronization and
   page-fault budgets are separate hard-real-time obligations.
+- Lifetime proofs are what make 32-bit references pay off. An actor-private
+  reference may drop its per-edge runtime generation proof only where typed
+  HIR/MIR proves the target outlives every use. Without that proof the edge
+  keeps its out-of-line proof, which currently costs more than a raw 64-bit
+  pointer. A compact offset alone never authorizes a dereference.
 - Java/Graal's host GC may remain enabled. The shared requirement is
   safe guest ownership and deterministic resource closure, **not** an
   untrue claim of zero JVM collection.
@@ -113,6 +118,8 @@ for all descendant/task/loan epochs to retire, not just a STOP flag.
 | L20 | Internal cyclic graph inside owned arena, no escaping handles | Reclaim at arena retirement |
 | L21 | Unbounded/unknown external allocation in strict hard-RT entry | Reject without trusted budget |
 | L22 | LLVM linked guest binary requires tracing collector | Fail zero-GC profile |
+| L23 | Actor-private reference with proven outlives relation | Admit a 32-bit field with no per-edge runtime proof |
+| L24 | Same reference when the outlives relation is unproven | Keep the runtime proof, or reject; never drop it silently |
 
 Evidence must distinguish parser admission, typed-HIR/CFG proof, native
 compiler emission, linked execution, runtime physical quiescence, sanitizer
