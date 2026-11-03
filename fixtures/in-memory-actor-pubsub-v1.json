@@ -389,6 +389,13 @@
       "expected": "reject",
       "assertion": "Leaving and rejoining an ActorGroup must not reauthorize a publisher or subscriber capability issued under an earlier membership-generation epoch",
       "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_unicode_whitespace_only_rejection",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "Every backend rejects Topic names made entirely of ASCII or Unicode whitespace, including U+00A0, U+2003, U+202F and U+3000, and preserves distinguishable ordinary names",
+      "status": "pending_backend_execution"
     }
   ]
 }
