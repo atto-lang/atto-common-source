@@ -375,6 +375,20 @@
       "expected": "reject",
       "assertion": "An exported host class, predictable group identifier, caller-made Symbol, or foreign runtime reference cannot construct a usable group/topic capability handle",
       "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_unicode_control_rejection",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "Topic identifiers containing C0 or C1 Unicode control code points must be rejected without mutating the topic registry on every backend",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_stale_membership_grant_after_rejoin",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "Leaving and rejoining an ActorGroup must not reauthorize a publisher or subscriber capability issued under an earlier membership-generation epoch",
+      "status": "pending_backend_execution"
     }
   ]
 }
