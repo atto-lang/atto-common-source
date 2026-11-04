@@ -49,3 +49,5 @@ jobs:
         run: cargo test --offline --manifest-path tools/recovery-register/Cargo.toml
       - name: Check fifty-item recovery register integrity (not live issues)
         run: cargo run --offline --manifest-path tools/recovery-register/Cargo.toml
+      - name: Verify canonical native numeric source identity and i64 contract
+        run: node --test tests/canonical-numeric-source.test.mjs tests/core-math-i64-contract.test.mjs
