@@ -20,9 +20,9 @@ function setup(t){
   return {root,manifest,c};
 }
 function write(f){writeFileSync(f.manifest,JSON.stringify(f.c,null,2)+"\n");}
-test("all 18 immutable exact-source fixtures and five routes are present",t=>{
+test("all 19 immutable exact-source fixtures and five routes are present",t=>{
   const f=setup(t);assert.deepEqual(verifyAttoScalarCorpus(f.root),
-    {positive:9,negative:9,compilerRoutes:5,sourceOnly:true});
+    {positive:10,negative:9,compilerRoutes:5,sourceOnly:true});
 });
 test("positive source mutation is rejected",t=>{
   const f=setup(t),p=join(f.root,f.c.cases[0].path);

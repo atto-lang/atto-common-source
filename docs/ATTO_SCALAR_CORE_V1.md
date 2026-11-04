@@ -20,7 +20,7 @@ immutable-by-default spec PR #203 and critical/suspends spec PR #209.
   or alter actor fields. See PR #203's compatibility appendix.
 - Eager local initialization includes unused locals. Statically known checked
   overflow in an unused initializer cannot be deleted just to return 42.
-- Pure `fnc` helper calls use value parameters, with explicit returns; there
+- Pure `fnc` helper calls use value parameters. Canonical type-first parameter spelling is `fnc inc(int x)`, and the legacy spelling `fnc inc(x:int)` remains temporarily accepted by compatible frontends; there
   is no implicit conversion, no user operator overloading, and no ambient
   global state or reflection in this profile.
 - Legacy source operators `%`, `^`, and `^^` are removed: reject them
@@ -31,10 +31,10 @@ immutable-by-default spec PR #203 and critical/suspends spec PR #209.
 
 ## Exact source corpus
 
-`contracts/atto-scalar-v1/cases.json` binds **9 positive and 9 negative**
+`contracts/atto-scalar-v1/cases.json` binds **10 positive and 9 negative**
 complete `.atto` programs to individually pinned exact Git blobs. Positive
 cases cover canonical 42, precedence, grouping, i64 bounds, type-first and
-const readonly bindings, and one pure helper call. Negative cases cover
+const readonly bindings, and pure helper calls in both canonical `int x` and legacy `x:int` parameter spellings. Negative cases cover
 add/sub/mul overflow, readonly rebinding, eager overflow in an unused
 initializer, and removed operators.
 

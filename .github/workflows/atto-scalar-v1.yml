@@ -1,4 +1,4 @@
-name: AttoLang 18-case scalar source-only contract
+name: AttoLang 19-case scalar source-only contract
 on:
   pull_request:
     paths:
