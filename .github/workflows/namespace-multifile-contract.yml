@@ -1,0 +1,25 @@
+name: namespace-multifile-contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/namespace-multifile-package-js-v1.json'
+      - 'docs/NAMESPACE_MULTIFILE_PACKAGE_JS_V1.md'
+      - 'tests/namespace-multifile-package-js-v1.test.mjs'
+      - 'tests/namespace-multifile-sources.test.mjs'
+      - 'fixtures/namespace-multifile-v1/**'
+      - '.github/workflows/namespace-multifile-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check Node runtime
+        run: node --version
+      - name: Run source-free namespace model and fixture consistency gates
+        run: node --test tests/namespace-multifile-package-js-v1.test.mjs tests/namespace-multifile-sources.test.mjs

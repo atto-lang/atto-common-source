@@ -14,65 +14,66 @@
     {
       "id": "write_then_read",
       "source": "contracts/v1/actor-critical-modes/fixtures/write_then_read.ores",
-      "git_blob_sha": "eb6e15e2670bd003d8106645faf053b82ab53c26",
+      "git_blob_sha": "4561ebec214f2e8f2ceb2c515348eb8ac2ff3650",
       "expected": "run_stdout",
       "stdout": "critical-modes-ok"
     },
     {
       "id": "reject_read_mutation",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_read_mutation.ores",
-      "git_blob_sha": "66d9f1509bdf09fd5dd88be044c546ecd7b34eb9",
+      "git_blob_sha": "122028cb3bf904cdf62c4157d0871fa75d58822a",
       "expected": "compile_reject",
       "diagnostic_category": "readonly"
     },
     {
       "id": "reject_read_mutable_reborrow",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_read_mutable_reborrow.ores",
-      "git_blob_sha": "ca96beecca803cecaa499a2d980334c5438cab5f",
+      "git_blob_sha": "1a4832fc51de0e863ba279abc183dd0ca49f573c",
       "expected": "compile_reject",
       "diagnostic_category": "borrow"
     },
     {
       "id": "reject_unknown_mode",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_unknown_mode.ores",
-      "git_blob_sha": "c003d3002841e644462c956a1ec96fdd3fe95d39",
+      "git_blob_sha": "21d231b460e9473007df9553bbe53c84c5ee4059",
       "expected": "compile_reject",
       "diagnostic_category": "mode"
     },
     {
       "id": "reject_string_forged_write_mode",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_string_forged_write_mode.ores",
-      "git_blob_sha": "0ab217e3edf944a510659e9ea0e765ffecf5e67f",
+      "git_blob_sha": "58b17152228e5724fe1a0adb5d31ccf22cab956d",
       "expected": "compile_reject",
       "diagnostic_category": "mode"
     },
     {
       "id": "reject_await_in_write",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_await_in_write.ores",
-      "git_blob_sha": "12c24fa550bfadb1cbc55ee4e6de25308509cc41",
+      "git_blob_sha": "ddfdb1f3301fdadc22a8c4c3e4db768c9dcf0dec",
       "expected": "compile_reject",
       "diagnostic_category": "effect"
     },
     {
       "id": "reject_await_in_read",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_await_in_read.ores",
-      "git_blob_sha": "f4d182cef8ab1e376198f84020c45f9dd0e0aba9",
+      "git_blob_sha": "cd41f7eafd0a47eae90557f594a09af767a7f4ef",
       "expected": "compile_reject",
       "diagnostic_category": "effect"
     },
     {
       "id": "reject_state_escape",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_state_escape.ores",
-      "git_blob_sha": "64bf6871b8d222854bce9e2343250923415f50af",
+      "git_blob_sha": "aea722e56944d17c736fa9cf4790a3d0b6d32619",
       "expected": "compile_reject",
       "diagnostic_category": "lifetime"
     },
     {
       "id": "reject_direct_state_access",
       "source": "contracts/v1/actor-critical-modes/fixtures/reject_direct_state_access.ores",
-      "git_blob_sha": "9754b8df89d7eee4cbf99ff6346b8225c5baa74f",
+      "git_blob_sha": "e5b6eb9d03e4f16b5886daed10e3b7868cbb82d2",
       "expected": "compile_reject",
       "diagnostic_category": "sealed"
     }
-  ]
+  ],
+  "revision": "critical-modes-suspends-2026-11-04"
 }

@@ -38,7 +38,7 @@ mixed/duplicate mode, or attempt to call on a non-actor is invalid.
 
 `critical[read]`:
 - Grants a **nonmutable, lexical borrow** over the sealed actor state,
-  with a read-only structural projection. No writes, `&mut`, type-cast
+  with a read-only structural projection. No writes, mutable reborrows, type-cast
   capability escalation or mutable alias extraction.
 - Read-mode access to mutable composite values must fail closed until a
   verified immutable snapshot/capability projection exists. Initial Java
@@ -129,16 +129,18 @@ composite projections and independent five-backend runtime conformance.
 
 ## Exact-source conformance fixtures
 
-Eight canonical Oreslang fixtures and their source Git blob hashes are
+Nine canonical Oreslang fixtures and their source Git blob hashes are
 recorded in [the conformance manifest](../contracts/v1/actor-critical-modes/manifest.json).
 The manifest intentionally declares `draft_not_executed`; expected
 pass/reject outcomes are specifications until a real backend compiler
 and guest executor report results.
 
-The Java/Graal source compiler draft PR #2245 copies the eight fixture
-blobs byte-for-byte into `src/test/resources/parity/actor-critical-modes/`,
-registers `ActorCriticalModeConformanceTest`, and requires a combined
-**36** native JUnit test cases via a pinned GraalVM workflow.
+The original Java/Graal PR #2245 copied an earlier fixture revision.
+This integrated revision uses `suspends fnc` and `rt mut borrow`, repins all
+nine hashes, and requires downstream copies and compiler tests to synchronize
+before any byte-identical or semantic acceptance is claimed. A rejection of
+legacy `async` or removed pointer syntax is not proof of the intended loan
+diagnostic. The manifest remains `draft_not_executed`.
 
 The compiler represents these modes with a dedicated
 `Ast.CriticalStateModeExpr` and closed enum, rather than a forgeable

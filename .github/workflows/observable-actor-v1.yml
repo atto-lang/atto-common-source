@@ -1,0 +1,47 @@
+name: ObservableActor v1 source contract
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/observable-actor-v1.yml'
+      - 'docs/OBSERVABLE_ACTOR_V1.md'
+      - 'fixtures/observable-actor-v1.json'
+      - 'models/observable-actor-reference-v1.mjs'
+      - 'tests/observable-actor-v1.test.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/observable-actor-v1.yml'
+      - 'docs/OBSERVABLE_ACTOR_V1.md'
+      - 'fixtures/observable-actor-v1.json'
+      - 'models/observable-actor-reference-v1.mjs'
+      - 'tests/observable-actor-v1.test.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: observable-actor-v1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact checked-out head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "ObservableActor SHA: $EXPECTED_HEAD"
+          echo "ObservableActor tree: $(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Verify source contract and deterministic reference model
+        run: node --test tests/observable-actor-v1.test.mjs
