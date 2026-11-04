@@ -34,7 +34,7 @@ command -v sha256sum >/dev/null 2>&1 || {
 repo_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 source="$repo_root/experiments/ipc_receipts.ores"
 fixture="$repo_root/tests/ipc_receipts_guest.ores"
-invalid="$repo_root/tests/ipc_receipts_reject.ores"
+invalid="$repo_root/tests/ipc_receipts_reject.atto"
 expected="$repo_root/tests/ipc_receipts_guest.expected"
 for item in "$source" "$fixture" "$invalid" "$expected"; do
   if [ ! -f "$item" ] || [ -L "$item" ]; then
