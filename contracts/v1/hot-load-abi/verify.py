@@ -10,7 +10,7 @@ class Denied(Exception):
 class UpgradeModel:
     def __init__(self, *, features=None, kind="shared", tenant="tenant-a"):
         self.issuer = object()            # Represents private runtime-issued authority.
-        self.features = frozenset(features or {"code_only", "ets_heir", "subtree"})
+        self.features = frozenset({"code_only", "ets_heir", "subtree"} if features is None else features)
         self.kind, self.tenant = kind, tenant
         self.epoch, self.incarnation, self.table_epoch = 1, 1, 1
         self.supervisor, self.logical_actor = object(), object()
@@ -136,6 +136,8 @@ class UpgradeModel:
     def owner_died(self, *, heir_alive=True, heir_tenant="tenant-a"):
         if not self.table_open or self.owner is None or self.transfer is not None:
             raise Denied("table closed or previous handoff still pending")
+        if self.table_epoch >= (1 << 64) - 1:
+            raise Denied("table epoch exhausted")
         self.owner = None              # Fence the dead owner before any handoff.
         self.table_epoch += 1
         if (not heir_alive or heir_tenant != self.tenant
@@ -155,6 +157,8 @@ class UpgradeModel:
     def restart_child(self):
         if self.stopped:
             raise Denied("stopped supervisor cannot restart")
+        if self.incarnation >= (1 << 64) - 1:
+            raise Denied("actor incarnation exhausted")
         self.incarnation += 1
         self.restart_count += 1
         self.frozen, self.txn = False, None
@@ -346,6 +350,36 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.s.prepare(token)
         self.rejects(lambda: self.s.freeze(token, self.s.epoch))
 
+
+    def test_explicit_empty_capabilities_never_restore_trusted_defaults(self):
+        # Python's `features or defaults` silently granted code loading to empty sets.
+        for features in (set(), frozenset(), [], ()):
+            s = UpgradeModel(features=features)
+            self.assertEqual(s.features, frozenset())
+            self.rejects(lambda: s.stage(s.candidate(), s.issuer))
+            self.assertIsNone(s.txn)
+            self.assertEqual((s.code, s.epoch), ("v1", 1))
+
+    def test_ets_epoch_exhaustion_rejects_before_owner_fencing(self):
+        s = self.s
+        s.table_epoch = (1 << 64) - 1
+        old_owner, stable_table, old_rows = s.owner, s.table_id, s.rows.copy()
+        self.rejects(s.owner_died)
+        self.assertIs(s.owner, old_owner)
+        self.assertIs(s.table_id, stable_table)
+        self.assertEqual(s.rows, old_rows)
+        self.assertEqual(s.table_epoch, (1 << 64) - 1)
+        self.assertIsNone(s.transfer)
+        self.assertTrue(s.table_open)
+
+    def test_restart_incarnation_exhaustion_preserves_live_supervisor(self):
+        s = self.s
+        s.incarnation = (1 << 64) - 1
+        self.rejects(s.restart_child)
+        self.assertEqual(s.incarnation, (1 << 64) - 1)
+        self.assertEqual(s.restart_count, 0)
+        self.assertFalse(s.stopped)
+        self.assertEqual(s.code, "v1")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
