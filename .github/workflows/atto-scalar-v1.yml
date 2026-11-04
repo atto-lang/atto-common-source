@@ -1,0 +1,40 @@
+name: AttoLang 18-case scalar source-only contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/atto-scalar-v1/**'
+      - 'docs/ATTO_SCALAR_CORE_V1.md'
+      - 'scripts/atto-scalar-v1/**'
+      - 'tests/atto-scalar-v1/**'
+      - '.github/workflows/atto-scalar-v1.yml'
+  push:
+    branches: ['spec/atto-scalar-parity-v1-20261103']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Check exact source HEAD
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          echo "ATTO_SOURCE_ONLY_HEAD=$HEAD_SHA TREE=$(git rev-parse 'HEAD^{tree}')"
+      - name: Source-only manifest + adversarial tests
+        run: |
+          set -euo pipefail
+          node --test tests/atto-scalar-v1/corpus.test.mjs
+          node scripts/atto-scalar-v1/verify.mjs
+      - name: Explicit guest evidence state
+        run: |
+          echo 'ATTO_SCALAR_NATIVE_GUEST=NOT_EXECUTED'
