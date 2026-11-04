@@ -1,0 +1,73 @@
+{
+  "schema": "oreslang.tcp.frozen_slab.portable.v1",
+  "maxBytes": 1048576,
+  "ownership": "copy-input-then-immutable-host-read-with-one-use-pin",
+  "capabilities": [
+    "pin",
+    "read_byte",
+    "release_pin",
+    "retire"
+  ],
+  "guestRawPointer": false,
+  "guestMutableAlias": false,
+  "cases": [
+    {
+      "id": "PB01",
+      "bytes": [
+        0,
+        1,
+        127,
+        128,
+        255
+      ],
+      "index": 3,
+      "expected": 128
+    },
+    {
+      "id": "PB02",
+      "bytes": [],
+      "index": 0,
+      "readError": "out-of-bounds"
+    },
+    {
+      "id": "PB03",
+      "bytes": [
+        42
+      ],
+      "index": 0,
+      "expected": 42
+    },
+    {
+      "id": "PB04",
+      "bytes": [
+        255,
+        0,
+        255,
+        0,
+        1
+      ],
+      "index": 4,
+      "expected": 1
+    }
+  ],
+  "negative": [
+    "input-mutation-does-not-change-snapshot",
+    "read-without-pin-denied",
+    "wrong-pin-denied",
+    "double-unpin-denied",
+    "pin-after-retirement-denied",
+    "retained-pin-valid-until-release",
+    "post-quiescence-read-denied",
+    "oversized-snapshot-denied",
+    "byte-outside-0..255-denied",
+    "empty-slab-read-denied",
+    "no-guest-raw-pointer"
+  ],
+  "runtimeStatus": {
+    "java": "host-implementation",
+    "llvm": "host-implementation",
+    "wasm": "host-implementation-only",
+    "cranelift": "host-implementation-only",
+    "net": "host-implementation"
+  }
+}
