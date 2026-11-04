@@ -56,6 +56,8 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 ## Documents
 
+- [Heterogeneous science and quantum v1](docs/HETEROGENEOUS_SCIENCE_V1.md) — G0 host reference admission for data/ML, GPU, HPC, realtime, quantum and robotics; real guest/device backends remain separate gates.
+
 - [AttoLang scalar core v1](docs/ATTO_SCALAR_CORE_V1.md) — 19 byte-pinned `.atto` programs, five independent compiler lanes, explicit source-only and executable evidence gates.
 
 - [Compiler diagnostics v1: five independent errors and actionable source traces](contracts/v1/COMPILER_DIAGNOSTICS_MULTI_ERROR_V1.md) — **proposal only**, pending backend implementation and execution gates.
