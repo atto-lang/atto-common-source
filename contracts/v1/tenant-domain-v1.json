@@ -1,0 +1,46 @@
+{
+  "contract": "attolang.tenant-domain",
+  "version": 1,
+  "status": "proposal-not-implemented",
+  "identity": {
+    "tenant": "host-created-opaque",
+    "actor": "runtime-created",
+    "generation": "monotonic-revocation"
+  },
+  "tiers": [
+    "sandboxed_wasm",
+    "trusted_native",
+    "process_isolated_native",
+    "verified_compartment_native_future"
+  ],
+  "securityRules": {
+    "ambientHostAccess": false,
+    "guestCanForgeSecurityPrincipal": false,
+    "untrustedNativeRequiresProcessFallback": true,
+    "capabilityOwnerAndGenerationRequired": true,
+    "revocationRejectsNewOperations": true,
+    "submissionIsNotDelivery": true,
+    "quotaLimitsAreBackendEnforced": true
+  },
+  "statuses": {
+    "PENDING": -115,
+    "DENIED": -13,
+    "INVALID": -22,
+    "QUOTA": -122,
+    "REVOKED": -125
+  },
+  "requiredEvidence": [
+    "wasmtime_real_engine_tenant_memory_isolation",
+    "wasmtime_fuel_runaway_neighbor_survival",
+    "wasmtime_memory_limit_and_trap",
+    "import_allowlist_and_no_ambient_wasi",
+    "capability_ownership_and_stale_completion_denial",
+    "byte_identical_java_llvm_source_conformance_PENDING",
+    "native_hostile_guest_protection_PENDING"
+  ],
+  "sourceSyntax": "none-admitted",
+  "references": [
+    "docs/TENANT_DOMAINS_V1.md",
+    "docs/NATIVE_IO_NAMING.md"
+  ]
+}
