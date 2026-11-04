@@ -1,4 +1,0 @@
-// Compiler-negative canary: this incomplete main MUST fail at parse time.
-// An always-green echo runner must not establish IPC guest parity.
-pub routine main(): void {
-  let malformed = ;
