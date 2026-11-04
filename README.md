@@ -76,6 +76,8 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Lifetimes v1: inferred outlives constraints, suspension safety and zero-GC profile gates](docs/LIFETIMES_V1.md) — proposal; no executable backend parity implied
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
 - [Ownership-first, zero-GC native and low-GC Graal performance contract](docs/MEMORY_SAFETY_AND_PERFORMANCE.md)
+- [Typed allocation MIR v1 contract](contracts/v1/escape-allocation-mir-v1.json) — candidate classes and negative escape/lifetime reference vectors, without source lowering or executable parity.
+- [Opt-in escape optimization and JIT CLI v1](docs/ESCAPE_OPTIMIZATION_CLI_V1.md) — flag contract, fail-closed acceptance, and execution proof gates; no five-backend optimization parity claimed.
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
 - [Decisions, non-goals and unresolved choices](docs/DECISIONS.md)
 
