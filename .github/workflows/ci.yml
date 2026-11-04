@@ -21,6 +21,9 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Enforce exact checked-out commit
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: Python contract tests still awaiting Rust migration
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Compile remaining Python contract tools
@@ -51,3 +54,28 @@ jobs:
         run: cargo run --offline --manifest-path tools/recovery-register/Cargo.toml
       - name: Verify canonical native numeric source identity and i64 contract
         run: node --test tests/canonical-numeric-source.test.mjs tests/core-math-i64-contract.test.mjs
+      - name: Record numeric contract Git blob identities
+        run: |
+          git hash-object \
+            contracts/library/v1/native-math-unary-precision.json \
+            contracts/library/v1/bigint-exact.json \
+            contracts/library/v1/decimal-precision.json \
+            contracts/library/v1/binary-floating.json \
+            contracts/library/v1/numeric-public-api.json \
+            contracts/library/v1/numeric-backend-status.json \
+            contracts/library/v1/numeric-portable-guests.json \
+            contracts/library/v1/numeric-errors.json \
+            fixtures/numeric-v1/math-i64-ok.ores \
+            fixtures/numeric-v1/math-i64-abs-min.ores \
+            fixtures/numeric-v1/math-i64-neg-min.ores
+      - name: Execute numeric semantic reference contracts
+        run: |
+          node --test \
+            tests/native-math-unary-precision-contract.test.mjs \
+            tests/bigint-exact-contract.test.mjs \
+            tests/decimal-precision-contract.test.mjs \
+            tests/binary-floating-contract.test.mjs \
+            tests/numeric-public-api-contract.test.mjs \
+            tests/numeric-backend-status.test.mjs \
+            tests/numeric-portable-guests.test.mjs \
+            tests/numeric-errors-contract.test.mjs
