@@ -28,9 +28,33 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Compile remaining Python contract tools
         run: python3 -m py_compile scripts/*.py
+      - name: Verify pinned editor syntax lexical contract v1
+        run: node --test tests/verify-editor-lexical-v1.mjs
+      - name: Reject fabricated lexical backend admission receipts
+        run: node --test tests/verify-backend-lexical-admission-v1.mjs
+      - name: Validate full lexical case comparisons and LLVM adapter fail-closed protocol
+        run: node --test tests/verify-lexical-case-receipts-v1.mjs tests/verify-llvm-lexical-probe-adapter-v1.mjs
       - name: Verify String/CString ABI v1 reference contract
         run: node tests/verify-string-abi-v1.mjs
-      - name: Verify exact numeric contract inputs
+      - name: Verify developer and systems hardening v1 inventory (reference only)
+        run: node tests/developer-systems-hardening-v1.test.mjs
+      - name: Format and lint Rust IPC models
+        run: |
+          cargo fmt --manifest-path tools/ipc-models/Cargo.toml -- --check
+          cargo clippy --offline --manifest-path tools/ipc-models/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust IPC receipt and delivery models
+        run: cargo test --offline --manifest-path tools/ipc-models/Cargo.toml
+      - name: Format and lint Rust recovery register gate
+        run: |
+          cargo fmt --manifest-path tools/recovery-register/Cargo.toml -- --check
+          cargo clippy --offline --manifest-path tools/recovery-register/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust recovery register integrity gate
+        run: cargo test --offline --manifest-path tools/recovery-register/Cargo.toml
+      - name: Check fifty-item recovery register integrity (not live issues)
+        run: cargo run --offline --manifest-path tools/recovery-register/Cargo.toml
+      - name: Verify canonical native numeric source identity and i64 contract
+        run: node --test tests/canonical-numeric-source.test.mjs tests/core-math-i64-contract.test.mjs
+      - name: Record numeric contract Git blob identities
         run: |
           git hash-object \
             contracts/library/v1/native-math-unary-precision.json \
@@ -55,17 +79,3 @@ jobs:
             tests/numeric-backend-status.test.mjs \
             tests/numeric-portable-guests.test.mjs \
             tests/numeric-errors-contract.test.mjs
-      - name: Format and lint Rust IPC models
-        run: |
-          cargo fmt --manifest-path tools/ipc-models/Cargo.toml -- --check
-          cargo clippy --offline --manifest-path tools/ipc-models/Cargo.toml --all-targets -- -D warnings
-      - name: Test Rust IPC receipt and delivery models
-        run: cargo test --offline --manifest-path tools/ipc-models/Cargo.toml
-      - name: Format and lint Rust recovery register gate
-        run: |
-          cargo fmt --manifest-path tools/recovery-register/Cargo.toml -- --check
-          cargo clippy --offline --manifest-path tools/recovery-register/Cargo.toml --all-targets -- -D warnings
-      - name: Test Rust recovery register integrity gate
-        run: cargo test --offline --manifest-path tools/recovery-register/Cargo.toml
-      - name: Check fifty-item recovery register integrity (not live issues)
-        run: cargo run --offline --manifest-path tools/recovery-register/Cargo.toml

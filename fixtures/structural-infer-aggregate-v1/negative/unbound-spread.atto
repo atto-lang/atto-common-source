@@ -1,0 +1,1 @@
+fnc bad():void{const x=infer record{...unknown,y:2};return;}

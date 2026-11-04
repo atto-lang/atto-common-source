@@ -35,6 +35,7 @@ function approxEq(a, b, absTol, relTol) {
   }
   if (Number.isNaN(a) || Number.isNaN(b)) return false;
   if (a === b) return true;
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
   return Math.abs(a - b) <= Math.max(absTol, relTol * Math.max(Math.abs(a), Math.abs(b)));
 }
 
@@ -73,5 +74,17 @@ test("binary floating reference cases preserve signed zero, subnormals and NaN o
     const a = item.a === "NaN" ? NaN : item.a;
     const b = item.b === "NaN" ? NaN : item.b;
     assert.equal(approxEq(a, b, item.abs_tol, item.rel_tol), item.expect, item.id);
+  }
+});
+
+
+test("approximate equality never admits unequal infinities through infinite tolerance products", () => {
+  for (const infinity of [Infinity, -Infinity]) {
+    assert.equal(approxEq(infinity, infinity, 0, 0), true);
+    assert.equal(approxEq(infinity, infinity, 1, 1), true);
+    for (const other of [0, 1, -1, Number.MAX_VALUE, -Number.MAX_VALUE, -infinity]) {
+      assert.equal(approxEq(infinity, other, 1, 1), false);
+      assert.equal(approxEq(other, infinity, 1, 1), false);
+    }
   }
 });
