@@ -1,0 +1,198 @@
+{
+  "schema": "oreslang.observable-actor.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "trait": "ObservableActor<E>",
+  "actor_only": true,
+  "generic_event_bound": "Sendable",
+  "source_intrinsic": "self.publish_event",
+  "observer_operation": "observe_actor",
+  "reserved_observer_hook": "on_observed_event",
+  "publisher_hooks": [
+    "on_observer_subscribed",
+    "on_observer_unsubscribed",
+    "on_event_published"
+  ],
+  "policies": [
+    "RELIABLE",
+    "LATEST",
+    "LOSSY"
+  ],
+  "delivery_modes": [
+    "pull",
+    "handler"
+  ],
+  "default_delivery_mode": "pull",
+  "identity": [
+    "publisher_id",
+    "publisher_incarnation",
+    "observer_id",
+    "observer_incarnation",
+    "event_schema",
+    "lease_id"
+  ],
+  "ordering": "per_publisher_incarnation",
+  "replay": false,
+  "reliable_atomic_preflight": true,
+  "receipt_means": "delivery_admission_not_processing",
+  "callback_lane": "observer_actor_turn",
+  "control_path": "supervisor_only",
+  "subscription_sendable": false,
+  "cases": [
+    {
+      "id": "typed-actor-trait",
+      "expect": "accept",
+      "kind": "compile",
+      "rule": "only actors can implement ObservableActor<E>"
+    },
+    {
+      "id": "nonactor-implements",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "class cannot implement actor-only trait"
+    },
+    {
+      "id": "unsendable-event",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "event type is not Sendable"
+    },
+    {
+      "id": "raw-actor-ref-event",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "live capability as event payload"
+    },
+    {
+      "id": "borrowed-event",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "borrowed state value escapes through publication"
+    },
+    {
+      "id": "observer-state-access",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "observer cannot inspect publisher sealed state"
+    },
+    {
+      "id": "publish-outside-actor",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "no ambient self.publish_event outside actor turn"
+    },
+    {
+      "id": "fake-publish-intrinsic",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "publisher cannot override runtime-owned publish_event"
+    },
+    {
+      "id": "observer-hook-wrong-type",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "handler event type must equal subscription E"
+    },
+    {
+      "id": "observer-hook-on-actor",
+      "expect": "accept",
+      "kind": "compile",
+      "rule": "typed hook executes on observer lane"
+    },
+    {
+      "id": "pull-subscription",
+      "expect": "accept",
+      "kind": "compile",
+      "rule": "owned non-Sendable pull lease"
+    },
+    {
+      "id": "forward-subscription",
+      "expect": "reject",
+      "kind": "compile",
+      "rule": "subscription cannot be sent to another actor"
+    },
+    {
+      "id": "stale-publisher-incarnation",
+      "expect": "reject",
+      "kind": "runtime",
+      "rule": "incarnation fence"
+    },
+    {
+      "id": "unauthorized-grant",
+      "expect": "reject",
+      "kind": "runtime",
+      "rule": "unforgeable observation authority"
+    },
+    {
+      "id": "subscribe-before-publish",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "linearizable subscribe boundary"
+    },
+    {
+      "id": "subscribe-after-publish",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "no replay"
+    },
+    {
+      "id": "reliable-backpressure-atomic",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "preflight before any delivery"
+    },
+    {
+      "id": "latest-coalescing",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "single pending event replacement"
+    },
+    {
+      "id": "lossy-overflow",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "bounded drops"
+    },
+    {
+      "id": "per-publisher-order",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "monotonic sequence"
+    },
+    {
+      "id": "cancel-releases-retention",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "exact-once retained event release"
+    },
+    {
+      "id": "publisher-close-revokes",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "no post-close publications"
+    },
+    {
+      "id": "observer-close-detaches",
+      "expect": "accept",
+      "kind": "runtime",
+      "rule": "unsubscribe and release"
+    },
+    {
+      "id": "self-reliable-await-deadlock",
+      "expect": "reject",
+      "kind": "runtime",
+      "rule": "no waiting on own turn"
+    },
+    {
+      "id": "private-actor-zero-copy",
+      "expect": "reject",
+      "kind": "runtime",
+      "rule": "current Java group bus is SHARED-only"
+    },
+    {
+      "id": "no-supervisor-interception",
+      "expect": "reject",
+      "kind": "runtime",
+      "rule": "user hook cannot intercept CONTROL"
+    }
+  ]
+}

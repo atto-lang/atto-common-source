@@ -1,0 +1,8 @@
+// SOURCE_CONTRACT_ONLY negative fixture. Compiler must reject a non-actor
+// claiming ObservableActor<E>; class != actor and cannot publish through self.
+define class NotAnActor implements ObservableActor<int> as
+    method publish_unchecked(int n): void {
+        self.publish_event(n);
+        return;
+    }
+end
