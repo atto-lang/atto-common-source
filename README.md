@@ -56,6 +56,8 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 ## Documents
 
+- [AttoLang scalar core v1](docs/ATTO_SCALAR_CORE_V1.md) — 19 byte-pinned `.atto` programs, five independent compiler lanes, explicit source-only and executable evidence gates.
+
 - [Compiler diagnostics v1: five independent errors and actionable source traces](contracts/v1/COMPILER_DIAGNOSTICS_MULTI_ERROR_V1.md) — **proposal only**, pending backend implementation and execution gates.
 
 - [Checked exceptional effects v2](contracts/v2/CHECKED_EXCEPTIONAL_EFFECTS_V2.md) — strict throws/raises/panics propagation, uncatchable panics and conformance gates.
