@@ -1,0 +1,47 @@
+name: Six-backend scalar evidence source-free audit (not compiler parity)
+on:
+  pull_request:
+    paths:
+      - 'scripts/six_backend_scalar_gate.mjs'
+      - 'tests/six_backend_scalar_gate.test.mjs'
+      - 'contracts/six-backend-scalar-v1.md'
+      - '.github/workflows/six-backend-scalar-source-free.yml'
+  push:
+    paths:
+      - 'scripts/six_backend_scalar_gate.mjs'
+      - 'tests/six_backend_scalar_gate.test.mjs'
+      - 'contracts/six-backend-scalar-v1.md'
+      - '.github/workflows/six-backend-scalar-source-free.yml'
+permissions:
+  contents: read
+jobs:
+  host-only-evidence-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact checkout and clean tree
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git diff --quiet HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          printf 'SOURCE_SHA=%s\n' "$EXPECTED_SHA"
+          printf 'SOURCE_TREE=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Execute six-backend source-free denial cases
+        run: node --test tests/six_backend_scalar_gate.test.mjs
+      - name: Label limited evidence
+        run: |
+          echo "HOST_ONLY_UNTRUSTED_CANDIDATE"
+          echo "COMPILED_GUEST_BACKENDS=0"
+          echo "PRIVATE_SOURCE_TRANSFER=0"

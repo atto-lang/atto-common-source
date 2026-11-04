@@ -1,0 +1,9 @@
+# PROPOSED schema v2. Pin foo through the verified dependency graph.
+schema_version = "2"
+[project]
+name = "app"
+root = "."
+[source]
+roots = ["src"]
+[packages.app]
+files = ["src/main.ores"]
