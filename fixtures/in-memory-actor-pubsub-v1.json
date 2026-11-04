@@ -396,6 +396,41 @@
       "expected": "reject",
       "assertion": "Every backend rejects Topic names made entirely of ASCII or Unicode whitespace, including U+00A0, U+2003, U+202F and U+3000, and preserves distinguishable ordinary names",
       "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_topic_payload_capability_rejected",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "A Topic<T>, Subscription<T> or TopicPublisher<T> capability nested anywhere inside an ActorStream DATA payload must be rejected by the type checker before route publication",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_no_implicit_pubsub_bridge",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "An infix actor pipe never treats an ActorGroup Topic<T> or Subscription<T> as a live actor stage or silently creates a broker-to-actor transport adapter",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_control_failure_independent_of_pubsub",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "A full lossy pubsub topic or cancelled event subscriber cannot suppress a panic, child-down, STOP or physical DONE CONTROL notice to the owning supervisor",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_actor_completion_independent_of_subscriptions",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "ActorStream get_done requires physical retirement of every stage and cannot settle successfully merely because a topic published, a subscription was cancelled, or an event queue drained",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_keyword_distinct_from_value_forward",
+      "category": "source_positive",
+      "expected": "accept",
+      "assertion": "Infix pipe and ActorUtils::pipe construct the same bounded authenticated actor route; functional |> only composes values/functions, never creates actor mailbox or supervisor authority",
+      "status": "pending_backend_execution"
     }
   ]
 }
