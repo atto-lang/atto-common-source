@@ -1,8 +1,8 @@
-# Oreslang common source
+# AttoLang common source
 
 **Status: future architecture and planning only. No shared compiler implementation exists in this repository yet.**
 
-This repository is the intended home for Oreslang's future common semantic compiler layer: **HIR → MIR**, before backend-specific lowering to LLVM and Java/Graal.
+This repository is the intended home for AttoLang's future common semantic compiler layer: **HIR → MIR**, before backend-specific lowering to LLVM and Java/Graal.
 
 For now, the existing implementations remain separate:
 
@@ -12,7 +12,9 @@ For now, the existing implementations remain separate:
 | [oreslang-source.llvm](https://github.com/ores-truffle-oreslang/oreslang-source.llvm) | Independent LLVM compiler and native runtime work; later consumes the common representation through its own adapter |
 | **oreslang-common-source** | Future shared semantic representations, HIR → MIR transformations, verifiers, and compatibility contracts |
 
-Creating this repository does not merge the other repositories, change their compiler pins, or establish feature parity.
+Creating this repository does not merge the other repositories, change their compiler pins, or establish feature parity. The current public language name is **AttoLang** (formerly Oreslang); old repository names, package coordinates, commands, ABI and protocol identifiers remain compatibility interfaces until separately versioned migrations ship.
+
+The versioned, machine-readable naming and source-compatibility policy is [AttoLang Brand Compatibility v1](contracts/v1/attolang-brand-compat-v1.json). It deliberately distinguishes the public brand from compiler capabilities: `.atto` is the preferred new source extension, but admission and execution must be proven independently in each backend. Existing `.ores` source remains compatible while that work proceeds.
 
 ## Core decisions
 
@@ -54,6 +56,10 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 
 ## Documents
 
+- [Heterogeneous science and quantum v1](docs/HETEROGENEOUS_SCIENCE_V1.md) — G0 host reference admission for data/ML, GPU, HPC, realtime, quantum and robotics; real guest/device backends remain separate gates.
+
+- [AttoLang scalar core v1](docs/ATTO_SCALAR_CORE_V1.md) — 19 byte-pinned `.atto` programs, five independent compiler lanes, explicit source-only and executable evidence gates.
+
 - [Compiler diagnostics v1: five independent errors and actionable source traces](contracts/v1/COMPILER_DIAGNOSTICS_MULTI_ERROR_V1.md) — **proposal only**, pending backend implementation and execution gates.
 
 - [Checked exceptional effects v2](contracts/v2/CHECKED_EXCEPTIONAL_EFFECTS_V2.md) — strict throws/raises/panics propagation, uncatchable panics and conformance gates.
@@ -61,11 +67,13 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Architecture proposal](docs/ARCHITECTURE.md)
 - [HIR/MIR representation design sketch](docs/IR-DESIGN.md)
 - [Compilation, trust and backend policy](docs/COMPILATION-POLICY.md)
+- [Three full-AOT guarantees: safe hot swap, real-time qualification, and actor session proofs](docs/THREE_GUARANTEES_AOT_V1.md) — proposed cross-backend acceptance contract; not executable guest proof.
 - [Callable bodies, return types, and contextual tuple syntax v1](docs/CALLABLE_SYNTAX_V1.md)
 - [Generators and async iterators v1](docs/GENERATORS_V1.md) — canonical `gen*`, iterator protocols, lazy pulls, cleanup and ownership.
 - [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
+- [Lifetimes v1: inferred outlives constraints, suspension safety and zero-GC profile gates](docs/LIFETIMES_V1.md) — proposal; no executable backend parity implied
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
 - [Ownership-first, zero-GC native and low-GC Graal performance contract](docs/MEMORY_SAFETY_AND_PERFORMANCE.md)
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
