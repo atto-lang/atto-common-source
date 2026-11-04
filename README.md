@@ -68,6 +68,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
 - [Ownership syntax: implicit by-value ownership, no public `owned` keyword](docs/OWNERSHIP_SYNTAX.md)
+- [Lifetimes v1: inferred outlives constraints, suspension safety and zero-GC profile gates](docs/LIFETIMES_V1.md) — proposal; no executable backend parity implied
 - [Native I/O naming and execution contract](docs/NATIVE_IO_NAMING.md)
 - [Ownership-first, zero-GC native and low-GC Graal performance contract](docs/MEMORY_SAFETY_AND_PERFORMANCE.md)
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
