@@ -1,0 +1,65 @@
+{
+  "contract": "attolang.tenant-domain.admission-cases",
+  "version": 1,
+  "status": "planning-fixtures-not-guest-executed",
+  "statuses": {
+    "OK": 0,
+    "PENDING": -115,
+    "DENIED": -13,
+    "INVALID": -22,
+    "QUOTA": -122,
+    "REVOKED": -125
+  },
+  "cases": [
+    {
+      "id": "foreign-socket-capability",
+      "precondition": "tenant-A-owns-capability",
+      "action": "tenant-B-submit-with-A-capability",
+      "expected": "DENIED"
+    },
+    {
+      "id": "unauthorized-destination",
+      "precondition": "port-42424-only",
+      "action": "open-port-42425",
+      "expected": "DENIED"
+    },
+    {
+      "id": "authorized-submission",
+      "precondition": "tenant-A-owns-capability-with-budget",
+      "action": "submit-datagram",
+      "expected": "PENDING",
+      "note": "does-not-mean-sent-or-delivered"
+    },
+    {
+      "id": "capability-budget",
+      "precondition": "max-capabilities-1-used",
+      "action": "open-second-capability",
+      "expected": "QUOTA"
+    },
+    {
+      "id": "datagram-budget",
+      "precondition": "max-datagrams-1-used",
+      "action": "submit-second-datagram",
+      "expected": "QUOTA"
+    },
+    {
+      "id": "stale-revocation",
+      "precondition": "tenant-A-revoked",
+      "action": "tenant-A-submit",
+      "expected": "REVOKED"
+    },
+    {
+      "id": "foreign-capability-after-owner-revoke",
+      "precondition": "tenant-A-revoked-tenant-B-active",
+      "action": "tenant-B-submit-with-A-capability",
+      "expected": "DENIED"
+    },
+    {
+      "id": "hostcall-invalid-buffer",
+      "precondition": "payload-empty-or-too-large",
+      "action": "submit-datagram",
+      "expected": "INVALID"
+    }
+  ],
+  "releaseGate": "Semantic expected outcomes, not executable AttoLang source fixtures. Backend parity remains NOT_VERIFIED until byte-identical guest code runs in both LLVM and Java/GraalVM."
+}
