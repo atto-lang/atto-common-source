@@ -9,7 +9,7 @@ trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 cat > "$tmp/java" <<'RUNNER'
 #!/usr/bin/env sh
 case "$1" in
-  *ipc_receipts_reject.ores) echo 'synthetic compiler syntax error' >&2; exit 1 ;;
+  *ipc_receipts_reject.atto) echo 'synthetic compiler syntax error' >&2; exit 1 ;;
   *ipc_receipts_guest.ores) cat "$IPC_GOLDEN" ;;
   *) exit 2 ;;
 esac
@@ -36,7 +36,7 @@ assert_refuse "$tmp/java" "$tmp/alwaysgreen" 'always-green fake compiler'
 cat > "$tmp/silenterror" <<'RUNNER'
 #!/usr/bin/env sh
 case "$1" in
-  *ipc_receipts_reject.ores) exit 1 ;;
+  *ipc_receipts_reject.atto) exit 1 ;;
   *) cat "$IPC_GOLDEN" ;;
 esac
 RUNNER
@@ -46,7 +46,7 @@ assert_refuse "$tmp/java" "$tmp/silenterror" 'silent compiler negative'
 cat > "$tmp/stderrpositive" <<'RUNNER'
 #!/usr/bin/env sh
 case "$1" in
-  *ipc_receipts_reject.ores) echo 'synthetic error' >&2; exit 1 ;;
+  *ipc_receipts_reject.atto) echo 'synthetic error' >&2; exit 1 ;;
   *) echo 'unexpected positive warning' >&2; cat "$IPC_GOLDEN" ;;
 esac
 RUNNER
@@ -56,7 +56,7 @@ assert_refuse "$tmp/java" "$tmp/stderrpositive" 'extra positive stderr'
 cat > "$tmp/badexit" <<'RUNNER'
 #!/usr/bin/env sh
 case "$1" in
-  *ipc_receipts_reject.ores) echo 'runner infrastructure failure' >&2; exit 125 ;;
+  *ipc_receipts_reject.atto) echo 'runner infrastructure failure' >&2; exit 125 ;;
   *) cat "$IPC_GOLDEN" ;;
 esac
 RUNNER
@@ -66,7 +66,7 @@ assert_refuse "$tmp/java" "$tmp/badexit" 'infrastructure failure as compiler rej
 cat > "$tmp/oversized" <<'RUNNER'
 #!/usr/bin/env sh
 case "$1" in
-  *ipc_receipts_reject.ores) head -c 4097 /dev/zero >&2; exit 1 ;;
+  *ipc_receipts_reject.atto) head -c 4097 /dev/zero >&2; exit 1 ;;
   *) cat "$IPC_GOLDEN" ;;
 esac
 RUNNER
