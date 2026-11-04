@@ -50,3 +50,18 @@ Run all cases with **Java/Graal, LLVM AOT/PIC and ORC where available, Wasm, .NE
 Every executable result must carry exact source/tree SHA, toolchain digest, exact guest image hash, backend/mode, runner ID, run attempt, **nonzero executed steps**, observed outputs and negative-test receipts. No promotion from documentation, host-only model, synthetically green JSON, or zero-step CI. Private source mirroring requires independent authorization and exact tree/blob verification.
 
 **Related**: common-source #73, Java #1967/#1972, LLVM #595/#602/#627, platform-conformance #284, common-source #107. Erlang's `release_handler`/`sys:change_code` and ETS `heir`/`give_away` are inspiration, not a binary ABI that Oreslang can reuse.
+
+## Model fail-closed capability and counter boundaries (2026-11-04 hardening)
+
+The **source-free Python reference** distinguishes an omitted feature list (model defaults)
+from an explicitly empty feature set (no capabilities). An empty set MUST NOT
+silently restore hot-loading, ETS-heir, or supervisor-subtree permissions. The
+runtime owns authority; a caller-supplied feature list is not authorization.
+
+The model rejects an ETS table-epoch increment or actor-incarnation restart at
+`2^64 - 1` **before changing the owner, transfer receipt, counter, or supervisor
+state**, because UHL-1 exposes bounded 64-bit host identities. These guards are
+reference invariants only, **not** evidence of real ETS, restart, or native ABI
+execution. The source-free suite is now **24** unittest cases per round (72
+across three repetitions); original source-org stepful CI, native ABI adapters,
+actual compiled AttoLang guests, and independent review remain outstanding.
