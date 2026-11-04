@@ -79,3 +79,5 @@ jobs:
             tests/numeric-backend-status.test.mjs \
             tests/numeric-portable-guests.test.mjs \
             tests/numeric-errors-contract.test.mjs
+      - name: Verify critical state-loan fixture identity (not guest execution)
+        run: node --test tests/actor-critical-modes-source.test.mjs
