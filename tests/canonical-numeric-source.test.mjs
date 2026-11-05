@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync, existsSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 
 const manifest = JSON.parse(readFileSync(
   new URL('../contracts/library/v1/canonical-numeric-source.json', import.meta.url), 'utf8'));
-const bytes = readFileSync(new URL('../library/ores.core/numeric.ores', import.meta.url));
+const bytes = readFileSync(new URL('../library/ores.core/numeric.atto', import.meta.url));
 const sha256 = data => createHash('sha256').update(data).digest('hex');
 const sha1 = data => createHash('sha1').update(data).digest('hex');
 const gitBlob = data => sha1(Buffer.concat([
@@ -15,7 +15,9 @@ test('canonical native Oreslang numeric source has exact pinned bytes and Git bl
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.kind, 'oreslang.canonical-library-source');
   assert.equal(manifest.module, 'ores.core/numeric');
-  assert.equal(manifest.sourcePath, 'library/ores.core/numeric.ores');
+  assert.equal(manifest.sourcePath, 'library/ores.core/numeric.atto');
+  assert.equal(existsSync(new URL('../library/ores.core/numeric.ores', import.meta.url)), false,
+    'canonical .atto source must not have a second physical .ores definition');
   assert.equal(manifest.sourceEncoding, 'UTF-8');
   assert.equal(sha256(bytes), manifest.sourceSha256);
   assert.equal(gitBlob(bytes), manifest.gitBlobSha1);
