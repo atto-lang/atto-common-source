@@ -55,7 +55,10 @@ export class ObservableActorReference {
     return next;
   }
   cancel(lease) {
-    if (!lease.active) return false;
+    // A label or copied lease must not revoke a different subscriber.
+    // Identity is the authority, not user-supplied observer/active fields.
+    if (!lease || typeof lease !== 'object' || !lease.active ||
+        this.subscribers.get(lease.observer) !== lease) return false;
     lease.active = false;
     this.subscribers.delete(lease.observer);
     this.retained -= lease.pending.length;
