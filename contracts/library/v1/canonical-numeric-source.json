@@ -3,7 +3,7 @@
   "kind": "oreslang.canonical-library-source",
   "id": "ores-core-numeric-v1",
   "module": "ores.core/numeric",
-  "sourcePath": "library/ores.core/numeric.ores",
+  "sourcePath": "library/ores.core/numeric.atto",
   "sourceSha256": "3d1d7b77068dd02b3d60b30b72f29a4537a933134ca79e1e81df096dc56f5f33",
   "gitBlobSha1": "5ced991f1d49b3c2a60fdd72b9003c0a4d18cd72",
   "sourceEncoding": "UTF-8",
