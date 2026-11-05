@@ -114,5 +114,26 @@ class CanonicalLibraryIdentityTests(unittest.TestCase):
         self.assertTrue(any("unexpected canonical path" in issue for issue in self.check()))
 
 
+    def test_hardlinked_guest_source_rejected(self):
+        source = self.root / self.manifest["modules"][1]["path"]
+        alias = self.root / "outside.atto"
+        alias.hardlink_to(source)
+        self.assertTrue(any("uniquely linked" in issue for issue in self.check()))
+
+    def test_hardlinked_manifest_rejected(self):
+        source = self.root / "library/atto-library-source-v1.json"
+        alias = self.root / "manifest-second-link.json"
+        alias.hardlink_to(source)
+        self.assertTrue(any("manifest must be" in issue for issue in self.check()))
+
+    def test_hardlinked_numeric_legacy_alias_rejected(self):
+        legacy = self.root / "library/ores.core/numeric.ores"
+        old = legacy.read_bytes()
+        legacy.unlink()
+        legacy.hardlink_to(self.root / "library/ores.core/numeric.atto")
+        self.assertEqual(old, legacy.read_bytes())
+        self.assertTrue(any("hardlink" in issue for issue in self.check()))
+
+
 if __name__ == "__main__":
     unittest.main()
