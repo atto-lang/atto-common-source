@@ -35,7 +35,7 @@ test('latest coalescing across two readers cannot leak old delivery slots', () =
 });
 
 test('lossy fanout still admits new subscribers while full old subscribers drop', () => {
-  const m = new ObservableActorReference({policy: 'LOSSY',capcity: 1});
+  const m = new ObservableActorReference({policy: 'LOSSY',capacity: 1});
   const old = m.subscribe('old');
   m.publish(1);
   const fresh = m.subscribe('fresh');
