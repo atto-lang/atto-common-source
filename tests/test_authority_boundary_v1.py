@@ -200,5 +200,51 @@ class AuthorityBoundaryContractTest(unittest.TestCase):
             self.oracle.leave_critical(self.root, lease)
         self.oracle.spawn(self.root, "allowed", set())
 
+
+
+class Wave22StaleActorAuthorityFences(unittest.TestCase):
+    """Source-free issued-token and state-loan revocation regressions."""
+
+    def setUp(self):
+        self.oracle = AuthorityBoundaryV1({"fs.read", "net.connect"})
+        self.root = self.oracle.root_actor("root", {"fs.read", "net.connect"})
+
+    def test_rejected_parent_upgrade_leaves_live_child_and_root_usable(self):
+        child = self.oracle.spawn(self.root, "worker", {"fs.read"})
+        with self.assertRaises(Denied):
+            self.oracle.upgrade(self.root, {"fs.read"})
+        self.assertEqual(
+            self.oracle.perform(child, "io.file.read", ("io.file.read",)),
+            "io.file.read",
+        )
+        self.assertEqual(
+            self.oracle.perform(self.root, "io.net", ("io.net",)),
+            "io.net",
+        )
+
+    def test_child_upgrade_revokes_stale_token_without_minting_permissions(self):
+        old_child = self.oracle.spawn(self.root, "worker", {"fs.read"})
+        new_child = self.oracle.upgrade(old_child, set())
+        with self.assertRaises(Denied):
+            self.oracle.perform(old_child, "io.file.read", ("io.file.read",))
+        with self.assertRaises(Denied):
+            self.oracle.perform(new_child, "io.file.read", ("io.file.read",))
+        with self.assertRaises(Denied):
+            self.oracle.send(self.root, old_child, 7)
+        self.assertEqual(self.oracle.send(self.root, new_child, 7), 7)
+
+    def test_live_critical_loan_blocks_spawn_and_send_until_retired(self):
+        lease = self.oracle.enter_critical(self.root)
+        try:
+            with self.assertRaises(Denied):
+                self.oracle.spawn(self.root, "late", {"fs.read"})
+            with self.assertRaises(Denied):
+                self.oracle.send(self.root, self.root, 9)
+        finally:
+            self.oracle.leave_critical(self.root, lease)
+        late = self.oracle.spawn(self.root, "late", {"fs.read"})
+        self.assertEqual(self.oracle.send(self.root, late, 9), 9)
+
+
 if __name__ == "__main__":
     unittest.main()
