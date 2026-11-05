@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import stat
 
 SCHEMA = "attolang.canonical-library-source.v1"
 STATUS = "SOURCE_ONLY_NOT_COMPILED"
@@ -40,6 +41,8 @@ def verify(root: Path, *, pins: dict[str, str] | None = None) -> list[str]:
     manifest_path = root / "library/atto-library-source-v1.json"
     if manifest_path.is_symlink() or not manifest_path.is_file():
         return ["manifest missing or symlinked"]
+    if not stat.S_ISREG(manifest_path.lstat().st_mode) or manifest_path.stat().st_nlink != 1:
+        return ["manifest must be a uniquely linked regular file"]
     try:
         manifest_bytes = manifest_path.read_bytes()
         if len(manifest_bytes) > MAX_SOURCE_BYTES:
@@ -83,6 +86,9 @@ def verify(root: Path, *, pins: dict[str, str] | None = None) -> list[str]:
         if source.is_symlink() or not source.is_file() or any(p.is_symlink() for p in source.parents if p != root):
             failures.append(f"source missing or symlinked: {rel}")
             continue
+        if not stat.S_ISREG(source.lstat().st_mode) or source.stat().st_nlink != 1:
+            failures.append(f"source must be a uniquely linked regular file: {rel}")
+            continue
         try:
             data = source.read_bytes()
         except OSError as exc:
@@ -118,6 +124,8 @@ def verify(root: Path, *, pins: dict[str, str] | None = None) -> list[str]:
     numeric = root / "library/ores.core/numeric.atto"
     if legacy.is_symlink() or not legacy.is_file() or numeric.is_symlink() or not numeric.is_file():
         failures.append("legacy numeric source missing or symlinked")
+    elif legacy.stat().st_nlink != 1 or numeric.stat().st_nlink != 1:
+        failures.append("legacy or canonical numeric hardlink not admitted")
     elif legacy.read_bytes() != numeric.read_bytes():
         failures.append("legacy numeric.ores differs from numeric.atto")
     return failures
