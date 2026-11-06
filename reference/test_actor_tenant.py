@@ -97,6 +97,29 @@ class IsolationModelTests(unittest.TestCase):
         foreign = other.create_tenant("alpha")
         self.rejects("STALE_TENANT", lambda: self.host.create_actor(foreign, "intruder"))
 
+    def test_actor_count_quota_denies_extra_spawn_without_partial_admission(self):
+        tenant = self.host.create_tenant("bounded", actor_limit=1)
+        first = self.host.create_actor(tenant, "first")
+        self.rejects("ACTOR_QUOTA", lambda: self.host.create_actor(tenant, "second"))
+        self.assertEqual(list(self.host._tenant(tenant).actors), ["first"])
+        self.assertIs(self.host._actor(first).ref, first)
+        self.rejects("DUPLICATE_ACTOR", lambda: self.host.create_actor(tenant, "first"))
+        self.host.retire_tenant(tenant)
+        fresh = self.host.create_tenant("bounded", actor_limit=1)
+        self.host.create_actor(fresh, "second")
+        self.rejects("STALE_TENANT", lambda: self.host.create_actor(tenant, "third"))
+
+    def test_actor_count_quota_zero_denies_all_spawns(self):
+        tenant = self.host.create_tenant("disabled", actor_limit=0)
+        self.rejects("ACTOR_QUOTA", lambda: self.host.create_actor(tenant, "actor"))
+        self.assertEqual(self.host._tenant(tenant).actors, {})
+
+    def test_actor_quota_rejects_bool_negative_and_oversized_values(self):
+        for invalid in (True, False, -1, 100_001, 1.0, "1"):
+            self.rejects("INVALID_ACTOR_QUOTA",
+                         lambda value=invalid: self.host.create_tenant("invalid", actor_limit=value))
+        self.assertNotIn("invalid", self.host.tenants)
+
     def test_invalid_tenant_id(self):
         self.rejects("INVALID_TENANT", lambda: self.host.create_tenant(".."))
         self.rejects("INVALID_TENANT", lambda: self.host.create_tenant("../escape"))
