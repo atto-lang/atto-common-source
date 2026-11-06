@@ -125,7 +125,10 @@ def admit_declaration(spec, uses):
     if len(uses) > spec["constraints"]["limits"]["maxAnnotationsPerDeclaration"]:
         raise AdmissionError("ANNOTATION_LIMIT")
     seen = set()
+    declaration_target = uses[0].get("target") if uses else None
     for use in uses:
+        if use.get("target") != declaration_target:
+            raise AdmissionError("MIXED_DECLARATION_TARGET")
         entry = admit_use(spec, use)
         name = entry["qualifiedName"]
         if name in seen and not entry["repeatable"]:
