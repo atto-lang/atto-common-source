@@ -2,15 +2,15 @@
   "schema": "atto.temporary-private-llvm-tenant-vm-mirror.v1",
   "origin": {
     "repository": "ores-truffle-oreslang/oreslang-source.llvm",
-    "commit": "5fb92b40f12f4554c80ebbbef7de6e3b3eb00944",
-    "pull_request": 1343
+    "commit": "0ffc82863747ee6e6b5e6eb5bc780a00bed56c89",
+    "pull_request": 1468
   },
   "scope": "7 exact host-native source/test blobs copied to a private runner branch; excludes guest lowering/compiler; not a full PR/guest sandbox certification",
   "source_blobs": {
     "src/main/cpp/oreslang/runtime/TenantVm.cpp": "953800268a1a75d8cd62be4287983adc07fd6c45",
     "src/main/cpp/oreslang/runtime/TenantVm.hpp": "098e7be192481f3e21c066e2fde05def4964fb2b",
     "src/main/cpp/oreslang/runtime/TenantVmGuestAbi.h": "ceac0a9064247c10b9c7394ce8789b9cc4d10d5f",
-    "tests/tenant-vm/tenant_vm_test.cpp": "d2a0719e19215e10ea8446c39d82e8bd151fee8f",
+    "tests/tenant-vm/tenant_vm_test.cpp": "0e52000bc13152cbeedea202e547cd9115d206b8",
     "tests/tenant-vm/guests.c": "301b2412f0b9766f4f8469cca0757d7f923f0ba5",
     "tests/tenant-vm/guests.h": "4457c59c8af836302d6be47ff66ca82a15e927be",
     "tests/tenant-vm/CMakeLists.txt": "74864becc22a800a5051ca16ced342559f817e28"

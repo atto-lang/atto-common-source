@@ -32,6 +32,7 @@ for case in \
   authority_is_bound_to_host_and_generation \
   host_can_kill_a_spinning_vm \
   actor_churn_reuses_slots_and_scrubs_memory \
+  tenant_recycling_restores_heap_quota_and_fences_aliases \
   shutdown_drains_then_retires
 do
   echo "ASAN_UBSAN_CASE=$case"
