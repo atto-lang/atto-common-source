@@ -195,5 +195,63 @@
     "forge": "parser/linker/source execution; a standalone host resolver is NOT guest parity",
     "net": "Native AOT linked .atto execution; host-only resolver is NOT guest parity"
   },
-  "proof_policy": "A contract fixture, parser acceptance, static lint or zero-step run never implies compiler/linker/executable parity."
+  "proof_policy": "A contract fixture, parser acceptance, static lint or zero-step run never implies compiler/linker/executable parity.",
+  "security_admission_v1": {
+    "modern_manifest": ".ores.pkg.toml",
+    "legacy_manifest": ".oreslangc.cfg.toml",
+    "modern_marker_precedence": "modern exists (including invalid/non-regular): reject or use modern; never silently switch to legacy",
+    "root_namespace": "+/ must resolve using nearest verified modern manifest and its configured [project].root; never CWD inference",
+    "environment_derived_absolute": "Require verified importing project manifest; physical target must remain within authorized project root or explicit manifest [source].import_paths; ambient ATTO_PATHS cannot authorize absolute env path",
+    "cross_backend_current_delta": "Java PR #2568 supports explicit manifest import_paths; LLVM PR #1442 restricts env absolute paths to importing physical package pending policy parser. Full cross-project parity NOT_IMPLEMENTED.",
+    "remote": "http:// and https:// denied until locked integrity, network permission, frozen offline, size/redirect and canonical graph checks"
+  },
+  "guest_execution_corpus_v1": [
+    {
+      "id": "distinct-root-and-env-imports",
+      "source_file": "src/main.atto",
+      "manifest": ".ores.pkg.toml",
+      "imports": [
+        "+/src/root_helper",
+        "${repo}/src/env_helper"
+      ],
+      "fixture_roots": {
+        "root_helper_return": 19,
+        "env_helper_return": 23
+      },
+      "expect_exit": 42,
+      "required": [
+        "Java/Graal source compile+execute",
+        "LLVM native compile+IR+clang guest execute"
+      ],
+      "status": "pending-exact-head-executed-test"
+    },
+    {
+      "id": "project-root-respects-configured-subdirectory",
+      "manifest_project_root": "application",
+      "specifier": "+/src/helper",
+      "resolved": "application/src/helper.atto",
+      "status": "pending-exact-head-executed-test"
+    },
+    {
+      "id": "external-env-source-authorized-manifest",
+      "specifier": "${OTHER_ROOT}/lib",
+      "required_authority": "declared [source].import_paths + source identity; do not use ambient ATTO_PATHS as policy",
+      "status": "Java-test-added; LLVM policy adapter pending"
+    },
+    {
+      "id": "env-no-manifest-failclosed",
+      "specifier": "${repo}/src/helper",
+      "expected": "reject-untrusted-absolute-environment-import"
+    },
+    {
+      "id": "nested-project-failclosed",
+      "specifier": "${repo}/nested/secret",
+      "expected": "reject-cross-package"
+    },
+    {
+      "id": "bare-dollar-remains-literal",
+      "specifier": "$repo/src/helper",
+      "expected": "never-project-root-alias"
+    }
+  ]
 }
