@@ -1,0 +1,28 @@
+name: Actor and tenant reference model
+on:
+  push:
+    paths:
+      - 'reference/**'
+      - 'contracts/actor-tenant-isolation-v1.json'
+      - '.github/workflows/actor-tenant-reference.yml'
+  pull_request:
+    paths:
+      - 'reference/**'
+      - 'contracts/actor-tenant-isolation-v1.json'
+      - '.github/workflows/actor-tenant-reference.yml'
+permissions:
+  contents: read
+jobs:
+  reference-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate contract JSON
+        run: python3 -m json.tool contracts/actor-tenant-isolation-v1.json >/dev/null
+      - name: Run source-free ownership model tests
+        run: python3 -m unittest discover -s reference -p 'test_*.py' -v
+      - name: Evidence scope
+        run: echo 'REFERENCE_MODEL_ONLY - no compiler, guest, runtime or sandbox was executed'
