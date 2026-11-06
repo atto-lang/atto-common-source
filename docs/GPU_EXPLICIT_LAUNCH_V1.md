@@ -62,6 +62,11 @@ The `grid` field counts groups; `block` counts work-items per group. This is *no
 9. **Security.** Require the existing isolate GPU authority plus device-scoped allocation/queue authority. Prevent forged generations, stale handles, cross-tenant command submission, and concurrent mutable aliasing. Capture exact compiler/source/tree, kernel binary, device metadata, fixture and run hashes for hardware claims.
 10. **Compatibility.** `gpu {}` anonymous kernels and the separate synchronous GPU region grammar have a known spelling conflict. Do not silently reinterpret either. Resolve contextually or through an explicitly gated migration with parser negative tests. `gpu task {}` and `task {}` retain the v2 eager Future contract.
 
+
+## v1.1 ergonomic refinement (additive candidate)
+
+The full cross-language benchmark and proposed three-level AttoLang GPU design are in [GPU_COMPARATIVE_SYNTAX_V1](GPU_COMPARATIVE_SYNTAX_V1.md). Keep the existing exact `grid/block` form unchanged. Add a mutually exclusive logical `over/group` form for concise 1–3-dimensional launches, with checked `ceil_div` grid derivation, explicit queue/device and original logical extent retained in typed IR. Tail masking cannot be assumed safe for divergent group barriers: compiler proof or rejection (`GPU-LAUNCH-010`) is required. `gpu each`, `gpu reduce`, `gpu tile`, `gpu graph`, automatic tuning and provider-specific extensions remain future proposals, **not v1.1 shipping execution**.
+
 ## Minimal typed GPU launch IR
 
 See [gpu-explicit-launch-v1.json](../contracts/v1/gpu-explicit-launch-v1.json). HIR/MIR must preserve kernel symbol identity, ordered arguments, geometry, owning tenant/device/queue/generation, capability demands, buffer access footprints, copy/precision policy, fence and cancellation state. The verifier rejects an IR node containing host buffers, unchecked dimensions, missing queue/device, forged owner, unbounded workgroup allocations, or unknown device effect. The schema is proposed only; this repository does not yet provide shared HIR/MIR implementation.
