@@ -1,0 +1,199 @@
+{
+  "contract_version": "attolang.import-resolution.v1",
+  "status": "normative-input-contract; independent backend adoption required",
+  "inputs": {
+    "static_import_specifier": "AttoLang UTF-8 quoted import string",
+    "environment": "explicit immutable compiler environment snapshot",
+    "project_root": "selected verified .ores.pkg.toml manifest and configured [project].root",
+    "package_graph": "Zed lockfile pinned artifact identities"
+  },
+  "syntax": {
+    "project_root_prefix": "+/",
+    "project_root_examples": [
+      "+/src/config",
+      "+/lib/math"
+    ],
+    "env_interpolation": "${NAME}",
+    "env_variable_name": "[A-Za-z_][A-Za-z0-9_]*",
+    "env_interpolation_examples": [
+      "${repo}/src/config",
+      "${LIB_ROOT}/${LIB_VERSION}/math",
+      "+/lib/${MODULE}"
+    ],
+    "literal_dollar_not_alias": "$repo/src/config",
+    "relative_prefixes": [
+      "./",
+      "../"
+    ]
+  },
+  "resolution_rules": [
+    "Expand only braced ${NAME} placeholders exactly once from a supplied compiler environment snapshot; never shell-expand or execute.",
+    "Do not rewrite $repo to +/, to the project root, or to an environment variable; bare dollar spellings are not aliases.",
+    "The +/ prefix remains a distinct project-root namespace and never consults a variable named repo.",
+    "Missing, empty, malformed and nested env expansion values fail closed before source opening; no implicit defaults.",
+    "Expand before determining absolute-vs-relative filesystem paths, but preserve original import spelling as the graph-edge key.",
+    "Resolve every input to one canonical physical source identity and package boundary; reject traversal or symlink escapes after interpolation.",
+    "Lock-pinned dependencies cannot be shadowed by user search paths, vendor copies, or cache aliases.",
+    "Environment variables participating in source resolution must enter compiler cache keys and build provenance without disclosing secrets.",
+    "HTTPS import resolution is a separate gated feature: explicit URL, permission, immutable digest, signed provenance as applicable, offline and frozen no-network."
+  ],
+  "search_paths": {
+    "canonical_env": "ATTO_PATHS",
+    "legacy_envs_in_order": [
+      "ORES_PATHS",
+      "ORESLANG_PATH"
+    ],
+    "priority": "if ATTO_PATHS exists use only it; otherwise use ORES_PATHS if present; otherwise ORESLANG_PATH; explicit empty disables legacy fallback",
+    "separators": "host OS path-list separator; ignore empty components, never treat them as cwd",
+    "configured_roots": "project source roots and explicit manifest import paths precede ambient fallback",
+    "vendor": "project-local vendor accepted only with declared and checked package identities",
+    "cache": "Zed-owned immutable store by pinned digest (suggested platform-appropriate zpkg data directory); ~/.atto reserved for compiler state",
+    "no_ambient_home_search": [
+      "$HOME/.zed",
+      "$HOME/.zpkg",
+      "$HOME/.atto"
+    ],
+    "dynamic_cache_requirements": "include variable names, resolved values or safe hash, and source identities; never leak secret values into diagnostics"
+  },
+  "positives": [
+    {
+      "id": "actual-repo-variable",
+      "raw": "${repo}/src/config",
+      "environment": {
+        "repo": "/work/app"
+      },
+      "expect": "/work/app/src/config"
+    },
+    {
+      "id": "multiple-variables",
+      "raw": "${LIB_ROOT}/${LIB_VERSION}/math",
+      "environment": {
+        "LIB_ROOT": "/sdk",
+        "LIB_VERSION": "v2"
+      },
+      "expect": "/sdk/v2/math"
+    },
+    {
+      "id": "root-is-not-env",
+      "raw": "+/src/config",
+      "environment": {
+        "repo": "/other"
+      },
+      "expect": "+/src/config"
+    },
+    {
+      "id": "root-with-braced-component",
+      "raw": "+/${MODULE}/config",
+      "environment": {
+        "MODULE": "src"
+      },
+      "expect": "+/src/config"
+    },
+    {
+      "id": "unbraced-dollar-not-expanded",
+      "raw": "$repo/src/config",
+      "environment": {
+        "repo": "/work/app"
+      },
+      "expect": "$repo/src/config"
+    },
+    {
+      "id": "relative-import-unchanged",
+      "raw": "./shared/config",
+      "environment": {
+        "repo": "/work/app"
+      },
+      "expect": "./shared/config"
+    },
+    {
+      "id": "variable-not-recursively-expanded",
+      "raw": "${repo}/app",
+      "environment": {
+        "repo": "/work"
+      },
+      "expect": "/work/app"
+    }
+  ],
+  "rejections": [
+    {
+      "id": "missing-variable",
+      "raw": "${HOME}/foo",
+      "environment": {
+        "repo": "/work"
+      },
+      "error": "missing-variable"
+    },
+    {
+      "id": "empty-variable",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": ""
+      },
+      "error": "empty-variable"
+    },
+    {
+      "id": "invalid-variable-name",
+      "raw": "${bad-name}/foo",
+      "environment": {
+        "bad-name": "/work"
+      },
+      "error": "invalid-variable"
+    },
+    {
+      "id": "invalid-numeric-leading",
+      "raw": "${1ROOT}/foo",
+      "environment": {
+        "1ROOT": "/work"
+      },
+      "error": "invalid-variable"
+    },
+    {
+      "id": "unterminated-placeholder",
+      "raw": "${repo/foo",
+      "environment": {
+        "repo": "/work"
+      },
+      "error": "unterminated-placeholder"
+    },
+    {
+      "id": "default-syntax-not-shell",
+      "raw": "${repo:-/tmp}/foo",
+      "environment": {
+        "repo": "/work"
+      },
+      "error": "invalid-variable"
+    },
+    {
+      "id": "nested-expansion-denied",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": "${OTHER}"
+      },
+      "error": "nested-expansion"
+    },
+    {
+      "id": "control-byte-denied",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": "a\nb"
+      },
+      "error": "control-character"
+    },
+    {
+      "id": "larger-than-4096-bytes",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "error": "length"
+    }
+  ],
+  "backend_gates": {
+    "java": "real .atto compile/link/execute, negative env and ATTO_PATHS tests",
+    "llvm": "real native .atto import graph and generated executable, negative cases",
+    "wasm": "verified LLVM source graph to wasm32 with real guest execution, not JS-only simulation",
+    "forge": "parser/linker/source execution; a standalone host resolver is NOT guest parity",
+    "net": "Native AOT linked .atto execution; host-only resolver is NOT guest parity"
+  },
+  "proof_policy": "A contract fixture, parser acceptance, static lint or zero-step run never implies compiler/linker/executable parity."
+}
