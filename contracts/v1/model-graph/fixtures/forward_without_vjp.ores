@@ -1,0 +1,5 @@
+// Forward execution is legal even when Quantize8 has no VJP.
+define model QuantizedSignal as
+    SampleInput()
+    Quantize8()
+end

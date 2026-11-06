@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ores-truffle-oreslang/oreslang-common-source/contracts/v1/model-graph/graph.schema.json",
+  "title": "Proposed Oreslang ModelGraph HIR v1 (not an executable guest format)",
+  "description": "A typed graph with no caller-provided effect, shape, code, VJP, scratch, ABI, implementation digest or provenance metadata. Compiler/linker-owned operation signatures supply all semantic attributes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "nodes",
+    "outputs"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 65536,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "op",
+        "inputs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "op": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.]*$"
+        },
+        "inputs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "constArgs": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/constant"
+          }
+        }
+      }
+    },
+    "port": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/bufferPort"
+        },
+        {
+          "$ref": "#/$defs/nominalPort"
+        }
+      ]
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputs",
+        "output",
+        "effect",
+        "vjp",
+        "scratchBytes",
+        "abi",
+        "constKinds",
+        "profile",
+        "implDigest",
+        "provenance"
+      ],
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/port"
+          }
+        },
+        "output": {
+          "$ref": "#/$defs/port"
+        },
+        "effect": {
+          "enum": [
+            "pure",
+            "io",
+            "network",
+            "random",
+            "clock",
+            "actor",
+            "ffi",
+            "suspend"
+          ]
+        },
+        "vjp": {
+          "type": "boolean"
+        },
+        "scratchBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "abi": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+        },
+        "constKinds": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "enum": [
+              "bool",
+              "i64",
+              "f64bits",
+              "string",
+              "symbol"
+            ]
+          }
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
+        "implDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provenance": {
+          "enum": [
+            "verified-ores",
+            "trusted-native"
+          ]
+        }
+      }
+    },
+    "constant": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bool"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "i64"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^-?(0|[1-9][0-9]*)$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "f64bits"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{16}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "symbol"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["symbolKind", "name"],
+              "properties": {
+                "symbolKind": {"enum": ["process", "stable"]},
+                "name": {"type": "string", "minLength": 1, "maxLength": 256}
+              },
+              "description": "Nominal Symbol kind and NFC-normalized logical name; semantic admission checks UTF-8 byte length, Unicode controls and canonical stable UUIDs."
+            }
+          }
+        }
+      ],
+      "description": "Canonical compile-time constant encoding. Semantic admission additionally rejects out-of-range i64 and non-finite f64 bit patterns."
+    },
+    "bufferPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dtype",
+        "shape"
+      ],
+      "properties": {
+        "dtype": {
+          "enum": [
+            "bool",
+            "i32",
+            "i64",
+            "f32",
+            "f64"
+          ]
+        },
+        "shape": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "layout": {
+          "enum": [
+            "scalar",
+            "contiguous"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_/^-]{1,40}$"
+        }
+      }
+    },
+    "nominalPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "typeAbi",
+        "bytes"
+      ],
+      "properties": {
+        "kind": {
+          "const": "nominal"
+        },
+        "typeAbi": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.:@-]{0,127}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "freestanding",
+        "allocation",
+        "deterministic"
+      ],
+      "properties": {
+        "freestanding": {
+          "type": "boolean"
+        },
+        "allocation": {
+          "enum": [
+            "none",
+            "scratch",
+            "dynamic"
+          ]
+        },
+        "deterministic": {
+          "type": "boolean"
+        }
+      },
+      "description": "Compiler/linker-owned conservative execution capabilities. These do not imply hard-real-time safety."
+    }
+  }
+}

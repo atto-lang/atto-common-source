@@ -34,10 +34,11 @@
     },
     {
       "id": "non-differentiable-op",
-      "fixture": "fixtures/reject_missing_vjp.ores",
-      "expect": "reject",
-      "diagnostic_class": "MODEL_MISSING_VJP",
-      "guest_execution": "NOT_EXECUTED"
+      "fixture": "fixtures/accept_forward_without_vjp.ores",
+      "expect": "accept",
+      "diagnostic_class": null,
+      "guest_execution": "NOT_EXECUTED",
+      "note": "Forward-only declaration is legal. MODEL_MISSING_VJP is a later gradient-admission diagnostic when a requested live derivative path traverses this op."
     },
     {
       "id": "effectful-body",

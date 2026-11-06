@@ -1,0 +1,5 @@
+// Expected syntax diagnostic: MODEL_NON_LAYER_EXPRESSION.
+define model ExpressionBody as
+    SampleInput()
+    1 + 2
+end
