@@ -85,6 +85,14 @@ The Java/Graal branch [#2582](https://github.com/ores-truffle-oreslang/oreslang-
 
 The [conformance corpus #502](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502) includes forward-looking negative fixtures for arbitrary geometry host calls and noninteger lexical grid bindings. They are proposal-only and remain `NOT_EXECUTED` across providers. LLVM's existing generic `GPU-LAUNCH-008` denial does **not** establish diagnostic parity with Java's new source-HIR checks.
 
+## G1c: typed GPU kernel source subset (Java, no device authority)
+
+The canonical `pub gpu fnc` declaration now has its own `Ast.GpuKernelDecl`, **not** an ordinary CPU `FunctionDecl`, on Java/Graal [#2582](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2582). This prevents interpreter/callable registration from silently reusing host-function execution. Production TypeChecker calls `GpuKernelSourceHirV1.lower` for a bounded, typed source-HIR prototype, then **always** rejects with `GPU-KERNEL-008`. This is a source-typing milestone, not enabled device compilation.
+
+The G1c prototype currently supports explicit `int`/`i64`, `f32`, `bool`, `GpuReadBuffer<f32>`, `GpuWriteBuffer<f32>`, and `GpuReadWriteBuffer<f32>` types; immutable scalar locals; 0–2 static-axis `gpu.global_id`; f32 device reads/writes; arithmetic; simple single-branch guards and void return. It rejects host calls, dynamic dispatch, suspension, unknown intrinsics, mutable local bindings, read-only stores, write-only loads, unbound symbols and implicit numeric conversions. Its immutable instruction/value tree is tagged `TYPED_SOURCE_ONLY_NOT_EXECUTABLE`.
+
+**Excluded/unproven**: complete kernel-entry signature binding at launch sites, physical address/bounds checks, buffer provenance, alias/loan ownership, tenant queue generation, padded-tail and barrier convergence, device code generation, cancellation, verified fence completion, numerical oracle and hardware execution. A typed source plan **must never be interpreted as a compiler-issued launch authority**. G1c compiler tests and new seven-case kernel conformance corpus in [platform-conformance #502](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502) remain `NOT_EXECUTED` until independently run on exact immutable source. The previous G1b shape IR still remains nonexecutable.
+
 ## Acceptance ladder
 
 - **G0 contract**: review this grammar and executable manifest/fixture-shape tests, without claiming source parsing.

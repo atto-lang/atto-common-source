@@ -55,8 +55,8 @@
         "deviceDispatch": false
       },
       {
-        "id": "G1c_TYPED_KERNEL_HIR",
-        "state": "NOT_IMPLEMENTED",
+        "id": "G1c_TYPED_KERNEL_SOURCE_SUBSET",
+        "state": "JAVA_SOURCE_TYPED_SUBSET_NOT_EXECUTABLE",
         "requiredProofs": [
           "kernelEntrySignature",
           "deviceEffectsClosedWorld",
@@ -65,6 +65,38 @@
           "tenantQueueGeneration",
           "barrierConvergence",
           "checkedPaddedTail"
+        ],
+        "backend": "java",
+        "evidence": "TYPED_SOURCE_ONLY_NOT_EXECUTABLE",
+        "supportedScalarTypes": [
+          "int",
+          "i64",
+          "f32",
+          "bool"
+        ],
+        "supportedDeviceViews": [
+          "GpuReadBuffer<f32>",
+          "GpuWriteBuffer<f32>",
+          "GpuReadWriteBuffer<f32>"
+        ],
+        "typedDeviceIr": false,
+        "kernelLaunchBinding": false,
+        "compilerEffectProof": false,
+        "ownershipProof": false,
+        "deviceDispatch": false
+      },
+      {
+        "id": "G2_TYPED_KERNEL_DEVICE_IR",
+        "state": "NOT_IMPLEMENTED",
+        "requiredProofs": [
+          "kernelEntrySignature",
+          "deviceEffectsClosedWorld",
+          "resolvedDeviceBuffers",
+          "borrowAndAliasFootprints",
+          "tenantQueueGeneration",
+          "barrierConvergence",
+          "checkedPaddedTail",
+          "compilerEmittedNativeKernelIdentity"
         ]
       },
       {
