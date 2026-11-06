@@ -77,6 +77,14 @@ Physical grid components must be positive (even if a zero-grid no-op could be me
 
 See [gpu-explicit-launch-v1.json](../contracts/v1/gpu-explicit-launch-v1.json). HIR/MIR must preserve kernel symbol identity, ordered arguments, geometry, owning tenant/device/queue/generation, capability demands, buffer access footprints, copy/precision policy, fence and cancellation state. The verifier rejects an IR node containing host buffers, unchecked dimensions, missing queue/device, forged owner, unbounded workgroup allocations, or unknown device effect. The schema is proposed only; this repository does not yet provide shared HIR/MIR implementation.
 
+## G1b staged source HIR — explicit evidence boundary
+
+The Java/Graal branch [#2582](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2582) now calls `GpuLaunchSourceHirV1.lower` from the production TypeChecker after parsing the actual `GpuLaunchExpr`. This creates immutable source-shape IR for named kernel, ordered operands, named device/queue, **physical** or **logical** geometry, checked signed-64-bit literal/integer expressions, and shared bytes. It rejects effectful geometry, unsupported host calls, static division by zero, signed overflow, negative dimensions, zero physical axes, and zero group sizes; the TypeChecker also checks lexically bound geometry symbols against its integer type.
+
+**This is neither a completed typed kernel IR nor an execution token.** The candidate's only admissible evidence state is `SOURCE_SHAPE_ONLY_NOT_EXECUTABLE`. Unresolved names, GPU ABI types, device view residency, mutable alias proofs, actor/tenant ownership, kernel effect closure, barrier convergence, and device completion fences are **unproved**; the TypeChecker always raises `GPU-LAUNCH-008` after shape analysis. Do not treat a successful HIR candidate as a capability or use it for enqueue. Further stages must add compiler-issued, identity-bound proof artifacts before any GPU command can be emitted.
+
+The [conformance corpus #502](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502) includes forward-looking negative fixtures for arbitrary geometry host calls and noninteger lexical grid bindings. They are proposal-only and remain `NOT_EXECUTED` across providers. LLVM's existing generic `GPU-LAUNCH-008` denial does **not** establish diagnostic parity with Java's new source-HIR checks.
+
 ## Acceptance ladder
 
 - **G0 contract**: review this grammar and executable manifest/fixture-shape tests, without claiming source parsing.

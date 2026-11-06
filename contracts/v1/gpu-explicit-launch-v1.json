@@ -43,6 +43,41 @@
       "nonZeroPhysicalGrid",
       "emptyLogicalExtentNoDispatch",
       "separatePaddedLanesFromLogicalWorkItems"
+    ],
+    "stages": [
+      {
+        "id": "G1b_SOURCE_HIR",
+        "backend": "java",
+        "state": "SOURCE_SHAPE_ONLY_NOT_EXECUTABLE",
+        "compilerEffectProof": false,
+        "typedKernelSignature": false,
+        "ownershipProof": false,
+        "deviceDispatch": false
+      },
+      {
+        "id": "G1c_TYPED_KERNEL_HIR",
+        "state": "NOT_IMPLEMENTED",
+        "requiredProofs": [
+          "kernelEntrySignature",
+          "deviceEffectsClosedWorld",
+          "resolvedDeviceBuffers",
+          "borrowAndAliasFootprints",
+          "tenantQueueGeneration",
+          "barrierConvergence",
+          "checkedPaddedTail"
+        ]
+      },
+      {
+        "id": "G3_DEVICE_DISPATCH",
+        "state": "NOT_IMPLEMENTED",
+        "requiredProofs": [
+          "authenticatedProviderCapability",
+          "providerIssuedAllocationLoans",
+          "kernelBinaryIdentity",
+          "fenceQuiescence",
+          "deviceOutputOracle"
+        ]
+      }
     ]
   },
   "diagnostics": [
