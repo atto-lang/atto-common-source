@@ -1,0 +1,94 @@
+{
+  "schema": "attolang.gpu-explicit-launch-ir/1",
+  "status": "PROPOSED_NOT_IMPLEMENTED",
+  "compatibleWith": [
+    "gpu fnc",
+    "gpu.global_id(axis)",
+    "GpuArray<T>",
+    "cpu-gpu-task-v2"
+  ],
+  "sourceExtension": ".atto",
+  "surface": {
+    "entryDeclaration": "gpu fnc",
+    "call": "launch <kernel>(<args>) on gpu(<device>) { grid: [x,y,z], block: [x,y,z], queue: <queue>, shared_bytes: <bytes> }",
+    "result": "Future<void>",
+    "cudaChevronsAccepted": false,
+    "defaultCpuFallback": false,
+    "implicitTransfer": false
+  },
+  "launchIR": {
+    "required": [
+      "kernelSymbol",
+      "argsInSourceOrder",
+      "grid3",
+      "block3",
+      "sharedBytes",
+      "queueIdentity",
+      "deviceIdentity",
+      "tenantIdentity",
+      "allocationGenerations",
+      "accessFootprints",
+      "capabilities",
+      "completionFence"
+    ],
+    "verification": [
+      "checkedExtentProducts",
+      "nonZeroBlock",
+      "deviceGeometryLimits",
+      "sameTenantDeviceGeneration",
+      "ownedNonAliasingMutableRegions",
+      "deviceSafeEffects",
+      "noImplicitTransfer",
+      "fenceQuiescenceBeforeReclaim"
+    ]
+  },
+  "diagnostics": [
+    {
+      "id": "GPU-LAUNCH-001",
+      "reason": "launch target is not a statically resolved gpu fnc entry"
+    },
+    {
+      "id": "GPU-LAUNCH-002",
+      "reason": "host-resident or unsupported ABI parameter"
+    },
+    {
+      "id": "GPU-LAUNCH-003",
+      "reason": "invalid/overflowing launch dimensions or device budget"
+    },
+    {
+      "id": "GPU-LAUNCH-004",
+      "reason": "missing capability, device, queue or matching generation"
+    },
+    {
+      "id": "GPU-LAUNCH-005",
+      "reason": "unsafe overlapping mutable device loans or premature release"
+    },
+    {
+      "id": "GPU-LAUNCH-006",
+      "reason": "unsupported effect or suspension inside gpu kernel"
+    },
+    {
+      "id": "GPU-LAUNCH-007",
+      "reason": "barrier requires proved workgroup convergence"
+    },
+    {
+      "id": "GPU-LAUNCH-008",
+      "reason": "unsupported GPU provider/feature without CPU fallback"
+    },
+    {
+      "id": "GPU-LAUNCH-009",
+      "reason": "CUDA chevron syntax is not AttoLang launch syntax"
+    }
+  ],
+  "targetBackends": [
+    "java",
+    "llvm",
+    "net",
+    "wasm",
+    "forge",
+    "cranelift",
+    "js"
+  ],
+  "evidenceState": "NOT_EXECUTED",
+  "notes": "This is a semantic/type IR proposal, not a compiled guest nor hardware receipt. Each backend must fail closed before it implements this contract."
+}
