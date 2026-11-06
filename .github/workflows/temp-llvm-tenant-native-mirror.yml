@@ -1,0 +1,32 @@
+name: TEMP private LLVM tenant native exact-blob test
+on:
+  push:
+    branches:
+      - ci/llvm-tenant-native-mirror-20261106
+permissions:
+  contents: read
+jobs:
+  llvm-native-tenant:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact temporary private branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify checked out branch head SHA
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "CARRIER_HEAD=$EXPECTED_HEAD"
+      - name: Install Clang, compiler toolchain and CMake
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build
+      - name: Execute real native host tenant VM and ASan UBSan gates
+        run: bash ci/llvm-tenant/verify-mirror.sh
+      - name: Explicit non-parity security scope
+        run: echo "TRUSTED HOST NATIVE ONLY; no guest-lowering, hostile native security, full PR CI or five-backend proof"
