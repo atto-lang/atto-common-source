@@ -78,6 +78,10 @@
     {
       "id": "GPU-LAUNCH-009",
       "reason": "CUDA chevron syntax is not AttoLang launch syntax"
+    },
+    {
+      "id": "GPU-LAUNCH-010",
+      "reason": "logical over/group launch lacks a proved safe tail or barrier-convergent memory access"
     }
   ],
   "targetBackends": [
@@ -90,5 +94,37 @@
     "js"
   ],
   "evidenceState": "NOT_EXECUTED",
-  "notes": "This is a semantic/type IR proposal, not a compiled guest nor hardware receipt. Each backend must fail closed before it implements this contract."
+  "notes": "This is a semantic/type IR proposal, not a compiled guest nor hardware receipt. Each backend must fail closed before it implements this contract.",
+  "geometryModes": {
+    "expert": {
+      "fields": [
+        "grid",
+        "block",
+        "queue"
+      ],
+      "axes": [
+        3
+      ],
+      "meaning": "grid counts groups; block counts work-items per group",
+      "preserveExactExtent": true
+    },
+    "logical": {
+      "fields": [
+        "over",
+        "group",
+        "queue"
+      ],
+      "axes": [
+        1,
+        2,
+        3
+      ],
+      "meaning": "over counts logical work-items; group counts work-items per group; physical grid is ceil_div(over,group)",
+      "preserveLogicalExtentInIR": true,
+      "requiresTailSafetyProof": true
+    },
+    "mutualExclusion": true,
+    "implicitCpuFallback": false,
+    "implicitHostDeviceTransfer": false
+  }
 }
