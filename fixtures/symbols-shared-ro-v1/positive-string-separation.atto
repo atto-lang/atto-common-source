@@ -1,0 +1,8 @@
+pub routine main(): void {
+  if #ready eq "ready" then
+    stdio.stdout.write("aliased");
+  else
+    stdio.stdout.write("distinct");
+  fi
+  return;
+}
