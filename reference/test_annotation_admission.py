@@ -58,6 +58,12 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
             self.use("Ret", "function", ["int"]), self.use("Ret", "function", ["bool"])
         ]))
 
+    def test_annotation_batch_cannot_mix_declarations(self):
+        self.rejects("MIXED_DECLARATION_TARGET", lambda: admit_declaration(self.spec, [
+            self.use("Doc", "class", ["class docs"]),
+            self.use("Doc", "actor", ["actor docs"]),
+        ]))
+
     def test_wrong_target_ret_on_module(self):
         self.rejects("WRONG_TARGET", lambda: admit_declaration(self.spec, [self.use("Ret", "module", ["int"])]))
 
