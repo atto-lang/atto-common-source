@@ -66,7 +66,7 @@ const done = launch saxpy(scale, x, y, out, n) on gpu(device) {
 await done;
 ```
 
-`over/group` and `grid/block` are mutually exclusive. No `group` field without `over`; no mixing with `block`, no implicit auto-tuning or silent device selection. Three-dimensional expert mode retains exact 3-element extent arrays for compatibility; logical mode accepts 1–3 dimensions and pads with 1. All dimensions must be checked nonnegative signed-64-bit values; physical groups must fit device-defined axis and total budgets. `group` dimensions must be strictly positive. A zero logical extent produces an empty, fence-quiescent completion after ordinary authority/loan preflight, not a physical zero-sized kernel.
+`over/group` and `grid/block` are mutually exclusive. No `group` field without `over`; no mixing with `block`, no implicit auto-tuning or silent device selection. Three-dimensional expert mode retains exact 3-element extent arrays for compatibility; logical mode accepts 1–3 dimensions and pads with 1. All dimensions must be checked nonnegative signed-64-bit values; physical groups must fit device-defined axis and total budgets. `group` dimensions must be strictly positive. A zero logical extent produces an empty, fence-quiescent completion after ordinary authority/loan preflight, not a physical zero-sized kernel. In contrast, an **exact physical grid with any zero axis is rejected** as `GPU-LAUNCH-003`. A logical planner must preserve the original logical work count separately from total padded dispatched lanes; the latter is not a proof of logical bounds safety.
 
 ### Tail safety, divergence and barriers
 
@@ -93,6 +93,10 @@ Dim1to3 = "[" Expr [ "," Expr [ "," Expr ] ] "]" ;
 ```
 
 Named fields are part of source grammar and evaluated once in source order; no runtime dictionaries, positional shell strings or C++ preprocessor. The short spelling `over/group` can be normalized in typed IR to **both** logicalExtent and physicalGrid/physicalBlock; do not overwrite `over` with `grid` and lose the logical domain.
+
+## Canonical form versus other draft proposals
+
+Conformance PRs #504 and #505 contain competing proposed kernel spellings (`compute fnc`, `define pub kernel`, `launch ... with`, `kernel.launch`), which are **not accepted aliases**. The common-source decision remains `gpu fnc` + `launch ... on gpu(device)` to preserve the existing Java/Graal GPU vocabulary and draft AST integration. The reference oracles in those PRs may still supply conservative *semantic* negatives, especially positive physical geometry, but should not be mistaken for approved parsing grammar.
 
 ## Proof gates and honest status
 

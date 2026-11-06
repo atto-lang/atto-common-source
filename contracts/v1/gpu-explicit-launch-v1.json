@@ -39,7 +39,10 @@
       "ownedNonAliasingMutableRegions",
       "deviceSafeEffects",
       "noImplicitTransfer",
-      "fenceQuiescenceBeforeReclaim"
+      "fenceQuiescenceBeforeReclaim",
+      "nonZeroPhysicalGrid",
+      "emptyLogicalExtentNoDispatch",
+      "separatePaddedLanesFromLogicalWorkItems"
     ]
   },
   "diagnostics": [
@@ -106,7 +109,8 @@
         3
       ],
       "meaning": "grid counts groups; block counts work-items per group",
-      "preserveExactExtent": true
+      "preserveExactExtent": true,
+      "physicalGridAxesPositive": true
     },
     "logical": {
       "fields": [
@@ -121,7 +125,9 @@
       ],
       "meaning": "over counts logical work-items; group counts work-items per group; physical grid is ceil_div(over,group)",
       "preserveLogicalExtentInIR": true,
-      "requiresTailSafetyProof": true
+      "requiresTailSafetyProof": true,
+      "zeroExtent": "EMPTY_QUIESCENT_AFTER_ADMISSION_NO_PHYSICAL_DISPATCH",
+      "paddedLanesAreNotLogicalWorkItems": true
     },
     "mutualExclusion": true,
     "implicitCpuFallback": false,
