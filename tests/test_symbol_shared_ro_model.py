@@ -3,6 +3,7 @@
 NOT a compiler, native read-only mapping, concurrent actor runtime or backend
 conformance suite. Tests exercise policy and immutable snapshot invariants.
 """
+import hashlib
 import json
 import unicodedata
 import unittest
@@ -304,6 +305,28 @@ class SharedROSymbolModelTest(unittest.TestCase):
         lease = registry.pin(self.trusted)
         self.assertEqual(lease.view.get("ok"), 1)
         lease.release()
+
+    def test_guest_fixtures_are_exact_blob_pinned_and_not_claimed_executed(self):
+        manifest = json.loads((VECTORS.parent / "symbols-shared-ro-v1" /
+                               "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["schema"], "atto.symbol-shared-ro-guest-fixtures/v1")
+        self.assertEqual(manifest["status"], "NOT_EXECUTED")
+        self.assertEqual(len(manifest["cases"]), 7)
+        self.assertEqual(len({case["path"] for case in manifest["cases"]}), 7)
+        self.assertEqual(len(manifest["backends"]), 5)
+        self.assertTrue(all(item["status"] == "NOT_EXECUTED"
+                            for item in manifest["backends"].values()))
+        for case in manifest["cases"]:
+            with self.subTest(case=case["path"]):
+                path = VECTORS.parent.parent / case["path"]
+                payload = path.read_bytes()
+                actual = hashlib.sha1(
+                    b"blob " + str(len(payload)).encode("ascii") + b"\0" + payload
+                ).hexdigest()
+                self.assertEqual(actual, case["git_blob_sha1"])
+                self.assertTrue(case["path"].endswith(".atto"))
+                self.assertIn(case["expected"],
+                              ("accept", "reject_lexer", "reject_parser", "reject_typecheck"))
 
     def test_no_permanent_intern_registry_is_needed_for_identity(self):
         x = Symbol("process", "same").canonical()
