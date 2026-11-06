@@ -1,0 +1,726 @@
+{
+  "schema": "atto.annotation-targets.v2",
+  "version": 2,
+  "status": "PROPOSED_REFERENCE_CONTRACT_ONLY_NOT_GUEST_EXECUTED",
+  "purpose": "Registry and fail-closed admission model for all declaration and type-use targets; not a compiler implementation.",
+  "supersedesLegacyV1": false,
+  "legacyContract": "ores-truffle-oreslang/oreslang-source.java contracts/v1/ANNOTATION_ADMISSION_V1.md (draft PR #2275)",
+  "sourceForm": "@Name or @Name(positional, named: constant) preceding an applicable declaration; type-use/return annotations require explicit grammar approval.",
+  "targets": [
+    "package",
+    "module",
+    "import",
+    "class",
+    "struct",
+    "record",
+    "interface",
+    "trait",
+    "enum",
+    "enum_variant",
+    "actor",
+    "actor_handler",
+    "actor_message",
+    "function",
+    "method",
+    "constructor",
+    "field",
+    "property",
+    "parameter",
+    "return_type",
+    "type_alias",
+    "type_use",
+    "generic_parameter",
+    "local_binding",
+    "closure",
+    "macro_definition"
+  ],
+  "phases": [
+    "metadata",
+    "expand",
+    "proof",
+    "abi"
+  ],
+  "constraints": {
+    "resolvedIdentity": "package-qualified annotation type, exact case-sensitive identifier; no confusable or display-name matching",
+    "unknown": "reject (including metadata) until schema and target are registered",
+    "wrongTarget": "reject before lowering",
+    "duplicates": "reject unless declared repeatable; no last-wins",
+    "arguments": "constant-only; no side effects, actor execution, reflection, dynamic loading, I/O, network, clock or randomness; type-exact; labels unique; positional/name collisions rejected",
+    "limits": {
+      "maxAnnotationsPerDeclaration": 64,
+      "maxArgumentsPerAnnotation": 8,
+      "maxArgumentStringBytes": 4096,
+      "maxExpansionDepth": 32,
+      "maxExpansionNodes": 10000,
+      "maxConstEvalSteps": 100000
+    },
+    "order": "Resolve and validate targets; expand hygienically; resolve/type check; ownership/borrow/effect checks; verify security and ABI; lower for each backend.",
+    "retention": "Every compiler-affecting use survives typed AST/HIR and is consumed with traceable proof or fails; no silent erase. Metadata-only uses cannot change behavior.",
+    "authority": "Annotations do not mint capabilities; RequiresPermission/CallerRole are checks, never grants. Tenant, actor, supervisor CONTROL, sealed-state, FFI and sandbox policies remain authoritative.",
+    "aot": "No runtime reflection, dynamic code generation or runtime annotation interpreter is required. Full AOT backends must reject unlowered semantic annotation before IR or emitted artifact.",
+    "hotReload": "Changed definition/version/expansion fingerprint invalidates typed/effect/ownership/ABI incremental and hot-reload caches.",
+    "securitySpoofingRejected": [
+      "@Trusted",
+      "@Unsafe",
+      "@AllowAll",
+      "@Untrusted"
+    ],
+    "validationEvidences": [
+      "parser-reject-with-diagnostic",
+      "type-ownership-effect-proof",
+      "pre-IR-guard",
+      "no-artifact-negative",
+      "exact-head-executed-guest-positive",
+      "AOT-no-reflection"
+    ]
+  },
+  "backendStatus": {
+    "java": "NOT_EXECUTED_THIS_CONTRACT",
+    "llvm": "NOT_EXECUTED_THIS_CONTRACT",
+    "wasm": "NOT_EXECUTED_THIS_CONTRACT",
+    "forge": "NOT_EXECUTED_THIS_CONTRACT",
+    "net": "NOT_EXECUTED_THIS_CONTRACT"
+  },
+  "legacyObservations": {
+    "java": "Draft admission PR describes parser-level @Ret, module @BuildMetadata, and field @FromJson paths; not verified runtime parity.",
+    "llvm": "Draft admission PR describes limited native actor annotation gates; not a Wasm guest guarantee.",
+    "wasm": "Draft source preflight rejects unlowered annotations.",
+    "net": "Draft scalar and structured parsers reject unlowered annotations.",
+    "forge": "Draft scalar and native-call parsers reject unlowered annotations."
+  },
+  "registry": [
+    {
+      "qualifiedName": "atto.core.Doc",
+      "allowedTargets": [
+        "package",
+        "module",
+        "import",
+        "class",
+        "struct",
+        "record",
+        "interface",
+        "trait",
+        "enum",
+        "enum_variant",
+        "actor",
+        "actor_handler",
+        "actor_message",
+        "function",
+        "method",
+        "constructor",
+        "field",
+        "property",
+        "parameter",
+        "return_type",
+        "type_alias",
+        "type_use",
+        "generic_parameter",
+        "local_binding",
+        "closure",
+        "macro_definition"
+      ],
+      "phase": "metadata",
+      "arguments": [
+        {
+          "name": "text",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": true,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Deprecated",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record",
+        "enum",
+        "enum_variant",
+        "actor",
+        "interface",
+        "trait",
+        "function",
+        "method",
+        "constructor",
+        "field",
+        "property",
+        "type_alias",
+        "module"
+      ],
+      "phase": "metadata",
+      "arguments": [
+        {
+          "name": "message",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Since",
+      "allowedTargets": [
+        "package",
+        "module",
+        "class",
+        "struct",
+        "record",
+        "actor",
+        "enum",
+        "interface",
+        "trait",
+        "function",
+        "method"
+      ],
+      "phase": "metadata",
+      "arguments": [
+        {
+          "name": "version",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Ret",
+      "allowedTargets": [
+        "function",
+        "method"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "type",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.BuildMetadata",
+      "allowedTargets": [
+        "module"
+      ],
+      "phase": "metadata",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.serde.FromJson",
+      "allowedTargets": [
+        "field",
+        "property"
+      ],
+      "phase": "expand",
+      "arguments": [
+        {
+          "name": "key",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.serde.SerialName",
+      "allowedTargets": [
+        "field",
+        "property",
+        "enum_variant",
+        "actor_message"
+      ],
+      "phase": "expand",
+      "arguments": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.serde.Skip",
+      "allowedTargets": [
+        "field",
+        "property"
+      ],
+      "phase": "expand",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Derive",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record",
+        "enum"
+      ],
+      "phase": "expand",
+      "arguments": [
+        {
+          "name": "trait",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": true,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Test",
+      "allowedTargets": [
+        "function",
+        "method"
+      ],
+      "phase": "metadata",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Benchmark",
+      "allowedTargets": [
+        "function",
+        "method"
+      ],
+      "phase": "metadata",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Inline",
+      "allowedTargets": [
+        "function",
+        "method",
+        "closure"
+      ],
+      "phase": "abi",
+      "arguments": [
+        {
+          "name": "mode",
+          "type": "enum",
+          "required": false,
+          "values": [
+            "hint",
+            "always",
+            "never"
+          ]
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Cold",
+      "allowedTargets": [
+        "function",
+        "method"
+      ],
+      "phase": "abi",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.NoCopy",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record"
+      ],
+      "phase": "proof",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Sendable",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record",
+        "enum",
+        "actor_message",
+        "type_alias"
+      ],
+      "phase": "proof",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Serializable",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record",
+        "enum",
+        "actor_message",
+        "type_alias"
+      ],
+      "phase": "proof",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.NoEscape",
+      "allowedTargets": [
+        "parameter",
+        "return_type",
+        "closure"
+      ],
+      "phase": "proof",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Pure",
+      "allowedTargets": [
+        "function",
+        "method",
+        "closure"
+      ],
+      "phase": "proof",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Repr",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record",
+        "enum"
+      ],
+      "phase": "abi",
+      "arguments": [
+        {
+          "name": "layout",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "native",
+            "c",
+            "transparent"
+          ]
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Align",
+      "allowedTargets": [
+        "class",
+        "struct",
+        "record",
+        "field"
+      ],
+      "phase": "abi",
+      "arguments": [
+        {
+          "name": "bytes",
+          "type": "positive_int",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Packed",
+      "allowedTargets": [
+        "struct",
+        "record"
+      ],
+      "phase": "abi",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.actor.ActorMaxThreads",
+      "allowedTargets": [
+        "actor"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "limit",
+          "type": "positive_int",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.actor.MailboxCapacity",
+      "allowedTargets": [
+        "actor"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "capacity",
+          "type": "positive_int",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.actor.Critical",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "budget_ns",
+          "type": "positive_int",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.actor.Isolation",
+      "allowedTargets": [
+        "actor"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "domain",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "actor",
+            "tenant"
+          ]
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.security.RequiresPermission",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "permission",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.security.CallerRole",
+      "allowedTargets": [
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "role",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.security.CallableBy",
+      "allowedTargets": [
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "role",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.DefaultArgVals",
+      "allowedTargets": [
+        "function",
+        "method",
+        "constructor"
+      ],
+      "phase": "expand",
+      "arguments": [
+        {
+          "name": "values",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Inject",
+      "allowedTargets": [
+        "field",
+        "constructor",
+        "parameter"
+      ],
+      "phase": "expand",
+      "arguments": [
+        {
+          "name": "container",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.actor.StateBacked",
+      "allowedTargets": [
+        "actor"
+      ],
+      "phase": "expand",
+      "arguments": [
+        {
+          "name": "container",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.HotReload",
+      "allowedTargets": [
+        "class",
+        "actor",
+        "function",
+        "method"
+      ],
+      "phase": "abi",
+      "arguments": [
+        {
+          "name": "policy",
+          "type": "enum",
+          "required": true,
+          "values": [
+            "replace",
+            "restart"
+          ]
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.ffi.Import",
+      "allowedTargets": [
+        "function",
+        "method"
+      ],
+      "phase": "abi",
+      "arguments": [
+        {
+          "name": "symbol",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.TypeUse",
+      "allowedTargets": [
+        "type_use",
+        "generic_parameter"
+      ],
+      "phase": "metadata",
+      "arguments": [
+        {
+          "name": "tag",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Suppress",
+      "allowedTargets": [
+        "local_binding",
+        "parameter",
+        "function",
+        "method"
+      ],
+      "phase": "metadata",
+      "arguments": [
+        {
+          "name": "rule",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": true,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.MacroOrigin",
+      "allowedTargets": [
+        "macro_definition"
+      ],
+      "phase": "metadata",
+      "arguments": [
+        {
+          "name": "source",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    }
+  ],
+  "reportingRule": "Reference contract/model tests are NOT compiler acceptance, executed AOT, or five-backend parity. A backend only moves to EXECUTED upon exact-head native test evidence."
+}
