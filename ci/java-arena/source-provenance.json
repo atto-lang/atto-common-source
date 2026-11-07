@@ -2,7 +2,7 @@
   "schema": "atto.private-jni-actor-arena-soak.v1",
   "origin": {
     "repository": "ores-truffle-oreslang/oreslang-source.java",
-    "head_sha": "e3ad6e2a5acf920ee1f21d9b3616069e55e3e28c",
+    "head_sha": "1147aed592f545c1ebe6e1f0f34f0480f96c2dae",
     "pr": 2606
   },
   "scope": "Five exact Git blobs; independent JDK25 JNI host arena test. No GraalVM Native Image or AttoLang guest, no tenant execution.",
@@ -10,7 +10,7 @@
     "src/main/c/oresarena.c": "20beb7e8c09553431951e0296d8e210fe0f130cb",
     "src/main/java/dev/oreslang/runtime/ActorNativeArena.java": "abeadf4a17bd544cbb67ad1b4fcdc471e109132f",
     "src/main/java/dev/oreslang/runtime/ActorLinearMemory.java": "0d9797f394d2dd94adaa260ab77d67d2b6dfa768",
-    "src/test/java/dev/oreslang/runtime/ActorNativeArenaSoak.java": "ce8048fa6086e029c240a51b835a1ce0cd550bc7",
+    "src/test/java/dev/oreslang/runtime/ActorNativeArenaSoak.java": "2c5e7e801b14e0b5fadfbf2e00ea1a34670602ec",
     "scripts/verify-actor-native-arena-soak.sh": "be5f3b52a65a89b42968fc9f5c671bd906263021",
     "src/main/java/dev/oreslang/runtime/OresSymbol.java": "015bfc2bb55940068b2e57e36beae0ea301f1b7d",
     "src/main/java/dev/oreslang/runtime/NativeCarrierExecutor.java": "41e1940367ead5881b08db96e8821c4f4587d4f6"
