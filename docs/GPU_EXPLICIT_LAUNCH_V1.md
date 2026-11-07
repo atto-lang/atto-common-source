@@ -309,3 +309,23 @@ compiler or JUnit. Hosted workflow steps still return null; all cases
 are `NOT_EXECUTED`. This is distinct from a provider-authenticated
 allocation or immutable compiler-issued ownership proof. Keep physical
 GPU dispatch, implicit CPU fallback, and merge promotion disabled.
+
+
+#### G1f.1 targeted mutation-test assurance
+
+The Java G1f forged typed-HIR suite was extended to **27** authored
+JUnit methods (26 expected malformed-HIR rejections plus a
+non-executable canonical source control), correcting the static
+global-id-axis test so the axis validator is actually exercised.
+Added malformed typed value cases include arity, mismatched comparison
+types, unknown boolean/integer literal spelling, incorrect buffer
+capabilities and unexpected global-id arguments.
+
+Exact Java source [#2610](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2610)
+head `78f46f46830c8cefede2e2cb2d48a48a57a6254f`,
+tree `8c0a52f06bc8027cd55e46db53ed8099935126ec`.
+Conformance receipt [#502](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502)
+pins source/test Git blobs and authored test identifiers. Hosted Java
+workflow `42333884103` has not supplied executed job-step evidence.
+No test pass, GPU guest compilation, device execution or independent
+security review should be inferred. Physical dispatch and fallback remain off.
