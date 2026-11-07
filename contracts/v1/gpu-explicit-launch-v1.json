@@ -96,7 +96,10 @@
           "provesAllocationLength": false,
           "provesBarrierConvergence": false,
           "provesOwnedDeviceLoan": false,
-          "provesRealGpuExecution": false
+          "provesRealGpuExecution": false,
+          "allowedBoundParameter": "n",
+          "otherIntegerParameterAdmitted": false,
+          "constantBoundAdmitted": false
         },
         "llvmHeaderAdmission": {
           "backend": "llvm",
@@ -126,7 +129,14 @@
         "providerIssuedLoans": false,
         "completionFenceProof": false,
         "deviceDispatch": false,
-        "compilerAndGpuGuestEvidence": "NOT_EXECUTED"
+        "compilerAndGpuGuestEvidence": "NOT_EXECUTED",
+        "lexicalKernelNamesModuleScoped": true,
+        "qualifiedKernelNamesRequirePublicVisibility": true,
+        "importAliasPermissionProof": false,
+        "tailGuardRequiresCanonicalN": true,
+        "alternativeBoundSolverImplemented": false,
+        "nativeLlvmGpuGlobalIdAxisSyntax": "single literal axis 0..2",
+        "nativeLlvmTypedIntrinsicIR": false
       },
       {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",

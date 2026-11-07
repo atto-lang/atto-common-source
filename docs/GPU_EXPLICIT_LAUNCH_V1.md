@@ -170,3 +170,42 @@ compiler-issued typed bindings, authentic provider snapshots, generation
 fencing, cancellation-safe ownership loans and verified device completion.
 `steps=[]` and `steps=null` are runner admission failures and never prove
 any of this. No CPU fallback.
+
+## G1d safety audit: canonical tail bound and module visibility
+
+A conservative Java source audit found that a 1D kernel could previously
+pass the tail-guard source check with a different parameter `m` or a
+nonnegative constant, while the separate buffer-capacity preflight checked
+`n`. This proof mismatch is incompatible with safe device dispatch.
+The Java source checker now accepts the restricted 1D f32 indexed access
+only when the guard compares `gpu.global_id(0)` (or its checked immutable
+local alias) against the **specific integer kernel parameter named `n`**.
+`if i < m` and `if i < 1024` are denied with
+`GPU-KERNEL-010`, and conformance corpus #502 pins the mutations as
+`NOT_EXECUTED` source fixtures. This is not the eventual general
+symbolic range and array-length solver; alternative proven bounds require
+a different, complete proof artifact. The capacity check still does not
+read authenticated provider allocation metadata.
+
+Separately, Java `GpuKernelSourceLinkV1` no longer resolves unqualified
+kernel names from arbitrary other modules. A source-only unqualified launch
+looks within its lexical module, and a qualified reference to a different
+module checks whether the target kernel was publicly declared. This is
+**not** complete import/alias/linker permission verification, and it never
+issues a device capability. The program remains fail-closed via
+`GPU-KERNEL-008`.
+
+LLVM native source admission now rejects malformed
+`gpu.global_id(axis)`: the source-only allowlist accepts exactly one
+literal axis 0, 1 or 2. A dynamic, unsupported or multi-argument axis
+fails with `GPU-KERNEL-006`, as do unknown device/host calls. This
+does not provide a typed LLVM GPU builtin or a backend kernel binary.
+Compiled test runs, provider ownership, alias quiescence and actual
+hardware device results remain `NOT_EXECUTED`. No implicit CPU fallback.
+
+**Security gate:** Do not combine source tail checks, untyped lexical
+launch names and caller-supplied footprint records into an executable
+launch permit. Require a single immutable compiler-issued typed device
+IR with imported symbol identity, generated bounds/alias proofs, trusted
+provider snapshots, generation-scoped allocation loans and an authentic
+device completion fence, all bound to exact source/kernel binary identity.
