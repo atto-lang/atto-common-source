@@ -131,6 +131,42 @@ class FourFormsDispatchContractTest(unittest.TestCase):
             with self.assertRaisesRegex(DispatchParityError, "duplicate dispatch form"):
                 oracle(p)
 
+    def test_direct_dictionary_cannot_bypass_oracle_validation(self):
+        # compare() is called by external CI adapters with dictionaries, not
+        # necessarily via oracle(path). The same validation must apply.
+        mutations = [
+            lambda m: m["cases"][3].update(form="match", return_destination="ARM_RESULT"),
+            lambda m: m["cases"][0].update(return_destination="FUNCTION_RETURN"),
+            lambda m: m["cases"][0].update(expected_result=True),
+            lambda m: m["cases"][0].update(expected_result=1 << 64),
+            lambda m: m["cases"][0].update(id="../bad"),
+            lambda m: m["cases"][0].update(source="  "),
+            lambda m: m["cases"][0].update(extra="smuggled"),
+            lambda m: m["cases"][0]["support"].update(wasm="candidate"),
+            lambda m: m.update(extra="unreviewed"),
+            lambda m: m["cases"].pop(),
+        ]
+        for mutate in mutations:
+            manifest = copy.deepcopy(self.manifest)
+            mutate(manifest)
+            with self.subTest(mutation=mutations.index(mutate)):
+                with self.assertRaises(DispatchParityError):
+                    compare(self.graal, self.llvm, manifest, require_full=False)
+
+    def test_direct_dictionary_rejects_nonobject_manifest(self):
+        for bad in (None, [], "manifest", 42):
+            with self.subTest(value=bad):
+                with self.assertRaises(DispatchParityError):
+                    compare(self.graal, self.llvm, bad, require_full=False)
+
+    def test_result_trace_cannot_be_omitted_or_reordered(self):
+        for trace in ([], ["FUNCTION_RETURN", "ARM_RESULT"], ["ARM_RESULT"],
+                      ["ARM_RESULT", "FUNCTION_RETURN", "FUNCTION_RETURN"]):
+            self.assert_rejected(
+                lambda r, trace=trace: r["observed"]["value-match-arm-result"]
+                .update(return_trace=trace)
+            )
+
     def test_boolean_or_out_of_range_expected_result_fails_closed(self):
         from tempfile import TemporaryDirectory
         import json
