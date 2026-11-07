@@ -4,6 +4,7 @@ NOT a compiler, native read-only mapping, concurrent actor runtime or backend
 conformance suite. Tests exercise policy and immutable snapshot invariants.
 """
 import hashlib
+import itertools
 import json
 import unicodedata
 import unittest
@@ -17,6 +18,10 @@ MAX_BYTES = 256
 MAX_RAW = 1024
 MAX_NODES = 64
 MAX_DEPTH = 16
+MAX_LIVE_GENERATIONS = 8
+# Sequential reference model only. Runtime backends require their own atomic
+# process/VM-local unique generation allocation.
+_NEXT_REGION_EPOCH = itertools.count(1)
 
 
 def canonical_name(name):
@@ -165,19 +170,31 @@ class ReadOnlyRegistry:
         self.manifest = manifest
         self.current = 0
         self.records = {}
+        self.closed = False
 
     def publish(self, value):
+        if self.closed:
+            raise RuntimeError("closed region registry")
         prepared = freeze(value, {"trust": "trusted"}, self.manifest)
+        if self.closed:
+            raise RuntimeError("closed region registry")
         old = self.current
-        self.current += 1
-        self.records[self.current] = {"value": prepared, "pins": 0}
+        discard_unpinned_current = (
+            1 if old and self.records[old]["pins"] == 0 else 0
+        )
+        if len(self.records) + 1 - discard_unpinned_current > MAX_LIVE_GENERATIONS:
+            raise RuntimeError("too many pinned region generations")
+        # Do not mint an epoch on rejection; a failed publication is inert.
+        epoch = next(_NEXT_REGION_EPOCH)
+        self.current = epoch
+        self.records[epoch] = {"value": prepared, "pins": 0}
         self._retire(old)
-        return self.current
+        return epoch
 
     def pin(self, context, expected_epoch=None):
-        if self.current == 0 or (expected_epoch is not None and
-                                 expected_epoch != self.current):
-            raise ValueError("stale or missing region generation")
+        if self.closed or self.current == 0 or (
+                expected_epoch is not None and expected_epoch != self.current):
+            raise ValueError("closed, stale or missing region generation")
         record = self.records[self.current]
         view = record["value"] if context["trust"] == "trusted" else freeze(
             record["value"], context, self.manifest)
@@ -190,6 +207,14 @@ class ReadOnlyRegistry:
             raise RuntimeError("pin ledger underflow")
         record["pins"] -= 1
         self._retire(epoch)
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+        self.current = 0
+        for epoch in tuple(self.records):
+            self._retire(epoch)
 
     def _retire(self, epoch):
         if epoch and epoch != self.current:
