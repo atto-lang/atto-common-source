@@ -121,8 +121,11 @@ def freeze(value, context, manifest):
                     seen_keys = set()
                     for key, entry in source:
                         frozen_key = walk(key, depth + 1)
-                        if not isinstance(frozen_key, (str, int, bool, Symbol)):
-                            raise TypeError("non-scalar map key")
+                        # v1 Map key domain is STRING or SYMBOL, not
+                        # arbitrary Python hashables. bool/int equality in
+                        # Python (True == 1) must not silently collapse keys.
+                        if type(frozen_key) is not str and not isinstance(frozen_key, Symbol):
+                            raise TypeError("Symbol v1 map key must be String or Symbol")
                         if frozen_key in seen_keys:
                             raise ValueError("duplicate canonical logical map key")
                         seen_keys.add(frozen_key)
@@ -273,6 +276,19 @@ class SharedROSymbolModelTest(unittest.TestCase):
             nested = [nested]
         with self.assertRaises(ValueError):
             freeze(nested, self.trusted, self.manifest)
+
+    def test_non_symbol_non_string_keys_are_rejected_not_collapsed(self):
+        # The host language considers True == 1; AttoLang must not silently
+        # collapse their nominal key identities or widen an undeclared map.
+        with self.assertRaises(TypeError):
+            freeze({1: "number"}, self.trusted, self.manifest)
+        with self.assertRaises(TypeError):
+            freeze({True: "bool"}, self.trusted, self.manifest)
+        # Mixed declared String and Symbol key domains remain distinct.
+        frozen = freeze({"ready": 1, Symbol("process", "ready"): 2},
+                        self.trusted, self.manifest)
+        self.assertEqual(frozen.get("ready"), 1)
+        self.assertEqual(frozen.get(Symbol("process", "ready")), 2)
 
     def test_generation_pins_and_tenant_copy(self):
         registry = ReadOnlyRegistry(self.manifest)
