@@ -83,7 +83,30 @@
         "kernelLaunchBinding": false,
         "compilerEffectProof": false,
         "ownershipProof": false,
-        "deviceDispatch": false
+        "deviceDispatch": false,
+        "oneDimensionalLaneGuard": {
+          "backend": "java",
+          "evidence": "SOURCE_TAIL_GUARD_ONLY_NOT_EXECUTABLE",
+          "diagnostic": "GPU-KERNEL-010",
+          "recognizes": [
+            "if i < n { load/store using i }",
+            "if i >= n { return } then load/store using i"
+          ],
+          "requiresExactLaneZeroIndex": true,
+          "provesAllocationLength": false,
+          "provesBarrierConvergence": false,
+          "provesOwnedDeviceLoan": false,
+          "provesRealGpuExecution": false
+        },
+        "llvmHeaderAdmission": {
+          "backend": "llvm",
+          "state": "HEADER_ABI_RECOGNIZED_ALWAYS_REJECTED",
+          "defaultDiagnostic": "GPU-KERNEL-008",
+          "typedDeviceHir": false,
+          "sourceOnlyLexicalEffectFilter": true,
+          "hostCodegen": false,
+          "deviceCodegen": false
+        }
       },
       {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",
