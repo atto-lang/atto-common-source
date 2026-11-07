@@ -134,3 +134,39 @@ records nine `.atto` source cases with exact Git blob identities.
 All seven backends remain `NOT_EXECUTED` until compiler-backed runs
 produce nonzero steps and source/guest receipts. Physical GPU execution,
 safety under driver failure and cancellation are still unimplemented.
+
+## G1d — source signature binding and capacity predicate (separate PR trees)
+
+Java/Graal [GPU source #2582](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2582)
+adds `GpuKernelSourceLinkV1` for a static same-compilation-unit `gpu fnc` declaration
+to `launch` site linkage, enforcing unique kernel identity, exact argument
+arity, supported literal types and rejection of host-effect argument expressions.
+Any lexical argument referring to a buffer is still
+`LEXICAL_NAME_UNTYPED`; it does not prove a device-buffer type,
+module capability, allocation identity or lifetime. The linker returns
+`SOURCE_SIGNATURE_ONLY_NOT_EXECUTABLE`, and production TypeChecker continues
+to reject GPU execution. The [five-case source-link conformance manifest](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/feat/atto-gpu-explicit-launch-contract-20261106/contracts/atto-gpu-kernel-source-link-v1.json)
+is proposal-only and `NOT_EXECUTED`.
+
+Independently, Java [GPU footprint #2583](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2583)
+adds `GpuKernelCapacityPreflightV1`. For the restricted 1D f32 kernel,
+it requires exact equality between supplied scalar n and logical over,
+ensures every supplied view has at least n x 4 bytes, validates four-byte
+alignment and the read/write parameter contract, and composes the existing
+footprint overlap, quota, tenant and device checks. Overflow is rejected.
+A zero logical extent is non-dispatching, but still undergoes ordinary view
+validation. Its report is `SNAPSHOT_CAPACITY_SHAPE_ONLY_NOT_EXECUTABLE`.
+**The supplied view records must eventually be backed by an authenticated
+immutable provider snapshot; caller-created records are not allocation
+authority, and a successful check cannot grant loans or enqueue.**
+
+These changes exist on **two independent Java draft PR heads**, not a
+single compiler-verified tree. The capacity preflight currently receives
+a caller-constructed view list; it is not yet automatically bound to the
+typed kernel signature or trusted device allocation registry. The source
+tail guard proves only canonical lane-index syntax, not allocation capacity.
+Before G2/G3, merge/reconcile the sources on one exact tree, implement
+compiler-issued typed bindings, authentic provider snapshots, generation
+fencing, cancellation-safe ownership loans and verified device completion.
+`steps=[]` and `steps=null` are runner admission failures and never prove
+any of this. No CPU fallback.

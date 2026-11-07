@@ -109,6 +109,26 @@
         }
       },
       {
+        "id": "G1d_SOURCE_LINK_AND_CAPACITY_SHAPE",
+        "state": "SEPARATE_JAVA_DRAFT_BRANCHES_NONEXECUTABLE",
+        "sourceKernelLaunchSymbolBinding": true,
+        "sourceLaunchArityCheck": true,
+        "literalArgumentTypesOnly": true,
+        "lexicalDeviceBufferTypesResolved": false,
+        "oneDimensionalF32CapacityPredicate": true,
+        "capacityRequiresLogicalOverEqualsN": true,
+        "capacityChecksEachView": true,
+        "capacityReport": "SNAPSHOT_CAPACITY_SHAPE_ONLY_NOT_EXECUTABLE",
+        "sourceLinkReport": "SOURCE_SIGNATURE_ONLY_NOT_EXECUTABLE",
+        "integratedOnSingleExactHead": false,
+        "authenticatedDeviceSnapshot": false,
+        "deviceAllocationCapacityProof": false,
+        "providerIssuedLoans": false,
+        "completionFenceProof": false,
+        "deviceDispatch": false,
+        "compilerAndGpuGuestEvidence": "NOT_EXECUTED"
+      },
+      {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",
         "state": "NOT_IMPLEMENTED",
         "requiredProofs": [
