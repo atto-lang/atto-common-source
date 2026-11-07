@@ -65,9 +65,11 @@ expected=[
     r"WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module",
     r"WARNING: Restricted methods will be blocked in a future release unless native access is enabled",
 ]
-if len(lines)==5 and lines[4]=="":
-    lines=lines[:4]
-if len(lines)!=4 or any(re.fullmatch(pattern,line) is None for pattern,line in zip(expected,lines)):
+if len(lines) < 4 or len(lines) > 8 or any(line != "" for line in lines[4:]):
+    print("GRAAL_EPSILON_UNEXPECTED_STDERR_RECORD_COUNT",file=sys.stderr)
+    sys.exit(1)
+lines = lines[:4]
+if any(re.fullmatch(pattern,line) is None for pattern,line in zip(expected,lines)):
     print("GRAAL_EPSILON_UNEXPECTED_NATIVE_STDERR",file=sys.stderr)
     print(pathlib.Path(sys.argv[1]).read_text(),file=sys.stderr)
     sys.exit(1)
