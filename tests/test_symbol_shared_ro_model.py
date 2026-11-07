@@ -352,8 +352,8 @@ class SharedROSymbolModelTest(unittest.TestCase):
                                "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["schema"], "atto.symbol-shared-ro-guest-fixtures/v1")
         self.assertEqual(manifest["status"], "NOT_EXECUTED")
-        self.assertEqual(len(manifest["cases"]), 7)
-        self.assertEqual(len({case["path"] for case in manifest["cases"]}), 7)
+        self.assertEqual(len(manifest["cases"]), 11)
+        self.assertEqual(len({case["path"] for case in manifest["cases"]}), 11)
         self.assertEqual(len(manifest["backends"]), 5)
         self.assertTrue(all(item["status"] == "NOT_EXECUTED"
                             for item in manifest["backends"].values()))
@@ -368,6 +368,12 @@ class SharedROSymbolModelTest(unittest.TestCase):
                 self.assertTrue(case["path"].endswith(".atto"))
                 self.assertIn(case["expected"],
                               ("accept", "reject_lexer", "reject_parser", "reject_typecheck"))
+                if case["expected"] == "accept":
+                    self.assertTrue(case.get("stdout"),
+                                    "accepted fixture must declare expected stdout")
+                else:
+                    self.assertNotIn("stdout", case,
+                                     "rejected fixture cannot claim guest output")
 
     def test_registry_epoch_minted_in_one_store_never_aliases_another(self):
         first = ReadOnlyRegistry(self.manifest)
