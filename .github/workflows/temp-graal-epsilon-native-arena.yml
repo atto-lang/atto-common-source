@@ -1,0 +1,37 @@
+name: TEMP real GraalVM Epsilon Native Image JNI actor arena
+on:
+  push:
+    branches:
+      - ci/graal-epsilon-native-arena-20261106
+permissions:
+  contents: read
+jobs:
+  native-image-epsilon-jni-host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact private carrier without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify exact carrier commit
+        env:
+          EXPECTED: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          git diff --quiet HEAD --
+          echo "CARRIER_HEAD=$EXPECTED"
+      - name: Install actual GraalVM JDK 25 and Native Image
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: graalvm
+          java-version: '25'
+      - name: Build true Native Image with Epsilon and execute JNI actor arena soak
+        run: bash ci/graal-epsilon/verify-native-image.sh
+      - name: Evidence boundary
+        run: |
+          echo 'JNI_NATIVE_IMAGE_EPSILON_HOST_SOAK_ONLY; not compiler-generated AttoLang guest'
+          echo 'GraalVM version shown in log; does not pin the Truffle SDK 25.3.4.1'
+          echo 'Sampled RSS does not prove long-term process-wide zero GC memory stability'
