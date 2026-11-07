@@ -156,6 +156,32 @@
         "privateSourceExternalMirrorAuthorized": false
       },
       {
+        "id": "G1e_DECLARED_HOST_ABI_SHAPE_ONLY",
+        "status": "JAVA_SOURCE_DECLARATION_CHECK_AUTHORED_JUNIT_NOT_EXECUTED",
+        "integrationPR": "ores-truffle-oreslang/oreslang-source.java#2610",
+        "integrationHeadSha": "ccb85fe1bf9303d1d714a5b350500a9fda46af6d",
+        "integrationTreeSha": "995214d81d884bb2c20666f65b8271eda67c808c",
+        "sourceTypeChecker": "GpuKernelTypedSourceArgsV1",
+        "integratedHostChecker": "GpuKernelSourceCapacityJoinV1.auditTypedSource",
+        "sourceEvidence": "DECLARED_HOST_ABI_SHAPE_ONLY_NOT_EXECUTABLE",
+        "declaredHostFormalTypesCrossChecked": true,
+        "exactBufferTypeAndAccessChecked": true,
+        "ambiguousOrUnresolvedHostNamesAllowed": false,
+        "writableSourceAliasAllowed": false,
+        "declarationOnlyNoLocalCaptureResolution": true,
+        "compilerIssuedSymbolProof": false,
+        "ownershipAndBorrowProof": false,
+        "authenticatedProviderBufferViews": false,
+        "authenticatedQueueGeneration": false,
+        "deviceCompletionFence": false,
+        "physicalDeviceDispatch": false,
+        "implicitCpuFallback": false,
+        "authoredJunitCases": 13,
+        "executedJunitCases": 0,
+        "testsEvidence": "NOT_EXECUTED",
+        "conformanceManifest": "oreslang-platform-conformance/contracts/atto-gpu-typed-host-args-v1.json"
+      },
+      {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",
         "state": "NOT_IMPLEMENTED",
         "requiredProofs": [

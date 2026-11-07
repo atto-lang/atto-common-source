@@ -241,3 +241,28 @@ runs remain `NOT_EXECUTED`: sampled source-org GitHub jobs returned
 requires independently authorized review and is not approved by
 source-only status. Retain GPU-KERNEL-008/GPU-LAUNCH-008 and disallow
 device dispatch, CPU fallback, physical GPU or ownership/fence claims.
+
+## G1e source-declared host parameter matching (still no GPU authority)
+
+Java/Graal draft [#2610](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2610)
+now includes `GpuKernelTypedSourceArgsV1` and
+`GpuKernelSourceCapacityJoinV1.auditTypedSource`. G1e checks
+source-declared host formal types against the kernel source signature
+and rejects mismatched f32 buffer access, unsupported or nested element
+types, unsupported scalar conversions, undeclared lexical names and
+writable source argument aliases. Reports are immutable and always
+`DECLARED_HOST_ABI_SHAPE_ONLY_NOT_EXECUTABLE` or a containing
+nonexecutable host-capacity report. The Java PR head for this change is
+`ccb85fe1bf9303d1d714a5b350500a9fda46af6d`
+(tree `995214d81d884bb2c20666f65b8271eda67c808c`).
+
+**Important:** This is a *source declaration checker*, NOT actual
+TypeChecker resolution of all local variables, ownership/borrow transfer,
+authentic GPU memory or a provider-issued launch permit. Existing
+legacy source-only `audit` paths remain nonexecuting. The 13 new JUnit
+cases are authored but NOT_EXECUTED due `steps=null` GitHub runner
+admission failures. The separate [eight-case proposed conformance
+corpus](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502)
+contains exact Git blob fixtures and explicitly disallows promoting
+fixture integrity into compiled guest or physical GPU evidence.
+No private-source cross-org mirror without independent authorization.
