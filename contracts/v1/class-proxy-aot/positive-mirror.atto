@@ -1,0 +1,13 @@
+// Candidate cross-backend guest fixture; not yet passing on five backends.
+define class Foo as
+  pub add(int a, int b): int { return a + b; }
+  pub add(int a): int { return a + 10; }
+  private hidden(): int { return 99; }
+  pub static fnc version(): int { return 1; }
+end
+pub routine main(): void {
+  val wrapped = new Proxy(new Foo());
+  stdio.stdout.write(wrapped.add(20, 22));
+  stdio.stdout.write(wrapped.add(2));
+  return;
+}
