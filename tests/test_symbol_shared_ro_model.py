@@ -233,24 +233,32 @@ def verify_guest_fixture_inventory(manifest, repo_root):
     required_backends = {
         "java-graal", "llvm", "dotnet-nativeaot", "wasm", "forge"
     }
-    if (set(manifest.get("backends", {})) != required_backends or any(
-            info.get("status") != "NOT_EXECUTED"
-            for info in manifest["backends"].values()):
+    backends = manifest.get("backends")
+    if not isinstance(backends, dict) or set(backends) != required_backends or any(
+            not isinstance(info, dict) or info.get("status") != "NOT_EXECUTED"
+            for info in backends.values()):
         raise ValueError("unsupported backend evidence-status mutation")
     directory = repo_root / "fixtures" / "symbols-shared-ro-v1"
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError("fixture directory missing or symlinked")
     actual = set()
     for entry in directory.iterdir():
-        if entry.name.endswith(".atto"):
+        if entry.name == "manifest.json":
             if entry.is_symlink() or not entry.is_file():
-                raise ValueError("unsafe Symbol guest fixture file")
-            actual.add(entry.name)
+                raise ValueError("unsafe Symbol fixture manifest file")
+            continue
+        # An unlisted nested directory or non-.atto payload must not become
+        # an unpinned source input to a later backend invocation.
+        if not entry.name.endswith(".atto") or entry.is_symlink() or not entry.is_file():
+            raise ValueError("unexpected or unsafe Symbol fixture directory entry")
+        actual.add(entry.name)
     expected = set()
     cases = manifest.get("cases")
     if not isinstance(cases, list) or not cases:
         raise ValueError("missing Symbol guest cases")
     for entry in cases:
+        if not isinstance(entry, dict):
+            raise ValueError("malformed Symbol fixture case record")
         raw = entry.get("path")
         if not isinstance(raw, str):
             raise ValueError("nontext guest path")
@@ -276,7 +284,17 @@ def verify_guest_fixture_inventory(manifest, repo_root):
         source_path = directory / relative.name
         if not source_path.is_file() or source_path.is_symlink():
             raise ValueError("missing or symlinked guest fixture")
+        # Bound input before reading or hashing. This is a deliberately small
+        # canonical source corpus, not an unrestricted external source file.
+        if source_path.stat().st_size > 65_536:
+            raise ValueError("oversized canonical guest fixture")
         payload = source_path.read_bytes()
+        if len(payload) > 65_536:
+            raise ValueError("oversized canonical guest fixture")
+        try:
+            payload.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as error:
+            raise ValueError("malformed UTF-8 guest fixture") from error
         actual_sha = hashlib.sha1(
             b"blob " + str(len(payload)).encode("ascii") + b"\0" + payload
         ).hexdigest()
