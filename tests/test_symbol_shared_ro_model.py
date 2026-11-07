@@ -493,6 +493,66 @@ class SharedROSymbolModelTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify_guest_fixture_inventory(base, root)
 
+    def test_guest_fixture_inventory_rejects_hidden_inputs_and_resource_abuse(self):
+        with tempfile.TemporaryDirectory(prefix="atto-symbol-guard-") as temp:
+            root = Path(temp)
+            folder = root / "fixtures" / "symbols-shared-ro-v1"
+            folder.mkdir(parents=True)
+            source = folder / "valid.atto"
+            source.write_text("pub routine main(): void { return; }\n", encoding="utf-8")
+            original = source.read_bytes()
+            digest = hashlib.sha1(
+                b"blob " + str(len(original)).encode("ascii") + b"\0" + original
+            ).hexdigest()
+            manifest = {
+                "schema": "atto.symbol-shared-ro-guest-fixtures/v1",
+                "status": "NOT_EXECUTED",
+                "backends": {
+                    key: {"status": "NOT_EXECUTED"} for key in (
+                        "java-graal", "llvm", "dotnet-nativeaot", "wasm", "forge")
+                },
+                "cases": [{
+                    "path": "fixtures/symbols-shared-ro-v1/valid.atto",
+                    "expected": "accept", "stdout": "ok", "git_blob_sha1": digest
+                }],
+            }
+            self.assertEqual(verify_guest_fixture_inventory(manifest, root), 1)
+            extra = folder / "unlisted.data"
+            extra.write_text("not a declared guest source", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unexpected or unsafe"):
+                verify_guest_fixture_inventory(manifest, root)
+            extra.unlink()
+
+            nested = folder / "hidden"
+            nested.mkdir()
+            (nested / "malicious.atto").write_text("#private", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unexpected or unsafe"):
+                verify_guest_fixture_inventory(manifest, root)
+            (nested / "malicious.atto").unlink()
+            nested.rmdir()
+
+            source.write_bytes(b"x" * 65_537)
+            with self.assertRaisesRegex(ValueError, "oversized"):
+                verify_guest_fixture_inventory(manifest, root)
+            source.write_bytes(b"\xff")
+            with self.assertRaisesRegex(ValueError, "malformed UTF-8"):
+                verify_guest_fixture_inventory(manifest, root)
+            source.write_bytes(original)
+
+            malformed = json.loads(json.dumps(manifest))
+            malformed["backends"]["java-graal"] = None
+            with self.assertRaisesRegex(ValueError, "backend evidence"):
+                verify_guest_fixture_inventory(malformed, root)
+            malformed = json.loads(json.dumps(manifest))
+            malformed["cases"][0] = "not a structured record"
+            with self.assertRaisesRegex(ValueError, "case record"):
+                verify_guest_fixture_inventory(malformed, root)
+
+            linked_manifest = folder / "manifest.json"
+            linked_manifest.symlink_to(folder / "untrusted-manifest.json")
+            with self.assertRaisesRegex(ValueError, "unsafe Symbol fixture manifest"):
+                verify_guest_fixture_inventory(manifest, root)
+
     def test_registry_epoch_minted_in_one_store_never_aliases_another(self):
         first = ReadOnlyRegistry(self.manifest)
         second = ReadOnlyRegistry(self.manifest)
