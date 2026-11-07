@@ -210,3 +210,34 @@ launch permit. Require a single immutable compiler-issued typed device
 IR with imported symbol identity, generated bounds/alias proofs, trusted
 provider snapshots, generation-scoped allocation loans and an authentic
 device completion fence, all bound to exact source/kernel binary identity.
+
+## G1d combined-tree integration (private source, nonexecuting)
+
+A dedicated [draft Java integration PR #2610](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2610)
+has a two-parent Git merge of source PR #2582 at
+`ec09ddba0068e10a420ba5bf7abd0490b702023c` and host-footprint
+PR #2583 at `62ede3accf28d2673bb307b5bf9c3a8fd65116a5`.
+The verified initial integration head is
+`bf196efe8ef8f6d8eec1927fb70137097bc60136`, with Git tree
+`8ef58d1f6625f53e247a6a29da83a415139e6bc3`. Both agent PR branches
+remain unchanged and the integrated tree includes their GPU source and
+host-footprint files without a same-path conflict.
+
+`GpuKernelSourceCapacityJoinV1` checks source typed kernel name/arity,
+source link, canonical n and the 1D tail source guard, then **derives**
+the expected view read/write mode from the kernel signature instead of
+trusting caller-supplied expectedAccess flags. It validates positional
+buffer snapshots, host-view overlap/tenant/quota constraints and exact
+1D f32 capacity, but cannot authenticate caller-supplied View records.
+The only result is
+`SOURCE_JOINED_CAPACITY_SHAPE_ONLY_NOT_EXECUTABLE`.
+
+The integrated draft includes 11 JUnit join regression cases, the
+2048-trial host-only capacity smoke, the original 2048-trial host
+footprint oracle, and an exact-PR-head Maven workflow. All compiler/JUnit
+runs remain `NOT_EXECUTED`: sampled source-org GitHub jobs returned
+`steps=null` due runner admission. The source GitHub repository is
+**private**; moving its exact code into a funded cross-org carrier
+requires independently authorized review and is not approved by
+source-only status. Retain GPU-KERNEL-008/GPU-LAUNCH-008 and disallow
+device dispatch, CPU fallback, physical GPU or ownership/fence claims.

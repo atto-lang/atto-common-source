@@ -113,7 +113,7 @@
       },
       {
         "id": "G1d_SOURCE_LINK_AND_CAPACITY_SHAPE",
-        "state": "SEPARATE_JAVA_DRAFT_BRANCHES_NONEXECUTABLE",
+        "state": "INTEGRATED_PRIVATE_JAVA_DRAFT_TREE_NOT_EXECUTED",
         "sourceKernelLaunchSymbolBinding": true,
         "sourceLaunchArityCheck": true,
         "literalArgumentTypesOnly": true,
@@ -123,7 +123,7 @@
         "capacityChecksEachView": true,
         "capacityReport": "SNAPSHOT_CAPACITY_SHAPE_ONLY_NOT_EXECUTABLE",
         "sourceLinkReport": "SOURCE_SIGNATURE_ONLY_NOT_EXECUTABLE",
-        "integratedOnSingleExactHead": false,
+        "integratedOnSingleExactHead": true,
         "authenticatedDeviceSnapshot": false,
         "deviceAllocationCapacityProof": false,
         "providerIssuedLoans": false,
@@ -140,7 +140,20 @@
         "crossModuleKernelLinksEnabled": false,
         "typedImportOrAliasProofAvailable": false,
         "lexicalPrivateKernelAllowedWithinModule": true,
-        "compilerScopeAndImportEvidence": "SOURCE_SHAPE_ONLY_NOT_EXECUTABLE"
+        "compilerScopeAndImportEvidence": "SOURCE_SHAPE_ONLY_NOT_EXECUTABLE",
+        "integrationPr": "ores-truffle-oreslang/oreslang-source.java#2610",
+        "integrationHeadSha": "bf196efe8ef8f6d8eec1927fb70137097bc60136",
+        "integrationTreeSha": "8ef58d1f6625f53e247a6a29da83a415139e6bc3",
+        "integrationParents": [
+          "ec09ddba0068e10a420ba5bf7abd0490b702023c",
+          "62ede3accf28d2673bb307b5bf9c3a8fd65116a5"
+        ],
+        "sourceHostJoinEvidence": "SOURCE_JOINED_CAPACITY_SHAPE_ONLY_NOT_EXECUTABLE",
+        "sourceViewAccessDerivedFromKernelSignature": true,
+        "callerViewRecordsAuthenticated": false,
+        "compiledIntegratedJUnit": "NOT_EXECUTED",
+        "exactHeadRunnerAdmission": "FAILED_STEPS_NULL",
+        "privateSourceExternalMirrorAuthorized": false
       },
       {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",
