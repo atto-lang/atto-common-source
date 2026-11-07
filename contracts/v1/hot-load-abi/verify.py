@@ -134,7 +134,7 @@ class UpgradeModel:
         self.rows[key] = value
 
     def owner_died(self, *, heir_alive=True, heir_tenant="tenant-a"):
-        if not self.table_open or self.owner is None or self.transfer is not None:
+        if self.stopped or not self.table_open or self.owner is None or self.transfer is not None:
             raise Denied("table closed or previous handoff still pending")
         if self.table_epoch >= (1 << 64) - 1:
             raise Denied("table epoch exhausted")
@@ -148,7 +148,8 @@ class UpgradeModel:
         return self.transfer
 
     def acknowledge_heir(self, ticket, heir, tenant):
-        if (self.transfer is None or ticket is not self.transfer
+        if (self.stopped or not self.table_open or self.transfer is None
+                or ticket is not self.transfer
                 or heir is not self.heir or tenant != self.tenant):
             raise Denied("stale, duplicate or foreign table transfer")
         self.owner = self.heir
@@ -164,7 +165,10 @@ class UpgradeModel:
         self.frozen, self.txn = False, None
 
     def stop(self):
+        # Terminal supervisor shutdown revokes logical ETS authority immediately.
+        # Physical image/table cleanup still requires separate quiescence evidence.
         self.stopped, self.frozen, self.txn = True, True, None
+        self.table_open, self.owner, self.transfer = False, None, None
 
 
 class UniversalHotLoadTests(unittest.TestCase):
@@ -380,6 +384,41 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.assertEqual(s.restart_count, 0)
         self.assertFalse(s.stopped)
         self.assertEqual(s.code, "v1")
+
+    def test_terminal_stop_revokes_pending_ets_heir_receipt(self):
+        s = self.s
+        pending = s.owner_died()
+        stable_id, old_rows = s.table_id, s.rows.copy()
+        s.stop()
+        self.assertFalse(s.table_open)
+        self.assertIsNone(s.owner)
+        self.assertIsNone(s.transfer)
+        self.assertIs(s.table_id, stable_id)
+        self.assertEqual(s.rows, old_rows)
+        self.rejects(lambda: s.acknowledge_heir(pending, s.heir, s.tenant))
+        self.rejects(lambda: s.write_table(s.heir, "n", 10))
+
+    def test_terminal_stop_fences_live_ets_owner_and_new_heir_admission(self):
+        s = self.s
+        old_owner = s.owner
+        s.stop()
+        self.assertFalse(s.table_open)
+        self.assertIsNone(s.owner)
+        self.rejects(s.owner_died)
+        self.rejects(lambda: s.write_table(old_owner, "n", 99))
+        self.assertEqual(s.rows["n"], 7)
+
+    def test_terminal_stop_revokes_acked_heir_without_recycling_table(self):
+        s = self.s
+        ticket = s.owner_died()
+        s.acknowledge_heir(ticket, s.heir, s.tenant)
+        original_table_id, old_epoch = s.table_id, s.table_epoch
+        s.stop()
+        self.assertIs(s.table_id, original_table_id)
+        self.assertEqual(s.table_epoch, old_epoch)
+        self.assertFalse(s.table_open)
+        self.rejects(lambda: s.write_table(s.heir, "n", 88))
+        self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
