@@ -107,15 +107,15 @@ Tracked upstream: [common-source heterogeneous semantics #182](https://github.co
 ## G1c.1 — source-level 1D tail-guard audit, not allocation bounds
 
 Java/Graal [#2582](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2582)
-adds \`GpuKernelTailGuardV1\`. The typed source-HIR lowerer now performs a
+adds `GpuKernelTailGuardV1`. The typed source-HIR lowerer now performs a
 mandatory, conservative pass over its immutable instructions before returning
 a candidate. Device f32 loads/stores must use the exact lane-zero index on a
-path established by \`i < n\`, or after an \`i >= n { return; }\` branch.
+path established by `i < n`, or after an `i >= n { return; }` branch.
 Mismatched lanes, reversed conditions, accesses outside the branch, non-lane
 indices and effects outside the closed kernel subset are rejected.
-The audit result \`SOURCE_TAIL_GUARD_ONLY_NOT_EXECUTABLE\` is not a device proof.
+The audit result `SOURCE_TAIL_GUARD_ONLY_NOT_EXECUTABLE` is not a device proof.
 
-This **does not** prove that the user-supplied bound \`n\` is at most each actual
+This **does not** prove that the user-supplied bound `n` is at most each actual
 device buffer's capacity. A future typed launch binder must pair the bound
 with every authenticated allocation length, borrow/alias loan, generation,
 grid/group configuration, barrier-convergence proof and GPU completion event.
@@ -123,14 +123,14 @@ Do not accept this audit result as a dispatch ticket, guest parity or
 hardware bounds guarantee.
 
 LLVM [#1457](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1457)
-now recognizes the narrow \`gpu fnc\` header and selected forbidden
+now recognizes the narrow `gpu fnc` header and selected forbidden
 lexical effects, but does not emit a typed kernel AST or GPU device IR.
-A well-formed declaration is rejected with \`GPU-KERNEL-008\`; malformed
+A well-formed declaration is rejected with `GPU-KERNEL-008`; malformed
 ABI headers and explicit forbidden effects receive specific diagnostics.
 This must not be described as Java/LLVM typed kernel parity.
 
 The companion [kernel corpus in conformance #502](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502)
-records nine \`.atto\` source cases with exact Git blob identities.
-All seven backends remain \`NOT_EXECUTED\` until compiler-backed runs
+records nine `.atto` source cases with exact Git blob identities.
+All seven backends remain `NOT_EXECUTED` until compiler-backed runs
 produce nonzero steps and source/guest receipts. Physical GPU execution,
 safety under driver failure and cancellation are still unimplemented.
