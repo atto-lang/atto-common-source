@@ -62,6 +62,16 @@ The model rejects an ETS table-epoch increment or actor-incarnation restart at
 `2^64 - 1` **before changing the owner, transfer receipt, counter, or supervisor
 state**, because UHL-1 exposes bounded 64-bit host identities. These guards are
 reference invariants only, **not** evidence of real ETS, restart, or native ABI
-execution. The source-free suite is now **24** unittest cases per round (72
+execution. The source-free suite is now **27** unittest cases per round (81
 across three repetitions); original source-org stepful CI, native ABI adapters,
 actual compiled AttoLang guests, and independent review remain outstanding.
+
+## Terminal supervisor shutdown and ETS authority (source-free model hardening)
+
+A terminal supervisor stop MUST revoke both pending and acknowledged ETS heir
+DATA rights, preserve table ID/committed row values only as non-addressable
+reference state, and refuse new handoffs or acknowledgement of pre-stop
+single-use receipts. Closing the logical table is an immediate authority fence;
+this source-free model does **not** prove safe physical reclamation, native
+quiescence, or replay-free persistent storage. Three regressions cover pending
+heir, live owner and already acknowledged heir shutdown races.
