@@ -189,9 +189,10 @@ read authenticated provider allocation metadata.
 
 Separately, Java `GpuKernelSourceLinkV1` no longer resolves unqualified
 kernel names from arbitrary other modules. A source-only unqualified launch
-looks within its lexical module, and a qualified reference to a different
-module checks whether the target kernel was publicly declared. This is
-**not** complete import/alias/linker permission verification, and it never
+looks **only** within its lexical module. Even if the external target is
+`pub gpu fnc`, qualified cross-module source links are now rejected because
+this stage has no verified import or linker-alias authorization. Private
+cross-module kernels are rejected separately. This source linker never
 issues a device capability. The program remains fail-closed via
 `GPU-KERNEL-008`.
 

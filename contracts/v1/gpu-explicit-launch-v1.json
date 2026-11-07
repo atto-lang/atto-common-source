@@ -136,7 +136,11 @@
         "tailGuardRequiresCanonicalN": true,
         "alternativeBoundSolverImplemented": false,
         "nativeLlvmGpuGlobalIdAxisSyntax": "single literal axis 0..2",
-        "nativeLlvmTypedIntrinsicIR": false
+        "nativeLlvmTypedIntrinsicIR": false,
+        "crossModuleKernelLinksEnabled": false,
+        "typedImportOrAliasProofAvailable": false,
+        "lexicalPrivateKernelAllowedWithinModule": true,
+        "compilerScopeAndImportEvidence": "SOURCE_SHAPE_ONLY_NOT_EXECUTABLE"
       },
       {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",
