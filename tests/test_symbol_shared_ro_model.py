@@ -393,12 +393,16 @@ class SharedROSymbolModelTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "too many pinned"):
             registry.publish({"ordinal": 999})
         self.assertEqual(registry.current, current)
-        self.assertEqual(registry.pin(self.trusted).view.get("ordinal"), 7)
+        extra = registry.pin(self.trusted)
+        self.assertEqual(extra.view.get("ordinal"), 7)
+        extra.release()
         pins[0].release()
         self.assertEqual(len(registry.records), MAX_LIVE_GENERATIONS - 1)
         newest = registry.publish({"ordinal": 8})
         self.assertNotEqual(newest, current)
-        self.assertEqual(registry.pin(self.trusted).view.get("ordinal"), 8)
+        latest_pin = registry.pin(self.trusted)
+        self.assertEqual(latest_pin.view.get("ordinal"), 8)
+        latest_pin.release()
         for pin in pins[1:]:
             pin.release()
         self.assertEqual(len(registry.records), 1)
