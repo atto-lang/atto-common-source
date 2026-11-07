@@ -43,8 +43,7 @@ binary="$repo/atto-native-arena-epsilon"
 mv "$binary" "$tmp/atto-native-arena-epsilon"
 (
   unset JAVA_HOME CLASSPATH JAVA_TOOL_OPTIONS JDK_JAVA_OPTIONS
-  "$tmp/atto-native-arena-epsilon" -Datto.max.rss.kib=262144 \
-    "$tmp/liboresarena.so" > "$tmp/native-output" 2> "$tmp/native-stderr"
+  "$tmp/atto-native-arena-epsilon" "$tmp/liboresarena.so" > "$tmp/native-output" 2> "$tmp/native-stderr"
 )
 if [[ -s "$tmp/native-stderr" ]]; then
   echo 'GRAAL_EPSILON_NOT_EXECUTED: native guest emitted unexpected stderr' >&2
@@ -56,6 +55,11 @@ grep -Fx 'ATTO_NATIVE_ARENA_SOAK=PASS' "$tmp/native-output"
 grep -Fx 'actor_operations=102400' "$tmp/native-output"
 grep -Fx 'actor_arena_restarts=128' "$tmp/native-output"
 grep -Fx 'native_charge_after=0' "$tmp/native-output"
+sampled_rss="$(awk -F= '$1=="rss_peak_sampled_kib"{print $2}' "$tmp/native-output")"
+if [[ ! "$sampled_rss" =~ ^[0-9]+$ ]] || (( sampled_rss > 262144 )); then
+  echo "GRAAL_EPSILON_NOT_EXECUTED: sampled peak RSS missing or above 256MiB budget" >&2; exit 1;
+fi
+echo "EPSILON_SAMPLED_RSS_KIB=$sampled_rss"
 grep -Fx 'tenant_restarts=NOT_TESTED' "$tmp/native-output"
 grep -Fx 'EVIDENCE_SCOPE=JNI_NATIVE_ARENA_HOST_ONLY_NO_ATTO_GUEST_OR_GRAAL_EPSILON_PROOF' "$tmp/native-output"
 echo 'GRAAL_EPSILON_NATIVE_IMAGE_HOST_JNI_SOAK=PASSED'
