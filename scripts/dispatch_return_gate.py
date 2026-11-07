@@ -52,6 +52,8 @@ def validate_manifest(data: dict) -> dict:
         if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]*", name) or name in unique:
             raise DispatchParityError("duplicate or invalid oracle id")
         unique.add(name)
+        if not isinstance(form, str):
+            raise DispatchParityError("dispatch form must be a string")
         if form in INVALID_DISPATCH_FORMS:
             raise DispatchParityError("nb match/switch is invalid; nb is a channel/select wait mode")
         if form not in EXPECTED_DEST or item.get("return_destination") != EXPECTED_DEST[form]:
