@@ -52,10 +52,27 @@ if (( native_exit != 0 )); then
   cat "$tmp/native-stderr" >&2
   exit "$native_exit"
 fi
+# JDK25 may emit one precise native-access warning when System.load() is
+# called by this standalone unnamed-module JNI host. Do not suppress stderr
+# globally: whitelist ONLY that exact four-line warning and optional empty LF.
 if [[ -s "$tmp/native-stderr" ]]; then
-  echo 'GRAAL_EPSILON_NOT_EXECUTED: native guest emitted unexpected stderr' >&2
-  cat "$tmp/native-stderr" >&2
-  exit 1
+  python3 - "$tmp/native-stderr" <<'PY'
+import pathlib, re, sys
+lines=pathlib.Path(sys.argv[1]).read_text().splitlines()
+expected=[
+    r"WARNING: A restricted method in java\\.lang\\.System has been called",
+    r"WARNING: java\\.lang\\.System::load has been called by dev\\.oreslang\\.runtime\\.ActorNativeArenaSoak in an unnamed module \\(file:/.+\\)",
+    r"WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module",
+    r"WARNING: Restricted methods will be blocked in a future release unless native access is enabled",
+]
+if len(lines)==5 and lines[4]=="":
+    lines=lines[:4]
+if len(lines)!=4 or any(re.fullmatch(pattern,line) is None for pattern,line in zip(expected,lines)):
+    print("GRAAL_EPSILON_UNEXPECTED_NATIVE_STDERR",file=sys.stderr)
+    print(pathlib.Path(sys.argv[1]).read_text(),file=sys.stderr)
+    sys.exit(1)
+print("GRAAL_NATIVE_ACCESS_WARNING_EXACTLY_MATCHED=1")
+PY
 fi
 cat "$tmp/native-output"
 grep -Fx 'ATTO_NATIVE_ARENA_SOAK=PASS' "$tmp/native-output"
