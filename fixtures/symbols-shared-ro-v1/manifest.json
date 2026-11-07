@@ -51,6 +51,28 @@
       "path": "fixtures/symbols-shared-ro-v1/negative-symbol-as-int.atto",
       "git_blob_sha1": "5b651ff237ecf196d669400917bbbd150c64e564",
       "expected": "reject_typecheck"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-nfc-quoted-equivalence.atto",
+      "git_blob_sha1": "6123e967bdb706b31cadd73e0024969ed274eaa1",
+      "expected": "accept",
+      "stdout": "nfc"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-256byte-quoted-symbol.atto",
+      "git_blob_sha1": "1bd48fd1ec99f34f0500a3edb01ad9976284aea7",
+      "expected": "accept",
+      "stdout": "boundary"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-257byte-quoted-symbol.atto",
+      "git_blob_sha1": "d568f822b080a2758bd19e98ed1d6ca0cfc063cd",
+      "expected": "reject_lexer"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-unterminated-quoted-symbol.atto",
+      "git_blob_sha1": "53ff5e285dc3e9bdef74802841291d8ef74fda16",
+      "expected": "reject_lexer"
     }
   ],
   "backends": {
