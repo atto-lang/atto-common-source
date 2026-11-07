@@ -60,8 +60,8 @@ if [[ -s "$tmp/native-stderr" ]]; then
 import pathlib, re, sys
 lines=pathlib.Path(sys.argv[1]).read_text().splitlines()
 expected=[
-    r"WARNING: A restricted method in java\\.lang\\.System has been called",
-    r"WARNING: java\\.lang\\.System::load has been called by dev\\.oreslang\\.runtime\\.ActorNativeArenaSoak in an unnamed module \\(file:/.+\\)",
+    r"WARNING: A restricted method in java\.lang\.System has been called",
+    r"WARNING: java\.lang\.System::load has been called by dev\.oreslang\.runtime\.ActorNativeArenaSoak in an unnamed module \(file:/.+\)",
     r"WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module",
     r"WARNING: Restricted methods will be blocked in a future release unless native access is enabled",
 ]
