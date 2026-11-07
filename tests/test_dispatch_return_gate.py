@@ -137,6 +137,8 @@ class FourFormsDispatchContractTest(unittest.TestCase):
         mutations = [
             lambda m: m["cases"][3].update(form="match", return_destination="ARM_RESULT"),
             lambda m: m["cases"][0].update(return_destination="FUNCTION_RETURN"),
+            lambda m: m["cases"][0].update(form=[]),
+            lambda m: m["cases"][0].update(form={"match": True}),
             lambda m: m["cases"][0].update(expected_result=True),
             lambda m: m["cases"][0].update(expected_result=1 << 64),
             lambda m: m["cases"][0].update(id="../bad"),
