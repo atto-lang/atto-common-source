@@ -235,8 +235,29 @@ def load_guest_fixture_manifest(path):
                 raise ValueError("duplicate JSON member in Symbol guest manifest: " + key)
             result[key] = value
         return result
-    return json.loads(Path(path).read_text(encoding="utf-8"),
-                      object_pairs_hook=unique_fields)
+    # The manifest is itself an attacker-editable repository artifact.
+    # Refuse symlink swaps, special files and oversized content before JSON
+    # parsing; no unbounded read_text() on a forged receipt.
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | (
+        getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    try:
+        fd = os.open(path, flags)
+    except OSError as failure:
+        raise ValueError("unsafe or inaccessible Symbol guest manifest") from failure
+    with os.fdopen(fd, "rb") as source:
+        info = os.fstat(source.fileno())
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("Symbol guest manifest must be a regular file")
+        if info.st_size > 65_536:
+            raise ValueError("oversized Symbol guest manifest")
+        raw = source.read(65_537)
+        if len(raw) > 65_536:
+            raise ValueError("oversized Symbol guest manifest")
+    try:
+        decoded = raw.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as failure:
+        raise ValueError("malformed UTF-8 Symbol guest manifest") from failure
+    return json.loads(decoded, object_pairs_hook=unique_fields)
 
 
 def verify_guest_fixture_inventory(manifest, repo_root):
@@ -570,6 +591,16 @@ class SharedROSymbolModelTest(unittest.TestCase):
                 candidate.write_text(duplicate, encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, "duplicate JSON member"):
                     load_guest_fixture_manifest(candidate)
+            candidate.write_bytes(b"x" * 65_537)
+            with self.assertRaisesRegex(ValueError, "oversized Symbol guest manifest"):
+                load_guest_fixture_manifest(candidate)
+            candidate.write_bytes(b"\\xff")
+            with self.assertRaisesRegex(ValueError, "malformed UTF-8 Symbol guest manifest"):
+                load_guest_fixture_manifest(candidate)
+            candidate.unlink()
+            candidate.symlink_to(Path(temp) / "outside-receipt.json")
+            with self.assertRaisesRegex(ValueError, "unsafe or inaccessible"):
+                load_guest_fixture_manifest(candidate)
 
         def changed():
             return json.loads(json.dumps(canonical))
