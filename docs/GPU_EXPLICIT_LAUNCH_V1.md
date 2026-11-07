@@ -329,3 +329,44 @@ pins source/test Git blobs and authored test identifiers. Hosted Java
 workflow `42333884103` has not supplied executed job-step evidence.
 No test pass, GPU guest compilation, device execution or independent
 security review should be inferred. Physical dispatch and fallback remain off.
+
+
+## G1c.2 canonical AttoLang GPU signature: slim arrow and unsigned lane
+
+The canonical AttoLang GPU entry signature is:
+
+```atto
+pub gpu fnc saxpy(
+    f32 alpha,
+    GpuArray<f32> x,
+    GpuArray<f32> y,
+    GpuArray<f32> mut out,
+    u64 n
+) -> void {
+    const u64 i = gpu.global_id(0);
+    if i >= n { return; }
+    out[i] = alpha * x[i] + y[i];
+}
+```
+
+**Only `->` is a GPU declaration return arrow.** The fat arrow `=>`
+and colon-return syntax are rejected for `gpu fnc` source. Plain
+`GpuArray<f32>` provides a read-only buffer view; `mut out` requests
+write-through referent capability. `gpu.global_id(0)` and canonical
+`n` are `u64` source values, not signed `i64` values. No implicit
+signed/unsigned conversion is permitted. A braced `gpu fnc` guard
+`if i >= n { return; }` needs no trailing `fi`; the ordinary
+AttoLang `if` parser retains its existing structural terminator.
+
+This is a source admission and typed-HIR prototype, **not a GPU kernel
+execution claim**. Buffer allocation length, per-view bounds,
+alias/borrow loans, physical group geometry, divergent barriers,
+authenticated queue/provider generations, cancellation and quiescent
+fence completion still require independent proof. Java #2582 and
+LLVM #1457 stage this source syntax, while conformance #502 pins 18
+canonical .atto kernel fixtures (one source candidate and 17 negative
+cases). The newer Java integrated G1d/G1e/G1f work on PR #2610 has
+**not yet been shown to accept this updated u64/GpuArray ABI at an
+executed compiler/guest gate**; do not transfer this source-only result
+into an integrated-backend or physical GPU pass claim. Zero-step
+runner admission is never proof of test execution.

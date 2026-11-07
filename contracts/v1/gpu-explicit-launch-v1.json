@@ -72,9 +72,11 @@
           "int",
           "i64",
           "f32",
-          "bool"
+          "bool",
+          "u64"
         ],
         "supportedDeviceViews": [
+          "GpuArray<f32>",
           "GpuReadBuffer<f32>",
           "GpuWriteBuffer<f32>",
           "GpuReadWriteBuffer<f32>"
@@ -109,6 +111,27 @@
           "sourceOnlyLexicalEffectFilter": true,
           "hostCodegen": false,
           "deviceCodegen": false
+        },
+        "canonicalSourceV2": {
+          "syntax": "pub gpu fnc saxpy(f32 alpha, GpuArray<f32> x, GpuArray<f32> y, GpuArray<f32> mut out, u64 n) -> void",
+          "returnArrow": "->",
+          "fatArrowAllowed": false,
+          "colonReturnAllowed": false,
+          "genericArray": "GpuArray<f32>",
+          "immutableReadViews": "non-mut GpuArray<f32>",
+          "explicitMutableWriteView": "GpuArray<f32> mut out",
+          "globalIdType": "u64",
+          "guard": "if i >= n { return; }",
+          "gpuBracedIfRequiresFi": false,
+          "ordinaryIfGrammarUnchanged": true,
+          "noImplicitSignedConversion": true,
+          "sourceScopeOnlyNotExecutable": true,
+          "canonicalJavaPr": "ores-truffle-oreslang/oreslang-source.java#2582",
+          "canonicalLlvmPr": "ores-truffle-oreslang/oreslang-source.llvm#1457",
+          "canonicalConformancePr": "ores-truffle-oreslang/oreslang-platform-conformance#502",
+          "integratedGpuG1eAndG1fParityWithCanonicalSyntax": "NOT_VERIFIED",
+          "acceptedHostExecution": false,
+          "physicalGpuExecution": false
         }
       },
       {
