@@ -159,8 +159,8 @@
         "id": "G1e_DECLARED_HOST_ABI_SHAPE_ONLY",
         "status": "JAVA_SOURCE_DECLARATION_CHECK_AUTHORED_JUNIT_NOT_EXECUTED",
         "integrationPR": "ores-truffle-oreslang/oreslang-source.java#2610",
-        "integrationHeadSha": "ccb85fe1bf9303d1d714a5b350500a9fda46af6d",
-        "integrationTreeSha": "995214d81d884bb2c20666f65b8271eda67c808c",
+        "integrationHeadSha": "c2070cb604aa70f4e399aff4605657740ea3922f",
+        "integrationTreeSha": "e01abe6bb44b52b99eae11975eee8da2777b237e",
         "sourceTypeChecker": "GpuKernelTypedSourceArgsV1",
         "integratedHostChecker": "GpuKernelSourceCapacityJoinV1.auditTypedSource",
         "sourceEvidence": "DECLARED_HOST_ABI_SHAPE_ONLY_NOT_EXECUTABLE",
@@ -176,10 +176,14 @@
         "deviceCompletionFence": false,
         "physicalDeviceDispatch": false,
         "implicitCpuFallback": false,
-        "authoredJunitCases": 13,
+        "authoredJunitCases": 16,
         "executedJunitCases": 0,
-        "testsEvidence": "NOT_EXECUTED",
-        "conformanceManifest": "oreslang-platform-conformance/contracts/atto-gpu-typed-host-args-v1.json"
+        "testsEvidence": "NOT_EXECUTED_RUNNER_STEPS_NULL",
+        "conformanceManifest": "oreslang-platform-conformance/contracts/atto-gpu-typed-host-args-v1.json",
+        "directLaunchCallSiteIdentityChecked": true,
+        "forgedSourceLinkArgumentsRejected": true,
+        "linkWithoutActualCallerLaunchRejected": true,
+        "nestedCallSiteTraversalImplemented": false
       },
       {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",

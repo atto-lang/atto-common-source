@@ -266,3 +266,20 @@ corpus](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/p
 contains exact Git blob fixtures and explicitly disallows promoting
 fixture integrity into compiled guest or physical GPU evidence.
 No private-source cross-org mirror without independent authorization.
+
+### G1e.1 call-site and anti-forgery source hardening
+
+At [Java/Graal PR #2610](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2610)
+head `c2070cb604aa70f4e399aff4605657740ea3922f`
+(tree `e01abe6bb44b52b99eae11975eee8da2777b237e`),
+G1e now cross-checks its declared host formal parameter types with
+an **actual direct GPU launch AST in that caller**, matching every
+source argument name/literal kind and positional index. A forged link
+from another host callable, a modified lexical name or a declaration
+with no launch fails closed, as do unproved nested call sites.
+The focused Java G1e suite now has 16 authored JUnit cases; negative
+cases construct the parser AST before asserting the binding rejection,
+so an earlier parser error cannot spoof a passing binding test.
+No compiler-issued lifetime proof, authenticated provider data,
+real device launch or guest execution exists. Hosted exact-head jobs
+reported `steps=null`, so JUnit evidence remains NOT_EXECUTED.
