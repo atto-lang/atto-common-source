@@ -231,7 +231,7 @@
         "integratedSourceCapacityJunitCasesAuthored": 22,
         "integratedSourceCapacityForgeryCasesAdded": 4,
         "sourceMutationEvidenceManifest": "oreslang-platform-conformance/contracts/atto-gpu-typed-hir-forgery-v1.json",
-        "javaCompilerTests": "NOT_EXECUTED_PENDING_RUNNER_STEPS_NULL",
+        "javaCompilerTests": "NOT_EXECUTED_FAILED_RUNNER_ADMISSION_STEPS_NULL",
         "compiledGuestParity": "NOT_EXECUTED",
         "authenticatedProviderAllocation": false,
         "compilerIssuedOwnership": false,
@@ -241,7 +241,9 @@
         "sourceOnlyReportExecutable": false,
         "privateSourceExternalMirrorAuthorized": false,
         "mergeReady": false,
-        "exactHeadRunId": 42333884103
+        "exactHeadRunId": 42333884103,
+        "exactHeadRunConclusion": "failure",
+        "jobSteps": null
       },
       {
         "id": "G2_TYPED_KERNEL_DEVICE_IR",
