@@ -369,6 +369,106 @@ class SharedROSymbolModelTest(unittest.TestCase):
                 self.assertIn(case["expected"],
                               ("accept", "reject_lexer", "reject_parser", "reject_typecheck"))
 
+    def test_registry_epoch_minted_in_one_store_never_aliases_another(self):
+        first = ReadOnlyRegistry(self.manifest)
+        second = ReadOnlyRegistry(self.manifest)
+        a = first.publish({"name": "a"})
+        b = second.publish({"name": "b"})
+        self.assertNotEqual(a, b)
+        with self.assertRaises(ValueError):
+            first.pin(self.trusted, expected_epoch=b)
+        with self.assertRaises(ValueError):
+            second.pin(self.trusted, expected_epoch=a)
+        self.assertEqual(first.pin(self.trusted, expected_epoch=a).view.get("name"), "a")
+        self.assertEqual(second.pin(self.trusted, expected_epoch=b).view.get("name"), "b")
+
+    def test_exact_eight_live_generations_reject_ninth_transactionally(self):
+        registry = ReadOnlyRegistry(self.manifest)
+        pins = []
+        for generation in range(MAX_LIVE_GENERATIONS):
+            epoch = registry.publish({"ordinal": generation})
+            pins.append(registry.pin(self.trusted, expected_epoch=epoch))
+        self.assertEqual(len(registry.records), MAX_LIVE_GENERATIONS)
+        current = registry.current
+        with self.assertRaisesRegex(RuntimeError, "too many pinned"):
+            registry.publish({"ordinal": 999})
+        self.assertEqual(registry.current, current)
+        self.assertEqual(registry.pin(self.trusted).view.get("ordinal"), 7)
+        pins[0].release()
+        self.assertEqual(len(registry.records), MAX_LIVE_GENERATIONS - 1)
+        newest = registry.publish({"ordinal": 8})
+        self.assertNotEqual(newest, current)
+        self.assertEqual(registry.pin(self.trusted).view.get("ordinal"), 8)
+        for pin in pins[1:]:
+            pin.release()
+        self.assertEqual(len(registry.records), 1)
+
+    def test_close_revokes_admission_but_keeps_pinned_views_until_release(self):
+        registry = ReadOnlyRegistry(self.manifest)
+        first = registry.publish({"symbol": Symbol("process", "ready")})
+        pin = registry.pin(self.trusted, expected_epoch=first)
+        registry.close()
+        registry.close()
+        self.assertEqual(pin.view.get("symbol"), Symbol("process", "ready"))
+        with self.assertRaises(ValueError):
+            registry.pin(self.trusted)
+        with self.assertRaises(RuntimeError):
+            registry.publish({"symbol": Symbol("process", "error")})
+        self.assertEqual(len(registry.records), 1)
+        pin.release()
+        self.assertEqual(len(registry.records), 0)
+
+    def test_denied_untrusted_pin_does_not_reserve_or_leak_a_generation(self):
+        registry = ReadOnlyRegistry(self.manifest)
+        epoch = registry.publish({"secret": Symbol("process", "not_exported")})
+        before = registry.records[epoch]["pins"]
+        with self.assertRaises(PermissionError):
+            registry.pin(self.untrusted_a, expected_epoch=epoch)
+        self.assertEqual(registry.records[epoch]["pins"], before)
+        trusted = registry.pin(self.trusted, expected_epoch=epoch)
+        self.assertEqual(registry.records[epoch]["pins"], before + 1)
+        trusted.release()
+
+    def test_export_scope_requires_matching_tenant_endpoint_and_protocol(self):
+        event = Symbol("process", "event")
+        self.assertTrue(allowed(event, self.untrusted_a, self.manifest))
+        for changed in (
+                {"tenant": "b"}, {"endpoint": "other"},
+                {"protocol": "future"}, {"trust": "invalid"}):
+            with self.subTest(changed=changed):
+                context = {**self.untrusted_a, **changed}
+                self.assertFalse(allowed(event, context, self.manifest))
+                with self.assertRaises(PermissionError):
+                    freeze({"event": event}, context, self.manifest)
+
+    def test_signed_byte_budget_and_graph_counts_do_not_reset_in_nested_values(self):
+        with self.assertRaisesRegex(ValueError, "graph byte quota"):
+            freeze({"payload": "a" * (1_048_576 + 1)},
+                   self.trusted, self.manifest)
+        with self.assertRaisesRegex(ValueError, "graph node quota"):
+            freeze({"left": list(range(MAX_NODES // 2)),
+                    "right": list(range(MAX_NODES // 2))},
+                   self.trusted, self.manifest)
+
+    def test_frozen_map_duplicate_nfc_keys_and_mixed_domains(self):
+        collapsed = FrozenMap((
+            (Symbol("process", "cafe\u0301"), 1),
+            (Symbol("process", "caf\u00e9"), 2),
+        ))
+        with self.assertRaisesRegex(ValueError, "duplicate canonical logical"):
+            freeze(collapsed, self.trusted, self.manifest)
+        disjoint = FrozenMap((
+            ("ready", 1),
+            (Symbol("process", "ready"), 2),
+            (Symbol("stable", "550e8400-e29b-41d4-a716-446655440000"), 3),
+        ))
+        copied = freeze(disjoint, self.trusted, self.manifest)
+        self.assertEqual(len(copied.entries), 3)
+        self.assertEqual(copied.get("ready"), 1)
+        self.assertEqual(copied.get(Symbol("process", "ready")), 2)
+        self.assertEqual(copied.get(Symbol("stable",
+                              "550e8400-e29b-41d4-a716-446655440000")), 3)
+
     def test_no_permanent_intern_registry_is_needed_for_identity(self):
         x = Symbol("process", "same").canonical()
         y = Symbol("process", "same").canonical()
