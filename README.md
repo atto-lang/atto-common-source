@@ -88,3 +88,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 **Proposals requiring implementation evidence:** exact IR forms, packaging, frontend consolidation, shared optimizations, and adapter APIs.
 
 No runtime parity, performance improvement, or completed migration is claimed by these documents.
+
+## AOT / zero-GC controlled-dynamism contract
+
+See [Shared HIR/MIR review gate](docs/AOT_ZERO_GC_CONTROLLED_DYNAMISM_V1.md) for proposed closed-world AOT admission, statically generated proxies, ownership/reclamation, compile-before-IR rejection and immutable per-backend execution evidence. This is a target; it is not proof of compiler support.
