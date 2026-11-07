@@ -287,3 +287,25 @@ reported `steps=null`, so JUnit evidence remains NOT_EXECUTED.
 ### G1e.2 restricted host AST and immutable canonical n (2026-11-06)
 
 The latest Java integration draft #2610 head is `dd742dc21aa6438775654e2597d2548e6287cccc` (tree `34dd5b4d9b8c6e96314ab2cd498869bd8fef838a`). G1e now intentionally accepts only a single direct GPU launch and an optional trailing void return. Host local shadowing, extra host calls, early return, another launch and nested effects are unproved and denied. The source-only launch requires logical `over: [n]`, a static positive 1D group, unit trailing axes, zero shared bytes, and exactly one immutable declared host integer `n` passed to the kernel as `n`. A literal or unrelated parameter cannot stand in for the bound. Both public TypeChecker entry points repeat GPU denial after annotation expansion. These restrictions are not final AttoLang GPU syntax: deeper control-flow/geometry proofs are future work. Conformance PR #502 pins 18 source-only G1e fixtures, while focused Java suites contain 19 G1e typed-argument, 24 G1e control-flow, six TypeChecker gate, and 18 source-capacity JUnit methods, all NOT_EXECUTED due runner job `steps=null`. Authenticated allocation, generation-fenced loan, device completion and physical GPU proof remain absent. The original G1d two-parent merge head remains preserved separately from the latest subsequent G1e integration head.
+
+
+### G1f independently constructible GPU typed-HIR records
+
+The Java G1e/G1f source HIR is a public record-based representation,
+not a compiler-trusted capability. At [Java/Graal GPU integration PR #2610](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2610),
+latest head `8a0d6e21c01b976a13d0503c73df202b52eb1e8d`,
+tree `4019960af3ca0d358766a0a58b84b5741953c11f`,
+the source tail verifier rechecks forged typed value opcodes, operand types
+and arity, declared read/write buffer capability, scalar local bindings
+and instruction metadata. An arbitrary Value/Instruction/Plan must not
+supply false source-guard evidence.
+
+The Java PR includes a dedicated 21-case forged-HIR JUnit suite
+(20 expected rejections plus a canonical non-executable control), and
+four source-capacity integration forged-plan regressions among 22
+authored integration tests. The [G1f conformance receipt](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/502)
+pins the Java Git blob identities but does NOT execute the private Java
+compiler or JUnit. Hosted workflow steps still return null; all cases
+are `NOT_EXECUTED`. This is distinct from a provider-authenticated
+allocation or immutable compiler-issued ownership proof. Keep physical
+GPU dispatch, implicit CPU fallback, and merge promotion disabled.
