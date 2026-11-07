@@ -224,18 +224,59 @@ class ReadOnlyRegistry:
                 del self.records[epoch]
 
 
+def load_guest_fixture_manifest(path):
+    """Decode canonical source receipts without JSON last-key-wins ambiguity."""
+    def unique_fields(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON member in Symbol guest manifest: " + key)
+            result[key] = value
+        return result
+    return json.loads(Path(path).read_text(encoding="utf-8"),
+                      object_pairs_hook=unique_fields)
+
+
 def verify_guest_fixture_inventory(manifest, repo_root):
     """Source-only receipt check; never interprets acceptance as guest execution."""
     if manifest.get("schema") != "atto.symbol-shared-ro-guest-fixtures/v1":
         raise ValueError("wrong Symbol guest fixture schema")
     if manifest.get("status") != "NOT_EXECUTED":
         raise ValueError("candidate fixtures cannot claim compiler execution")
+    # No unknown fields, especially synthetic "passed"/"steps"/"receipt" keys
+    # that could be mistaken for real compiler-backed evidence.
+    v1_keys = {
+        "schema", "description", "status", "compatibility_note",
+        "witness_requirements", "cases", "backends"
+    }
+    if not isinstance(manifest, dict) or set(manifest) - v1_keys:
+        raise ValueError("unknown or malformed Symbol guest manifest field")
+    for optional in ("description", "compatibility_note"):
+        if optional in manifest and (
+                not isinstance(manifest[optional], str)
+                or not manifest[optional]
+                or len(manifest[optional]) > 4096):
+            raise ValueError("malformed Symbol fixture documentation")
+    required_witnesses = {
+        "exact_pr_head_sha", "exact_git_tree_sha", "compiler_build_identity",
+        "source_git_blob_sha", "actual_job_steps_nonzero",
+        "diagnostic_or_guest_stdout", "exit_status", "independent_review"
+    }
+    if "witness_requirements" in manifest:
+        witness = manifest["witness_requirements"]
+        if not isinstance(witness, list) or len(witness) != len(required_witnesses) or (
+                set(witness) != required_witnesses):
+            raise ValueError("missing or forged Symbol guest evidence requirements")
     required_backends = {
         "java-graal", "llvm", "dotnet-nativeaot", "wasm", "forge"
     }
     backends = manifest.get("backends")
     if not isinstance(backends, dict) or set(backends) != required_backends or any(
-            not isinstance(info, dict) or info.get("status") != "NOT_EXECUTED"
+            not isinstance(info, dict)
+            or set(info) - {"status", "reason"}
+            or info.get("status") != "NOT_EXECUTED"
+            or ("reason" in info and (
+                not isinstance(info["reason"], str) or not info["reason"]))
             for info in backends.values()):
         raise ValueError("unsupported backend evidence-status mutation")
     directory = repo_root / "fixtures" / "symbols-shared-ro-v1"
@@ -257,8 +298,9 @@ def verify_guest_fixture_inventory(manifest, repo_root):
     if not isinstance(cases, list) or not cases:
         raise ValueError("missing Symbol guest cases")
     for entry in cases:
-        if not isinstance(entry, dict):
-            raise ValueError("malformed Symbol fixture case record")
+        if not isinstance(entry, dict) or set(entry) - {
+                "path", "git_blob_sha1", "expected", "stdout"}:
+            raise ValueError("malformed or forged Symbol fixture case record")
         raw = entry.get("path")
         if not isinstance(raw, str):
             raise ValueError("nontext guest path")
@@ -431,8 +473,8 @@ class SharedROSymbolModelTest(unittest.TestCase):
         lease.release()
 
     def test_guest_fixtures_are_exact_blob_pinned_and_not_claimed_executed(self):
-        manifest = json.loads((VECTORS.parent / "symbols-shared-ro-v1" /
-                               "manifest.json").read_text(encoding="utf-8"))
+        manifest = load_guest_fixture_manifest(
+            VECTORS.parent / "symbols-shared-ro-v1" / "manifest.json")
         self.assertEqual(verify_guest_fixture_inventory(
             manifest, VECTORS.parent.parent), 11)
 
