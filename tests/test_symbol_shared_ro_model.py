@@ -6,6 +6,8 @@ conformance suite. Tests exercise policy and immutable snapshot invariants.
 import hashlib
 import itertools
 import json
+import re
+import tempfile
 import unicodedata
 import unittest
 import uuid
@@ -222,6 +224,69 @@ class ReadOnlyRegistry:
                 del self.records[epoch]
 
 
+def verify_guest_fixture_inventory(manifest, repo_root):
+    """Source-only receipt check; never interprets acceptance as guest execution."""
+    if manifest.get("schema") != "atto.symbol-shared-ro-guest-fixtures/v1":
+        raise ValueError("wrong Symbol guest fixture schema")
+    if manifest.get("status") != "NOT_EXECUTED":
+        raise ValueError("candidate fixtures cannot claim compiler execution")
+    required_backends = {
+        "java-graal", "llvm", "dotnet-nativeaot", "wasm", "forge"
+    }
+    if (set(manifest.get("backends", {})) != required_backends or any(
+            info.get("status") != "NOT_EXECUTED"
+            for info in manifest["backends"].values()):
+        raise ValueError("unsupported backend evidence-status mutation")
+    directory = repo_root / "fixtures" / "symbols-shared-ro-v1"
+    if directory.is_symlink() or not directory.is_dir():
+        raise ValueError("fixture directory missing or symlinked")
+    actual = set()
+    for entry in directory.iterdir():
+        if entry.name.endswith(".atto"):
+            if entry.is_symlink() or not entry.is_file():
+                raise ValueError("unsafe Symbol guest fixture file")
+            actual.add(entry.name)
+    expected = set()
+    cases = manifest.get("cases")
+    if not isinstance(cases, list) or not cases:
+        raise ValueError("missing Symbol guest cases")
+    for entry in cases:
+        raw = entry.get("path")
+        if not isinstance(raw, str):
+            raise ValueError("nontext guest path")
+        relative = Path(raw)
+        if (relative.parts[:2] != ("fixtures", "symbols-shared-ro-v1")
+                or len(relative.parts) != 3
+                or re.fullmatch(r"[a-z0-9][a-z0-9-]*\.atto", relative.name) is None):
+            raise ValueError("noncanonical or traversing guest fixture path")
+        if relative.name in expected:
+            raise ValueError("duplicate guest fixture inventory path")
+        expected.add(relative.name)
+        if entry.get("expected") not in (
+                "accept", "reject_lexer", "reject_parser", "reject_typecheck"):
+            raise ValueError("unknown compiler admission classification")
+        if entry["expected"] == "accept":
+            if not isinstance(entry.get("stdout"), str) or not entry["stdout"]:
+                raise ValueError("accepted guest fixture lacks predicted stdout")
+        elif "stdout" in entry:
+            raise ValueError("rejected source cannot claim guest output")
+        pinned = entry.get("git_blob_sha1")
+        if not isinstance(pinned, str) or re.fullmatch("[0-9a-f]{40}", pinned) is None:
+            raise ValueError("malformed Git blob identity")
+        source_path = directory / relative.name
+        if not source_path.is_file() or source_path.is_symlink():
+            raise ValueError("missing or symlinked guest fixture")
+        payload = source_path.read_bytes()
+        actual_sha = hashlib.sha1(
+            b"blob " + str(len(payload)).encode("ascii") + b"\0" + payload
+        ).hexdigest()
+        if actual_sha != pinned:
+            raise ValueError("mismatched immutable guest Git blob")
+    if actual != expected:
+        raise ValueError("unlisted or missing .atto fixture")
+    return len(expected)
+
+
 class SharedROSymbolModelTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -350,30 +415,65 @@ class SharedROSymbolModelTest(unittest.TestCase):
     def test_guest_fixtures_are_exact_blob_pinned_and_not_claimed_executed(self):
         manifest = json.loads((VECTORS.parent / "symbols-shared-ro-v1" /
                                "manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual(manifest["schema"], "atto.symbol-shared-ro-guest-fixtures/v1")
-        self.assertEqual(manifest["status"], "NOT_EXECUTED")
-        self.assertEqual(len(manifest["cases"]), 11)
-        self.assertEqual(len({case["path"] for case in manifest["cases"]}), 11)
-        self.assertEqual(len(manifest["backends"]), 5)
-        self.assertTrue(all(item["status"] == "NOT_EXECUTED"
-                            for item in manifest["backends"].values()))
-        for case in manifest["cases"]:
-            with self.subTest(case=case["path"]):
-                path = VECTORS.parent.parent / case["path"]
-                payload = path.read_bytes()
-                actual = hashlib.sha1(
-                    b"blob " + str(len(payload)).encode("ascii") + b"\0" + payload
-                ).hexdigest()
-                self.assertEqual(actual, case["git_blob_sha1"])
-                self.assertTrue(case["path"].endswith(".atto"))
-                self.assertIn(case["expected"],
-                              ("accept", "reject_lexer", "reject_parser", "reject_typecheck"))
-                if case["expected"] == "accept":
-                    self.assertTrue(case.get("stdout"),
-                                    "accepted fixture must declare expected stdout")
-                else:
-                    self.assertNotIn("stdout", case,
-                                     "rejected fixture cannot claim guest output")
+        self.assertEqual(verify_guest_fixture_inventory(
+            manifest, VECTORS.parent.parent), 11)
+
+    def test_guest_fixture_verifier_rejects_mutated_references_and_inventories(self):
+        with tempfile.TemporaryDirectory(prefix="atto-symbol-fixture-") as temp:
+            root = Path(temp)
+            folder = root / "fixtures" / "symbols-shared-ro-v1"
+            folder.mkdir(parents=True)
+            source = folder / "test.atto"
+            source.write_text("pub routine main(): void { return; }\n",
+                              encoding="utf-8")
+            payload = source.read_bytes()
+            blob_sha = hashlib.sha1(
+                b"blob " + str(len(payload)).encode("ascii") + b"\0" + payload
+            ).hexdigest()
+            base = {
+                "schema": "atto.symbol-shared-ro-guest-fixtures/v1",
+                "status": "NOT_EXECUTED",
+                "backends": {
+                    backend: {"status": "NOT_EXECUTED"} for backend in (
+                        "java-graal", "llvm", "dotnet-nativeaot", "wasm", "forge")
+                },
+                "cases": [{
+                    "path": "fixtures/symbols-shared-ro-v1/test.atto",
+                    "expected": "accept", "stdout": "ok",
+                    "git_blob_sha1": blob_sha
+                }]
+            }
+            self.assertEqual(verify_guest_fixture_inventory(base, root), 1)
+            for mutation in (
+                {"git_blob_sha1": "0" * 40},
+                {"git_blob_sha1": "f" * 40},
+                {"path": "fixtures/symbols-shared-ro-v1/../test.atto"},
+                {"path": "/tmp/test.atto"},
+                {"expected": "reject_lexer", "stdout": "forged"},
+                {"expected": "accept", "stdout": ""},
+            ):
+                changed = json.loads(json.dumps(base))
+                changed["cases"][0].update(mutation)
+                with self.subTest(mutation=mutation):
+                    with self.assertRaises(ValueError):
+                        verify_guest_fixture_inventory(changed, root)
+            changed = json.loads(json.dumps(base))
+            changed["status"] = "PASSED"
+            with self.assertRaises(ValueError):
+                verify_guest_fixture_inventory(changed, root)
+            changed = json.loads(json.dumps(base))
+            changed["backends"]["llvm"]["status"] = "EXECUTED"
+            with self.assertRaises(ValueError):
+                verify_guest_fixture_inventory(changed, root)
+            extra = folder / "forgotten.atto"
+            extra.write_text("untracked", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                verify_guest_fixture_inventory(base, root)
+            extra.unlink()
+            source.unlink()
+            source.symlink_to(folder / "missing.atto")
+            with self.assertRaises(ValueError):
+                verify_guest_fixture_inventory(base, root)
 
     def test_registry_epoch_minted_in_one_store_never_aliases_another(self):
         first = ReadOnlyRegistry(self.manifest)
