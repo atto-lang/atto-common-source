@@ -6,7 +6,9 @@ conformance suite. Tests exercise policy and immutable snapshot invariants.
 import hashlib
 import itertools
 import json
+import os
 import re
+import stat
 import tempfile
 import unicodedata
 import unittest
@@ -329,13 +331,25 @@ def verify_guest_fixture_inventory(manifest, repo_root):
         source_path = directory / relative.name
         if not source_path.is_file() or source_path.is_symlink():
             raise ValueError("missing or symlinked guest fixture")
-        # Bound input before reading or hashing. This is a deliberately small
-        # canonical source corpus, not an unrestricted external source file.
-        if source_path.stat().st_size > 65_536:
-            raise ValueError("oversized canonical guest fixture")
-        payload = source_path.read_bytes()
-        if len(payload) > 65_536:
-            raise ValueError("oversized canonical guest fixture")
+        # Bound the actual descriptor read, not just an earlier stat().
+        # Another process changing the checkout between validation and read
+        # must never turn this verifier into an unbounded memory allocation.
+        # O_NOFOLLOW prevents a swapped final-component symlink on Unix.
+        flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | (
+            getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+        try:
+            fd = os.open(source_path, flags)
+        except OSError as failure:
+            raise ValueError("unsafe or inaccessible canonical guest fixture") from failure
+        with os.fdopen(fd, "rb") as source:
+            info = os.fstat(source.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError("canonical guest fixture must be a regular file")
+            if info.st_size > 65_536:
+                raise ValueError("oversized canonical guest fixture")
+            payload = source.read(65_537)
+            if len(payload) > 65_536:
+                raise ValueError("oversized canonical guest fixture")
         try:
             payload.decode("utf-8", errors="strict")
         except UnicodeDecodeError as error:
