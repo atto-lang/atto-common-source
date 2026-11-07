@@ -594,7 +594,7 @@ class SharedROSymbolModelTest(unittest.TestCase):
             candidate.write_bytes(b"x" * 65_537)
             with self.assertRaisesRegex(ValueError, "oversized Symbol guest manifest"):
                 load_guest_fixture_manifest(candidate)
-            candidate.write_bytes(b"\\xff")
+            candidate.write_bytes(b"\xff")
             with self.assertRaisesRegex(ValueError, "malformed UTF-8 Symbol guest manifest"):
                 load_guest_fixture_manifest(candidate)
             candidate.unlink()
