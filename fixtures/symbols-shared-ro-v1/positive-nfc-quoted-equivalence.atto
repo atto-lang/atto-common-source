@@ -1,0 +1,10 @@
+pub routine main(): void {
+  const Symbol composed = #"café";
+  const Symbol decomposed = #"café";
+  if composed eq decomposed then
+    stdio.stdout.write("nfc");
+  else
+    stdio.stdout.write("mismatch");
+  fi
+  return;
+}
