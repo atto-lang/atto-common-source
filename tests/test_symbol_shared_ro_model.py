@@ -239,6 +239,8 @@ def load_guest_fixture_manifest(path):
 
 def verify_guest_fixture_inventory(manifest, repo_root):
     """Source-only receipt check; never interprets acceptance as guest execution."""
+    if not isinstance(manifest, dict):
+        raise ValueError("malformed Symbol guest manifest")
     if manifest.get("schema") != "atto.symbol-shared-ro-guest-fixtures/v1":
         raise ValueError("wrong Symbol guest fixture schema")
     if manifest.get("status") != "NOT_EXECUTED":
@@ -265,7 +267,8 @@ def verify_guest_fixture_inventory(manifest, repo_root):
     if "witness_requirements" in manifest:
         witness = manifest["witness_requirements"]
         if not isinstance(witness, list) or len(witness) != len(required_witnesses) or (
-                set(witness) != required_witnesses):
+                not all(isinstance(field, str) for field in witness)
+                or set(witness) != required_witnesses):
             raise ValueError("missing or forged Symbol guest evidence requirements")
     required_backends = {
         "java-graal", "llvm", "dotnet-nativeaot", "wasm", "forge"
@@ -534,6 +537,52 @@ class SharedROSymbolModelTest(unittest.TestCase):
             source.symlink_to(folder / "missing.atto")
             with self.assertRaises(ValueError):
                 verify_guest_fixture_inventory(base, root)
+
+    def test_guest_manifest_loader_and_schema_reject_forged_evidence(self):
+        manifest_path = VECTORS.parent / "symbols-shared-ro-v1" / "manifest.json"
+        canonical = load_guest_fixture_manifest(manifest_path)
+        self.assertEqual(verify_guest_fixture_inventory(
+            canonical, VECTORS.parent.parent), 11)
+
+        with tempfile.TemporaryDirectory(prefix="atto-duplicate-receipt-") as temp:
+            candidate = Path(temp) / "manifest.json"
+            for duplicate in (
+                '{"schema":"atto.symbol-shared-ro-guest-fixtures/v1",'
+                '"status":"PASSED","status":"NOT_EXECUTED"}',
+                '{"backends":{"llvm":{"status":"PASSED",'
+                '"status":"NOT_EXECUTED"}}}',
+                '{"cases":[{"expected":"accept","expected":"reject_lexer"}]}',
+            ):
+                candidate.write_text(duplicate, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "duplicate JSON member"):
+                    load_guest_fixture_manifest(candidate)
+
+        def changed():
+            return json.loads(json.dumps(canonical))
+
+        for mutation in (
+            ("top-level forged pass", lambda m: m.update({"ci_pass": True})),
+            ("backend forged steps", lambda m: m["backends"]["llvm"].update(
+                {"steps": 1})),
+            ("case forged pass", lambda m: m["cases"][0].update({"passed": True})),
+            ("missing witness", lambda m: m["witness_requirements"].remove(
+                "independent_review")),
+            ("duplicated witness", lambda m: m["witness_requirements"].append(
+                "exact_pr_head_sha")),
+            ("untyped witness", lambda m: m.update(
+                {"witness_requirements": [1] * 8})),
+            ("blank backend reason", lambda m: m["backends"]["java-graal"].update(
+                {"reason": ""})),
+            ("untyped backend reason", lambda m: m["backends"]["llvm"].update(
+                {"reason": 0})),
+        ):
+            with self.subTest(mutation=mutation[0]):
+                forged = changed()
+                mutation[1](forged)
+                with self.assertRaises(ValueError):
+                    verify_guest_fixture_inventory(forged, VECTORS.parent.parent)
+        with self.assertRaises(ValueError):
+            verify_guest_fixture_inventory([], VECTORS.parent.parent)
 
     def test_guest_fixture_inventory_rejects_hidden_inputs_and_resource_abuse(self):
         with tempfile.TemporaryDirectory(prefix="atto-symbol-guard-") as temp:
