@@ -41,10 +41,17 @@ file atto-native-arena-epsilon | grep -E 'ELF|Mach-O' >/dev/null || {
 }
 binary="$repo/atto-native-arena-epsilon"
 mv "$binary" "$tmp/atto-native-arena-epsilon"
+native_exit=0
 (
   unset JAVA_HOME CLASSPATH JAVA_TOOL_OPTIONS JDK_JAVA_OPTIONS
   "$tmp/atto-native-arena-epsilon" "$tmp/liboresarena.so" > "$tmp/native-output" 2> "$tmp/native-stderr"
-)
+) || native_exit=$?
+if (( native_exit != 0 )); then
+  echo "GRAAL_EPSILON_NATIVE_RUNTIME_FAILED: exit_code=$native_exit" >&2
+  cat "$tmp/native-output" >&2
+  cat "$tmp/native-stderr" >&2
+  exit "$native_exit"
+fi
 if [[ -s "$tmp/native-stderr" ]]; then
   echo 'GRAAL_EPSILON_NOT_EXECUTED: native guest emitted unexpected stderr' >&2
   cat "$tmp/native-stderr" >&2
