@@ -21,6 +21,7 @@ class UpgradeModel:
         self.state, self.rows, self.on_start_count = 42, {"n": 7}, 1
         self.owner, self.heir = object(), object()  # Runtime-minted, not strings.
         self.transfer, self.table_open = None, True
+        self.owner_retirement_confirmed = False
         self.frozen, self.stopped = False, False
         self.txn = None
         self.pins = {}                 # Token -> (kind, code generation).
@@ -42,8 +43,13 @@ class UpgradeModel:
             raise Denied("no authenticated supervisor authority or signed manifest")
         if "code_only" not in self.features:
             raise Denied("unsupported hot loading")
-        if artifact["code"] == self.code:
-            raise Denied("duplicate image")
+        code = artifact.get("code")
+        if not isinstance(code, str) or not code:
+            raise Denied("invalid image identifier")
+        # This reference model uses labels, not a real generation-id registry.
+        # Never recycle a label while a retired/quarantined image may exist.
+        if code == self.code or code in self.retired or code in self.quarantined:
+            raise Denied("duplicate, retained or quarantined image identifier")
         self.txn = {"token": object(), "image": artifact.copy(), "phase": "staged",
                     "expected": self.epoch}
         return self.txn["token"]
@@ -139,6 +145,7 @@ class UpgradeModel:
         if self.table_epoch >= (1 << 64) - 1:
             raise Denied("table epoch exhausted")
         self.owner = None              # Fence the dead owner before any handoff.
+        self.owner_retirement_confirmed = False
         self.table_epoch += 1
         if (not heir_alive or heir_tenant != self.tenant
                 or "ets_heir" not in self.features):
@@ -147,17 +154,29 @@ class UpgradeModel:
         self.transfer = object()
         return self.transfer
 
+    def confirm_owner_retired(self, issuer, expected_table_epoch):
+        # Source-free stand-in for a trusted physical actor registry observer.
+        # The real runtime must independently prove old-owner registry removal
+        # and absence of executable turns, Tasks, FFI and ETS loans.
+        if (self.stopped or issuer is not self.issuer or not self.table_open
+                or self.transfer is None or self.owner_retirement_confirmed
+                or expected_table_epoch != self.table_epoch or self.pins):
+            raise Denied("old physical owner retirement not proven")
+        self.owner_retirement_confirmed = True
+
     def acknowledge_heir(self, ticket, heir, tenant):
         if (self.stopped or not self.table_open or self.transfer is None
+                or not self.owner_retirement_confirmed
                 or ticket is not self.transfer
                 or heir is not self.heir or tenant != self.tenant):
-            raise Denied("stale, duplicate or foreign table transfer")
+            raise Denied("unretired, stale, duplicate or foreign table transfer")
         self.owner = self.heir
         self.transfer = None
+        self.owner_retirement_confirmed = False
 
     def restart_child(self):
-        if self.stopped:
-            raise Denied("stopped supervisor cannot restart")
+        if self.stopped or self.pins or self.transfer is not None:
+            raise Denied("cannot restart before old leases and transfers drain")
         if self.incarnation >= (1 << 64) - 1:
             raise Denied("actor incarnation exhausted")
         self.incarnation += 1
@@ -169,6 +188,7 @@ class UpgradeModel:
         # Physical image/table cleanup still requires separate quiescence evidence.
         self.stopped, self.frozen, self.txn = True, True, None
         self.table_open, self.owner, self.transfer = False, None, None
+        self.owner_retirement_confirmed = False
 
 
 class UniversalHotLoadTests(unittest.TestCase):
@@ -298,6 +318,7 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.assertEqual(s.table_epoch, 2)
         self.rejects(lambda: s.write_table(old_owner, "n", 9))
         self.rejects(lambda: s.write_table(s.heir, "n", 9))
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
         s.acknowledge_heir(receipt, s.heir, s.tenant)
         s.write_table(s.heir, "n", 9)
         self.assertEqual(s.rows["n"], 9)
@@ -310,6 +331,7 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.rejects(s.owner_died)
         self.assertEqual(s.table_epoch, before_epoch)
         self.assertIs(s.transfer, ticket)
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
         s.acknowledge_heir(ticket, s.heir, s.tenant)
 
     def test_heir_cross_tenant_and_dead_heir_fail_closed(self):
@@ -325,6 +347,7 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.rejects(lambda: s.acknowledge_heir(object(), s.heir, s.tenant))
         self.rejects(lambda: s.acknowledge_heir(t, ("outsider", 3), s.tenant))
         self.rejects(lambda: s.acknowledge_heir(t, s.heir, "other"))
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
         s.acknowledge_heir(t, s.heir, s.tenant)
 
     def test_ets_transfer_blocks_upgrade_quiescence(self):
@@ -332,6 +355,7 @@ class UniversalHotLoadTests(unittest.TestCase):
         receipt = self.s.owner_died()
         self.assertFalse(self.s.quiesce(token))
         self.rejects(lambda: self.s.commit(token, 1))
+        self.s.confirm_owner_retired(self.s.issuer, self.s.table_epoch)
         self.s.acknowledge_heir(receipt, self.s.heir, self.s.tenant)
         self.s.commit(token, 1)
 
@@ -411,6 +435,7 @@ class UniversalHotLoadTests(unittest.TestCase):
     def test_terminal_stop_revokes_acked_heir_without_recycling_table(self):
         s = self.s
         ticket = s.owner_died()
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
         s.acknowledge_heir(ticket, s.heir, s.tenant)
         original_table_id, old_epoch = s.table_id, s.table_epoch
         s.stop()
@@ -419,6 +444,99 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.assertFalse(s.table_open)
         self.rejects(lambda: s.write_table(s.heir, "n", 88))
         self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
+
+
+    def test_heir_ack_requires_separate_physical_owner_retirement(self):
+        s = self.s
+        ticket = s.owner_died()
+        self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
+        self.assertIsNone(s.owner)
+        self.assertIs(s.transfer, ticket)
+        self.assertEqual(s.rows, {"n": 7})
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
+        s.acknowledge_heir(ticket, s.heir, s.tenant)
+        self.assertIs(s.owner, s.heir)
+
+    def test_owner_retirement_waits_for_all_live_lease_categories(self):
+        for kind in ("turn", "await", "ffi", "ets_reader", "ets_writer", "child"):
+            s = UpgradeModel()
+            lease = s.pin(kind)
+            ticket = s.owner_died()
+            self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch))
+            self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
+            self.assertIsNone(s.owner)
+            s.release(lease)
+            s.confirm_owner_retired(s.issuer, s.table_epoch)
+            s.acknowledge_heir(ticket, s.heir, s.tenant)
+
+    def test_owner_retirement_wrong_issuer_and_epoch_fail_closed(self):
+        s = self.s
+        ticket = s.owner_died()
+        self.rejects(lambda: s.confirm_owner_retired(object(), s.table_epoch))
+        self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch - 1))
+        self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch + 1))
+        self.assertFalse(s.owner_retirement_confirmed)
+        self.assertIs(s.transfer, ticket)
+        self.assertEqual(s.table_epoch, 2)
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
+
+    def test_owner_retirement_single_use_and_no_receipt_replay(self):
+        s = self.s
+        ticket = s.owner_died()
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
+        self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch))
+        s.acknowledge_heir(ticket, s.heir, s.tenant)
+        self.assertFalse(s.owner_retirement_confirmed)
+        self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
+        self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch))
+
+    def test_terminal_stop_revokes_already_confirmed_retirement(self):
+        s = self.s
+        ticket = s.owner_died()
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
+        s.stop()
+        self.assertFalse(s.owner_retirement_confirmed)
+        self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
+        self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch))
+        self.assertEqual(s.rows, {"n": 7})
+
+    def test_restart_rejects_pinned_old_physical_actor_and_pending_heir(self):
+        s = self.s
+        initial = (s.incarnation, s.restart_count)
+        lease = s.pin("ffi")
+        self.rejects(s.restart_child)
+        self.assertEqual((s.incarnation, s.restart_count), initial)
+        s.release(lease)
+        ticket = s.owner_died()
+        self.rejects(s.restart_child)
+        self.assertEqual((s.incarnation, s.restart_count), initial)
+        s.confirm_owner_retired(s.issuer, s.table_epoch)
+        s.acknowledge_heir(ticket, s.heir, s.tenant)
+        s.restart_child()
+        self.assertEqual((s.incarnation, s.restart_count), (2, 1))
+
+    def test_retired_or_quarantined_image_labels_cannot_be_reused(self):
+        s = self.s
+        t = s.stage(s.candidate(), s.issuer)
+        s.prepare(t); s.freeze(t, 1); s.commit(t, 1)
+        self.rejects(lambda: s.stage(s.candidate(code="v1"), s.issuer))
+        s.retire("v1")
+        t = s.stage(s.candidate(code="v1"), s.issuer)
+        s.prepare(t); s.freeze(t, 2); s.commit(t, 2)
+        self.assertEqual((s.code, s.epoch), ("v1", 3))
+        q = UpgradeModel()
+        t = q.stage(q.candidate(), q.issuer)
+        q.prepare(t); q.freeze(t, 1); q.commit(t, 1)
+        self.rejects(lambda: q.retire("v1", unload_succeeded=False))
+        self.rejects(lambda: q.stage(q.candidate(code="v1"), q.issuer))
+        self.assertEqual((q.code, q.epoch), ("v2", 2))
+
+    def test_malformed_candidate_image_identifiers_fail_before_staging(self):
+        for code in ("", None, 0, [], object()):
+            s = UpgradeModel()
+            self.rejects(lambda: s.stage(s.candidate(code=code), s.issuer))
+            self.assertIsNone(s.txn)
+            self.assertEqual((s.code, s.epoch), ("v1", 1))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
