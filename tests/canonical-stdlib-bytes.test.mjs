@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {compareCanonicalStdlibBytes as compare} from '../src/canonical-stdlib-bytes.mjs';
 const manifest=JSON.parse(readFileSync(new URL('../contracts/canonical-stdlib-v1.json',import.meta.url)));
 const filename='stdlib/core/identity.atto';
@@ -64,4 +65,14 @@ test('false evidence labels and unsafe source paths cannot claim five-backend ex
    m=>m.extra=true,
    m=>Object.defineProperty(m,'hidden',{value:'x'}),
  ]){const m=structuredClone(manifest);mutate(m);denied(()=>compare(m,canonical(),replicas()));}
+});
+
+test('matching BOM bytes and corresponding manifest hash still fail closed',()=>{
+ const bom=Buffer.from('\ufeff'+source.toString('utf8'),'utf8');
+ const m=structuredClone(manifest);
+ m.sources[0].bytes=bom.byteLength;
+ m.sources[0].sha256=createHash('sha256').update(bom).digest('hex');
+ const c={[filename]:Buffer.from(bom)};
+ const replicasWithBom=Object.fromEntries(targetNames.map(b=>[b,{[filename]:Buffer.from(bom)}]));
+ denied(()=>compare(m,c,replicasWithBom));
 });
