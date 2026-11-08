@@ -124,10 +124,18 @@ injection of a live lease, including one discovered after confirmation, blocks
 ACK before a second writer is published. Terminal stop revokes ownership even
 when it races an ACK, and owner-death fencing linearizes with in-flight writes.
 
-Six additional adversarial test methods exercise these conditions, including
+Seven additional adversarial test methods exercise these conditions, including
 three bounded 40-round two-thread interleaving sweeps (ACK/pin, owner-death/
-write, stop/ACK). Source-free inventory is now **41 methods per round**,
-**123 cases across three rounds** once executed. This is not a C++/Java
+write, stop/ACK). Source-free inventory is now **42 methods per round**,
+**126 cases across three rounds** once executed. This is not a C++/Java
 concurrency memory-model proof, authenticated physical actor registry, guest
 execution, or executed-hosted CI claim. The real runtime must prove fencing
 with scheduler/ETS registry ownership and model-check adversarial reorderings.
+
+### No implicit physical owner authority
+
+Generation-pin admission now requires the trusted host to supply the live
+physical owner identity explicitly; omitted and forged identities MUST fail
+closed even if an heir is now current. Never default a stale callback's owner
+identity to the current table owner. The source-free model has **42 methods**
+per round, **126 expected model cases** across three non-skipped runs.
