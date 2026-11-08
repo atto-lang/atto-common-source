@@ -39,13 +39,13 @@ jobs:
           export PYTHONDONTWRITEBYTECODE=1
           for round in 1 2 3; do
             python3 -I -B contracts/v1/hot-load-abi/verify.py >"$RUNNER_TEMP/uhl-$round.log" 2>&1
-            grep -q '^Ran 35 tests in' "$RUNNER_TEMP/uhl-$round.log"
+            grep -q '^Ran 41 tests in' "$RUNNER_TEMP/uhl-$round.log"
             grep -qx 'OK' "$RUNNER_TEMP/uhl-$round.log"
             if grep -Eq 'FAILED|skipped|expected failure|unexpected success' "$RUNNER_TEMP/uhl-$round.log"; then
               cat "$RUNNER_TEMP/uhl-$round.log"
               exit 1
             fi
-            echo "UHL_SOURCEFREE_ROUND_${round}=PASS_35"
+            echo "UHL_SOURCEFREE_ROUND_${round}=PASS_41"
           done
       - name: Emit narrow evidence receipt (not native parity)
         env:
@@ -74,7 +74,7 @@ jobs:
           records = []
           for i in (1, 2, 3):
               data = (Path(os.environ["RUNNER_TEMP"]) / f"uhl-{i}.log").read_bytes()
-              if b"Ran 35 tests in" not in data or b"\nOK\n" not in data:
+              if b"Ran 41 tests in" not in data or b"\nOK\n" not in data:
                   raise SystemExit("missing executed source-free test receipts")
               records.append(hashlib.sha256(data).hexdigest())
           receipt = {
@@ -85,7 +85,7 @@ jobs:
               "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
               "source_git_blobs": {str(p): git("hash-object", str(p)) for p in sources},
               "round_sha256": records,
-              "executed_reference_model_cases": 105,
+              "executed_reference_model_cases": 123,
               "c11_gcc_clang_and_cpp17_syntax_checked": True,
               "source_free_only": True,
               "compiler_executed": False,
