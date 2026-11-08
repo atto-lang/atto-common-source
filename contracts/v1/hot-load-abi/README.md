@@ -75,3 +75,32 @@ single-use receipts. Closing the logical table is an immediate authority fence;
 this source-free model does **not** prove safe physical reclamation, native
 quiescence, or replay-free persistent storage. Three regressions cover pending
 heir, live owner and already acknowledged heir shutdown races.
+
+## Physical owner retirement gate and image label re-use (2026-11-08)
+
+**Normative acceptance requirement, model-only implementation:** An ETS owner-death
+event fences the previous writer but does **not** prove the old physical
+owner is gone. The heir receipt must remain pending until the trusted
+runtime independently establishes actor registry removal **and** drains all
+turn/Task/continuation/FFI/timer/ETS/external leases able to touch the table.
+Only that supervisor-owned proof at the exact table epoch may make the
+single-use heir acknowledgement eligible. A stale, cross-tenant or forged
+proof, unretired lease, pending transfer, or terminal stop MUST reject without
+publishing a second writer. Terminal stop also revokes already confirmed but
+unacknowledged retirement eligibility.
+
+A child restart MUST NOT discard live physical Task/FFI/ETS leases or an
+unacknowledged heir transfer. Retired or quarantined code-image identifiers
+MUST NOT be recycled while the old identity may remain mapped; the final
+runtime needs distinct monotonic generation IDs plus immutable content
+digests, rather than trusting this oracle's simplified string code labels.
+Actual owner-retirement proof requires runtime-owned actor registry,
+generation pin bookkeeping and loader/ETS integration. The Python method
+`confirm_owner_retired` represents the trusted observer **only**; calling
+it in a model is not physical teardown evidence.
+
+These eight additional source-free regressions intentionally do **not**
+validate a source actor, real ETS provider, native image unloading, compiler
+instrumentation, zero downtime, or backend parity. Together with the
+stacked terminal-stop patch, the expected source-free inventory is 35 Python
+cases per round (105 over three runs) **once executed on an admitted runner**.
