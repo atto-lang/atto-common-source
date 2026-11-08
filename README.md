@@ -25,3 +25,15 @@ This README records the intended role of this repository; it is not a claim of f
 - [AttoLang](https://github.com/atto-lang)
 - [Language specification](https://github.com/atto-lang/atto-spec)
 - [Cross-platform conformance](https://github.com/atto-lang/atto-platform-conformance)
+
+## Repository ownership and contribution routing
+
+**Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and canonical portable core/std written in .atto.
+
+**Belongs elsewhere:** Backend-specific codegen and host runtime shims belong in the respective atto-source.* repositories; changing language rules requires atto-spec.
+
+**Security and portability boundary:** Shared files must be versioned and byte-identical where required across backends; never silently let platform code redefine portable ownership, imports or concurrency.
+
+AttoLang is the public name; preserve existing Oreslang/.ores compatibility and use canonical .atto for new portable library source. This README defines scope, not feature readiness.
+
+**Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
