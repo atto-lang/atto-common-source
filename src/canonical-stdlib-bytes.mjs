@@ -24,6 +24,9 @@ const sourcePath = p => typeof p === 'string' &&
   !p.includes('..') && p.length <= 160;
 function inspectSourceBytes(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.length<1 || bytes.length>65536)error('BYTES');
+  // TextDecoder strips a leading UTF-8 BOM by default; inspect bytes first.
+  if(bytes.length>=3 && bytes[0]===0xef && bytes[1]===0xbb && bytes[2]===0xbf)
+    error('SOURCE_ENCODING');
   let text;
   try {text=utf8.decode(bytes);} catch {error('UTF8');}
   if (text.startsWith('\uFEFF') || text.includes('\u0000') || text.includes('\r') ||
