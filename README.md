@@ -37,3 +37,5 @@ This README records the intended role of this repository; it is not a claim of f
 AttoLang is the public name; preserve existing Oreslang/.ores compatibility and use canonical .atto for new portable library source. This README defines scope, not feature readiness.
 
 **Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
+
+For the audited 68-repository routing index and distinctions between compiler backends, platform adapters and demos, see [Repository ownership map](docs/REPOSITORY_MAP.md). Keep this private catalog out of public organization metadata.
