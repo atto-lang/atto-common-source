@@ -92,10 +92,11 @@ class UpgradeModel:
     def pin(self, kind, *, physical_owner=None):
         # An old owner cannot acquire another turn/Task/ETS/FFI lease after
         # owner-death fencing or via a stale physical-owner token post-ACK.
-        # The real runtime issues and checks the token in its actor registry.
+        # No implicit binding to the currently live actor: the trusted runtime
+        # MUST supply a physical-owner token from the executing context.
         if (self.frozen or self.stopped or self.transfer is not None
                 or self.owner is None
-                or (physical_owner is not None and physical_owner is not self.owner)
+                or physical_owner is None or physical_owner is not self.owner
                 or kind not in ("turn", "await", "continuation", "timer", "ffi",
                                 "shared", "ets_reader", "ets_writer", "external", "child")):
             raise Denied("DATA not admitted for current physical owner")
@@ -253,7 +254,7 @@ class UniversalHotLoadTests(unittest.TestCase):
         for category in ("turn", "await", "continuation", "timer", "ffi",
                          "shared", "ets_reader", "ets_writer", "external", "child"):
             s = UpgradeModel()
-            lease = s.pin(category)
+            lease = s.pin(category, physical_owner=s.owner)
             token = s.stage(s.candidate(), s.issuer)
             s.prepare(token); s.freeze(token, 1)
             self.assertFalse(s.quiesce(token), category)
@@ -317,7 +318,7 @@ class UniversalHotLoadTests(unittest.TestCase):
         self.rejects(lambda: self.s.commit(object(), 1))
         self.rejects(lambda: self.s.abort(object()))
         self.s.abort(token)
-        lease = self.s.pin("ffi")
+        lease = self.s.pin("ffi", physical_owner=self.s.owner)
         self.s.release(lease)
         self.rejects(lambda: self.s.release(lease))
 
@@ -490,7 +491,7 @@ class UniversalHotLoadTests(unittest.TestCase):
     def test_owner_retirement_waits_for_all_live_lease_categories(self):
         for kind in ("turn", "await", "ffi", "ets_reader", "ets_writer", "child"):
             s = UpgradeModel()
-            lease = s.pin(kind)
+            lease = s.pin(kind, physical_owner=s.owner)
             ticket = s.owner_died()
             self.rejects(lambda: s.confirm_owner_retired(s.issuer, s.table_epoch))
             self.rejects(lambda: s.acknowledge_heir(ticket, s.heir, s.tenant))
@@ -533,7 +534,7 @@ class UniversalHotLoadTests(unittest.TestCase):
     def test_restart_rejects_pinned_old_physical_actor_and_pending_heir(self):
         s = self.s
         initial = (s.incarnation, s.restart_count)
-        lease = s.pin("ffi")
+        lease = s.pin("ffi", physical_owner=s.owner)
         self.rejects(s.restart_child)
         self.assertEqual((s.incarnation, s.restart_count), initial)
         s.release(lease)
@@ -708,6 +709,17 @@ class UniversalHotLoadTests(unittest.TestCase):
             self.assertFalse(s.owner_retirement_confirmed)
             self.rejects(lambda: s.pin("turn"))
             self.rejects(lambda: s.write_table(s.heir, "n", 88))
+
+
+    def test_missing_physical_owner_token_never_binds_implicitly(self):
+        s = self.s
+        self.rejects(lambda: s.pin("turn"))
+        self.rejects(lambda: s.pin("ffi", physical_owner=object()))
+        self.assertEqual(len(s.pins), 0)
+        lease = s.pin("turn", physical_owner=s.owner)
+        self.assertEqual(len(s.pins), 1)
+        s.release(lease)
+        self.assertEqual(len(s.pins), 0)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
