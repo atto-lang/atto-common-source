@@ -104,3 +104,30 @@ validate a source actor, real ETS provider, native image unloading, compiler
 instrumentation, zero downtime, or backend parity. Together with the
 stacked terminal-stop patch, the expected source-free inventory is 35 Python
 cases per round (105 over three runs) **once executed on an admitted runner**.
+
+## Linearized ETS handoff and physical lease fencing (2026-11-08 follow-up)
+
+The source-free oracle now serializes the ETS-owner ledger and generation-pin
+admission using one short critical section. This models the **same-lock**
+requirement for owner death, DATA admission, physical retirement confirmation,
+heir ACK, table mutation, supervisor stop, and generation freeze/commit. It
+must NEVER hold this lock across guest callbacks, migration, I/O, blocking
+waits, or image cleanup. Implementation must use runtime-owned physical actor
+identities; an omitted model token means the currently active physical owner,
+not permission for an arbitrary guest to name an actor.
+
+While an owner-death transfer is pending, the old physical owner cannot acquire
+new turn/Task/continuation/FFI/ETS leases. ACK verifies both trusted
+retirement confirmation AND zero live leases inside the same table lock.
+After ACK the new heir can acquire leases; stale owner tokens cannot. Any
+injection of a live lease, including one discovered after confirmation, blocks
+ACK before a second writer is published. Terminal stop revokes ownership even
+when it races an ACK, and owner-death fencing linearizes with in-flight writes.
+
+Six additional adversarial test methods exercise these conditions, including
+three bounded 40-round two-thread interleaving sweeps (ACK/pin, owner-death/
+write, stop/ACK). Source-free inventory is now **41 methods per round**,
+**123 cases across three rounds** once executed. This is not a C++/Java
+concurrency memory-model proof, authenticated physical actor registry, guest
+execution, or executed-hosted CI claim. The real runtime must prove fencing
+with scheduler/ETS registry ownership and model-check adversarial reorderings.
