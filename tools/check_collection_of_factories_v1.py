@@ -67,7 +67,9 @@ def check(path):
             continue
         coverage[family].add(case["expected"])
         if case["expected"] == "ACCEPT":
-            if f"{family.capitalize()}.of" not in source and f"~{family}(" not in source:
+            if (f"{family.capitalize()}.of" not in source
+                    and f"~{family}(" not in source
+                    and f"~{family}<" not in source):
                 raise ValueError("positive case does not exercise its named factory or tilde alias")
     for family, expected in coverage.items():
         if expected != ALLOWED_EXPECTED:
