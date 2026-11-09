@@ -1,5 +1,7 @@
 # AttoLang tilde map/record literals and explicit structural matching v1
 
+**Empty-constructor refinement:** [v3](../v3/ATTO_TILDE_TYPED_EMPTY_AGGREGATES_V3.md) adds explicit `~tuple()` and type-directed `~<T>()` under a statically proven unique aggregate kind and zero-initialization capability. Bare `~()` remains forbidden. All runtime and ownership gates below remain in force.
+
 **Status: DRAFT LANGUAGE PROPOSAL — NOT EXECUTABLE, NOT CERTIFIED.**
 **Scope: additive frontend syntax, canonical formatting and semantic conformance targets; not an implemented runtime or an authorization to merge.**
 
