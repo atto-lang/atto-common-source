@@ -1,0 +1,406 @@
+{
+  "schema": "attolang.tilde-aggregate-and-structural-match.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "feature": "tilde-literals-match-over-on-structural",
+  "spec": "contracts/v1/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V1.md",
+  "source_extension": ".atto",
+  "backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "net"
+  ],
+  "evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  },
+  "certification": "NOT_CERTIFIED",
+  "note": "Expectations are normative targets; tests have not compiled or run on any backend. Negative cases require compiler diagnostic and no generated guest artifact.",
+  "counts": {
+    "accept": 22,
+    "reject": 25,
+    "total": 47
+  },
+  "cases": [
+    {
+      "id": "p01_record_short",
+      "kind": "record",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const r = ~(foo: 42, active: true); return r.foo; }",
+      "reason": "typed readonly record, static field projection",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p02_record_explicit",
+      "kind": "record",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const r = ~record(foo: 42); return r.foo; }",
+      "reason": "explicit record kind",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p03_record_quoted_name",
+      "kind": "record",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const r = ~(\"first name\": 42); return r[\"first name\"]; }",
+      "reason": "static quoted record field",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p04_map_short",
+      "kind": "map",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const m = ~(\"hello\" => 42); return m[\"hello\"]; }",
+      "reason": "dynamic typed string key",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p05_map_explicit",
+      "kind": "map",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const m = ~map(\"hello\" => 42); return m[\"hello\"]; }",
+      "reason": "explicit Map<K,V>",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p06_map_variable_key",
+      "kind": "map",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const key = \"hello\"; const m = ~(key => 42); return m[\"hello\"]; }",
+      "reason": "key identifier evaluates, not field name",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p07_map_symbol_keys",
+      "kind": "map",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const m = ~map(#ready => 42); return m[#ready]; }",
+      "reason": "Symbol key remains Symbol",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p08_record_empty",
+      "kind": "record",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const r = ~record(); return 42; }",
+      "reason": "unambiguous empty record",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p09_map_empty_context",
+      "kind": "map",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const Map<String,int> m = ~map(); return 42; }",
+      "reason": "empty map requires K,V context",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p10_legacy_record",
+      "kind": "compat",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const r = record{foo: 42}; return r.foo; }",
+      "reason": "preserve existing record constructor",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p11_legacy_map",
+      "kind": "compat",
+      "expected": "accept",
+      "source": "pub fnc main(): int { val Map<String,int> m = new Map<String,int>(); m[\"hello\"] = 42; return m[\"hello\"]; }",
+      "reason": "preserve existing Map constructor",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p12_struct_not_record",
+      "kind": "compat",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const p = infer struct{x: 42, y: 1}; return p.x; }",
+      "reason": "struct maintains exact concrete identity",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p13_tuple_not_map",
+      "kind": "compat",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const p = (42, \"x\"); return p[0]; }",
+      "reason": "parenthesized pair is tuple",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p14_record_match",
+      "kind": "match",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const x = ~(status: 200, value: 42); return match x over on ~(status: 200, value: v) -> v default -> 0 end; }",
+      "reason": "record on pattern",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p15_explicit_structural_projection",
+      "kind": "match",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const x = infer struct{status: 200, value: 42}; return match x over on structural ~(status: 200, value: v) -> v default -> 0 end; }",
+      "reason": "readonly structural view of struct fields",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p16_match_first_priority",
+      "kind": "match",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const x = ~(value: 42, ready: true); return match first x over on ~(value: n) -> n on ~(ready: true) -> 10 default -> 0 end; }",
+      "reason": "overlapping match first arms ordered",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p17_match_typed",
+      "kind": "match",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const x = ~(value: 42); return match<int> x over on ~(value: v) -> v default -> 0 end; }",
+      "reason": "typed match return",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p18_match_guard",
+      "kind": "match",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const x = ~(value: 42); return match first x over on ~(value: v) when v > 40 -> v default -> 0 end; }",
+      "reason": "guard pure scoped binding",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p19_explicit_structural_interface",
+      "kind": "match",
+      "expected": "accept",
+      "source": "define interface HasId\n id: int;\nend\nfnc read_id(structural HasId row): int { return row.id; }\npub fnc main(): int { const r = ~(id:42, other:true); return read_id(r); }",
+      "reason": "existing structural parameter contract intact",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p20_legacy_spread",
+      "kind": "compat",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const a = record{value:40}; const b = record{...a, extra:2}; return b.value + b.extra; }",
+      "reason": "preexisting immutable spread remains",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p21_record_tilde_spread",
+      "kind": "record",
+      "expected": "accept",
+      "source": "pub fnc main(): int { const a = record{value:40}; const b = ~record(...a, extra:2); return b.value + b.extra; }",
+      "reason": "new surface reuses existing spread ownership plan",
+      "target_exit_code": 42
+    },
+    {
+      "id": "p22_map_function_arrow_coexist",
+      "kind": "compat",
+      "expected": "accept",
+      "source": "type F = (int) => int;\npub fnc main(): int { const m = ~(\"answer\" => 42); return m[\"answer\"]; }",
+      "reason": "function-type => and map-entry => are context-separated",
+      "target_exit_code": 42
+    },
+    {
+      "id": "n01_empty_bare",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(); }",
+      "reason": "bare empty tilde ambiguous even with context",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n02_empty_bare_context",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const Map<String,int> x = ~(); }",
+      "reason": "typed context does not enable ~() in v1",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n03_mixed_short",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 1, \"bar\" => 2); }",
+      "reason": "no record/map mixing",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n04_mixed_explicit",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~record(foo: 1, \"bar\" => 2); }",
+      "reason": "no separator mixing with named form",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n05_map_with_record_separator",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~map(foo: 1); }",
+      "reason": "explicit map requires =>",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n06_record_with_map_separator",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~record(\"foo\" => 1); }",
+      "reason": "explicit record requires :",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n07_unbound_map_key",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~(foo => 1); }",
+      "reason": "foo is an unbound variable, not field key",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n08_dynamic_record_field",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~(get_key(): 1); }",
+      "reason": "record field names not computed",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n09_duplicate_record_field",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~(foo: 1, foo: 2); }",
+      "reason": "duplicate explicit field",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n10_duplicate_constant_map_key",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~(\"foo\" => 1, \"foo\" => 2); }",
+      "reason": "duplicate compile-time equal map key",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n11_map_mixed_key_domain",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~(\"foo\" => 1, #bar => 2); }",
+      "reason": "no implicit String/Symbol union",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n12_map_wrong_expected_key",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const Map<String,int> m = ~map(#ready => 1); }",
+      "reason": "typed Map<String> cannot take Symbol key",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n13_map_empty_no_context",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~map(); }",
+      "reason": "unconstrained empty Map<K,V>",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n14_record_mutation",
+      "kind": "ownership",
+      "expected": "reject",
+      "source": "fnc bad(): void { const r = ~(foo: 1); r.foo = 2; }",
+      "reason": "record readonly",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n15_struct_record_implicit_erasure",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = infer struct{foo:1}; const record{foo:int} r = x; }",
+      "reason": "no silent nominal/exact struct to record conversion",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n16_missing_over",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 1); match x on ~(foo: 1) -> 1 default -> 0 end; }",
+      "reason": "match requires over",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n17_on_default",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 1); match x over on default -> 1 end; }",
+      "reason": "default does not get on prefix",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n18_default_not_last",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 1); match x over default -> 0 on ~(foo: 1) -> 1 end; }",
+      "reason": "default last",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n19_duplicate_default",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 1); match x over default -> 0 default -> 1 end; }",
+      "reason": "single fallback",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n20_nominal_without_structural",
+      "kind": "type",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = infer struct{foo: 1}; match x over on ~(foo: 1) -> 42 default -> 0 end; }",
+      "reason": "nominal/exact struct structural projection must be marked",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n21_nonexhaustive_match",
+      "kind": "proof",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 1); match x over on ~(foo: 2) -> 0 end; }",
+      "reason": "ordinary match is nonexhaustive",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n22_overlapping_match",
+      "kind": "proof",
+      "expected": "reject",
+      "source": "fnc bad(): void { const x = ~(foo: 42, ready: true); match x over on ~(foo: v) -> 0 on ~(ready: true) -> 1 default -> 2 end; }",
+      "reason": "ordinary match cannot overlap",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n23_map_pattern_reserved",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~map(\"foo\" => 1); match m over on ~map(\"foo\" => x) -> x default -> 0 end; }",
+      "reason": "map pattern syntax reserved in v1",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n24_map_spread_reserved",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const m = ~map(\"a\" => 1); const n = ~map(...m); }",
+      "reason": "map spread requires separate version",
+      "no_guest_artifact_on_reject": true
+    },
+    {
+      "id": "n25_invalid_structural_key",
+      "kind": "syntax",
+      "expected": "reject",
+      "source": "fnc bad(): void { const r = ~(foo: 1); match r over on structural ~(key() => v) -> 1 default -> 0 end; }",
+      "reason": "structural record pattern static fields only",
+      "no_guest_artifact_on_reject": true
+    }
+  ]
+}
