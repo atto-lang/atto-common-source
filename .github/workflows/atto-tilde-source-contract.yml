@@ -1,20 +1,28 @@
 # SOURCE CONTRACT ONLY. No AttoLang compiler or guest execution implied.
-name: AttoLang tilde literal source contract
+name: AttoLang tilde literal source contract v1-v2
 on:
   pull_request:
     paths:
       - ".github/workflows/atto-tilde-source-contract.yml"
       - "contracts/v1/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V1.md"
+      - "contracts/v2/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V2.md"
       - "fixtures/tilde-aggregate-match-v1/**"
+      - "fixtures/tilde-aggregate-match-v2/**"
       - "tools/check-tilde-aggregate-match-v1.py"
       - "tools/tests/test_tilde_contract_manifest.py"
+      - "tools/tilde_literal_reference.py"
+      - "tools/tests/test_tilde_literal_reference_v2.py"
   push:
     paths:
       - ".github/workflows/atto-tilde-source-contract.yml"
       - "contracts/v1/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V1.md"
+      - "contracts/v2/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V2.md"
       - "fixtures/tilde-aggregate-match-v1/**"
+      - "fixtures/tilde-aggregate-match-v2/**"
       - "tools/check-tilde-aggregate-match-v1.py"
       - "tools/tests/test_tilde_contract_manifest.py"
+      - "tools/tilde_literal_reference.py"
+      - "tools/tests/test_tilde_literal_reference_v2.py"
 permissions:
   contents: read
 jobs:
@@ -28,8 +36,10 @@ jobs:
           persist-credentials: false
       - name: Strict fixture manifest validation
         run: python3 -B tools/check-tilde-aggregate-match-v1.py
-      - name: Adversarial source-only manifest mutation tests
-        run: python3 -B -m unittest discover -s tools/tests -p test_tilde_contract_manifest.py -v
+      - name: Adversarial v1 and v2 source-only reference tests
+        run: |
+          python3 -B -m unittest discover -s tools/tests -p test_tilde_contract_manifest.py -v
+          python3 -B -m unittest discover -s tools/tests -p test_tilde_literal_reference_v2.py -v
       - name: Explicit evidence boundary
         run: |
           echo "SOURCE_CONTRACT_ONLY"
