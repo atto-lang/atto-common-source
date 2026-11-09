@@ -1,5 +1,7 @@
 # AttoLang tilde aggregate literals and structural matching — optional extensions v2
 
+**Empty-constructor refinement:** [v3](../v3/ATTO_TILDE_TYPED_EMPTY_AGGREGATES_V3.md) adds `~tuple()` and `~<T>()` with a compiler-proven unique aggregate type. The v2 `~map<K,V>()` and map-spread policies remain unchanged; bare `~()` stays forbidden.
+
 **Status: DRAFT PROPOSAL / SOURCE-CONTRACT ONLY / NOT_EXECUTED / NOT_CERTIFIED.**
 **Parent:** [v1 contract](../v1/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V1.md). V2 is a proposed, independently gated extension. Nothing here silently changes the v1 accepted language, existing compiler release, or required backend support.
 
