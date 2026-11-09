@@ -8,6 +8,7 @@ effect safety, codegen, or five-backend conformance.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ast
 import re
 
 
@@ -58,6 +59,17 @@ def lex(source: str) -> list[Token]:
                 if c == "\\":
                     if i + 1 >= len(source) or source[i + 1] in ("\r", "\n"):
                         raise SyntaxRejection("invalid string escape")
+                    # Reject escaped lone UTF-16 surrogate scalar values, not
+                    # just literal surrogate characters in fixture JSON.
+                    if source[i + 1] == "u":
+                        digits = source[i + 2:i + 6]
+                        if len(digits) != 4 or not re.fullmatch(r"[0-9a-fA-F]{4}", digits):
+                            raise SyntaxRejection("malformed Unicode escape")
+                        codepoint = int(digits, 16)
+                        if 0xD800 <= codepoint <= 0xDFFF:
+                            raise SyntaxRejection("unpaired Unicode surrogate escape")
+                        i += 6
+                        continue
                     i += 2
                     continue
                 if c == quote:
@@ -102,8 +114,17 @@ def _segments(tokens: list[Token]) -> list[list[Token]]:
     item: list[Token] = []
     brackets = {"(": ")", "[": "]", "{": "}"}
     stack: list[str] = []
-    for t in tokens:
-        if t.value in brackets:
+    for index, t in enumerate(tokens):
+        # A generic comma inside ~map<K,V> is not an aggregate entry comma.
+        # Only recognize '<' as generic after the contextual '~map' head.
+        if (t.value == "<" and index >= 2 and tokens[index - 1].value == "map"
+                and tokens[index - 2].value == "~"):
+            stack.append(">")
+        elif t.value == "<" and stack and stack[-1] == ">":
+            stack.append(">")
+        elif t.value == ">" and stack and stack[-1] == ">":
+            stack.pop()
+        elif t.value in brackets:
             stack.append(brackets[t.value])
         elif t.value in (")", "]", "}"):
             if not stack or stack.pop() != t.value:
@@ -140,9 +161,19 @@ def _find_sep(tokens: list[Token]) -> tuple[int, str] | None:
 
 
 def _slice_quoted_key(raw: str) -> str:
-    # Backslash escapes are checked for syntax, and field identity is retained.
-    # This reference deliberately does not normalize Unicode or prove codec rules.
-    return raw
+    # Host-side reference only. Decode simple Python-compatible literal escapes
+    # to detect alias duplicates such as foo: and "foo":. AttoLang's actual
+    # compiler must implement its own specified static Unicode key policy.
+    if not raw.startswith(("'", '"')):
+        return raw
+    try:
+        value = ast.literal_eval(raw)
+    except (SyntaxError, ValueError) as exc:
+        raise SyntaxRejection("invalid static field quoted key") from exc
+    if not isinstance(value, str) or "\x00" in value or any(
+            0xD800 <= ord(ch) <= 0xDFFF for ch in value):
+        raise SyntaxRejection("invalid static field contents")
+    return value
 
 
 def _validate_nested(tokens: list[Token]) -> int:
