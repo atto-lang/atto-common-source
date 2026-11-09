@@ -71,6 +71,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Callable bodies, return types, and contextual tuple syntax v1](docs/CALLABLE_SYNTAX_V1.md)
 
 - [Tilde Map/Record literals and explicit structural matching v1](contracts/v1/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V1.md) — draft syntax proposal, 47 accept/reject fixture targets and source-only manifest checker; no compiler or guest evidence.
+- [Typed empty tilde aggregates v3](contracts/v3/ATTO_TILDE_TYPED_EMPTY_AGGREGATES_V3.md) — explicit `~map()`, `~record()`, `~tuple()` and type-directed `~<T>()` draft admission contract, without guest parity claims.
 - [Generators and async iterators v1](docs/GENERATORS_V1.md) — canonical `gen*`, iterator protocols, lazy pulls, cleanup and ownership.
 - [Tree shaking and reachability contract](docs/TREE_SHAKING.md)
 - [Shared contracts and conformance](docs/CONFORMANCE.md)
