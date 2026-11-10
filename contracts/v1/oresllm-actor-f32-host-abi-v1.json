@@ -128,5 +128,49 @@
     "llvm_aot": "NOT_EXECUTED",
     "tenant_isolation": "NOT_CERTIFIED",
     "release_ready": false
+  },
+  "host_stage": {
+    "classification": "LOCALLY_EXECUTED_TRUSTED_HOST_COMPONENTS_NOT_COMPILER_BRIDGE",
+    "java_actor_pin": {
+      "repository": "ores-truffle-oreslang/oreslang-source.java",
+      "pr": 2731,
+      "source_head": "eeac0e56c53734ada4f1d3c7d3fdb016a45d21ba",
+      "runtime_blob": "ed5793389fe7c10a4ef9b9560b7ce8cc4e871afc",
+      "test_blob": "6a4b2b8abc5c5f61c72f7ead2b133186d4d2d6f4",
+      "runner_blob": "ac96f50f442ca7bf80e98921e3c8843739e39fa2",
+      "local_execution": "PASS_JDK_21_HOST_ONLY",
+      "scheduler_dispatch_wiring": "NOT_IMPLEMENTED"
+    },
+    "llvm_actor_pin": {
+      "repository": "ores-truffle-oreslang/oreslang-source.llvm",
+      "pr": 1628,
+      "source_head": "901c9aad50903641fea8a23a260d09d3bde77075",
+      "lease_blob": "60730da754b9edd1e8486c1f37d346352c8894fe",
+      "test_blob": "fefc6b67def07c9757d04d1c0ff93d8fdf2f4eb7",
+      "runner_blob": "775b38f957f61cd6f56ad3c0b9bc60b2eb9d2d91",
+      "local_execution": "PASS_GCC_CLANG_O1_O2_ASAN_UBSAN_HOST_ONLY",
+      "compiler_lowering": "NOT_IMPLEMENTED"
+    },
+    "production_host_broker": {
+      "repository": "ores-llm/ores-llm-ml-kernels-cpu.atto",
+      "pr": 30,
+      "source_head": "68d1388c384c36507e3213a09f64cebefb8c5d55",
+      "header_blob": "2482d603331c15acf687560c63d6e340c7fbce3a",
+      "implementation_blob": "7b08c7f652bdc14c0b981fa0f3d95cb0817023e7",
+      "test_blob": "cbd21637de91ad99989e6da3bb9a154b14e15134",
+      "local_execution": "PASS_REAL_C11_GCC_CLANG_O1_O2_ASAN_UBSAN",
+      "golden": "22,28,49,64",
+      "forced_commit_rollbacks": 256,
+      "forced_stop_during_allocator": true,
+      "executor_callbacks": "TEST_MODEL_ONLY"
+    },
+    "compiler_intrinsic_call": "NOT_IMPLEMENTED",
+    "java_native_image": "NOT_EXECUTED",
+    "llvm_aot_guest": "NOT_EXECUTED",
+    "borrow_take_compile_negative": "NOT_EXECUTED",
+    "source_github_actions": "BLOCKED_ZERO_STEP",
+    "source_security_incident": "OPEN",
+    "cross_org_private_compiler_source_copy": false,
+    "release_ready": false
   }
 }
