@@ -1,0 +1,9 @@
+// Generated declarations are not trusted; normal return typing must apply.
+define macro make_bad_main() -> Syntax<Decl> {
+    return quote {
+        fnc main() -> int {
+            return "not an int";
+        }
+    };
+}
+make_bad_main!();
