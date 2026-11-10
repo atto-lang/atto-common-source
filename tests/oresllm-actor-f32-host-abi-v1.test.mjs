@@ -70,3 +70,53 @@ test('forged readiness, pointer exposure and unsafe ownership changes are reject
  bad(c=>c.release_gates.pop());
  bad(c=>c.security_incident='CLOSED');
 });
+
+test('latest actual host pin and native production bridge are not compiler/AOT evidence',()=>{
+ const h=data.host_stage;
+ assert.equal(h.classification,'LOCALLY_EXECUTED_TRUSTED_HOST_COMPONENTS_NOT_COMPILER_BRIDGE');
+ assert.equal(h.java_actor_pin.pr,2731);
+ assert.equal(h.java_actor_pin.local_execution,'PASS_JDK_21_HOST_ONLY');
+ assert.equal(h.java_actor_pin.scheduler_dispatch_wiring,'NOT_IMPLEMENTED');
+ assert.equal(h.java_actor_pin.runtime_blob,'ed5793389fe7c10a4ef9b9560b7ce8cc4e871afc');
+ assert.equal(h.llvm_actor_pin.pr,1628);
+ assert.equal(h.llvm_actor_pin.local_execution,'PASS_GCC_CLANG_O1_O2_ASAN_UBSAN_HOST_ONLY');
+ assert.equal(h.llvm_actor_pin.lease_blob,'60730da754b9edd1e8486c1f37d346352c8894fe');
+ assert.equal(h.llvm_actor_pin.compiler_lowering,'NOT_IMPLEMENTED');
+ assert.equal(h.production_host_broker.pr,30);
+ assert.equal(h.production_host_broker.local_execution,'PASS_REAL_C11_GCC_CLANG_O1_O2_ASAN_UBSAN');
+ assert.equal(h.production_host_broker.implementation_blob,'7b08c7f652bdc14c0b981fa0f3d95cb0817023e7');
+ assert.equal(h.production_host_broker.test_blob,'cbd21637de91ad99989e6da3bb9a154b14e15134');
+ assert.equal(h.production_host_broker.golden,'22,28,49,64');
+ assert.equal(h.production_host_broker.forced_commit_rollbacks,256);
+ assert.equal(h.production_host_broker.forced_stop_during_allocator,true);
+ assert.equal(h.production_host_broker.executor_callbacks,'TEST_MODEL_ONLY');
+ assert.equal(h.compiler_intrinsic_call,'NOT_IMPLEMENTED');
+ assert.equal(h.java_native_image,'NOT_EXECUTED');
+ assert.equal(h.llvm_aot_guest,'NOT_EXECUTED');
+ assert.equal(h.borrow_take_compile_negative,'NOT_EXECUTED');
+ assert.equal(h.source_github_actions,'BLOCKED_ZERO_STEP');
+ assert.equal(h.source_security_incident,'OPEN');
+ assert.equal(h.cross_org_private_compiler_source_copy,false);
+ assert.equal(h.release_ready,false);
+ const corrupt=(fn)=>{
+  const copy=structuredClone(h);fn(copy);
+  assert.notDeepEqual(copy,h);
+  const ok=copy.compiler_intrinsic_call==='NOT_IMPLEMENTED' &&
+    copy.production_host_broker.executor_callbacks==='TEST_MODEL_ONLY' &&
+    copy.llvm_aot_guest==='NOT_EXECUTED' &&
+    copy.java_native_image==='NOT_EXECUTED' &&
+    copy.borrow_take_compile_negative==='NOT_EXECUTED' &&
+    copy.source_security_incident==='OPEN' &&
+    copy.cross_org_private_compiler_source_copy===false &&
+    copy.release_ready===false;
+  assert.equal(ok,false);
+ };
+ corrupt(x=>x.compiler_intrinsic_call='IMPLEMENTED');
+ corrupt(x=>x.production_host_broker.executor_callbacks='PRODUCTION_ACTOR_SCHEDULER');
+ corrupt(x=>x.java_native_image='PASS');
+ corrupt(x=>x.llvm_aot_guest='PASS');
+ corrupt(x=>x.borrow_take_compile_negative='PASS');
+ corrupt(x=>x.source_security_incident='CLOSED');
+ corrupt(x=>x.cross_org_private_compiler_source_copy=true);
+ corrupt(x=>x.release_ready=true);
+});
