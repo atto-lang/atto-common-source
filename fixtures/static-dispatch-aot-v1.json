@@ -757,7 +757,7 @@
           "visibility": true,
           "actorIsolation": true
         },
-        "kind": "DIRECT",
+        "kind": "RUNTIME_REFLECTION",
         "target": "root.Counter.read$arity0",
         "emittedTargets": [
           "root.Counter.read$arity0"
