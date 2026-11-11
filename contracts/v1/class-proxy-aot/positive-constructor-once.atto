@@ -1,0 +1,11 @@
+// Candidate guest regression; verify constructor evaluation is exactly once.
+let int constructed = 0;
+define class Foo as
+  constructor() { constructed = constructed + 1; }
+  pub count(): int { return constructed; }
+end
+pub routine main(): void {
+  val wrapped = new Proxy(new Foo());
+  stdio.stdout.write(wrapped.count());
+  return;
+}
