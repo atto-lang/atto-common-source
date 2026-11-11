@@ -168,6 +168,9 @@ test('contract declares every source.* backend without claiming execution',()=>{
   assert.ok(Object.values(spec.backend_profiles).every(x=>x.status.includes('NOT_EXECUTED')));
   assert.equal(spec.grammar_proposal.canonical_root,'+/');
   assert.equal(spec.cases.length,28);
+  assert.equal(spec.interface_digest_policy.canonical_semantic_digest,'PROPOSED_NOT_IMPLEMENTED');
+  assert.equal(spec.interface_digest_policy.example_java_oresi_sha256,
+    '8db5681e1e41c389e2358f9e0cd5c46e78b5b33519ed4769056268a240847f3d');
   assert.equal(spec.evidence_policy.no_authored_fixture_as_executed,true);
 });
 for(const c of spec.cases){
