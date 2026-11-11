@@ -38,11 +38,17 @@ Until imported and qualified nominal type resolution is proven, the generator
 MUST reject a synthetic `FooProxy` name that collides with any compilation-unit
 declaration or explicitly imported symbol/alias; wildcard imports fail closed.
 An imported `Proxy` name must not silently bind to the intrinsic.
+An imported `Foo` name or namespace alias must not silently capture the
+locally synthesized `FooProxy` target identity; reject it before lowering.
 
 Before forwarder emission, require a unique public instance slot by
 `(name, explicit value arity)`. A different parameter type does **not**
 distinguish equal-arity slots. Preserve original target dispatch inside the
 forwarder, never a speculative direct target implementation.
+
+Reject target constructors with annotations that cannot be safely mirrored.
+Also reject recursively nested mutable `struct` signatures, which may convey
+unproven write authority across a proxy boundary.
 
 Reject public methods whose annotations would be dropped, and any public
 method signature with borrowed, inferred or function-valued types (including
