@@ -50,3 +50,35 @@ test('strict schema protects against source/macro provenance spoofing', () => {
   expectReject(m => {m.nodes[1].calls=['apply-int','apply-int'];}, 'duplicate dependency');
   expectReject(m => {m.schema='atto.specialization-closure.v2';}, 'version');
 });
+
+test('distinct linker names cannot duplicate the same concrete specialization', () => {
+  expectReject(m => {
+    m.nodes[0].calls.push('apply-int-copy');
+    m.nodes.push({...m.nodes[1],id:'apply-int-copy',
+      emittedSymbol:'root.apply$int.copy'});
+  }, 'duplicate semantic specialization');
+});
+test('bounded dependency edges prevent dense manifest expansion', () => {
+  expectReject(m => {
+    const count = 257; // 257 x 257 = 66,049, over the 65,536 edge budget
+    const names = Array.from({length:count}, (_, i) => 'n' + i);
+    m.maxCodeBytes = 2048;
+    m.roots = ['n0'];
+    m.nodes = names.map((id, i) => ({
+      id,callee:'root.fn' + i,witness:'root.w' + i,
+      types:['int'],emittedSymbol:'root.symbol' + i,
+      estimatedBytes:1,calls:names.slice(),
+      abiVerified:true,semanticChecksPassed:true
+    }));
+  }, 'dense graph');
+});
+test('diamond dependencies and recursive references stay within a frozen closure', () => {
+  const m = fixture();
+  m.nodes[0].calls = ['apply-int', 'second-int'];
+  m.nodes[1].calls = ['apply-int', 'second-int'];
+  m.nodes.push({id:'second-int',callee:'root.second',witness:'root.Numeric.int',
+    types:['int'],emittedSymbol:'root.second$int',estimatedBytes:64,
+    calls:['apply-int'],abiVerified:true,semanticChecksPassed:true});
+  assert.deepEqual(validateSpecializationManifest(m),
+    {instantiations:3,estimatedCodeBytes:704});
+});
