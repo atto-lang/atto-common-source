@@ -2,7 +2,7 @@
 
 Status: **proposed conformance targets; compiled guest and AOT parity NOT_EXECUTED** (2026-11-10).
 
-Companion fixture: `fixtures/tuple-type-value-v1/manifest.json` (6 accept / 9 reject).
+Companion fixture: `fixtures/tuple-type-value-v1/manifest.json` (6 accept / 10 reject).
 Reference work: [Java #2790](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2790), stacked on Java [#2734](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2734) and [#2733](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2733).
 Related broader aggregate work: common-source [#254](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/254) and [#257](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/257).
 This is a deliberately **tuple-only** contract, not a new collection runtime or factory registry.
@@ -24,7 +24,7 @@ pub fnc labels(): Tuple[string, string] {
 
 ## Typechecking and ownership
 
-A tuple return requires exactly the declared arity and each corresponding element type. Nested tuples preserve slot types recursively. Wrong slot types, missing explicit returns, tuple-vs-array swaps and mismatched arity fail compilation. `~array(v1, v2)` must **never** be contextually coerced into `Tuple[T1, T2]`, even for tuple-typed local bindings or union-of-tuples returns; legacy `[...]` contextual behavior is separately grandfathered and must remain explicit in compiler metadata. Tuple values cannot be mutated through indexed assignments.
+A tuple return requires exactly the declared arity and each corresponding element type. Nested tuples preserve slot types recursively. Wrong slot types, missing explicit returns, tuple-vs-array swaps and mismatched arity fail compilation. `~array(v1, v2)` and legacy `arr[v1, v2]` must **never** be contextually coerced into `Tuple[T1, T2]`, even for tuple-typed local bindings or union-of-tuples returns; legacy `[...]` contextual behavior is separately grandfathered and must remain explicit in compiler metadata. Tuple values cannot be mutated through indexed assignments.
 
 Ownership of tuple elements is checked recursively. Returning or transporting a tuple must not conceal borrowed actor-private values, non-sendable closures, borrowed stack frames, stale generation handles or raw mutable supervisor state. Moving a tuple moves its owned non-Copy elements; copying is legal only when each element is Copy-safe. Evaluating `~tuple(...)` does not grant authority or mint an unchecked host object. Allocation and destruction must honor actor-owned arenas and supervisor quiescence.
 
