@@ -10,8 +10,8 @@ This contract refines `AOT_LANGUAGE_CLOSURE_V1.md` and `METAPROGRAMMING_AOT_V1.m
 | --- | --- | --- |
 | `DIRECT` | Exact final method, sealed unique override, or whole-program uniqueness proof | Direct call to one precompiled symbol |
 | `STATIC_WITNESS` | Named compile-time witness, verified ABI and finite reachable generic instantiations | Monomorphized or static witness-selected precompiled call |
-| `CLOSED_INDIRECT` | Complete finite target set, stable slot ABI, complete fallback, no implementation registry | Precompiled table/conditional selection (indirect execution is permissible) |
-| `ACTOR_MESSAGE` | Closed compiled handlers, stable actor identity, generation fence, admission, isolation and nonreentrancy | Runtime mailbox routing to compiled handlers, **never direct actor-state mutation** |
+| `CLOSED_INDIRECT` | Complete **ordered** finite target set, stable slot ABI, complete fallback, no implementation registry | Precompiled table/conditional selection (indirect execution is permissible) |
+| `ACTOR_MESSAGE` | Closed **ordered** compiled handler slots, stable actor identity, generation fence, admission, isolation and nonreentrancy | Runtime mailbox routing to compiled handlers, **never direct actor-state mutation** |
 
 **Do not** infer a unique virtual dispatch target solely from a declared base class. A direct call requires a proof that an override cannot change the selected callee. Inlining and speculative optimization must preserve override semantics and correct fallback.
 
@@ -27,9 +27,11 @@ The compiler's actual dispatch evidence must bind a call-site identity to a conc
 6. Finite generic closure is a hard requirement. Shape sharing and witness reuse are allowed only when ABI, effects, ownership and semantics are equivalent. Bounded specialization does not permit a hidden JIT.
 7. No speedup assertion is valid without executed benchmarks on a matched toolchain and recorded AOT binary-size and compile-time regressions.
 
+**Ordering invariant:** compiler-emitted indirect targets and actor-handler slots must preserve the exact index-to-target mapping of the verified plan. A permutation of a complete set is still an invalid dispatch mapping. Reordering is permissible only when every index/ABI mapping is correspondingly updated and reverified.
+
 ## Normative v1 validation surface
 
-- `fixtures/static-dispatch-aot-v1.json`: four dispatch kinds, five positive controls and nineteen negative cases. Values such as `verified.type=true` are **illustrative expected evidence**, not cryptographic provenance.
+- `fixtures/static-dispatch-aot-v1.json`: four dispatch kinds, five positive controls and twenty negative cases, including reordering a complete vtable. Values such as `verified.type=true` are **illustrative expected evidence**, not cryptographic provenance.
 - `tools/validate-static-dispatch-aot-v1.mjs`: strict source-plan validator; rejects unknown fields, unclosed sets, missing evidence, unsound dynamic fallback or malformed identities.
 - `tests/static-dispatch-aot-v1.test.mjs`: positive, negative, and adversarial mutation checks. Runs locally with `node --test tests/static-dispatch-aot-v1.test.mjs`.
 - `.github/workflows/static-dispatch-aot-v1.yml`: exact-head source-contract CI. **This is not compiler-backed guest verification**.
