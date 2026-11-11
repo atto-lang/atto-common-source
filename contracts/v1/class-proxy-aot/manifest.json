@@ -18,10 +18,10 @@
     "target_identity": "distinct from wrapper",
     "self_calls": "not intercepted",
     "constructor_evaluation": "exactly once",
-    "generated_name_resolution": "reject collision across modules and explicit imports; reject unresolved wildcard imports",
+    "generated_name_resolution": "reject collisions across modules and explicit imports; reject imports capturing the target or Proxy intrinsic; reject unresolved wildcard imports",
     "overload_identity": "name + explicit value arity; ambiguity rejects before generation",
-    "annotation_forwarding": "unsupported annotations must be rejected, never dropped",
-    "borrowed_or_callable_signature": "reject recursively until lifetime/effect/ownership lowering is proven",
+    "annotation_forwarding": "reject annotated target constructors and annotated forwarded methods until metadata is compiler-checked; never drop contracts",
+    "borrowed_or_callable_signature": "reject recursively on borrowed, callable, inferred, or mutable struct signatures until lifetime/effect/ownership lowering is proven",
     "wrapped_target_return": "fail closed on direct or nested target-typed returns until identity-preserving proxy adaptation is proven"
   },
   "fixtures": [
@@ -108,7 +108,10 @@
     "duplicate name-and-arity public instance slot",
     "silent method annotation loss",
     "nested borrow and function-valued parameter transport",
-    "direct or nested Foo return bypasses FooProxy"
+    "direct or nested Foo return bypasses FooProxy",
+    "imported target-name capture (Foo import vs local Foo)",
+    "annotated target constructor contract loss",
+    "mutable struct value signature, including nested position"
   ],
   "evidence_policy": "Use exact PR head + Git tree + nonzero executed jobs and steps + compiler-backed guest output; steps=[] and steps=null are runner admission failures and are not evidence."
 }
