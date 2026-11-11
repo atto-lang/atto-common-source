@@ -765,6 +765,41 @@
         "overrideProof": "exact_final",
         "runtimeLookup": false
       }
+    },
+    {
+      "id": "reject-vtable-reordered",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "emittedTargets": [
+          "root.Blue.draw",
+          "root.Red.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": true,
+        "sealedTargetSet": true,
+        "fallbackIncluded": true,
+        "runtimeLookup": false
+      }
     }
   ]
 }
