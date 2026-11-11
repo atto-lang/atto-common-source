@@ -11,7 +11,7 @@ const accepted = Object.fromEntries(contract.cases
 const rejected = contract.cases.filter(x => x.expected === 'reject');
 
 test('all versioned plans are fail-closed and all cases have explicit decisions', () => {
-  assert.deepEqual(validateContract(contract), {accepted: 5, rejected: 19, total: 24});
+  assert.deepEqual(validateContract(contract), {accepted: 5, rejected: 20, total: 25});
 });
 test('each of four AOT dispatch categories has a positive proof', () => {
   for (const kind of contract.categories) {
@@ -72,6 +72,19 @@ test('closed indirect ABI/override admission must not disappear', () => {
   const duplicate = clone(accepted['closed-precompiled-indirect']);
   duplicate.targets[1] = duplicate.targets[0];
   assert.throws(() => validateDispatchPlan(duplicate), /DISPATCH_AOT_REJECT/);
+});
+test('finite vtables and actor tag tables preserve exact slot order', () => {
+  const indirect = clone(accepted['closed-precompiled-indirect']);
+  indirect.emittedTargets.reverse();
+  assert.throws(() => validateDispatchPlan(indirect),
+    /exact ordered target slots/);
+  const actor = clone(accepted['actor-message-closed']);
+  actor.handlers.push('root.OtherActor.receive');
+  actor.emittedTargets = [...actor.handlers].reverse();
+  assert.throws(() => validateDispatchPlan(actor),
+    /exact ordered target slots/);
+  const correctlyOrdered = clone(accepted['closed-precompiled-indirect']);
+  assert.equal(validateDispatchPlan(correctlyOrdered), true);
 });
 test('actor routing cannot skip generation, admission or nonreentrancy', () => {
   for (const key of ['stableActorId','generationFence','admission','nonreentrant','ownerIsolation']) {
