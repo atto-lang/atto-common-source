@@ -47,9 +47,9 @@ test('guest conformance cannot forge compiler-owned auto traits or actors', () =
 
 
 test('exact Atto guest fixtures remain SHA-pinned with no evidence laundering', () => {
-  assert.equal(manifest.fixtures.length, 6);
-  assert.equal(manifest.fixtures.filter(f => f.kind === 'positive').length, 2);
-  assert.equal(manifest.fixtures.filter(f => f.kind === 'compile_reject_expected').length, 4);
+  assert.equal(manifest.fixtures.length, 8);
+  assert.equal(manifest.fixtures.filter(f => f.kind === 'positive').length, 3);
+  assert.equal(manifest.fixtures.filter(f => f.kind === 'compile_reject_expected').length, 5);
   assert.equal(new Set(manifest.fixtures.map(f => f.id)).size, manifest.fixtures.length);
   assert.equal(new Set(manifest.fixtures.map(f => f.path)).size, manifest.fixtures.length);
   for (const fixture of manifest.fixtures) {
