@@ -2,7 +2,7 @@
 
 Status: **proposed conformance targets; compiled guest and AOT parity NOT_EXECUTED** (2026-11-10).
 
-Companion fixture: `fixtures/tuple-type-value-v1/manifest.json` (6 accept / 10 reject).
+Companion fixture: `fixtures/tuple-type-value-v1/manifest.json` (6 accept / 12 reject).
 Reference work: [Java #2790](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2790), stacked on Java [#2734](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2734) and [#2733](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2733).
 Related broader aggregate work: common-source [#254](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/254) and [#257](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/257).
 This is a deliberately **tuple-only** contract, not a new collection runtime or factory registry.
@@ -19,6 +19,7 @@ pub fnc labels(): Tuple[string, string] {
 - **Value constructor**: `~tuple(v1, v2, ...)`; do not reinterpret this expression as an annotation. Statically infer positional element types and retain lexical left-to-right exactly-once evaluation.
 - `Tuple<T1, T2>` remains a compatibility *type* spelling, subject to existing lexical nominal `Tuple` resolution. The bracketed `Tuple[T1, T2]` must remain intrinsic even if an alias/class is also named Tuple.
 - `~tuple<T1, T2>` is a compatibility *type* spelling only in type position, and must preserve a genuine finite tuple shape. `~tuple<T1, T2>(values)` remains unsupported until a checked typed-constructor contract is implemented; reject it.
+- `Tuple<>[]` / `~tuple<>[]` remain rejected: inferred generic markers do not silently manufacture an empty tuple shape.
 - `Tuple[]` is the zero-element tuple type, paired with `~tuple()`. `Tuple[T]` is a singleton *tuple*, paired with `~tuple(v)`; `(v)` remains a grouping expression.
 - Preserve `tuple(v1, v2)`, legacy bracketed context-typed literals and existing tuple returns without silently changing runtime identity.
 
