@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "feature": "attolang-tuple-type-value-return-v1",
+  "status": "proposed-not-executed",
+  "spec": "contracts/v1/ATTO_TUPLE_TYPE_VALUE_RETURN_V1.md",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "wasm",
+    "forge"
+  ],
+  "evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "p01_strings",
+      "expect": "accept",
+      "kind": "stdout",
+      "stdout": "hello|world",
+      "source": "fnc pair(): Tuple[string, string] { return ~tuple(\"hello\", \"world\"); }\npub routine main(): void {\n  val v: Tuple[string, string] = pair();\n  stdio.stdout.write(v[0]); stdio.stdout.write(\"|\"); stdio.stdout.write(v[1]);\n  return;\n}",
+      "source_file": "fixtures/tuple-type-value-v1/positive/string-return.atto"
+    },
+    {
+      "id": "p02_nested",
+      "expect": "accept",
+      "kind": "exit_code",
+      "exit_code": 42,
+      "source": "fnc make(): Tuple[int, Tuple[int, int]] { return ~tuple(39, ~tuple(1, 2)); }\npub fnc main(): int { val t: Tuple[int, Tuple[int, int]] = make(); return t[0] + t[1][0] + t[1][1]; }"
+    },
+    {
+      "id": "p03_singleton",
+      "expect": "accept",
+      "kind": "exit_code",
+      "exit_code": 42,
+      "source": "fnc one(): Tuple[int] { return ~tuple(42); }\npub fnc main(): int { return one()[0]; }"
+    },
+    {
+      "id": "p04_empty",
+      "expect": "accept",
+      "kind": "exit_code",
+      "exit_code": 42,
+      "source": "fnc zero(): Tuple[] { return ~tuple(); }\npub fnc main(): int { val value: Tuple[] = zero(); return 42; }",
+      "source_file": "fixtures/tuple-type-value-v1/positive/empty-return.atto"
+    },
+    {
+      "id": "p05_legacy_angles",
+      "expect": "accept",
+      "kind": "exit_code",
+      "exit_code": 42,
+      "source": "fnc old(): Tuple<int, int> { return ~tuple(40, 2); }\nfnc canonical(): Tuple[int, int] { return old(); }\npub fnc main(): int { val t: Tuple[int, int] = canonical(); return t[0] + t[1]; }"
+    },
+    {
+      "id": "p06_nominal_shadow",
+      "expect": "accept",
+      "kind": "exit_code",
+      "exit_code": 42,
+      "source": "type Tuple<T> = T;\nfnc pair(): Tuple[int, int] { return ~tuple(40, 2); }\npub fnc main(): int { val v: Tuple[int, int] = pair(); return v[0] + v[1]; }"
+    },
+    {
+      "id": "n01_array_as_tuple",
+      "expect": "reject",
+      "category": "type",
+      "source": "fnc bad(): Tuple[int, int] { return ~array(40, 2); }",
+      "source_file": "fixtures/tuple-type-value-v1/negative/array-as-tuple.atto"
+    },
+    {
+      "id": "n02_wrong_arity",
+      "expect": "reject",
+      "category": "type",
+      "source": "fnc bad(): Tuple[int, int] { return ~tuple(42); }"
+    },
+    {
+      "id": "n03_wrong_element",
+      "expect": "reject",
+      "category": "type",
+      "source": "fnc bad(): Tuple[int, string] { return ~tuple(\"wrong\", 42); }"
+    },
+    {
+      "id": "n04_missing_return",
+      "expect": "reject",
+      "category": "control_flow",
+      "source": "fnc bad(): Tuple[int, int] { }"
+    },
+    {
+      "id": "n05_bare_return",
+      "expect": "reject",
+      "category": "control_flow",
+      "source": "fnc bad(): Tuple[int, int] { return; }"
+    },
+    {
+      "id": "n06_value_as_type",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): ~tuple(int, int) { return ~tuple(40, 2); }",
+      "source_file": "fixtures/tuple-type-value-v1/negative/constructor-as-type.atto"
+    },
+    {
+      "id": "n07_typed_value_ctor",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Tuple[int, int] { return ~tuple<int, int>(40, 2); }"
+    },
+    {
+      "id": "n08_empty_array_shape",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Array[] { return ~array(); }"
+    },
+    {
+      "id": "n09_array_as_union_tuple",
+      "expect": "reject",
+      "category": "type",
+      "source": "fnc bad(): Tuple[int, int] | Tuple[string, string] { return ~array(40, 2); }"
+    }
+  ]
+}
