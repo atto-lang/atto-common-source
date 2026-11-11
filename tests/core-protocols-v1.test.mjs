@@ -22,15 +22,17 @@ test('canonical freestanding source is regular, pinned, and closed', () => {
 });
 
 test('every declared protocol and required method is present, and no extra traits', () => {
-  const matches = [...source.matchAll(/\bdefine pub trait (\w+)(?:<([^>]+)>)?(?: extends \w+(?:<[^>]+>)?)? as\s*([\s\S]*?)\n\s*end/g)];
+  const matches = [...source.matchAll(/\bdefine pub trait (\w+)(?:<([^>]+)>)?(?: extends ([^\n]+?))? as\s*([\s\S]*?)\n\s*end/g)];
   assert.deepEqual(matches.map(m => m[1]).sort(), Object.keys(manifest.traits).sort());
   for (const match of matches) {
-    const [full, name, args, body] = match;
+    const [full, name, args, parents, body] = match;
     const spec = manifest.traits[name];
     assert.equal(args ? args.split(',').length : 0, spec.arity, name);
-    for (const method of spec.methods) {
-      assert.match(body, new RegExp('\\bfnc ' + method + '\\('), name + '.' + method);
-    }
+    assert.equal(parents || null, spec.extends ? spec.extends.join(', ') : null,
+      name + ' parent conformance must match manifest');
+    const methods = [...body.matchAll(/\bfnc\s+(\w+)\s*\(/g)].map(m => m[1]).sort();
+    assert.deepEqual(methods, [...spec.methods].sort(),
+      name + ' must have exactly the declared method set');
     assert.ok(full.length < 2048);
   }
 });
@@ -67,5 +69,18 @@ test('exact Atto guest fixtures remain SHA-pinned with no evidence laundering', 
       assert.equal(fixture.kind, 'compile_reject_expected');
       assert.equal(fixture.expected_exit_code, undefined);
     }
+  }
+});
+
+test('core traits remain freestanding and do not launder actor or I/O privileges', () => {
+  const pureContracts = ['TryFrom', 'ReadWrite', 'Transform', 'BatchWritable', 'KeyValueStore'];
+  for (const name of pureContracts) assert.ok(manifest.traits[name], name);
+  assert.ok(manifest.compiler_intrinsics_not_user_implementable.includes('ActorLifecycle'));
+  assert.doesNotMatch(source, /(?:^|\n)\s*import\s/m);
+  assert.doesNotMatch(source, /\b(?:external|critical|unsafe|spawn|await)\b\s+(?:fnc|mtd)/);
+  assert.doesNotMatch(source, /\b(?:std\/|ores\.std|java\.|dotnet\.)/);
+  for (const name of ['ReadWrite', 'Transform']) {
+    assert.deepEqual(manifest.traits[name].methods, [],
+      name + ' must be composition, not new authority');
   }
 });
