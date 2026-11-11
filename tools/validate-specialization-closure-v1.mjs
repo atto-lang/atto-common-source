@@ -30,8 +30,11 @@ export function validateSpecializationManifest(manifest) {
   uint(manifest.maxCodeBytes, 1, 268435456, 'max code bytes');
   if (!Array.isArray(manifest.nodes) || manifest.nodes.length < 1 ||
       manifest.nodes.length > 4096) reject('generic instantiation count');
-  const ids = new Map(), symbols = new Set();
-  let bytes = 0;
+  const ids = new Map(), symbols = new Set(), concreteInstantiations = new Set();
+  // A node count alone is not an expansion budget: 4,096 x 4,096 edges
+  // would let a syntactically bounded manifest cause massive graph work.
+  const MAX_TOTAL_EDGES = 65536;
+  let bytes = 0, edges = 0;
   for (const n of manifest.nodes) {
     keys(n, ['id','callee','witness','types','emittedSymbol','estimatedBytes',
       'calls','abiVerified','semanticChecksPassed'], 'specialization node');
@@ -42,6 +45,12 @@ export function validateSpecializationManifest(manifest) {
     if (!Array.isArray(n.types) || n.types.length < 1 || n.types.length > 32)
       reject('missing or oversized concrete type tuple');
     n.types.forEach(t => symbol(t, 'concrete type'));
+    // IDs and linker symbols are not a license to compile the same concrete
+    // implementation twice: a compiler must canonicalize specialization keys.
+    const concreteKey = JSON.stringify([n.callee, n.witness, n.types]);
+    if (concreteInstantiations.has(concreteKey))
+      reject('duplicate concrete callee/witness/type instantiation');
+    concreteInstantiations.add(concreteKey);
     if (n.abiVerified !== true || n.semanticChecksPassed !== true)
       reject('ABI, type, ownership, effect or capability proof absent');
     uint(n.estimatedBytes, 1, 268435456, 'instantiation estimate');
@@ -50,6 +59,9 @@ export function validateSpecializationManifest(manifest) {
       reject('compiled specialization byte budget exceeded');
     if (!Array.isArray(n.calls) || n.calls.length > 4096)
       reject('invalid specialization dependencies');
+    edges += n.calls.length;
+    if (edges > MAX_TOTAL_EDGES)
+      reject('specialization dependency edge budget exceeded');
     const unique = new Set();
     for (const edge of n.calls) {
       symbol(edge, 'specialization edge');
@@ -60,15 +72,25 @@ export function validateSpecializationManifest(manifest) {
   if (!Array.isArray(manifest.roots) || manifest.roots.length < 1 ||
       manifest.roots.length > 4096 || new Set(manifest.roots).size !== manifest.roots.length)
     reject('invalid frozen roots');
-  const seen = new Set(), todo = [...manifest.roots];
+  // Every reachable specialization is enqueued at most once. This is
+  // important for dense diamonds and recursive witness graphs.
+  const seen = new Set(), queued = new Set(manifest.roots);
+  const todo = [...manifest.roots];
   while (todo.length) {
     const id = todo.pop();
+    queued.delete(id);
     symbol(id, 'root/edge');
     const node = ids.get(id);
     if (!node) reject('missing compiled specialization for ' + id);
     if (seen.has(id)) continue;
     seen.add(id);
-    for (const child of node.calls) todo.push(child);
+    for (const child of node.calls) {
+      if (!ids.has(child)) reject('missing compiled specialization for ' + child);
+      if (!seen.has(child) && !queued.has(child)) {
+        todo.push(child);
+        queued.add(child);
+      }
+    }
   }
   if (seen.size !== ids.size) reject('unreachable or unauthorized emitted specialization');
   return Object.freeze({instantiations: ids.size, estimatedCodeBytes: bytes});
