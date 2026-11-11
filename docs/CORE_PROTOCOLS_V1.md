@@ -32,9 +32,13 @@ proof before support may be called verified.
 - Typed streaming: `Source<T,E>`, `Sink<T,E>`.
 - Iteration: `IntoIterator<T>`, using existing compiler-owned `Iterator<T>`.
 - Requests: `Service<Request,Reply,E>`, a non-authoritative request/reply surface.
+- Fallible conversions: `TryFrom<Src,Dst,E>` (no implicit coercion).
+- Composed capabilities: `ReadWrite<E>` and `Transform<I,O,E>`, inheriting only verified signatures.
+- Bounded batch admission: `BatchWritable<T,E>`, all-or-error.
+- Optional provider-neutral storage: `KeyValueStore<K,V,E>`; no filesystem/network/actor-state authority.
 
 Do **not** declare `Sendable`, `Shareable`, `Copy`, `Drop`, `Receives`
-or `Supervisor` as ordinary, forgeable user traits. They are compiler/runtime
+or `Supervisor` / `ActorLifecycle` as ordinary, forgeable user traits. They are compiler/runtime
 authorities and require safety proofs. A `Service` implementation never grants
 mailbox access or permits an actor to intercept its own panic.
 
@@ -62,6 +66,11 @@ mailbox access or permits an actor to intercept its own panic.
 7. Ownership and actor state rules always take precedence over a user-supplied
    behavioural trait. Captures across future suspension must pass loan and
    lifetime checking. `Close` is not a replacement for compiler-owned `Drop`.
+
+The new source-only declarations have the same proof boundary as the original
+14. They do not imply implemented codecs, storage providers, async formatting,
+stream adapters or actor behaviours. `Iterator<T>` and `AsyncIterator<T>`
+remain compiler-owned public types per the generator contract.
 
 ## Evidence tiers
 
