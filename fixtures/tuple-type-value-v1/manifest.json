@@ -123,6 +123,18 @@
       "expect": "reject",
       "category": "type",
       "source": "fnc bad(): Tuple[int, int] { return arr[40, 2]; }"
+    },
+    {
+      "id": "n11_inferred_empty_tuple_type",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Tuple<>[] { return ~tuple(); }"
+    },
+    {
+      "id": "n12_tilde_inferred_empty_tuple_type",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): ~tuple<>[] { return ~tuple(); }"
     }
   ]
 }
