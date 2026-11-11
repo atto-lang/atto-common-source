@@ -135,6 +135,13 @@
       "git_blob_sha": "1e62bb7f4fe58afd056006c4b367319408ea4a20"
     },
     {
+      "id": "eq-interface-dispatch-positive",
+      "path": "tests/fixtures/core-protocols-v1/eq-interface-dispatch-positive.atto",
+      "kind": "positive",
+      "expected_exit_code": 42,
+      "git_blob_sha": "c9e796cb42732d2261655c959515647080a086a6"
+    },
+    {
       "id": "eq-missing-negative",
       "path": "tests/fixtures/core-protocols-v1/eq-missing-negative.atto",
       "kind": "compile_reject_expected",
@@ -157,6 +164,12 @@
       "path": "tests/fixtures/core-protocols-v1/ord-inherited-missing-negative.atto",
       "kind": "compile_reject_expected",
       "git_blob_sha": "26195243cdb020a9b65e46b74f8eb6d09097ef4d"
+    },
+    {
+      "id": "eq-interface-impostor-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-interface-impostor-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "65c42b5b32ba25182fec7794d3f78b203bc8625b"
     }
   ]
 }
