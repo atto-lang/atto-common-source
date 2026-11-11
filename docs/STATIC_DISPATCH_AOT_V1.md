@@ -35,6 +35,12 @@ The compiler's actual dispatch evidence must bind a call-site identity to a conc
 - `tools/validate-static-dispatch-aot-v1.mjs`: strict source-plan validator; rejects unknown fields, unclosed sets, missing evidence, unsound dynamic fallback or malformed identities.
 - `tests/static-dispatch-aot-v1.test.mjs`: positive, negative, and adversarial mutation checks. Runs locally with `node --test tests/static-dispatch-aot-v1.test.mjs`.
 - `.github/workflows/static-dispatch-aot-v1.yml`: exact-head source-contract CI. **This is not compiler-backed guest verification**.
+- `tools/validate-specialization-closure-v1.mjs`: finite witness/monomorphization closure with exact emitted symbol uniqueness, bounded estimated code size, complete dependency edges, per-node ABI and semantic evidence, and no runtime specialization.
+- `tests/specialization-closure-v1.test.mjs`: seven adversarial test groups, including forged targets, duplicate instantiations, unbounded growth, unauthorized emitted nodes, missing semantic proofs and permitted same-instantiation recursion. Run both suites with `node --test tests/static-dispatch-aot-v1.test.mjs tests/specialization-closure-v1.test.mjs`.
+
+**Specialization boundary:** This is a pre-codegen *source-only reference validator*, not a compiler-enforced bound yet. Real compiler implementations must derive the graph exclusively from the fully typed/borrow/effect-checked post-macro IR, record actual emitted target identities, enforce a code-size/instantiation budget before link, and verify that no edge points outside the closed set. A recursive call to the same specialization is legal; expanding type-recursion with an unbounded chain must terminate at the budget before emission. The `estimatedBytes` manifest is an admission estimate, not a measured machine-code size.
+
+
 
 ## Cross-backend acceptance matrix (not yet passed)
 
