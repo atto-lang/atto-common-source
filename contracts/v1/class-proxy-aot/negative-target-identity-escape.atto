@@ -1,0 +1,8 @@
+// AOT_PROXY_UNSUPPORTED: method returns the wrapped Foo, bypassing FooProxy.
+define class Foo as
+  pub identity(): Foo { return self; }
+end
+pub routine main(): void {
+  val proxy = new Proxy(new Foo());
+  return;
+}
