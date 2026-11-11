@@ -11,8 +11,8 @@ AttoLang aims for **behavioral capability parity**, not Erlang syntax parity, BE
 ## Operators and bindings (canonical AttoLang, not Erlang)
 
 - `eq`: the single typed value-equality operator. `neq` and `!eq`: equivalent typed inequality spellings; canonical formatter output should be `neq` **only after parser agreement and token-preservation tests**.
-- `==`, `!=`, `=:=`, `=/=`, `/=`, and Erlang `=<` are not AttoLang equality/comparison spellings. Do not silently normalize them. Binding/assignment `=` is never pattern matching or unification.
-- Equality is type checked before lowering: no implicit int/float equality coercion; no implicit cross-type ordering. Aggregate equality is legal only for components with a statically proven equality contract. Preserve `Option[T]` and `Result[T,E]` variant identity.
+- `eq`, `neq` and contiguous `!eq` are the **canonical AttoLang source forms**. The Java/Graal and LLVM frontends already normalize legacy `==`/`!=` comparison syntax, and the .NET structured subset accepts them. Their removal is **not** part of the current patch: version and document any future strict-source profile that rejects these aliases, and test compatibility/migration first. Erlang-specific `=:=`, `=/=`, `/=` and `=<` are not automatically admitted. Binding/assignment `=` is never pattern matching or unification.
+- **Proposed strict v2 equality target:** equality type checked before lowering, with no implicit int/float equality coercion and no implicit cross-type ordering. **Migration blocker:** Java/Graal's existing `EqualityIdentityOperatorTest` explicitly accepts `5 eq 5.0`; do not turn this proposal into an immediate compiler change or baseline conformance failure without an agreed versioned migration policy. Aggregate equality requires a statically proven component contract, preserving `Option[T]` and `Result[T,E]` variant identity.
 - Define float equality (NaN, signed zero) and structural equality precisely before promotion; never claim a total order or recursive object equality without a proven bound. Stable actor-reference identity and stale-generation checking must not be reduced to raw pointer comparison.
 - Short-circuit Boolean conjunction/disjunction keep the **separately accepted AttoLang grammar** (including any approved comma/pipe or keyword spellings). Do not introduce Erlang `andalso`/`orelse` or silently rewrite `,` and `|` in call/sequence contexts. Bool-only operands, left-to-right evaluation, lazy RHS and effect preservation are mandatory.
 - Integer division/remainder and bitwise operations should use explicitly specified typed operations; no `%`, `^`, `^^` aliases and no operator overloading. Require defined signed overflow, division-by-zero, shift-width, and endian behavior.
@@ -62,7 +62,7 @@ Do not infer parity from a host-only canary, source-only fixture, stub compiler,
 
 ## Acceptance sequence
 
-P0: operator/typing agreement; scalar, aggregate and negative vectors; typed match without function clauses; binary bounds; strict AOT admission checks. P0 runtime: selective receive, cancellation/STOP, generation/monitor races, actor-stack failures and supervisor recovery.
+P0: operator/typing agreement **including compatibility vs proposed strict-source-v2 semantics**; scalar, aggregate and negative vectors; typed match without function clauses; binary bounds; strict AOT admission checks. P0 runtime: selective receive, cancellation/STOP, generation/monitor races, actor-stack failures and supervisor recovery.
 
 P1: static `maybe`, comprehensions, typed server/state-machine libraries, complete OTP restart policies, secure remote actor protocols. P2: ETS-like tables, persistence, compatible hot code swaps, diagnostics/observer, distributed durability claims only after real failure tests.
 
