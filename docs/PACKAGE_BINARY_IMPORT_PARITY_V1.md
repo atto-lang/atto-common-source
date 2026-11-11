@@ -52,6 +52,6 @@ Every backend acceptance receipt must bind exact input/source SHA, PR head SHA, 
 
 ## Tests
 
-The source-free Node suite validates 26 positive/negative vectors, including source versus compiled export identity, package shadowing, `pub[pkg]` leaks, path-based external imports, archive traversal, symlink/duplicate/unlisted members, target ABI mismatches, missing target payloads and zero-step receipt rejection. These are metadata/reference assertions only, not real archive extraction, compiler parsing or linker execution.
+The source-free Node suite validates 28 positive/negative vectors, including source versus compiled export identity, package shadowing, `pub[pkg]` leaks, path-based external imports, archive traversal, symlink/duplicate/unlisted members, target ABI mismatches, missing target payloads and zero-step receipt rejection. These are metadata/reference assertions only, not real archive extraction, compiler parsing or linker execution.
 
 First real promotion fixture: compile the same two public symbols using (a) source, (b) verified tar archive source, and (c) target-compatible precompiled binary; compare guest exit/observable behavior. Negative tests must fail before partial artifact publication.
