@@ -54,6 +54,11 @@
       "file": "negative-target-identity-escape.atto",
       "expect": "reject:AOT_PROXY_UNSUPPORTED",
       "stage": "parse/synthesis"
+    },
+    {
+      "file": "positive-constructor-once.atto",
+      "expect": "stdout:1",
+      "stage": "compiler-backed guest execution required"
     }
   ],
   "backends": {
