@@ -117,6 +117,12 @@
       "expect": "reject",
       "category": "type",
       "source": "fnc bad(): Tuple[int, int] | Tuple[string, string] { return ~array(40, 2); }"
+    },
+    {
+      "id": "n10_legacy_arr_as_tuple",
+      "expect": "reject",
+      "category": "type",
+      "source": "fnc bad(): Tuple[int, int] { return arr[40, 2]; }"
     }
   ]
 }
