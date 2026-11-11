@@ -10,6 +10,7 @@ For now, the existing implementations remain separate:
 | --- | --- |
 | [oreslang-source.java](https://github.com/ores-truffle-oreslang/oreslang-source.java) | Independent Java/Graal compiler and runtime; later consumes the common representation through its own adapter |
 | [oreslang-source.llvm](https://github.com/ores-truffle-oreslang/oreslang-source.llvm) | Independent LLVM compiler and native runtime work; later consumes the common representation through its own adapter |
+| [oreslang-source.net](https://github.com/ores-truffle-oreslang/oreslang-source.net) | Independent .NET compiler and runtime; executable source coverage is measured separately |
 | **oreslang-common-source** | Future shared semantic representations, HIR → MIR transformations, verifiers, and compatibility contracts |
 
 Creating this repository does not merge the other repositories, change their compiler pins, or establish feature parity. The current public language name is **AttoLang** (formerly Oreslang); old repository names, package coordinates, commands, ABI and protocol identifiers remain compatibility interfaces until separately versioned migrations ship.
@@ -18,7 +19,7 @@ The versioned, machine-readable naming and source-compatibility policy is [AttoL
 
 ## Core decisions
 
-- Keep **two independent compilers and borrow checkers** for now. Neither backend waits for the other to implement a feature.
+- Keep **independent compilers and borrow checkers** for now. No backend waits for another to implement a feature.
 - Share the language specification, TypeSpec/JSON Schema contracts, source fixtures and conformance expectations immediately.
 - Consolidate semantic compiler source here later, starting with a proven HIR → MIR boundary.
 - **Trusted code, shared actors and isolated actors must eventually support complete AOT in LLVM.** Equivalent Java/Graal guest-code AOT is a target to prove.
@@ -45,6 +46,10 @@ The common layer should preserve one language contract while allowing different 
 The frontend's implementation language and eventual repository placement are not decided. Existing frontends may initially produce the shared HIR independently. The first shared implementation should focus on a small, verifiable HIR → MIR slice.
 
 ## Planned scope
+
+The [three-backend executable corpus](fixtures/executable-three-backend-v1/README.md)
+measures identical `.atto` programs on Java, LLVM and .NET today. Its Rust runner
+reports executed results and real gaps without implying a shared compiler exists.
 
 - Backend-neutral types, symbols, source locations, and semantic identities.
 - Explicit ownership, borrowing, effects, capabilities, and evaluation order.
