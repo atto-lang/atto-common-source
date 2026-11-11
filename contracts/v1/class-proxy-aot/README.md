@@ -32,6 +32,28 @@ this feature as of contract creation.** Fixture presence is not execution proof.
   nonzero executed build/test steps, guest outputs and negative-test receipts.
   Source-free or host-only tests are not guest/native/AOT parity.
 
+## Hardened admission rules (2026-11-10)
+
+Until imported and qualified nominal type resolution is proven, the generator
+MUST reject a synthetic `FooProxy` name that collides with any compilation-unit
+declaration or explicitly imported symbol/alias; wildcard imports fail closed.
+An imported `Proxy` name must not silently bind to the intrinsic.
+
+Before forwarder emission, require a unique public instance slot by
+`(name, explicit value arity)`. A different parameter type does **not**
+distinguish equal-arity slots. Preserve original target dispatch inside the
+forwarder, never a speculative direct target implementation.
+
+Reject public methods whose annotations would be dropped, and any public
+method signature with borrowed, inferred or function-valued types (including
+nested generic positions), until type/effect/ownership and generated metadata
+are checked. Keep private methods invisible and static methods excluded.
+
+These are **required negative tests**, not evidence that any non-Java backend
+has implemented proxy support. An existing target's internal `self.method()`
+call is intentionally **not intercepted**. A transparent subtype/overriding
+proxy and a method-entry interception mechanism need separate designs.
+
 ## Next compiler slices
 
 1. Java: execute the JUnit test under CI and standalone GraalVM Native Image.
