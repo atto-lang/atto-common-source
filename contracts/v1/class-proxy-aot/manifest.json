@@ -21,7 +21,7 @@
     "generated_name_resolution": "reject collisions across modules and explicit imports; reject imports capturing the target or Proxy intrinsic; reject unresolved wildcard imports",
     "overload_identity": "name + explicit value arity; ambiguity rejects before generation",
     "annotation_forwarding": "reject annotated target constructors and annotated forwarded methods until metadata is compiler-checked; never drop contracts",
-    "borrowed_or_callable_signature": "reject recursively on borrowed, callable, inferred, or mutable struct signatures until lifetime/effect/ownership lowering is proven",
+    "borrowed_or_callable_signature": "reject recursively on borrowed, callable, inferred, mutable struct or unresolved type-alias signatures until lifetime/effect/ownership lowering is proven",
     "wrapped_target_return": "fail closed on direct or nested target-typed returns until identity-preserving proxy adaptation is proven"
   },
   "fixtures": [
@@ -111,7 +111,8 @@
     "direct or nested Foo return bypasses FooProxy",
     "imported target-name capture (Foo import vs local Foo)",
     "annotated target constructor contract loss",
-    "mutable struct value signature, including nested position"
+    "mutable struct value signature, including nested position",
+    "type-alias hiding target-identity return, including nested Option<AliasFoo>"
   ],
   "evidence_policy": "Use exact PR head + Git tree + nonzero executed jobs and steps + compiler-backed guest output; steps=[] and steps=null are runner admission failures and are not evidence."
 }
