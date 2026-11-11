@@ -4,7 +4,7 @@
   "import_root": "ores.core/",
   "module": "protocols",
   "canonical_source": "library/ores.core/protocols.atto",
-  "git_blob_sha": "7ae501ded40973a23c59e214dba7182c61bc97d2",
+  "git_blob_sha": "7aee9ad151e784c8852aff277b6337df230a1498",
   "traits": {
     "Eq": {
       "arity": 1,
@@ -15,7 +15,7 @@
     "Ord": {
       "arity": 1,
       "extends": [
-        "Eq"
+        "Eq<T>"
       ],
       "methods": [
         "compare"
@@ -93,6 +93,42 @@
       "methods": [
         "call_async"
       ]
+    },
+    "TryFrom": {
+      "arity": 3,
+      "methods": [
+        "try_from"
+      ]
+    },
+    "ReadWrite": {
+      "arity": 1,
+      "extends": [
+        "Read<E>",
+        "Write<E>"
+      ],
+      "methods": []
+    },
+    "Transform": {
+      "arity": 3,
+      "extends": [
+        "Sink<I, E>",
+        "Source<O, E>"
+      ],
+      "methods": []
+    },
+    "BatchWritable": {
+      "arity": 2,
+      "methods": [
+        "send_batch_async"
+      ]
+    },
+    "KeyValueStore": {
+      "arity": 3,
+      "methods": [
+        "get_async",
+        "put_async",
+        "delete_async"
+      ]
     }
   },
   "compiler_intrinsics_not_user_implementable": [
@@ -101,7 +137,8 @@
     "Copy",
     "Drop",
     "Receives",
-    "Supervisor"
+    "Supervisor",
+    "ActorLifecycle"
   ],
   "requirements": [
     "Import selection must use compiler-owned identity; no local filesystem shadowing",
@@ -110,7 +147,11 @@
     "write_all_async moves input and must not report success on partial writes",
     "send_async success means bounded admission, not persistence",
     "compiler-intrinsic Sendable and actor state/control are never granted by source trait conformance",
-    "all five backend lanes require real guest execution before declaring parity"
+    "all five backend lanes require real guest execution before declaring parity",
+    "ReadWrite and Transform only compose interface signatures; no capability or hidden I/O is granted",
+    "TryFrom is explicit and fallible; no implicit numeric/string coercions",
+    "BatchWritable success is whole-batch bounded admission, not durable persistence",
+    "KeyValueStore is an abstract provider interface: no ambient filesystem/network and no sealed actor-state aliasing"
   ],
   "backend_evidence": {
     "java": "NOT_EXECUTED",
