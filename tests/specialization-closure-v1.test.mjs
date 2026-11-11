@@ -13,9 +13,9 @@ const fixture = () => ({
      abiVerified:true,semanticChecksPassed:true}
   ]
 });
-const expectReject = (mutate, name) => {
+const expectReject = (mutate, name, diagnostic = /SPECIALIZATION_REJECT/) => {
   const m = fixture(); mutate(m);
-  assert.throws(() => validateSpecializationManifest(m), /SPECIALIZATION_REJECT/, name);
+  assert.throws(() => validateSpecializationManifest(m), diagnostic, name);
 };
 test('finite specialized witness closure allows self-recursion and accounts code bytes', () => {
   assert.deepEqual(validateSpecializationManifest(fixture()),
@@ -56,7 +56,8 @@ test('distinct linker names cannot duplicate the same concrete specialization', 
     m.nodes[0].calls.push('apply-int-copy');
     m.nodes.push({...m.nodes[1],id:'apply-int-copy',
       emittedSymbol:'root.apply$int.copy'});
-  }, 'duplicate semantic specialization');
+  }, 'duplicate semantic specialization',
+    /SPECIALIZATION_REJECT: duplicate concrete callee\/witness\/type instantiation/);
 });
 test('bounded dependency edges prevent dense manifest expansion', () => {
   expectReject(m => {
@@ -70,7 +71,8 @@ test('bounded dependency edges prevent dense manifest expansion', () => {
       estimatedBytes:1,calls:names.slice(),
       abiVerified:true,semanticChecksPassed:true
     }));
-  }, 'dense graph');
+  }, 'dense graph',
+    /SPECIALIZATION_REJECT: specialization dependency edge budget exceeded/);
 });
 test('diamond dependencies and recursive references stay within a frozen closure', () => {
   const m = fixture();
