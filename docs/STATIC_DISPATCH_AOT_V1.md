@@ -61,3 +61,19 @@ For every backend, **unsupported cases must reject**, not silently fall back to 
 3. Add cross-backend `.atto` positives/negatives and mandatory strict AOT artifact checks; start with existing LLVM concrete class and Java arity/override probes.
 4. Record direct-vs-indirect and specialization latency/code-size benchmarks separately from correctness tests.
 5. Obtain independent reviewer approval before merging backend changes.
+
+### Concrete specialization canonicalization and graph cost
+
+The source-only closure reference validator now rejects duplicate concrete
+`(callee, witness, ordered concrete type arguments)` triples even if each
+node advertises a distinct ID and emitted symbol. The backend must produce
+that key from resolved typed IR after macro expansion, not from source text.
+Each closure is limited to 4,096 nodes **and 65,536 total dependency edges**;
+the verifier enqueues each reachable instantiation only once, including in
+recursive and diamond-shaped call graphs. Both bounds apply before code
+emission and must be mirrored by a compiler-side admission pass.
+
+This does **not** implement generic monomorphization in any backend. A
+successful fixture test demonstrates only that the reference policy rejects
+these malformed manifests; production compiler output and emitted machine
+code require separate exact-head execution and review.
