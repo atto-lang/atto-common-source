@@ -1,0 +1,170 @@
+{
+  "schema": "attolang.core-actor-foundation.v1",
+  "status": "DESIGN_ONLY_BACKEND_EXECUTION_UNVERIFIED",
+  "based_on_core_protocols": "contracts/v1/core-protocols-v1.json",
+  "core_types": [
+    {
+      "name": "Option<T>",
+      "role": "value sum",
+      "authority": "none"
+    },
+    {
+      "name": "Result<T,E>",
+      "role": "value sum",
+      "authority": "none"
+    },
+    {
+      "name": "Error",
+      "role": "typed failure root",
+      "authority": "none"
+    },
+    {
+      "name": "Future<T>",
+      "role": "async completion and suspension",
+      "authority": "runtime completion only"
+    },
+    {
+      "name": "Iterator<T>",
+      "role": "owned iteration",
+      "authority": "none"
+    },
+    {
+      "name": "ActorId",
+      "role": "immutable actor identifier",
+      "authority": "none"
+    },
+    {
+      "name": "ActorMail<T>",
+      "role": "validated mailbox envelope view",
+      "authority": "none"
+    },
+    {
+      "name": "ActorOutput<T>",
+      "role": "validated actor output view",
+      "authority": "none"
+    },
+    {
+      "name": "ActorRef<A>",
+      "role": "opaque generation-fenced actor endpoint",
+      "authority": "runtime-minted"
+    },
+    {
+      "name": "Channel<T>",
+      "role": "bounded channel endpoint",
+      "authority": "runtime-minted"
+    },
+    {
+      "name": "ReadChannel<T>",
+      "role": "read-only channel capability",
+      "authority": "runtime-minted"
+    },
+    {
+      "name": "WriteChannel<T>",
+      "role": "write-only channel capability",
+      "authority": "runtime-minted"
+    }
+  ],
+  "core_actor_bases": [
+    {
+      "name": "Actor",
+      "role": "implicit actor nominal; not an ordinary guest-constructible class",
+      "stage": "existing_language_intrinsic",
+      "runtime_owned": true,
+      "control_access": false
+    },
+    {
+      "name": "SupervisorActor",
+      "role": "runtime-validated supervisor; CONTROL callbacks never ordinary callable methods",
+      "stage": "proposed_checked_base",
+      "runtime_owned": true,
+      "control_access": true
+    },
+    {
+      "name": "ServiceActor<Request,Reply>",
+      "role": "typed request/reply actor, does not turn Service trait into mailbox authority",
+      "stage": "proposed_checked_base",
+      "runtime_owned": true,
+      "control_access": false
+    }
+  ],
+  "std_hosted_bases": [
+    {
+      "name": "HttpActor",
+      "requires": [
+        "NETWORK"
+      ],
+      "stage": "proposed_hosted_adapter",
+      "privileged": false
+    },
+    {
+      "name": "TcpActor",
+      "requires": [
+        "NETWORK"
+      ],
+      "stage": "proposed_hosted_adapter",
+      "privileged": false
+    },
+    {
+      "name": "WebSocketActor",
+      "requires": [
+        "NETWORK"
+      ],
+      "stage": "proposed_hosted_adapter",
+      "privileged": false
+    },
+    {
+      "name": "ChildProcManager",
+      "requires": [
+        "PROCESS"
+      ],
+      "stage": "proposed_hosted_adapter",
+      "privileged": false
+    },
+    {
+      "name": "PersistenceActor",
+      "requires": [
+        "FILESYSTEM_OR_STORAGE_PROVIDER"
+      ],
+      "stage": "proposed_hosted_adapter",
+      "privileged": false
+    }
+  ],
+  "existing_hosted_policy_modules": [
+    "stdlib/otp/supervisor.ores",
+    "stdlib/actor_persistence.ores"
+  ],
+  "not_separate_actor_kinds": [
+    "StatefulActor",
+    "EventSourcedActor",
+    "SerialHttpActor"
+  ],
+  "compiler_runtime_authorities": [
+    "Sendable",
+    "Shareable",
+    "Copy",
+    "Drop",
+    "Receives",
+    "Supervisor",
+    "ActorLifecycle"
+  ],
+  "security_invariants": [
+    "Actor base conformance never grants supervisor CONTROL, actor spawning, or mailbox sender identity",
+    "Only runtime-minted ActorRef and channel endpoints authorize delivery; plain IDs or structural methods do not",
+    "Actor lifecycle init and receive are private runtime-only external ingress, never public guest-callable methods",
+    "Actor-owned mutable state is sealed and accessed only by checked critical-read/critical-write; no raw state references escape or survive await",
+    "Each actor has serialized effective turns, immutable incarnation identity and generation-fenced mailbox admission",
+    "Panic uses trusted supervisor priority CONTROL and cannot be intercepted by the actor that panicked",
+    "Actor or trait implementers cannot provide their own Sendable, Drop, Receives or ActorLifecycle safety proof",
+    "ores.core imports no ores.std or OS facilities; hosted bases require explicit runtime permissions and nonblocking I/O",
+    "Async Read/Write/Source/Sink/KeyValueStore do not imply concrete I/O implementations or durable completion",
+    "Cancellation, close, start failure and supervisor crash settle pending futures and release bounded quotas exactly once",
+    "Serial HTTP means concurrency policy requestConcurrency=1,messageConcurrency=1, not a new privileged actor species"
+  ],
+  "backend_evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  }
+}
