@@ -49,6 +49,12 @@ method signature with borrowed, inferred or function-valued types (including
 nested generic positions), until type/effect/ownership and generated metadata
 are checked. Keep private methods invisible and static methods excluded.
 
+A public method returning the proxied target type (`Foo`), the unqualified
+receiver type (`self`), or a generic containing it must reject. Otherwise
+the wrapper could reveal its wrapped instance and bypass the proxy surface.
+Both `Fnc` and `Function` callable signature aliases must reject until
+closure transport has proven lifetime, ownership and actor isolation safety.
+
 These are **required negative tests**, not evidence that any non-Java backend
 has implemented proxy support. An existing target's internal `self.method()`
 call is intentionally **not intercepted**. A transparent subtype/overriding
