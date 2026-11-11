@@ -8,6 +8,7 @@ import {posix} from 'node:path';
 const spec=JSON.parse(readFileSync(new URL('../contracts/conformance/package-binary-import-v1.json',import.meta.url),'utf8'));
 const sha=/^[0-9a-f]{64}$/;
 const lockedName=/^[a-z][a-z0-9_]*$/;
+const reservedNames=new Set(['__root__','__proto__','prototype','constructor']);
 const targets=new Set(['java','llvm','net','wasm','forge','js','rs','cranelift','hdl']);
 const own=(o,k)=>Object.hasOwn(o,k);
 function fail(code){const e=new Error(code);e.code=code;throw e;}
@@ -32,6 +33,7 @@ function loadGraph(doc){
     const seen=new Set();
     for(const ex of p.exports){
       if(!['module','namespace'].includes(ex.kind) ||
+         (ex.kind==='namespace' && reservedNames.has(ex.name)) ||
          !/^[A-Za-z_][A-Za-z0-9_]*$/.test(ex.name) ||
          !['pub','pub[pkg]','pub[file]','private'].includes(ex.visibility))
         fail('INVALID_EXPORT');
@@ -44,7 +46,7 @@ function loadGraph(doc){
   const locks=new Map();
   for(const l of doc.locks){
     if(!pkgs.has(l.importer_id)||!pkgs.has(l.instance_id) ||
-       !lockedName.test(l.alias))fail('INVALID_PACKAGE_LOCK');
+       !lockedName.test(l.alias)||reservedNames.has(l.alias))fail('INVALID_PACKAGE_LOCK');
     const key=l.importer_id+'\0'+l.alias;
     if(locks.has(key))fail('DUPLICATE_PACKAGE_LOCK');
     if(!sha.test(l.interface_sha256))fail('INVALID_LOCK_DIGEST');
@@ -205,6 +207,23 @@ test('fail closed on duplicated lock alias and duplicate export',()=>{
   const pub=structuredClone(spec);pub.packages[1].exports.push({...pub.packages[1].exports[0]});
   assert.throws(()=>resolve(pub,spec.cases[0]),e=>e.code==='DUPLICATE_EXPORT');
 });
+test('prototype and constructor aliases never resolve by ambient object property',()=>{
+  for(const alias of ['constructor','prototype','__proto__','__root__']){
+    const modified=structuredClone(spec);
+    modified.locks[0].alias=alias;
+    assert.throws(()=>resolve(modified,spec.cases[0]),
+      e=>e.code==='INVALID_PACKAGE_LOCK');
+  }
+});
+test('reserved flat namespace exports never enter the public API catalog',()=>{
+  for(const name of ['constructor','prototype','__proto__','__root__']){
+    const modified=structuredClone(spec);
+    modified.packages[1].exports.find(e=>e.kind==='namespace').name=name;
+    assert.throws(()=>resolve(modified,spec.cases[0]),
+      e=>e.code==='INVALID_EXPORT');
+  }
+});
+
 test('receipt model must not mistake authored fixtures or zero-step jobs for execution',()=>{
   assert.throws(()=>verifyGuestReceipt({}),e=>e.code==='INCOMPLETE_GUEST_RECEIPT');
   const receipt={backend:'java',target:'java',source_sha256:'1'.repeat(64),
