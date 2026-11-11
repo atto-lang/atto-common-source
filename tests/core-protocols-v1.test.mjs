@@ -22,7 +22,7 @@ test('canonical freestanding source is regular, pinned, and closed', () => {
 });
 
 test('every declared protocol and required method is present, and no extra traits', () => {
-  const matches = [...source.matchAll(/\bdefine pub trait (\w+)(?:<([^>]+)>)?(?: extends ([^\n]+?))? as\s*([\s\S]*?)\n\s*end/g)];
+  const matches = [...source.matchAll(/\bdefine pub trait (\w+)(?:<([^>]+)>)?(?: extends ([^\n]+?))? as\r?\n([\s\S]*?)(?:^|\n)[ \t]*end\b/gm)];
   assert.deepEqual(matches.map(m => m[1]).sort(), Object.keys(manifest.traits).sort());
   for (const match of matches) {
     const [full, name, args, parents, body] = match;
