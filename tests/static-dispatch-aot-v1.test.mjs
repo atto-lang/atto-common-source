@@ -83,12 +83,12 @@ test('actor routing cannot skip generation, admission or nonreentrancy', () => {
   bypass.directStateCall = true;
   assert.throws(() => validateDispatchPlan(bypass), /DISPATCH_AOT_REJECT/);
 });
-test('contract validation rejects missing cases and dishonest status', () => {
+test('contract validation rejects missing positive dispatch category and dishonest status', () => {
   const p = clone(contract);
   p.status = 'ALL_BACKENDS_EXECUTED';
   assert.throws(() => validateContract(p), /DISPATCH_AOT_REJECT/);
   const p2 = clone(contract);
-  p2.cases = p2.cases.filter(x => x.id !== 'direct-final');
+  p2.cases = p2.cases.filter(x => !(x.plan.kind === 'DIRECT' && x.expected === 'accept'));
   assert.throws(() => validateContract(p2), /DISPATCH_AOT_REJECT/);
   const p3 = clone(contract);
   p3.cases.push(clone(p3.cases[0]));
