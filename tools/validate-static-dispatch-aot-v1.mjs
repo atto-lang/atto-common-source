@@ -39,8 +39,10 @@ const uniqueSymbols = (value, where, limit = 256) => {
 const exactTargetSet = (planned, emitted) => {
   uniqueSymbols(planned, 'planned targets');
   uniqueSymbols(emitted, 'emitted targets');
-  if (planned.length !== emitted.length || planned.some(t => !emitted.includes(t)))
-    fail('compiler emission does not close all planned targets');
+  // Tag-indexed vtables and actor handler slots are order-sensitive. A set
+  // comparison would accept a reordered table, silently redirecting dispatch.
+  if (planned.length !== emitted.length || planned.some((t, i) => t !== emitted[i]))
+    fail('compiler emission does not preserve exact ordered target slots');
 };
 
 export function validateDispatchPlan(plan) {
