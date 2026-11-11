@@ -1,0 +1,2 @@
+fnc zero(): Tuple[] { return ~tuple(); }
+pub fnc main(): int { val value: Tuple[] = zero(); return 42; }
