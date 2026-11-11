@@ -21,7 +21,13 @@
     "package_import_no_permissions": true,
     "no_implicit_import_download": true,
     "no_ambient_lock_shadowing": true,
-    "no_cross_package_namespace_merge": true
+    "no_cross_package_namespace_merge": true,
+    "reserved_package_namespace_identifiers": [
+      "__root__",
+      "__proto__",
+      "prototype",
+      "constructor"
+    ]
   },
   "packages": [
     {
