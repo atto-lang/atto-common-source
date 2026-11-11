@@ -17,7 +17,11 @@
     "dynamic_property_lookup": false,
     "target_identity": "distinct from wrapper",
     "self_calls": "not intercepted",
-    "constructor_evaluation": "exactly once"
+    "constructor_evaluation": "exactly once",
+    "generated_name_resolution": "reject collision across modules and explicit imports; reject unresolved wildcard imports",
+    "overload_identity": "name + explicit value arity; ambiguity rejects before generation",
+    "annotation_forwarding": "unsupported annotations must be rejected, never dropped",
+    "borrowed_or_callable_signature": "reject recursively until lifetime/effect/ownership lowering is proven"
   },
   "fixtures": [
     {
@@ -34,6 +38,16 @@
       "file": "negative-class-collision.atto",
       "expect": "reject:AOT_PROXY_UNSUPPORTED",
       "stage": "parse/semantic"
+    },
+    {
+      "file": "negative-annotated-method.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/synthesis"
+    },
+    {
+      "file": "negative-duplicate-slot.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/synthesis"
     }
   ],
   "backends": {
@@ -76,7 +90,13 @@
     "private method leakage",
     "static method mistakenly treated as instance",
     "constructor evaluates more than once",
-    "unwinding partially initialized proxy"
+    "unwinding partially initialized proxy",
+    "cross-module synthetic name capture",
+    "explicit imported type/alias capture",
+    "wildcard imported type ambiguity",
+    "duplicate name-and-arity public instance slot",
+    "silent method annotation loss",
+    "nested borrow and function-valued parameter transport"
   ],
   "evidence_policy": "Use exact PR head + Git tree + nonzero executed jobs and steps + compiler-backed guest output; steps=[] and steps=null are runner admission failures and are not evidence."
 }
