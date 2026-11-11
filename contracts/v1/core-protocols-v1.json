@@ -118,5 +118,45 @@
     "wasm": "NOT_EXECUTED",
     "forge": "NOT_EXECUTED",
     "net": "NOT_EXECUTED"
-  }
+  },
+  "fixtures": [
+    {
+      "id": "eq-positive",
+      "path": "tests/fixtures/core-protocols-v1/eq-positive.atto",
+      "kind": "positive",
+      "expected_exit_code": 42,
+      "git_blob_sha": "999dbddcfa53f9b52db677e587c038ef94afa9f7"
+    },
+    {
+      "id": "ord-inherited-positive",
+      "path": "tests/fixtures/core-protocols-v1/ord-inherited-positive.atto",
+      "kind": "positive",
+      "expected_exit_code": 42,
+      "git_blob_sha": "1e62bb7f4fe58afd056006c4b367319408ea4a20"
+    },
+    {
+      "id": "eq-missing-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-missing-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "40d64114073512f4bec9cbcff5ad40a84c009cdc"
+    },
+    {
+      "id": "eq-wrong-signature-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-wrong-signature-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "8136e91293fd7094c179b67a8e31b882d90cd1d7"
+    },
+    {
+      "id": "eq-private-method-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-private-method-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "fcebab2a17f7fb54f33f146d1b7793067c4b80d5"
+    },
+    {
+      "id": "ord-inherited-missing-negative",
+      "path": "tests/fixtures/core-protocols-v1/ord-inherited-missing-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "26195243cdb020a9b65e46b74f8eb6d09097ef4d"
+    }
+  ]
 }
