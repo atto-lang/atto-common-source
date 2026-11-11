@@ -58,7 +58,7 @@ test('exact Atto guest fixtures remain SHA-pinned with no evidence laundering', 
     const target = root + fixture.path;
     assert.equal(lstatSync(target).isSymbolicLink(), false, fixture.id);
     const bytes = readFileSync(target);
-    const sha = createHash('sha1').update('blob ' + bytes.length + '\\0').update(bytes).digest('hex');
+    const sha = createHash('sha1').update('blob ' + bytes.length + '\0').update(bytes).digest('hex');
     assert.equal(sha, fixture.git_blob_sha, fixture.id);
     if (fixture.kind === 'positive') {
       assert.equal(fixture.expected_exit_code, 42);
