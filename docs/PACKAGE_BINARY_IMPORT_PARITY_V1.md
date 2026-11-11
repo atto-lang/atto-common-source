@@ -34,6 +34,12 @@ The `pkg` import provides a qualified API handle only. It does not inject unqual
 7. Source or verified portable IR may be recompiled only by a compiler that actually supports and checks that representation. No silent host fallback, guest privilege elevation, actor-state access, global singleton sharing, or automatic capability grant arises from import.
 8. Existing `.atto.pkg.toml` and `.ores.pkg.toml` manifest conventions require fail-closed precedence/migration reconciliation. Do not silently change existing source roots or legacy imports.
 
+## Interface digest scopes and first compiler implementation
+
+The common reference vector's `interface_sha256` is an **abstract proposed target-neutral semantic export fingerprint**, not the actual SHA-256 of Java's `.oresi` v1 bytes. Existing `.oresi` v1 includes compiler-version, target ABI and feature-policy strings; consequently the actual envelope hash changes by target and compiler profile. A future cross-backend semantic digest must be separately specified and independently derived from resolved exported types, effects, nominal identities and visibility. It is **NOT_IMPLEMENTED**.
+
+Initial real compiler metadata admission drafts: [Java #2880](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2880) and [LLVM #1699](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1699) read the existing target-specific `.oresi` v1 envelope, with a frozen test fixture hash `8db5681e1e41c389e2358f9e0cd5c46e78b5b33519ed4769056268a240847f3d`. Those drafts do not yet wire the real `pkg:` import grammar, trusted package archive, object linker or Atto guest execution. Do not label their host-only tests cross-backend language parity.
+
 ## Promotion gates for all nine repositories
 
 | Repository suffix | Required actual compiler/runtime proof |
