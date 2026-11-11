@@ -1,0 +1,770 @@
+{
+  "schema": "atto.static-dispatch-aot.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "purpose": "Pre-codegen static-dispatch decision model; not evidence of backend implementation or guest execution",
+  "runtimeJitOptional": true,
+  "limits": {
+    "maxEmittedTargets": 256,
+    "maxReachableInstantiations": 4096
+  },
+  "categories": [
+    "DIRECT",
+    "STATIC_WITNESS",
+    "CLOSED_INDIRECT",
+    "ACTOR_MESSAGE"
+  ],
+  "cases": [
+    {
+      "id": "direct-final",
+      "expected": "accept",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "direct-sealed-proven",
+      "expected": "accept",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "sealed_unique",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "static-witness",
+      "expected": "accept",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "STATIC_WITNESS",
+        "target": "root.add$int",
+        "emittedTargets": [
+          "root.add$int"
+        ],
+        "witness": "root.Numeric<int>",
+        "reachableInstantiations": [
+          "int"
+        ],
+        "abiVerified": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "closed-precompiled-indirect",
+      "expected": "accept",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "emittedTargets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": true,
+        "sealedTargetSet": true,
+        "fallbackIncluded": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "actor-message-closed",
+      "expected": "accept",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "ACTOR_MESSAGE",
+        "handlers": [
+          "root.CounterActor.receive"
+        ],
+        "emittedTargets": [
+          "root.CounterActor.receive"
+        ],
+        "stableActorId": true,
+        "generationFence": true,
+        "admission": true,
+        "nonreentrant": true,
+        "ownerIsolation": true,
+        "directStateCall": false
+      }
+    },
+    {
+      "id": "reject-overridable-declared-type",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "declared_type_only",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-dynamic-method-name",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": true
+      }
+    },
+    {
+      "id": "reject-direct-missing-image-target",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-borrow-unverified",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": false,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-postmacro-unverified",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": false,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-jit-dependency",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": true,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-runtime-codegen",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": true,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-unresolved-trait-witness",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "STATIC_WITNESS",
+        "target": "root.add$int",
+        "emittedTargets": [
+          "root.add$int"
+        ],
+        "witness": "",
+        "reachableInstantiations": [
+          "int"
+        ],
+        "abiVerified": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-generic-infinite-graph",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "STATIC_WITNESS",
+        "target": "root.add$int",
+        "emittedTargets": [
+          "root.add$int"
+        ],
+        "witness": "root.Numeric<int>",
+        "reachableInstantiations": [
+          "int",
+          "int"
+        ],
+        "abiVerified": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-vtable-open-world",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "emittedTargets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": true,
+        "sealedTargetSet": false,
+        "fallbackIncluded": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-vtable-missing-target",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "emittedTargets": [
+          "root.Red.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": true,
+        "sealedTargetSet": true,
+        "fallbackIncluded": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-vtable-duplicate-target",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Red.draw"
+        ],
+        "emittedTargets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": true,
+        "sealedTargetSet": true,
+        "fallbackIncluded": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-vtable-abi-unchecked",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "emittedTargets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": false,
+        "sealedTargetSet": true,
+        "fallbackIncluded": true,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-vtable-missing-fallback",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "CLOSED_INDIRECT",
+        "targets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "emittedTargets": [
+          "root.Red.draw",
+          "root.Blue.draw"
+        ],
+        "slotId": "root.Drawable.draw$arity0",
+        "abiVerified": true,
+        "sealedTargetSet": true,
+        "fallbackIncluded": false,
+        "runtimeLookup": false
+      }
+    },
+    {
+      "id": "reject-actor-stale-generation",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "ACTOR_MESSAGE",
+        "handlers": [
+          "root.CounterActor.receive"
+        ],
+        "emittedTargets": [
+          "root.CounterActor.receive"
+        ],
+        "stableActorId": true,
+        "generationFence": false,
+        "admission": true,
+        "nonreentrant": true,
+        "ownerIsolation": true,
+        "directStateCall": false
+      }
+    },
+    {
+      "id": "reject-actor-direct-state-call",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "ACTOR_MESSAGE",
+        "handlers": [
+          "root.CounterActor.receive"
+        ],
+        "emittedTargets": [
+          "root.CounterActor.receive"
+        ],
+        "stableActorId": true,
+        "generationFence": true,
+        "admission": true,
+        "nonreentrant": true,
+        "ownerIsolation": true,
+        "directStateCall": true
+      }
+    },
+    {
+      "id": "reject-actor-reentrant",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "ACTOR_MESSAGE",
+        "handlers": [
+          "root.CounterActor.receive"
+        ],
+        "emittedTargets": [
+          "root.CounterActor.receive"
+        ],
+        "stableActorId": true,
+        "generationFence": true,
+        "admission": true,
+        "nonreentrant": false,
+        "ownerIsolation": true,
+        "directStateCall": false
+      }
+    },
+    {
+      "id": "reject-actor-missing-handler",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "ACTOR_MESSAGE",
+        "handlers": [
+          "root.CounterActor.receive"
+        ],
+        "emittedTargets": [],
+        "stableActorId": true,
+        "generationFence": true,
+        "admission": true,
+        "nonreentrant": true,
+        "ownerIsolation": true,
+        "directStateCall": false
+      }
+    },
+    {
+      "id": "reject-unknown-dispatch-kind",
+      "expected": "reject",
+      "plan": {
+        "compileTimeClosure": true,
+        "sourceMacrosEliminated": true,
+        "postMacroValidated": true,
+        "runtimeJitRequired": false,
+        "runtimeCompilerRequired": false,
+        "runtimeGeneratesCode": false,
+        "runtimeRegistry": false,
+        "verified": {
+          "type": true,
+          "borrow": true,
+          "effect": true,
+          "capability": true,
+          "visibility": true,
+          "actorIsolation": true
+        },
+        "kind": "DIRECT",
+        "target": "root.Counter.read$arity0",
+        "emittedTargets": [
+          "root.Counter.read$arity0"
+        ],
+        "overrideProof": "exact_final",
+        "runtimeLookup": false
+      }
+    }
+  ]
+}
