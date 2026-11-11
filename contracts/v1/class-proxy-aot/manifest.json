@@ -21,7 +21,8 @@
     "generated_name_resolution": "reject collision across modules and explicit imports; reject unresolved wildcard imports",
     "overload_identity": "name + explicit value arity; ambiguity rejects before generation",
     "annotation_forwarding": "unsupported annotations must be rejected, never dropped",
-    "borrowed_or_callable_signature": "reject recursively until lifetime/effect/ownership lowering is proven"
+    "borrowed_or_callable_signature": "reject recursively until lifetime/effect/ownership lowering is proven",
+    "wrapped_target_return": "fail closed on direct or nested target-typed returns until identity-preserving proxy adaptation is proven"
   },
   "fixtures": [
     {
@@ -46,6 +47,11 @@
     },
     {
       "file": "negative-duplicate-slot.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/synthesis"
+    },
+    {
+      "file": "negative-target-identity-escape.atto",
       "expect": "reject:AOT_PROXY_UNSUPPORTED",
       "stage": "parse/synthesis"
     }
@@ -96,7 +102,8 @@
     "wildcard imported type ambiguity",
     "duplicate name-and-arity public instance slot",
     "silent method annotation loss",
-    "nested borrow and function-valued parameter transport"
+    "nested borrow and function-valued parameter transport",
+    "direct or nested Foo return bypasses FooProxy"
   ],
   "evidence_policy": "Use exact PR head + Git tree + nonzero executed jobs and steps + compiler-backed guest output; steps=[] and steps=null are runner admission failures and are not evidence."
 }
