@@ -95,6 +95,24 @@
   ],
   "artifacts": [
     {
+      "id": "directory",
+      "package_instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "format": "source-directory",
+      "sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "members": [
+        {
+          "path": "src/parser.atto",
+          "kind": "file",
+          "size": 128
+        },
+        {
+          "path": "src/net.atto",
+          "kind": "file",
+          "size": 256
+        }
+      ]
+    },
+    {
       "id": "source",
       "package_instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "format": "source-archive",
@@ -178,6 +196,28 @@
     }
   },
   "cases": [
+    {
+      "id": "directory-pkg-public-api",
+      "artifact": "directory",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "expected": "admit",
+      "exports": [
+        "module:parser",
+        "namespace:network"
+      ]
+    },
+    {
+      "id": "directory-module",
+      "artifact": "directory",
+      "from": "pkg:bar",
+      "selector": "module",
+      "name": "parser",
+      "expected": "admit",
+      "exports": [
+        "module:parser"
+      ]
+    },
     {
       "id": "source-pkg-public-api",
       "artifact": "source",
