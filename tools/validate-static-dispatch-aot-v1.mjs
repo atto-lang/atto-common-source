@@ -98,6 +98,7 @@ export function validateContract(contract) {
   if (!Array.isArray(contract.cases) || contract.cases.length < 20)
     fail('insufficient positive/negative fixtures');
   const ids = new Set();
+  const coveredKinds = new Set();
   let accepted = 0, rejected = 0;
   for (const c of contract.cases) {
     exactKeys(c, ['id','expected','plan'], 'case');
@@ -112,8 +113,9 @@ export function validateContract(contract) {
     }
     if (ok !== (c.expected === 'accept'))
       fail('case ' + c.id + ' unexpectedly ' + (ok ? 'accepted' : 'rejected'));
-    if (ok) accepted++; else rejected++;
+    if (ok) { accepted++; coveredKinds.add(c.plan.kind); } else rejected++;
   }
-  if (accepted < 4 || rejected < 15) fail('missing adversarial coverage');
+  if (accepted < 4 || rejected < 15 || coveredKinds.size !== Object.keys(KINDS).length)
+    fail('missing positive category or adversarial coverage');
   return {accepted, rejected, total: contract.cases.length};
 }
