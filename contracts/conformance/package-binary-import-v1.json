@@ -419,7 +419,7 @@
       "selector": "pkg",
       "mutation": "shadow_pin",
       "expected": "reject",
-      "code": "INTERFACE_DIGEST_MISMATCH"
+      "code": "LOCK_ARTIFACT_MISMATCH"
     },
     {
       "id": "undeclared-capability-grant",
