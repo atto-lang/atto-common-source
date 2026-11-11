@@ -47,6 +47,12 @@ distinguish equal-arity slots. Preserve original target dispatch inside the
 forwarder, never a speculative direct target implementation.
 
 Reject target constructors with annotations that cannot be safely mirrored.
+Reject all unresolved local type aliases in public proxy method signatures
+until the compiler can prove their transitive definitions: `AliasFoo = Foo`
+and `Option<AliasFoo>` can otherwise bypass a nominal proxy's target-identity
+return gate. This is intentionally conservative and must be relaxed only with
+full alias, effects and lifetime resolution.
+
 Also reject recursively nested mutable `struct` signatures, which may convey
 unproven write authority across a proxy boundary.
 
