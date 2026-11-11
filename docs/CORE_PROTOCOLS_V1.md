@@ -6,7 +6,7 @@ Status: **source declarations added; executable backend conformance remains unve
 
 The compiler-owned import namespace is `ores.core/*`, not `ores.std/*` or the
 legacy `std/*` alias. The canonical guest declaration source is
-`library/ores.core/protocols.atto`, with an identical `.ores` resource in
+`library/ores.core/protocols.atto`, with an identical `.atto` resource in
 `oreslang-source.java`. Both must retain the same Git blob identity. User
 filesystem paths and `ORES_PATHS` may not shadow this compiler authority.
 
