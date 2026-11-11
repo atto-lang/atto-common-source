@@ -1,0 +1,122 @@
+{
+  "schema": "attolang.core.protocols.v1",
+  "status": "SOURCE_DECLARED_BACKEND_EXECUTION_UNVERIFIED",
+  "import_root": "ores.core/",
+  "module": "protocols",
+  "canonical_source": "library/ores.core/protocols.atto",
+  "git_blob_sha": "7ae501ded40973a23c59e214dba7182c61bc97d2",
+  "traits": {
+    "Eq": {
+      "arity": 1,
+      "methods": [
+        "equals"
+      ]
+    },
+    "Ord": {
+      "arity": 1,
+      "extends": [
+        "Eq"
+      ],
+      "methods": [
+        "compare"
+      ]
+    },
+    "Hash": {
+      "arity": 0,
+      "methods": [
+        "hash_value"
+      ]
+    },
+    "Clone": {
+      "arity": 1,
+      "methods": [
+        "clone_value"
+      ]
+    },
+    "Read": {
+      "arity": 1,
+      "methods": [
+        "read_async"
+      ]
+    },
+    "Write": {
+      "arity": 1,
+      "methods": [
+        "write_all_async"
+      ]
+    },
+    "Flush": {
+      "arity": 1,
+      "methods": [
+        "flush_async"
+      ]
+    },
+    "Close": {
+      "arity": 0,
+      "methods": [
+        "close"
+      ]
+    },
+    "AsyncClose": {
+      "arity": 1,
+      "methods": [
+        "close_async"
+      ]
+    },
+    "Seek": {
+      "arity": 1,
+      "methods": [
+        "seek_async"
+      ]
+    },
+    "Source": {
+      "arity": 2,
+      "methods": [
+        "next_async"
+      ]
+    },
+    "Sink": {
+      "arity": 2,
+      "methods": [
+        "send_async",
+        "flush_async"
+      ]
+    },
+    "IntoIterator": {
+      "arity": 1,
+      "methods": [
+        "into_iter"
+      ]
+    },
+    "Service": {
+      "arity": 3,
+      "methods": [
+        "call_async"
+      ]
+    }
+  },
+  "compiler_intrinsics_not_user_implementable": [
+    "Sendable",
+    "Shareable",
+    "Copy",
+    "Drop",
+    "Receives",
+    "Supervisor"
+  ],
+  "requirements": [
+    "Import selection must use compiler-owned identity; no local filesystem shadowing",
+    "Only verified nonblocking providers may implement core Future-returning I/O",
+    "read_async returns None for EOF; empty data is not EOF",
+    "write_all_async moves input and must not report success on partial writes",
+    "send_async success means bounded admission, not persistence",
+    "compiler-intrinsic Sendable and actor state/control are never granted by source trait conformance",
+    "all five backend lanes require real guest execution before declaring parity"
+  ],
+  "backend_evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  }
+}
