@@ -492,5 +492,13 @@
       "guest_execution"
     ],
     "no_parity_claim_without_same_api_digest_and_independent_guest": true
+  },
+  "interface_digest_policy": {
+    "canonical_semantic_digest": "PROPOSED_NOT_IMPLEMENTED",
+    "oracle_interface_sha256_is": "abstract target-independent semantic export digest placeholder only, NOT Java .oresi v1 wire hash",
+    "java_oresi_v1": "target-specific compiler/ABI/profile envelope; independently pinned per namespace",
+    "example_java_oresi_sha256": "8db5681e1e41c389e2358f9e0cd5c46e78b5b33519ed4769056268a240847f3d",
+    "native_oresi_decoder": "LLVM compiler metadata preflight only; not a native linker nor guest proof",
+    "binary_payload": "always target-specific and separately authenticated"
   }
 }
