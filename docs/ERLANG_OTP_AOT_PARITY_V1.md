@@ -1,0 +1,53 @@
+# Erlang/OTP capability parity under strict AttoLang AOT — v1
+
+**Status: candidate normative design / NO EXECUTED BACKEND EVIDENCE.** This document is a target specification, not proof of syntax acceptance, compiler lowering, runtime behavior, or OTP compatibility. Public language name: AttoLang; historical repository and `.ores` compatibility identifiers remain unchanged. This contract must not override accepted ownership, panic, supervisor, or checked-effects contracts.
+
+## Decision and scope
+
+AttoLang aims for **behavioral capability parity**, not Erlang syntax parity, BEAM bytecode compatibility, or Erlang wire-protocol compatibility. Compile the reachable trusted application, including actors, supervisors, messages, callbacks, cleanup, and async continuations, ahead of time. A compiler with an unsupported feature **must reject it**, producing no executable artifact. It must never silently fall back to a guest interpreter, runtime code generation, reflection-based call resolution, dynamic assembly loading, or guest JIT in strict AOT mode.
+
+**Deferred:** multiple function-head clauses and runtime argument-pattern dispatch. This is not an AOT impossibility: a finite, statically analyzable clause set could lower to an ordered decision DAG, but its overlapping guards, exhaustiveness, imported symbols, effect/ownership checking, and code-size policy need separate design and parity evidence. Do not parse-and-ignore, dynamically dispatch, or enable it by default.
+
+## Operators and bindings (canonical AttoLang, not Erlang)
+
+- `eq`: the single typed value-equality operator. `neq` and `!eq`: equivalent typed inequality spellings; canonical formatter output should be `neq` **only after parser agreement and token-preservation tests**.
+- `==`, `!=`, `=:=`, `=/=`, `/=`, and Erlang `=<` are not AttoLang equality/comparison spellings. Do not silently normalize them. Binding/assignment `=` is never pattern matching or unification.
+- Equality is type checked before lowering: no implicit int/float equality coercion; no implicit cross-type ordering. Aggregate equality is legal only for components with a statically proven equality contract. Preserve `Option[T]` and `Result[T,E]` variant identity.
+- Define float equality (NaN, signed zero) and structural equality precisely before promotion; never claim a total order or recursive object equality without a proven bound. Stable actor-reference identity and stale-generation checking must not be reduced to raw pointer comparison.
+- Short-circuit Boolean conjunction/disjunction keep the **separately accepted AttoLang grammar** (including any approved comma/pipe or keyword spellings). Do not introduce Erlang `andalso`/`orelse` or silently rewrite `,` and `|` in call/sequence contexts. Bool-only operands, left-to-right evaluation, lazy RHS and effect preservation are mandatory.
+- Integer division/remainder and bitwise operations should use explicitly specified typed operations; no `%`, `^`, `^^` aliases and no operator overloading. Require defined signed overflow, division-by-zero, shift-width, and endian behavior.
+
+## Language parity slices (static lowering only)
+
+1. **Pattern matching**: exhaustive typed `match` on finite ADTs, tuples, records, `Option`, `Result`, and length-checked list shapes; determine reachable arms, ownership moves, and binder lifetimes at compile time. Guards must be pure, bounded under the selected profile, and type checked. Unsupported dynamic patterns reject at compile time. No function-head-clause syntax in v1.
+2. **Conditional match / `maybe`**: candidate only. Desugar `Pattern ?= expr` to a finite typed `Result`/`Option` branch graph with deterministic early exit and `defer` cleanup. No implicit exception catch, no panic consumption, no auto-flattening; rejection until end-to-end parser, MIR and borrow checker exist.
+3. **Comprehensions**: lower list/map/set/binary forms to statically resolved iterator operations, with allocation bounds or explicit quotas, deterministic evaluation order, cancellation points and no runtime expression compiler. Candidate grammar until separately ratified.
+4. **Binary pattern decoding**: compile literal field widths, signedness, endianness, alignment, byte lengths and suffix patterns into checked bounds-safe loads. Dynamic lengths must be range-checked before all pointer arithmetic. Borrowed zero-copy views must never outlive storage or cross actor/channel boundaries unsafely. Typed `BitCursor`/`ByteBuffer` APIs may establish equivalence without copying `<<>>` syntax.
+5. **Closures and callable values**: statically known, AOT-generated environment layouts and finite call tables; no reflection, runtime source evaluator, hidden interpreter, uncaptured effects, or unsound ownership escapes. Recursive functions use compiled calls; recursion/checkpoint and stack budgets must protect each actor.
+6. **Typed control flow / exceptional effects**: honor explicit-return callable contracts and checked Throws/Raises/Panics. `defer` runs once in reverse lexical order on every specified exit, including cancellation; it cannot swallow panics or forge a successful return. An actor panic reaches the supervisor CONTROL channel, not the actor mailbox.
+
+## Runtime and OTP-like service slices
+
+- **Mailbox semantics**: per-sender/per-receiver FIFO for admitted messages; typed message schema; bounded mailbox and backpressure. Selective receive scans without deleting unmatched messages and commits exactly one matched message. Define timeout, cancellation, sender identity, hot-reload generation, and receive-vs-STOP linearization. It is **not** the same as channel `select`. Mailbox scans require amortization/indexing strategy and fair scheduling; avoid starvation and unbounded scan work.
+- **Actor isolation**: actor-owned heap and stack, generation-fenced handles, one semantic mutable owner, fair reader/writer coordination when explicitly shared, non-reentrant handler execution even across suspension, scheduler checkpoints at loops/recursion. Actor failure must not crash siblings; cleanup waits for physical quiescence and outstanding loans.
+- **Monitors and links**: typed monitor/reference lifecycle, at-most-once terminal notification per monitored incarnation, deterministic monitor registration vs termination races, explicitly chosen link-failure propagation policy. No raw supervisor state authority inherited by children.
+- **Supervision**: `one_for_one`, `one_for_all`, `rest_for_one`, bounded restart intensity/window, ordered child startup/shutdown, supervisor escalation, last-failure receipt and generation fencing. A restart creates a new incarnation; stale handles/continuations fail closed.
+- **OTP-like libraries**: typed server request/reply, state-machine abstraction, application lifecycle, timer service, structured logs, actor introspection, in-memory typed concurrent tables and optional durability. Favor canonical `.atto` core/std implementations; host code implements only justified primitives. ETS/DETS/Mnesia are capability goals, not implied compatibility.
+- **Distribution**: typed serialization and schema evolution, authenticated/encrypted transport, remote actor addressing, partition handling, replay-resistant admission, cancellation, delivery acknowledgment and deduplication policy. Preserve FIFO only within explicitly established ordering scope; never claim exactly-once delivery from retries alone.
+- **Hot upgrades**: precompile and sign/load separately built generations, verify type/ABI/message/effect compatibility and authorized capability manifest before cutover. Fenced quiescence, rollback and persisted state migration must be deterministic. No runtime guest compilation is required or permitted in strict AOT deployment.
+
+## Strict AOT profiles and backend admission
+
+An **AOT-only** build must prove **guest-code** ahead-of-time compilation; producing a Native Image of a generic guest interpreter is not proof. For LLVM and Forge require emitted executable machine code; for .NET require NativeAOT with statically linked generated guest and no dynamic assembly; for Java/Graal prove program-specific compiled guest implementations with no interpreter fallback; for Wasm require fully compiled guest Wasm and an execution policy with runtime JIT disabled or a verified AOT engine; a JS-transpiled artifact alone is **not** a native AOT executable. Keep JS as a separate semantic target, not evidence of strict native AOT.
+
+The AOT feature gates are closed-world symbol discovery, static monomorphization or verified finite erased layouts, checked effect/capability table, bounded ownership/stack/message metadata, ABI-pinned generated serializers, no reflection-only registration, no dynamic guest code import, and codegen/link failure rather than silent fallback. Hot-swap is permitted only for precompiled, verified generations.
+
+Do not infer parity from a host-only canary, source-only fixture, stub compiler, Node Wasm JIT host, or `steps=[]`/`null` CI result. Promotion requires exact PR head and tree SHA, hashed fixture bytes, compiler executable digest, nonzero executed compiler steps, negative diagnostics with no output artifact, actual guest execution where applicable, strict-AOT fallback prohibition test, independent review, and separately verified per-backend receipts.
+
+## Acceptance sequence
+
+P0: operator/typing agreement; scalar, aggregate and negative vectors; typed match without function clauses; binary bounds; strict AOT admission checks. P0 runtime: selective receive, cancellation/STOP, generation/monitor races, actor-stack failures and supervisor recovery.
+
+P1: static `maybe`, comprehensions, typed server/state-machine libraries, complete OTP restart policies, secure remote actor protocols. P2: ETS-like tables, persistence, compatible hot code swaps, diagnostics/observer, distributed durability claims only after real failure tests.
+
+For every promoted feature, execute positive, negative, differential and adversarial tests in Java/GraalVM, LLVM, .NET NativeAOT, Wasm, and Forge. Record JS/Rust outcomes separately where applicable. The entire matrix begins **NOT_EXECUTED** until independently attested. AOT-restricted non-support is an explicit fail-closed status, never an implicit claim of parity.
