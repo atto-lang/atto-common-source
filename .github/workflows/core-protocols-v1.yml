@@ -5,6 +5,7 @@ on:
       - 'library/ores.core/protocols.atto'
       - 'contracts/v1/core-protocols-v1.json'
       - 'tests/core-protocols-v1.test.mjs'
+      - 'tests/fixtures/core-protocols-v1/**'
       - '.github/workflows/core-protocols-v1.yml'
   workflow_dispatch:
 permissions:
