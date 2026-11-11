@@ -73,7 +73,7 @@ function mutate(doc,c){
 function admitArtifact(doc,artifact,pkg,req){
   if(!artifact || artifact.package_instance_id!==pkg.id ||
      !sha.test(artifact.sha256))fail('ARTIFACT_IDENTITY_INVALID');
-  if(artifact.format==='source-archive'){
+  if(['source-archive','source-directory'].includes(artifact.format)){
     const members=new Set();
     let total=0;
     if(artifact.members.length>4096)fail('ARCHIVE_LIMIT');
@@ -116,7 +116,7 @@ function resolve(doc,req){
   // does not imply tenant/actor visibility, filesystem access or code trust.
   if(req.grant_capabilities?.length)fail('IMPORT_CANNOT_GRANT_CAPABILITY');
   if(req.selector==='file'){
-    if(artifact.format!=='source-archive')fail('BINARY_HAS_NO_SOURCE_PATHS');
+    if(!['source-archive','source-directory'].includes(artifact.format))fail('BINARY_HAS_NO_SOURCE_PATHS');
     if(importerId!==pkg.id)fail('CROSS_PACKAGE_SOURCE_IMPORT');
     if(!req.from.startsWith('./')||!canonicalPath(req.source_unit))
       fail('INVALID_RELATIVE_IMPORT');
@@ -167,7 +167,7 @@ test('contract declares every source.* backend without claiming execution',()=>{
   assert.deepEqual(Object.keys(spec.backend_profiles).sort(),[...targets].sort());
   assert.ok(Object.values(spec.backend_profiles).every(x=>x.status.includes('NOT_EXECUTED')));
   assert.equal(spec.grammar_proposal.canonical_root,'+/');
-  assert.equal(spec.cases.length,26);
+  assert.equal(spec.cases.length,28);
   assert.equal(spec.evidence_policy.no_authored_fixture_as_executed,true);
 });
 for(const c of spec.cases){
@@ -184,8 +184,10 @@ for(const c of spec.cases){
   });
 }
 test('source and binary representation do not change the public export table',()=>{
+  const d=spec.cases.find(c=>c.id==='directory-pkg-public-api');
   const s=spec.cases.find(c=>c.id==='source-pkg-public-api');
   const b=spec.cases.find(c=>c.id==='binary-pkg-same-api');
+  assert.deepEqual(resolve(spec,d),resolve(spec,s));
   assert.deepEqual(resolve(spec,s),resolve(spec,b));
 });
 test('lock always chooses a single package instance despite matching name',()=>{
