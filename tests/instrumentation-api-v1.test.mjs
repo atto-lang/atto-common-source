@@ -15,7 +15,7 @@ function classify(v) {
 
 test('instrumentation status is honest about missing execution and parity', () => {
   assert.equal(contract.schema, 'attolang.instrumentation.v1');
-  assert.match(contract.status, /NO_GUEST_OTLP/);
+  assert.match(contract.status, /UNVERIFIED_NO_E2E/);
   for (const status of Object.values(contract.evidence)) {
     assert.ok(['NOT_EXECUTED', 'NOT_IMPLEMENTED'].includes(status));
   }
@@ -201,8 +201,8 @@ test('staged semantic spans and native Atto batch are not misrepresented as OTLP
   const java = contract.implementation_progress.java_graal;
   assert.match(java.semantic_span_lifecycle, /HOST STAGING IMPLEMENTED/);
   assert.match(java.semantic_span_lifecycle, /idempotent Scope.finish/);
-  assert.match(java.exporter, /PARTIAL_NATIVE_ATTO_DATA_ONLY/);
-  assert.match(java.exporter, /actual source collector ACTOR/);
+  assert.match(java.exporter, /PARTIAL_NATIVE_ATTO_TRANSPORT_ONLY/);
+  assert.match(java.exporter, /No built-in actor collector/);
   assert.match(java.exporter, /NOT_IMPLEMENTED/);
   assert.match(java.scoped_using, /trusted SpanScope type\/effect.*NOT_IMPLEMENTED/);
   assert.equal(contract.e2e_http_actor_client_otlp.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
@@ -223,4 +223,27 @@ test('LLVM native semantic staging host smoke is exact-blob but never promoted t
   assert.match(llvm.semantic_span_staging, /host-only exact-GitHub-blob/);
   assert.equal(contract.evidence.llvm_native_semantic_staging_ctest, 'NOT_EXECUTED');
   assert.equal(contract.evidence.llvm_guest_semantic_spans, 'NOT_IMPLEMENTED');
+});
+
+
+test('bounded POST transport and native .atto OTLP JSON source are partial, with exact guest evidence absent', () => {
+  const java = contract.implementation_progress.java_graal;
+  assert.match(java.post_transport, /max 1 MiB/);
+  assert.match(java.post_transport, /transport-owned Content-Length/);
+  assert.match(java.post_transport, /canonical loopback egress and NET checks/);
+  assert.match(java.otlp_json_encoder, /ExportTraceServiceRequest OTLP\/JSON/);
+  assert.match(java.otlp_json_encoder, /integer kind, quoted decimal int64 timestamps/);
+  assert.match(java.otlp_json_encoder, /partialSuccess parser/);
+  assert.match(java.actor_export_fixture, /one-shot application fixture/);
+  assert.match(java.exporter, /export recursion suppression/);
+  assert.match(contract.otlp_schema_reference, /^https:\/\/opentelemetry.io\/docs\/specs\/otlp\//);
+  for (const field of [
+    'java_post_transport_host_test',
+    'java_post_guest_loopback_test',
+    'java_native_otlp_json_codec_guest',
+    'java_native_actor_otlp_post_guest',
+  ]) {
+    assert.equal(contract.evidence[field], 'NOT_EXECUTED');
+  }
+  assert.equal(contract.e2e_http_actor_client_otlp.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
 });
