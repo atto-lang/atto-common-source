@@ -116,6 +116,19 @@
       "carrier_sha": "e2bc743a8a135ca1c728c7cbb9b480160c40d48a",
       "optimizing_machine_code_tier_proven": false,
       "native_image_proven": false
+    },
+    {
+      "backend": "java_graalvm25_checked_computed",
+      "kind": "SELECTED_SOURCE_GIT_BLOBS_ONLY",
+      "outcome": "PASSED",
+      "total_tests": 99,
+      "failed": 0,
+      "skipped": 0,
+      "run_url": "https://github.com/voxletra/voxletra-e2e/actions/runs/43243158563",
+      "source_pr_sha": "a076149cc13e047f0f75c622aa148122200eb6e7",
+      "carrier_sha": "897ea9b43a14766cfcf99b9291cc750c9063715f",
+      "optimizing_machine_code_tier_proven": false,
+      "native_image_proven": false
     }
   ],
   "full_backend_execution": {
