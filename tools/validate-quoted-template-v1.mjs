@@ -53,7 +53,6 @@ export function validateQuotedTemplateContract(contract, root=ROOT) {
   seen.add(c.id);
   if(c.typed_runtime_outcome!=='NOT_EXECUTED')
    throw Error('lexical fixture promoted to unverified guest pass');
-  const exact='fixtures/quoted-template-v1/'+c.id.replace(/^ordinary-/, 'quoted-').replace(/-single-double$/, '-single-double')+'.atto';
   // File names are fixed independently of the ID; the path must remain local.
   if(typeof c.path!=='string' ||
     !/^fixtures\/quoted-template-v1\/[a-z-]+\.atto$/.test(c.path) ||
