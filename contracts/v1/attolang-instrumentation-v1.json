@@ -1,0 +1,152 @@
+{
+  "schema": "attolang.core-std.instrumentation.v1",
+  "status": "PROPOSED_NOT_IMPLEMENTED",
+  "source_extension": ".atto",
+  "legacy_alias_policy": "preserve existing .ores imports; no silent ABI rename",
+  "owners": {
+    "core": "core.instrumentation",
+    "std": "std.instrumentation",
+    "compatibility": [
+      "stdlib/trace.ores",
+      "oreslang-otel/src/otel.ores",
+      "CorePerf"
+    ]
+  },
+  "surface": {
+    "types": [
+      "TraceContext",
+      "SpanContext",
+      "Span",
+      "SpanKind",
+      "SpanStatus",
+      "AttributeValue",
+      "SpanEvent",
+      "SpanLink"
+    ],
+    "kinds": [
+      "INTERNAL",
+      "SERVER",
+      "CLIENT",
+      "PRODUCER",
+      "CONSUMER"
+    ],
+    "statuses": [
+      "UNSET",
+      "OK",
+      "ERROR"
+    ],
+    "methods": [
+      "trace.start",
+      "trace.current",
+      "span.context",
+      "span.is_recording",
+      "span.attribute",
+      "span.event",
+      "span.record_error",
+      "span.set_status",
+      "span.end",
+      "trace.extract_http",
+      "trace.inject_http",
+      "metrics.counter",
+      "metrics.gauge",
+      "metrics.histogram",
+      "log.emit"
+    ]
+  },
+  "boundaries": {
+    "context_storage": "logical_execution_or_continuation_not_carrier_tls",
+    "span_ownership": "actor_local_non_sendable",
+    "transfer": "immutable_validated_context_only",
+    "actor_messages": "metadata_envelope_with_generation_fencing",
+    "producer_consumer": "link_by_default",
+    "exporter": "off_carrier_capability_checked_bounded_nonblocking",
+    "disabled": "no_clock_no_allocation_no_formatting_no_network",
+    "telemetry_failure": "cannot_change_application_result",
+    "sensitive_by_default": "deny_payloads_cookies_auth_headers_raw_path_and_query",
+    "w3c_ids": "16_byte_trace_id_and_8_byte_span_id_not_ores_trace_id",
+    "serialization": "existing_oreslang_otel_jsonl_not_otlp"
+  },
+  "fixture_vectors": {
+    "traceparent": [
+      {
+        "id": "valid_sampled",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "ACCEPT"
+      },
+      {
+        "id": "zero_trace_id",
+        "input": "00-00000000000000000000000000000000-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "zero_parent_id",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-0000000000000000-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "invalid_separator",
+        "input": "00_4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "nonhex_trace_id",
+        "input": "00-zbf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "truncated_flags",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-0",
+        "expect": "REJECT"
+      },
+      {
+        "id": "extra_suffix_v00",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-junk",
+        "expect": "REJECT"
+      },
+      {
+        "id": "leading_space",
+        "input": " 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "new_line_injection",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01\r\nx-forwarded-host: evil",
+        "expect": "REJECT"
+      },
+      {
+        "id": "invalid_ff_version",
+        "input": "ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      }
+    ],
+    "runtime": [
+      "manual_nested_spans",
+      "idempotent_end_and_elapsed_freeze",
+      "record_error_preserves_guest_exception",
+      "await_resume_on_different_carrier",
+      "task_inherit_and_detach_no_ambient_leak",
+      "mailbox_send_receive_and_fan_in_links",
+      "actor_stop_restart_upgrade_generation_fence",
+      "http_server_client_real_wire_attempt_no_duplicate",
+      "http_retry_cancellation_and_redirect_denial",
+      "fs_tcp_dns_async_trace_without_carrier_block",
+      "telemetry_queue_full_saturating_drop_counts",
+      "no_network_credential_or_body_export",
+      "disabled_no_clock_or_allocation",
+      "untrusted_otlp_endpoint_fails_capability_admission",
+      "exporter_recursion_and_shutdown_bounded",
+      "actual_otlp_decode_and_trace_join"
+    ]
+  },
+  "targets": [
+    "java-jit",
+    "java-guest-native-aot",
+    "llvm-native",
+    "dotnet-native-aot",
+    "wasm-worker",
+    "forge-native",
+    "js"
+  ],
+  "evidence_rule": "exact_head_and_tree_nonzero_steps_real_guest_and_wire_receipts_independent_review",
+  "claims": "No runtime behavior, backend parity or OTLP exporter is added by this contract."
+}
