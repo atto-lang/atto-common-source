@@ -1,0 +1,347 @@
+{
+  "schema": "atto-native-auto-instrumentation.v1",
+  "status": "PROPOSAL_SOURCE_ONLY_NOT_EXECUTED",
+  "reference_date": "2026-11-12",
+  "supported_target_backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "net"
+  ],
+  "invariants": {
+    "monkey_patching": false,
+    "dynamic_code_generation": false,
+    "runtime_default": "off",
+    "build_default": "boundaries",
+    "core_diagnostics_independent": true,
+    "otel_userland_import_implicit": false,
+    "std_exporter_requires_host_opt_in": true,
+    "trace_context_location": "immutable_actor_envelope_and_continuation",
+    "no_thread_local_context_assumption": true,
+    "no_synchronous_exporter": true,
+    "queue_memory_bounded": true,
+    "saturation_behavior": "drop_and_count",
+    "core_can_depend_on_std": false,
+    "guest_semantics_unchanged_on_export_failure": true,
+    "function_instrumentation_opt_in": true,
+    "trace_id_bits": 128,
+    "span_id_bits": 64
+  },
+  "build_modes": [
+    "none",
+    "boundaries",
+    "functions"
+  ],
+  "runtime_modes": [
+    "off",
+    "on"
+  ],
+  "exporter_modes": [
+    "none",
+    "otlp",
+    "file"
+  ],
+  "defaults": {
+    "build": "boundaries",
+    "runtime": "off",
+    "exporter": "none",
+    "buffer_events": 8192,
+    "capture_request_bodies": false,
+    "capture_arbitrary_headers": false,
+    "capture_sql_bindings": false,
+    "capture_guest_objects": false
+  },
+  "hooks": [
+    {
+      "id": 1,
+      "name": "fn.enter",
+      "kind": "compiler",
+      "profile": "functions"
+    },
+    {
+      "id": 2,
+      "name": "fn.exit",
+      "kind": "compiler",
+      "profile": "functions"
+    },
+    {
+      "id": 10,
+      "name": "http.server.start",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 11,
+      "name": "http.server.finish",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 12,
+      "name": "http.client.attempt",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 13,
+      "name": "http.client.finish",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 20,
+      "name": "actor.send",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 21,
+      "name": "actor.admit",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 22,
+      "name": "actor.process",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 30,
+      "name": "continuation.suspend",
+      "kind": "compiler",
+      "profile": "boundaries"
+    },
+    {
+      "id": 31,
+      "name": "continuation.resume",
+      "kind": "compiler",
+      "profile": "boundaries"
+    },
+    {
+      "id": 40,
+      "name": "io.complete",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 50,
+      "name": "db.execute",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 60,
+      "name": "collector.drop",
+      "kind": "internal",
+      "profile": "boundaries"
+    }
+  ],
+  "privacy": {
+    "forbidden_default_fields": [
+      "http.request.body",
+      "http.request.header.authorization",
+      "http.request.header.cookie",
+      "db.query.parameters",
+      "guest.object",
+      "actor.message.payload",
+      "file.path",
+      "url.query"
+    ],
+    "allowed_default_fields": [
+      "http.request.method",
+      "http.route",
+      "http.response.status_code",
+      "server.address",
+      "network.protocol.name",
+      "messaging.system.name",
+      "error.type"
+    ],
+    "untrusted_remote_headers": "validate_then_context_only",
+    "external_headers": [
+      "traceparent",
+      "tracestate"
+    ],
+    "exporter_requires_egress_capability": true,
+    "no_raw_user_attributes_in_core_hooks": true
+  },
+  "scenarios": [
+    {
+      "id": "disabled-default",
+      "build": "boundaries",
+      "runtime": "off",
+      "expect": {
+        "recorded_spans": 0,
+        "clock_reads": 0,
+        "event_allocations": 0,
+        "export_attempts": 0,
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "compile-out",
+      "build": "none",
+      "runtime": "on",
+      "expect": {
+        "recorded_spans": 0,
+        "probes": 0,
+        "diagnostic": "instrumentation_unavailable",
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "http-server-auto",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "std.http.inbound",
+      "expect": {
+        "span_kind": "SERVER",
+        "parent": "validated_remote_or_new_root",
+        "name": "method_and_route_template",
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "http-client-retry",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "std.http.outbound",
+      "expect": {
+        "span_kind": "CLIENT",
+        "per_wire_attempt": true,
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "actor-message",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor.send",
+      "expect": {
+        "context": "immutable_envelope",
+        "payload_unmodified": true,
+        "actor_generation_fenced": true,
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "actor-fanout",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor.multicast",
+      "expect": {
+        "relation": "span_links",
+        "single_ambiguous_parent": false
+      }
+    },
+    {
+      "id": "async-resume",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "future.await",
+      "expect": {
+        "context": "same_logical_continuation",
+        "carrier_thread_independent": true
+      }
+    },
+    {
+      "id": "exception-teardown",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "throw_raise_panic_cancel",
+      "expect": {
+        "end_span_count_per_started_span": 1,
+        "guest_effects": "unchanged",
+        "control_priority_unblocked": true
+      }
+    },
+    {
+      "id": "pressure",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "bounded_collector_full",
+      "expect": {
+        "waits": 0,
+        "drop_count_increases": true,
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "export-denied",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "otlp_without_host_egress_permission",
+      "expect": {
+        "network_exports": 0,
+        "guest_effects": "unchanged",
+        "failure_isolated": true
+      }
+    },
+    {
+      "id": "privacy",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "http_request_with_authorization_and_query",
+      "expect": {
+        "secret_in_attributes": false,
+        "route_template_preferred": true,
+        "remote_trace_id_trusted_as_authority": false
+      }
+    },
+    {
+      "id": "unsupported-ffi",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "unregistered_native_driver_call",
+      "expect": {
+        "automatic_db_span": false,
+        "coverage_gap_reported": true
+      }
+    },
+    {
+      "id": "function-probes",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "ordinary_guest_function",
+      "expect": {
+        "callable_entry_and_exit": true,
+        "static_descriptor": true,
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "wasm-no-import",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "no_import_wasm_guest",
+      "expect": {
+        "new_host_imports": 0,
+        "fail_closed_if_unavailable": true
+      }
+    }
+  ],
+  "evidence": {
+    "self_test_scope": "contract_shape_only",
+    "source_only_is_backend_execution": false,
+    "requires_guest_compiler": true,
+    "requires_actual_backend_artifact": true,
+    "requires_stepful_execution": true,
+    "requires_exact_sha": true,
+    "required_results": [
+      "source_contract",
+      "compiler_lowering",
+      "executed_guest",
+      "aot_artifact",
+      "privacy_and_pressure",
+      "performance"
+    ],
+    "backend_execution_status": {
+      "java": "NOT_EXECUTED",
+      "llvm": "NOT_EXECUTED",
+      "wasm": "NOT_EXECUTED",
+      "forge": "NOT_EXECUTED",
+      "net": "NOT_EXECUTED"
+    }
+  }
+}
