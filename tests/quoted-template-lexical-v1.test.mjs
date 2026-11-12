@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadQuotedTemplateContract,validateQuotedTemplateContract} from '../tools/validate-quoted-template-v1.mjs';
 
-test('ten real .atto fixtures have exact pinned Git blob identities',()=>{
+test('twelve real .atto fixtures have exact pinned Git blob identities',()=>{
  const result=validateQuotedTemplateContract(loadQuotedTemplateContract());
- assert.equal(result.verified_git_blobs,10);
+ assert.equal(result.verified_git_blobs,12);
  assert.equal(result.backend_evidence,'NOT_EXECUTED');
 });
 test('cannot promote lexical fixtures into execution evidence',()=>{
