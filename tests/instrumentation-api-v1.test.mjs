@@ -124,3 +124,34 @@ test('freestanding context remains separated from hosted exporter and compiler A
   assert.match(n['ores.std/telemetry'], /bounded asynchronous collector/);
   assert.match(n['internal/probe_abi'], /not importable from guest code/);
 });
+
+
+test('scoped using preserves existing borrow semantics and requires typed unwinding', () => {
+  const scoped = contract.scoped_using;
+  assert.equal(scoped.spelling, 'using telemetry.span(name) as span { body }');
+  assert.match(scoped.compatibility, /retains existing contextual using resource\.borrow/);
+  assert.match(scoped.compiler_ast, /TryStmt finally/);
+  assert.ok(scoped.behavior.some(x => x.includes('exactly once')));
+  assert.ok(scoped.current_limitations.some(x => x.includes('not executed')));
+});
+
+test('runtime policy switches only precompiled sites and does not permit patching', () => {
+  const dyn = contract.dynamic_activation;
+  assert.equal(dyn.no_monkey_patching, true);
+  assert.match(dyn.no_redeploy_if, /pre-emitted/);
+  assert.ok(dyn.rejected_mechanisms.includes('Java agents'));
+  assert.match(dyn.backend_constraints.llvm_aot, /no new probes if stripped/);
+  assert.match(dyn.backend_constraints.net_native_aot, /precompiled probes only/);
+  assert.match(dyn.control.max_coverage, /never exceeded/);
+  assert.match(dyn.control.generation, /fence stale callbacks/);
+});
+
+test('end-to-end target is not claimed as completed by synthetic harness tests', () => {
+  const e2e = contract.e2e_http_actor_client_otlp;
+  assert.equal(e2e.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
+  assert.ok(e2e.steps.some(s => s.includes('LLVM')));
+  assert.ok(e2e.steps.some(s => s.includes('OTLP receiver')));
+  assert.ok(e2e.steps.some(s => s.includes('immutable Context metadata')));
+  assert.match(e2e.forbidden_shortcut, /synthetic trace fixtures/);
+  assert.equal(contract.evidence.auto_otel_e2e, 'NOT_IMPLEMENTED');
+});
