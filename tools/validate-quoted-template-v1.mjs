@@ -45,11 +45,26 @@ export function validateQuotedTemplateContract(contract, root=ROOT) {
  if(contract?.schema!==1 || contract.id!=='atto.quoted-template.lexical.v1')
   throw Error('wrong quoted-template contract');
  if(contract.source_extension!=='.atto' ||
-    typeof contract.scope!=='string' || !contract.scope.includes('lexical'))
+    contract.scope!=='compiler frontend admission (scanner plus parser/lowering), not scanner-only or guest String execution')
   throw Error('contract scope drift');
  for(const [name,value] of Object.entries(EXPECTED_LIMITS))
   if(contract.semantics?.limits?.[name]!==value)
    throw Error('quoted-template lexical limit drift: '+name);
+ const stages=contract.admission_stage_profiles;
+ const stageOracle={java:'PARSER_LOWERING',llvm:'PARSER_LOWERING',
+  forge:'SCANNER',wasm:'HOST_PREFLIGHT',net:'SCANNER'};
+ if(!stages || Object.keys(stages).sort().join(',')!==
+    'template-comment-only,template-empty-interpolation' ||
+    Object.values(stages).some(v=>
+     Object.keys(v).sort().join(',')!=='forge,java,llvm,net,wasm' ||
+     Object.entries(stageOracle).some(([name,stage])=>v[name]!==stage)))
+  throw Error('scanner-vs-parser stage claim drift');
+ const wasmLimits=contract.backend_specific_source_limits;
+ if(!wasmLimits || Object.keys(wasmLimits).join(',')!=='wasm' ||
+    wasmLimits.wasm.max_utf8_bytes!==1_048_576 ||
+    wasmLimits.wasm.unpaired_utf16!=='REJECT_BEFORE_TOKENIZATION' ||
+    wasmLimits.wasm.portability!=='WASM_HOST_ONLY_NOT_SHARED_COMPILER_LIMIT')
+  throw Error('Wasm byte-budget profile drift');
  const pending=contract.pending_review;
  if(pending?.status!=='DRAFT_NOT_MERGED_NOT_EXECUTED' ||
     pending.java!=='https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2967' ||
@@ -71,7 +86,7 @@ export function validateQuotedTemplateContract(contract, root=ROOT) {
  const seen=new Set();
  for(const c of contract.cases){
   if(seen.has(c.id) || !CASES.has(c.id) ||
-     c.expect_lexical!==CASES.get(c.id))
+     c.expect_frontend!==CASES.get(c.id) || Object.hasOwn(c,'expect_lexical'))
    throw Error('fixture identity or expected result drift');
   seen.add(c.id);
   const pinned=PINNED_GIT_BLOBS.get(c.id);
