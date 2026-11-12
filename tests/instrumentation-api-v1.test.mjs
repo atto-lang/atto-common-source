@@ -155,3 +155,26 @@ test('end-to-end target is not claimed as completed by synthetic harness tests',
   assert.match(e2e.forbidden_shortcut, /synthetic trace fixtures/);
   assert.equal(contract.evidence.auto_otel_e2e, 'NOT_IMPLEMENTED');
 });
+
+
+test('Java source milestones are partial and still require executed guest evidence', () => {
+  const java = contract.implementation_progress.java_graal;
+  assert.match(java.call_probe, /automatic.*numeric timing/);
+  assert.match(java.recording, /NO OTLP export/);
+  assert.match(java.actor_context, /private mailbox metadata/);
+  assert.match(java.task_context, /heap-retained TaskContext/);
+  assert.match(java.outbound_http, /W3C child traceparent/);
+  assert.match(java.inbound_http, /NOT_IMPLEMENTED/);
+  assert.match(java.exporter, /NOT_IMPLEMENTED/);
+  assert.equal(contract.evidence.java_auto_calls_guest, 'NOT_EXECUTED');
+  assert.equal(contract.evidence.java_actor_mail_context, 'NOT_EXECUTED');
+  assert.equal(contract.evidence.java_outbound_w3c_headers, 'NOT_EXECUTED');
+});
+
+test('LLVM W3C wire carrier is host ABI only, never promoted to guest parity', () => {
+  const llvm = contract.implementation_progress.llvm;
+  assert.match(llvm.w3c_v00, /no-allocation/);
+  assert.match(llvm.source_guest, /NOT_IMPLEMENTED/);
+  assert.match(llvm.isolated_w3c_smoke, /NOT an exact GitHub head build/);
+  assert.equal(contract.evidence.llvm_traceparent_ctest, 'NOT_EXECUTED');
+});
