@@ -207,3 +207,20 @@ test('staged semantic spans and native Atto batch are not misrepresented as OTLP
   assert.match(java.scoped_using, /trusted SpanScope type\/effect.*NOT_IMPLEMENTED/);
   assert.equal(contract.e2e_http_actor_client_otlp.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
 });
+
+
+test('LLVM native semantic staging host smoke is exact-blob but never promoted to guest parity', () => {
+  const e = contract.host_smoke_evidence.llvm_semantic_staging;
+  assert.equal(e.status, 'PASS_ISOLATED_EXACT_GITHUB_BLOBS');
+  assert.match(e.header_sha, /^[0-9a-f]{40}$/);
+  assert.match(e.test_sha, /^[0-9a-f]{40}$/);
+  assert.match(e.result, /736 drops/);
+  assert.match(e.scope_limit, /Does not execute full CMake\/CTest/);
+  assert.ok(e.compilers.some(s => s.includes('GCC')));
+  assert.ok(e.compilers.some(s => s.includes('Clang')));
+  const llvm = contract.implementation_progress.llvm;
+  assert.match(llvm.native_telemetry_actor, /NOT_IMPLEMENTED/);
+  assert.match(llvm.semantic_span_staging, /host-only exact-GitHub-blob/);
+  assert.equal(contract.evidence.llvm_native_semantic_staging_ctest, 'NOT_EXECUTED');
+  assert.equal(contract.evidence.llvm_guest_semantic_spans, 'NOT_IMPLEMENTED');
+});
