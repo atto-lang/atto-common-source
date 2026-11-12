@@ -541,6 +541,177 @@
         "export_attempts": 0,
         "guest_effects": "unchanged"
       }
+    },
+    {
+      "id": "using-fallthrough",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-fallthrough",
+      "expect": {
+        "close_scope_calls": 1,
+        "resource_acquire_calls": 1,
+        "body_executed": true
+      }
+    },
+    {
+      "id": "using-early-return",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-early-return",
+      "expect": {
+        "close_scope_calls": 1,
+        "guest_return_unchanged": true
+      }
+    },
+    {
+      "id": "using-exception-and-cancel",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-exception-and-cancel",
+      "expect": {
+        "cleanup_on": [
+          "throw",
+          "raise",
+          "panic",
+          "cancel"
+        ],
+        "close_scope_calls_per_activated_scope": 1,
+        "supervisor_control_unmodified": true
+      }
+    },
+    {
+      "id": "using-await-survival",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-await-survival",
+      "expect": {
+        "close_on_suspend": false,
+        "close_on_lexical_exit": true,
+        "span_context_preserved": true
+      }
+    },
+    {
+      "id": "using-scope-borrow-escape",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-scope-borrow-escape",
+      "expect": {
+        "scope_token_escape_rejected": true,
+        "actor_transfer_rejected": true,
+        "non_scoped_resource_rejected": true
+      }
+    },
+    {
+      "id": "using-no-op-disabled",
+      "build": "functions",
+      "runtime": "off",
+      "operation": "using-no-op-disabled",
+      "expect": {
+        "recorded_spans": 0,
+        "clock_reads": 0,
+        "resource_scope_valid": true,
+        "user_argument_side_effects_preserved": true
+      }
+    },
+    {
+      "id": "jit-live-attach",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-live-attach",
+      "expect": {
+        "same_process": true,
+        "requires_instrumentable_nodes": true,
+        "attached_truffle_probes": true,
+        "deopt_and_recompile": true,
+        "subsequent_calls_recorded": true
+      }
+    },
+    {
+      "id": "jit-live-detach",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-live-detach",
+      "expect": {
+        "same_process": true,
+        "probes_removed_from_future_entries": true,
+        "already_started_scopes_finalized_per_policy": true
+      }
+    },
+    {
+      "id": "jit-security-denial",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-security-denial",
+      "expect": {
+        "unauthorized_request_denied": true,
+        "no_execution_mutation": true,
+        "no_extra_egress_permission": true
+      }
+    },
+    {
+      "id": "jit-bounded-churn",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-bounded-churn",
+      "expect": {
+        "trace_filter_bounded": true,
+        "compile_work_bounded": true,
+        "supervisor_control_unblocked": true
+      }
+    },
+    {
+      "id": "aot-instrument-none",
+      "build": "none",
+      "runtime": "on",
+      "operation": "aot-instrument-none",
+      "expect": {
+        "available_probes": 0,
+        "runtime_activation": "instrumentation_unavailable",
+        "spontaneous_jit": false
+      }
+    },
+    {
+      "id": "aot-instrument-boundaries",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "aot-instrument-boundaries",
+      "expect": {
+        "runtime_enable_without_jit": true,
+        "semantic_boundary_probe_records": true,
+        "manual_using_supported": true
+      }
+    },
+    {
+      "id": "aot-hotload-signed",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "aot-hotload-signed",
+      "expect": {
+        "signed_precompiled_new_generation": true,
+        "old_generation_completion_fenced": true,
+        "not_same_binary_reinstrumentation": true
+      }
+    },
+    {
+      "id": "jit-no-retroactive-span",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-no-retroactive-span",
+      "expect": {
+        "already_running_frame_not_retroactively_timed": true,
+        "next_function_entry_traced": true
+      }
+    },
+    {
+      "id": "truffle-source-mapping",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "truffle-source-mapping",
+      "expect": {
+        "source_tags_retained": true,
+        "deterministic_descriptor_ids": true,
+        "no_opaque_binary_guessing": true
+      }
     }
   ],
   "evidence": {
@@ -659,5 +830,105 @@
       "telemetry.auto.filesystem",
       "telemetry.export.protocol"
     ]
+  },
+  "scoped_using_v1": {
+    "status": "TARGET_NOT_IMPLEMENTED",
+    "existing_keyword": "using",
+    "grammar": "using expression as identifier { statements }",
+    "new_keyword_required": false,
+    "generic_scoped_resource_protocol": "ScopedResource",
+    "cleanup_member_candidate": "close_scope",
+    "static_resource_check_required": true,
+    "resource_expression_evaluated_once": true,
+    "binding_lexically_scoped": true,
+    "acquired_resource_cleanup_exactly_once": true,
+    "cleanup_paths": [
+      "fallthrough",
+      "return",
+      "question_early_exit",
+      "trap",
+      "throw",
+      "raise",
+      "panic",
+      "cancel",
+      "unwind"
+    ],
+    "tail_call_cleanup_barrier": true,
+    "cleanup_on_await_suspension": false,
+    "preserve_scope_across_suspension": true,
+    "telemetry_cleanup_nothrow": true,
+    "telemetry_cleanup_nosuspend": true,
+    "telemetry_cleanup_no_io": true,
+    "no_op_scope_when_disabled": true,
+    "no_op_does_not_elide_user_argument_effects": true,
+    "no_span_scope_token_escape": true,
+    "no_cross_actor_span_scope_transfer": true,
+    "links_to_automatic_trace_pipeline": true,
+    "generate_source_parse_typecheck_guest_tests": true
+  },
+  "live_instrumentation_v1": {
+    "status": "TARGET_NOT_IMPLEMENTED",
+    "control_actions": [
+      "enable",
+      "disable",
+      "set_filter",
+      "snapshot_status"
+    ],
+    "no_process_restart_for_existing_probe_activation": true,
+    "runtime_implementation": [
+      {
+        "mode": "precompiled-probes",
+        "requires": "compiled_in_boundary_or_function_probes",
+        "available_on": [
+          "java-jit",
+          "java-aot",
+          "llvm-aot",
+          "forge-aot",
+          "forge-jit",
+          "net-aot",
+          "wasm"
+        ],
+        "spontaneous_new_probes": false
+      },
+      {
+        "mode": "truffle-dynamic-attach",
+        "requires": "instrumentable_truffle_ast_or_bytecode_plus_authorized_instrumenter",
+        "available_on": [
+          "java-jit"
+        ],
+        "spontaneous_new_probes": true,
+        "safepoint_deopt_recompile": true
+      },
+      {
+        "mode": "forge-jit-dynamic",
+        "requires": "engine_supported_ir_retention_tiering_and_authorized_control",
+        "available_on": [
+          "forge-jit"
+        ],
+        "spontaneous_new_probes": "conditional"
+      },
+      {
+        "mode": "signed-hotload-generation",
+        "requires": "verified_precompiled_artifact_and_generation_safe_handoff",
+        "available_on": [
+          "explicitly_hotload_capable_profiles"
+        ],
+        "spontaneous_new_probes": "new_code_generation_only"
+      }
+    ],
+    "no_silent_jit_in_full_guest_aot": true,
+    "instrumentation_none_cannot_enable_missing_probes": true,
+    "runtime_activation_requires_authorized_control_plane": true,
+    "runtime_activation_no_extra_capabilities": true,
+    "control_rate_limited": true,
+    "dynamic_jit_budgeted": true,
+    "stop_or_change_at_safe_points": true,
+    "preserve_actor_owner_and_control_priority": true,
+    "activation_reports_coverage_mode": true,
+    "no_retroactive_spans": true,
+    "in_flight_scopes_generation_fenced": true,
+    "source_metadata_or_ir_required_for_late_jit_attach": true,
+    "default_no_remote_attach_port": true,
+    "wasm_no_monkey_patching": true
   }
 }
