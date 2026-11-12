@@ -25,6 +25,14 @@
     "output_exact_current_actor_identity": true,
     "terminal_settlement": "EXACTLY_ONCE",
     "async_guest_result": "REQUIRES_TYPED_AWAIT_LOWERING",
+    "ordinary_actor_turns": "BOUNDED_CONCURRENT_EFFECTIVE_TURNS",
+    "serial_actor_turns": "AT_MOST_ONE_ACTIVE_GUEST_TURN",
+    "task_executor": "OWNING_ACTOR_TASK_POOL_NOT_SUPERVISOR_CONTROL",
+    "task_continuation_identity": "ACTOR_ID_INCARNATION_GENERATION_CODE_IMAGE",
+    "reader_loan_overlap": "IMMUTABLE_READERS_ONLY_WHEN_SUPPORTED",
+    "writer_loan_exclusion": "EXCLUSIVE_READ_WRITE",
+    "task_suspension_parks_carrier": false,
+    "task_may_resume_on_supervisor_control_pool": false,
     "experimental_scalar_projection": "JAVA_CLOSED_WORLD_TEST_ONLY_NOT_FINAL_LANGUAGE_API"
   },
   "supervisor_contract": {
