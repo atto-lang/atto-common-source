@@ -51,8 +51,15 @@ test("disabled span remains valid but user expressions are not optimized away", 
 
 test("runtime activation of compiled probes is not the same as adding new probes", () => {
   assert.equal(live.no_process_restart_for_existing_probe_activation, true);
-  assert.equal(live.instrumentation_none_cannot_enable_missing_probes, true);
+  assert.equal(live.instrumentation_none_cannot_enable_missing_precompiled_probes, true);
   assert.equal(live.no_silent_jit_in_full_guest_aot, true);
+  assert.equal(live.instrumentation_none_may_support_separate_dynamic_jit_attach, true);
+  assert.equal(live.strict_none_without_tagged_ir_has_no_dynamic_attach, true);
+  assert.equal(cases.get("jit-none-with-retained-tags").expect.static_probe_sites, 0);
+  assert.equal(cases.get("jit-none-with-retained-tags").expect.authorized_new_jit_probes, true);
+  assert.equal(cases.get("jit-none-no-metadata").expect.dynamic_jit_probes, 0);
+  assert.equal(cases.get("jit-none-no-metadata").expect.activation_result, "instrumentation_unavailable");
+
   const pre=live.runtime_implementation.find(x=>x.mode==="precompiled-probes");
   const truffle=live.runtime_implementation.find(x=>x.mode==="truffle-dynamic-attach");
   const hotload=live.runtime_implementation.find(x=>x.mode==="signed-hotload-generation");
@@ -84,7 +91,7 @@ test("late probe addition requires instrumentable JIT and safe authorization", (
 
 test("fixture count is unique and cannot certify backend parity", () => {
   assert.equal(c.scenarios.length, new Set(c.scenarios.map(x=>x.id)).size);
-  assert.equal(c.scenarios.length, 45);
+  assert.equal(c.scenarios.length, 47);
   assert.equal(c.evidence.source_only_is_backend_execution, false);
   for(const r of Object.values(c.evidence.backend_execution_status))
     assert.equal(r, "NOT_EXECUTED");
