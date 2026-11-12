@@ -64,6 +64,54 @@ test('future distributed API reserves W3C identifiers and actor-local context', 
   assert.ok(c.context.wire.includes('traceparent'));
   assert.ok(c.context.wire.includes('tracestate'));
   assert.ok(c.context.attached_to.includes('continuation'));
-  assert.ok(c.automatic_hooks.includes('TCP read/write'));
+  assert.ok(c.automatic_hooks.includes('TCP connect/read/write'));
   assert.ok(c.automatic_hooks.includes('await suspend/resume'));
+});
+
+
+test('zero-code automatic instrumentation has no dynamic interception requirement', () => {
+  const a = contract.auto_instrumentation;
+  assert.equal(a.status, 'PROPOSED_NOT_IMPLEMENTED');
+  assert.match(a.goal, /no application-level imports/);
+  for (const forbidden of ['monkey patching','Java agents','reflection-based interception','dynamic bytecode rewriting']) {
+    assert.ok(a.forbidden.includes(forbidden), forbidden);
+  }
+  assert.match(a.mechanisms.compiler, /HIR\/MIR/);
+  assert.match(a.mechanisms.runtime, /actor/);
+  assert.match(a.mechanisms.stdlib, /HTTP/);
+  assert.match(a.mechanisms.foreign_ffi, /not.*arbitrary third-party internals/);
+});
+
+test('trace-capable binaries start off and never turn missing probe sites on', () => {
+  const a = contract.auto_instrumentation;
+  assert.equal(a.runtime.enabled_default, false);
+  assert.deepEqual(a.runtime.modes, ['off','boundaries','calls','full']);
+  assert.equal(a.runtime.default_enabled_mode, 'boundaries');
+  assert.equal(a.runtime.sampling_default_when_enabled, 0.05);
+  assert.deepEqual(a.build.variants, ['trace_capable','trace_stripped']);
+  assert.match(a.build.trace_stripped, /cannot turn on missing call-site coverage/);
+  assert.match(a.build.options.precedence, /runtime.*cannot add missing probes/);
+  assert.match(a.probe_abi.recording, /before timestamp/);
+  assert.ok(a.behavior_gates.some(x => x.includes('without rebuild')));
+});
+
+test('logical async propagation and effects stay distinct from recording', () => {
+  const a = contract.auto_instrumentation;
+  assert.match(a.propagation.enabled_unsampled, /nonrecording spans/);
+  assert.match(a.propagation.carrier, /continuation/);
+  assert.match(a.propagation.restart, /revoked generation/);
+  assert.match(a.probe_abi.error_handling, /supervisor CONTROL notice/);
+  assert.match(a.probe_abi.lifecycle, /fatal process abort/);
+  assert.match(a.probe_abi.host_boundary, /separate runtime-internal diagnostic events/);
+  assert.ok(a.probe_abi.outcome.includes('cancel'));
+  assert.ok(a.probe_abi.outcome.includes('panic'));
+});
+
+test('OTel configuration does not provide new permissions', () => {
+  const c = contract.auto_instrumentation.configuration;
+  assert.ok(c.environment.includes('OTEL_SDK_DISABLED'));
+  assert.ok(c.environment.includes('OTEL_TRACES_SAMPLER'));
+  assert.ok(c.environment.includes('OTEL_EXPORTER_OTLP_ENDPOINT'));
+  assert.match(c.environment_cannot_grant, /network\/filesystem/);
+  assert.match(c.otel_disabled_semantics, /propagation policy remains independent/);
 });
