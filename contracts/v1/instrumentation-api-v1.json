@@ -1,0 +1,192 @@
+{
+  "schema": "attolang.instrumentation.v1",
+  "status": "PROPOSED_PARTIAL_JAVA_GUEST_IMPLEMENTATION_NOT_EXECUTED",
+  "version": 1,
+  "layers": {
+    "ores.core/diagnostics": {
+      "ownership": "runtime",
+      "visibility": "internal",
+      "payload": "bounded fixed numeric IDs only",
+      "export": "cold path only",
+      "depends_on_user_otel": false
+    },
+    "ores.std/trace": {
+      "ownership": "actor/supervisor",
+      "visibility": "public",
+      "implementation": "native Atto guest code",
+      "legacy_import": "std/trace",
+      "disabled_hot_path": "zero clock reads and zero event allocations",
+      "sinks": "bounded local buffer; asynchronous export separately"
+    },
+    "oreslang-otel": {
+      "ownership": "application",
+      "visibility": "opt-in",
+      "transport": "existing library JSONL only; OTLP not implemented",
+      "runtime_dependency": false
+    }
+  },
+  "implemented_guest_api": {
+    "module": "Trace",
+    "functions": [
+      "start_ns(enabled)",
+      "duration_ns(started_ns)",
+      "event(correlation_id, phase_id, elapsed_ns)",
+      "buffer(capacity)",
+      "begin_span(enabled)",
+      "finish_span(buffer, correlation_id, phase_id, started_ns)"
+    ],
+    "finish_span": {
+      "disabled_token": 0,
+      "result_disabled": false,
+      "invalid_ids": false,
+      "buffer_full": false,
+      "duration_clock": "process monotonic",
+      "not_idempotent": true,
+      "requires_single_owner": true
+    },
+    "bounds": {
+      "buffer_capacity_min": 1,
+      "buffer_capacity_max": 65536,
+      "dropped_count_saturates_at": 2147483647
+    }
+  },
+  "phase_ids": {
+    "phase_function_call": 100,
+    "phase_http_client": 200,
+    "phase_http_server": 201,
+    "phase_tcp_connect": 300,
+    "phase_tcp_read": 301,
+    "phase_tcp_write": 302,
+    "phase_file_read": 400,
+    "phase_file_write": 401,
+    "phase_actor_send": 500,
+    "phase_actor_receive": 501,
+    "phase_actor_await": 502
+  },
+  "future_contract": {
+    "span_kind": [
+      "INTERNAL",
+      "SERVER",
+      "CLIENT",
+      "PRODUCER",
+      "CONSUMER"
+    ],
+    "span_status": [
+      "UNSET",
+      "OK",
+      "ERROR"
+    ],
+    "context": {
+      "trace_id_bytes": 16,
+      "span_id_bytes": 8,
+      "ids_must_be_nonzero": true,
+      "entropy": "cryptographically secure",
+      "wire": [
+        "traceparent",
+        "tracestate"
+      ],
+      "baggage": "explicit allowlist; never automatic",
+      "attached_to": "logical actor/task/continuation, not OS thread"
+    },
+    "scope": "span created by Tracer; separate active-context scope; finish once on normal/error/cancel",
+    "propagation": "inject/extract W3C headers at trust boundary; preserve context across await, actor send/receive, restart generation fencing",
+    "export": "bounded async collector; OTLP exporter optional and capability-gated; no hot-path I/O",
+    "automatic_hooks": [
+      "function annotation",
+      "outbound HTTP",
+      "inbound HTTP",
+      "TCP read/write/connect",
+      "file read/write",
+      "actor send/receive",
+      "await suspend/resume"
+    ],
+    "attribute_policy": "static low cardinality keys; route templates not raw URLs; no credentials, headers, bodies, query strings or raw payloads",
+    "default": "off, opt in and sample; existing core log/debug/perf flags are independent"
+  },
+  "evidence": {
+    "java_guest_test": "NOT_EXECUTED",
+    "java_full_suite": "NOT_EXECUTED",
+    "java_aot": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "distributed_propagation": "NOT_IMPLEMENTED",
+    "otel_export": "NOT_IMPLEMENTED"
+  },
+  "vectors": [
+    {
+      "id": "off",
+      "expect": "no_event",
+      "enabled": false,
+      "correlation_id": 1,
+      "phase_id": 100,
+      "started_ns": 0
+    },
+    {
+      "id": "manual-call",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 100,
+      "started_ns": 1
+    },
+    {
+      "id": "manual-http",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 2,
+      "phase_id": 201,
+      "started_ns": 1
+    },
+    {
+      "id": "manual-net",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 3,
+      "phase_id": 302,
+      "started_ns": 1
+    },
+    {
+      "id": "manual-actor",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 4,
+      "phase_id": 500,
+      "started_ns": 1
+    },
+    {
+      "id": "invalid-correlation",
+      "expect": "no_event",
+      "enabled": true,
+      "correlation_id": -1,
+      "phase_id": 100,
+      "started_ns": 1
+    },
+    {
+      "id": "invalid-phase",
+      "expect": "no_event",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 0,
+      "started_ns": 1
+    },
+    {
+      "id": "invalid-token",
+      "expect": "no_event",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 100,
+      "started_ns": -1
+    },
+    {
+      "id": "saturated",
+      "expect": "dropped",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 201,
+      "started_ns": 1,
+      "buffer_full": true
+    }
+  ]
+}
