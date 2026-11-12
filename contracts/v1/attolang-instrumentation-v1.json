@@ -55,7 +55,29 @@
       "metrics.histogram",
       "log.emit"
     ],
-    "optional_manual_scope": "using telemetry.span(name) as span (proposed, not compiler-verified)"
+    "required_scoped_using": {
+      "syntax": "using telemetry.span(name) as span { body }",
+      "requirement": "MUST_IMPLEMENT",
+      "current_support": "NOT_COMPILER_VERIFIED",
+      "keyword": "using",
+      "import_keyword_distinct": "use",
+      "bound_effect_keyword_distinct": "with",
+      "resource_identity": "sealed_type_checked_scoped_resource_not_name_matched",
+      "cleanup": "nonblocking compiler-owned exactly once while live runtime can retire",
+      "suspension": "allowed for telemetry span guard; live state.read/write loans still restricted",
+      "ownership": "non-sendable actor/execution-bound guard; immutable context is sendable",
+      "disabled": "no heap allocation, clock read, export",
+      "explicit_end": "idempotent; lexical cleanup no-op after end",
+      "negative": [
+        "forged resource",
+        "loan escape",
+        "cross_actor_span_move",
+        "state_write_borrow_await",
+        "cancellation_finalization_race",
+        "double_end",
+        "stale_generation"
+      ]
+    }
   },
   "boundaries": {
     "context_storage": "logical_execution_or_continuation_not_carrier_tls",
@@ -146,7 +168,13 @@
       "probes_do_not_add_guest_visible_effects",
       "tracing_context_and_span_lifetime_across_critical_section",
       "compiler_tail_call_and_routine_direct_call_semantics",
-      "recording_and_sampled_flag_matrix"
+      "recording_and_sampled_flag_matrix",
+      "scoped_using_telemetry_span_grammar_and_effects",
+      "manual_scoped_span_cancellation_await_and_generation",
+      "adaptive_trusted_ir_recompile_and_versioned_dispatch",
+      "adaptive_compiler_refuses_untrusted_source",
+      "jit_quota_and_old_suspended_frame_fencing",
+      "no_jit_uninstrumented_sealed_aot_remains_no_probes"
     ],
     "compiler_runtime": [
       {
@@ -213,6 +241,66 @@
         "id": "native_ffi_limit",
         "mode": "calls",
         "expect": "external native function internals not observed without adapter"
+      },
+      {
+        "id": "using_telemetry_scope_early_return",
+        "mode": "calls",
+        "expect": "one exit, unchanged return, original context restored"
+      },
+      {
+        "id": "using_telemetry_scope_await_migration",
+        "mode": "calls",
+        "expect": "same guard and span retained after continuation resumes on another carrier"
+      },
+      {
+        "id": "using_telemetry_scope_cancel_and_stop",
+        "mode": "calls",
+        "expect": "idempotent nonblocking finalization without stale owner"
+      },
+      {
+        "id": "using_telemetry_scope_disabled",
+        "mode": "none",
+        "expect": "no heap allocation, timestamp read or exporter I/O"
+      },
+      {
+        "id": "using_telemetry_spoofed_identity",
+        "mode": "calls",
+        "expect": "reject forged user method/resource alias"
+      },
+      {
+        "id": "using_telemetry_state_loan_suspension",
+        "mode": "calls",
+        "expect": "reject await with live exclusive state loan even when span scope is allowed"
+      },
+      {
+        "id": "jit_adaptive_recompile",
+        "mode": "adaptive",
+        "expect": "source/ABI identical new immutable function version, new calls traced, old frames safe"
+      },
+      {
+        "id": "jit_old_suspended_frame",
+        "mode": "adaptive",
+        "expect": "old suspended continuation not retroactively instrumented; no double span"
+      },
+      {
+        "id": "jit_disable_ttl_and_quiescence",
+        "mode": "adaptive",
+        "expect": "baseline target restored; code reclaimed after frame quiescence"
+      },
+      {
+        "id": "jit_cross_tenant_rejection",
+        "mode": "adaptive",
+        "expect": "unauthorized trace request rejected without recompile"
+      },
+      {
+        "id": "jit_budget_exhaustion",
+        "mode": "adaptive",
+        "expect": "fail closed with bounded control receipt and unchanged app behavior"
+      },
+      {
+        "id": "jit_sealed_aot_rejection",
+        "mode": "none",
+        "expect": "runtime trace request cannot produce missing probes; no hidden JIT"
       }
     ]
   },
@@ -226,7 +314,7 @@
     "js"
   ],
   "evidence_rule": "exact_head_and_tree_nonzero_steps_real_guest_and_wire_receipts_independent_review",
-  "claims": "Contract-only update to PR #277; no compiler/runtime instrumentation implementation, guest execution, CI evidence or OTel wire interoperability is certified.",
+  "claims": "Design contract only: scoped using tracing REQUIRED by language policy but NOT YET compiler implemented; opt-in JIT adaptive re-instrumentation NOT IMPLEMENTED. No guest code executed, no CI or native AOT proof.",
   "compiler": {
     "no_monkey_patching": true,
     "no_java_agents": true,
@@ -271,6 +359,13 @@
       "full": {
         "probes": "calls_plus_diagnostic_scheduler_allocator",
         "runtime_toggle": true
+      },
+      "adaptive": {
+        "probes": "NONE_INITIAL; trusted typed-IR compilation of selected callable with instrumentation on demand",
+        "runtime_toggle": true,
+        "jit_only": true,
+        "requires": "privileged control, retained SHA-pinned typed IR, executable memory and generation fences",
+        "sealed_aot": false
       }
     },
     "runtime_enabled_by_default": false,
@@ -289,7 +384,39 @@
       "no_exporter_self_instrumentation",
       "exact_one_end_per_admitted_scope_except_process_death",
       "disabled_no_clock_no_format_no_record_alloc"
-    ]
+    ],
+    "runtime_reinstrumentation": {
+      "state": "PROPOSED_NOT_IMPLEMENTED",
+      "strategy": "compile_new_immutable_code_generation_from_pinned_typed_IR",
+      "no_inplace_code_patch": true,
+      "no_java_agent": true,
+      "no_arbitrary_source_or_reflection": true,
+      "no_guest_api_privilege_escalation": true,
+      "scopes": "new_invocations_only; preserve old active suspended frames",
+      "enable_rebuild_without_deployment": "JIT_capable_approved_profile_only",
+      "supported_backends": {
+        "java-truffle-jit": "POTENTIALLY_FEASIBLE_PENDING_INTEGRATION_AND_EXECUTED_PROOF",
+        "llvm-sealed-aot": "NOT_SUPPORTED_WITHOUT_PRECOMPILED_PROBES_OR_NEW_BINARY",
+        "dotnet-native-aot": "NOT_SUPPORTED_WITHOUT_PRECOMPILED_PROBES_OR_NEW_BINARY",
+        "forge-sealed-aot": "NOT_SUPPORTED_WITHOUT_PRECOMPILED_PROBES_OR_NEW_BINARY",
+        "wasm-static": "NOT_SUPPORTED_WITHOUT_REPLACEMENT_MODULE_OR_CUSTOM_APPROVED_JIT",
+        "js": "BACKEND_SPECIFIC_PENDING_VERIFICATION"
+      },
+      "guards": [
+        "authenticated_supervisor_tenant_scope",
+        "source_hash_compiler_version_identity",
+        "type_effect_borrow_state_abi_parity",
+        "bounded_jit_time_cpu_code_cache",
+        "call_target_epoch_fence",
+        "retire_after_active_and_suspended_quiescence",
+        "ttl_and_rate_limit",
+        "admin_receipt_for_policy_change",
+        "forbid_OSR_without_proof"
+      ],
+      "fallback": "NO_SILENT_FALLBACK",
+      "disabled_none": "cannot_dynamically_enable_missing_probes",
+      "hard_realtime": "use_static_dormant_probes_instead_of_jit"
+    }
   },
   "telemetry_configuration": {
     "file": ".ores.pkg.toml",
@@ -319,7 +446,10 @@
     ],
     "requires_privileged_startup_and_export_capability": true,
     "compiler_stripping_is_upper_bound": true,
-    "context_propagation_independent_of_collection": true
+    "context_propagation_independent_of_collection": true,
+    "build_mode": "--instrument=none|boundaries|calls|full|adaptive",
+    "jit_adaptive_opt_in": true,
+    "jit_adaptive_enabled_by_default": false
   },
   "otel_semantics": {
     "kinds": [
