@@ -8,13 +8,13 @@ classes executable or certify any backend. Canonical source traits live in
 ## Native implementation and authority boundary
 
 **Required implementation language:** all public core behavior, traits, actor
-bases, and hosted actor policies must be native AttoLang \`.atto\` code.
+bases, and hosted actor policies must be native AttoLang `.atto` code.
 Java/LLVM/Wasm/Forge/.NET may provide compiler lowering, schedulers, memory
 isolation, trusted capability minting and nonblocking device adapters; their
 host-side classes must **not** be represented as completed guest base classes.
 
-The machine-readable \`native_actor_policy\` contract in
-\`contracts/v1/core-actor-foundation-v1.json\` is validated by a separate
+The machine-readable `native_actor_policy` contract in
+`contracts/v1/core-actor-foundation-v1.json` is validated by a separate
 fail-closed test suite with adversarial authority and permission mutations.
 That is a **source-only gate**, not a compiler/runtime enforcement mechanism.
 A future compiled guest base must pass the same requirements independently.
@@ -24,7 +24,7 @@ name nor implementing any ordinary trait mints supervisor CONTROL, ActorRef,
 Channel, mailbox identity, a reply capability, or process/network permission**.
 Only the runtime may authenticate the actual supervisor relationship, actor
 incarnation, code image, capabilities and priority CONTROL destination.
-Private \`init\` and \`receive\` are compiler-bound runtime ingress, not public
+Private `init` and `receive` are compiler-bound runtime ingress, not public
 or guest-reflectable members.
 
 ## Library boundary
@@ -76,22 +76,22 @@ introducing a new privileged `SerialHttpActor` base.
 
 ## Mailbox, CONTROL and sealed-state requirements
 
-Actor mailboxes are channels with bounded admission. \`send_async\` may suspend
+Actor mailboxes are channels with bounded admission. `send_async` may suspend
 the **Atto task** on full capacity but cannot park an ActorRuntime carrier;
-\`try_send\` is a nonblocking admission API that must distinguish committed,
+`try_send` is a nonblocking admission API that must distinguish committed,
 backpressured and closed outcomes. A rejected or cancelled admission must not
 retain message ownership or leak quota. Dispatch, close, restart, cancellation
 and pending futures require exactly-once accounting and generation fencing.
 
-Every effective actor turn is serialized. Checked \`critical-read\` and
-\`critical-write\` lend state only inside their scoped callback; the loan may
-not cross \`await\` or escape into a closure, mailbox payload or returned view.
-A valid \`ActorMail<T>\` envelope is **not** a sender capability. \`ActorId\`
-is an immutable identifier, not an \`ActorRef\`. Guest-visible \`Service\`
+Every effective actor turn is serialized. Checked `critical-read` and
+`critical-write` lend state only inside their scoped callback; the loan may
+not cross `await` or escape into a closure, mailbox payload or returned view.
+A valid `ActorMail<T>` envelope is **not** a sender capability. `ActorId`
+is an immutable identifier, not an `ActorRef`. Guest-visible `Service`
 conformance cannot create a request/reply endpoint.
 
 The supervisor's priority CONTROL is authenticated outside the user mailbox.
-A forged guest CONTROL message, inherited method, user-defined \`Supervisor\`
+A forged guest CONTROL message, inherited method, user-defined `Supervisor`
 trait, or structural match may never authorize supervision. Child panic must
 reach the trusted parent supervisor; the panicking actor may not intercept it.
 On retirement and hot-reload, stale references and pending callbacks cannot
@@ -145,15 +145,15 @@ an acceptable implementation.
 
 ## Implementation gate for native base actor classes
 
-The next real compiler milestone is a *native* \`Actor\` contract exercising
-\`declare actor\`, sealed state, private runtime \`external mtd init/receive\`,
-checked \`critical\` turns, \`spawn\`, bounded channel sends and clean retirement
-on an actual \`.atto\` guest. The existing Java source-level actor experiments
+The next real compiler milestone is a *native* `Actor` contract exercising
+`declare actor`, sealed state, private runtime `external mtd init/receive`,
+checked `critical` turns, `spawn`, bounded channel sends and clean retirement
+on an actual `.atto` guest. The existing Java source-level actor experiments
 are intentionally closed-world and must not be generalized by a host-class
-shortcut. \`SupervisorActor\` follows only after runtime-authenticated parent
-CONTROL and restart receipts; \`ServiceActor<Request,Reply>\` follows only after
+shortcut. `SupervisorActor` follows only after runtime-authenticated parent
+CONTROL and restart receipts; `ServiceActor<Request,Reply>` follows only after
 typed reply ownership and terminal settlement are compiler-checked. Hosted
-\`HttpActor\`/\`TcpActor\`/\`ChildProcManager\` then compose verified native
+`HttpActor`/`TcpActor`/`ChildProcManager` then compose verified native
 policy with independently permission-gated nonblocking providers.
 
 ## Merge gates
