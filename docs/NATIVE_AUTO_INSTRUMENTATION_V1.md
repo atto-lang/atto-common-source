@@ -175,8 +175,11 @@ Required backend evidence includes:
 This section refines the initial proposal with the 2026-11-12 automatic-
 instrumentation design. Its detailed requirements take priority over vague
 examples above; it does **not** certify implementation. In particular
-`using telemetry.span(...)` is **illustrative non-normative syntax**; do not
-introduce a new `using` language construct merely for instrumentation.
+`using telemetry.span(...) as span { ... }` is a **normative proposed
+scoped-resource construct**, reusing AttoLang's existing `using` keyword;
+it MUST NOT be deferred as optional pseudo-syntax. The compiler and language
+spec must specify this spelling and its cleanup, ownership, suspension and
+failure behavior before executable support is claimed.
 
 **Three independent producers share one versioned span/event ABI:**
 
@@ -341,3 +344,158 @@ See also:
 [OTel messaging conventions](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/),
 [OTLP exporter](https://opentelemetry.io/docs/specs/otel/protocol/exporter/)
 and [W3C Trace Context](https://www.w3.org/TR/trace-context/).
+
+
+## v1 amendment: first-class `using` scopes and live JIT instrumentation
+
+**Decision (2026-11-12):** `using` is already an AttoLang keyword. Make the
+scoped resource form **normative source grammar** rather than an illustrative
+host-style pseudo-language. It is a general resource construct; instrumentation
+uses it, but does not own the keyword. Canonical illustrative Atto:
+
+```atto
+use namespace ores.std.telemetry;
+
+pub fnc checkout(Order order): Result<Receipt, Error> {
+    using telemetry.span("checkout") as span {
+        span.set_attribute("order.type", order.kind);
+        return process_order(order)?;
+    }
+}
+```
+
+### Grammar and lifecycle
+
+Target EBNF (subject to alignment with the existing `using` grammar):
+`using_stmt := "using" expression "as" identifier block`.
+`block` is the existing Atto brace-form lexical block. There is **no new
+keyword**, decorator, macro, or implicit import. Evaluate the resource
+expression exactly once, respecting ordinary typing/ownership/effects; bind
+the resource to `span` only in the body. Acquiring an invalid or failing
+resource obeys the ordinary expression's error semantics and does not run
+the body or a cleanup for an unacquired resource.
+
+`using` checks a nominal/trait-like **ScopedResource** protocol with
+compiler-verifiable deterministic `close_scope` behavior. Exact trait syntax
+and implementation naming are a language-spec gate; do not claim they are
+accepted now. Its `close_scope` runs **exactly once on each acquired
+resource** after the body's normal fallthrough, `return`, `?`, `trap`,
+`throw`, `raise`, `panic`, cancellation, and task unwinding.
+`using` is a cleanup barrier for tail calls. Lexical exit closes the span;
+**suspension is not exit**. The scope token and parent trace context survive
+`await`, `select`, continuation migration, and permitted async operations
+without leaving a mutable cross-thread global. The binding cannot escape its
+scope, be copied as an owner, or cross actor boundaries; a child may inherit
+only permitted immutable trace context.
+
+Unlike a general resource finalizer that may itself have specified fallible
+effects, a telemetry `SpanScope.close_scope` is **non-throwing and
+non-suspending**. Trace recording failures are swallowed and accounted by
+bounded telemetry diagnostics. Cancellation and panic cleanup MUST NOT
+intercept or convert the actor's CONTROL/panic notice or other guest errors.
+If no recording is enabled, `telemetry.span` provides an allocation-free,
+clock-free no-op scope. User expressions passed as arguments or attributes
+still evaluate normally; the compiler cannot drop their side effects merely
+because telemetry is off. Expensive dynamic attributes can be guarded with
+`span.is_recording()`.
+
+Manual `using` spans integrate with the same active context and native
+collector as automatic probes; a manual span must not cause automatic
+HTTP semantic spans to duplicate. A parent span should remain valid when
+sampling yields non-recording context.
+
+### Live instrumentation: distinguish **enable** from **add**
+
+**Mode A — runtime enable of precompiled probe sites:** in
+`--instrument=boundaries` or `functions` builds, enable the existing
+fixed-ID probes from an authorized runtime control endpoint, without process
+restart, new code or runtime executable-memory write. `none` has **no
+precompiled optional probe sites**. Even with telemetry off, trace-capable
+binaries carry small branch/metadata costs. Full AOT should prefer this path.
+
+**Mode B — JIT/Truffle dynamic probe attachment:** if an Atto guest is running
+under a truly JIT-capable Truffle language implementation, the Atto host can
+use the native `Instrumenter` execution-event API or a dynamically
+configurable Truffle Bytecode DSL instrumentation table. Enable tags and
+per-call-site native instrumentation from an **authorized control-plane
+operation**, deoptimize/invalidate affected optimized code safely, and
+recompile/tier it with the new probes. This is language/runtime-managed
+instrumentation, **not** Java agent attachment, monkey patching or
+application object mutation. It requires retained instrumentable AST or
+bytecode, stable source/tag mappings, and preinstalled trusted runtime
+instrumentation support. JIT availability alone does not prove that Atto's
+current compiler has the required tags and control plane.
+
+**Mode C — dynamic hot-loading of a validated precompiled code generation:**
+for governed module-hot-load profiles, a signed/preauthorized replacement
+module may be compiled *outside* the process with probe sites and hot-loaded
+using the existing generation-safe module switching model. This may avoid a
+**process** restart but is a **code generation deployment**, not magically
+injecting probes into previously stripped AOT functions. In-flight calls
+complete on their original code generation unless an explicitly verified
+safepoint migration is supported. Full, sealed, closed-world AOT must reject
+arbitrary new guest JIT code and unauthorized runtime executable modification.
+
+**Unsupported case:** a `--instrument=none` fully-AOT closed binary with
+no instrumentation slots, no allowed dynamic-loader surface and no code
+generation capability cannot start function tracing purely by flipping a
+runtime flag. External eBPF/system profiling may reveal OS/network/system
+behaviors but cannot guarantee Atto semantic function/actor spans, or replace
+Atto's immutable continuation trace context.
+
+### Backend capability targets (NOT IMPLEMENTED)
+
+| Backend/profile | Runtime enable built-in probes | Late add **new** call probes | Constraint |
+| --- | --- | --- | --- |
+| Java/Graal Truffle JIT | Target yes | **Possible** via Truffle instrumentation/tagged nodes + invalidation/recompile | Must implement, register and verify Atto tags, deoptimization and control-plane authorization |
+| Java/Graal full guest AOT | Target yes if compiled in | No arbitrary JIT | Use precompiled probes or separately governed signed hot-loading if allowed |
+| LLVM native full AOT | Target yes if compiled in | No spontaneous new function probes | Precompiled sites / validated module replacement only; compiler needs explicit patch-point or indirection design |
+| Forge JIT-capable profile | Target yes | Conditional on its implemented IR/tiering and retention | Separate engine proof; do not presume Java Truffle behavior |
+| Forge sealed AOT | Target yes if compiled in | No arbitrary JIT | Same full-AOT rules as LLVM |
+| .NET Native AOT | Target yes if compiled in | No arbitrary managed JIT | Must not rely on CLR runtime codegen/reflection |
+| Wasm precompiled module | Target yes if built in | No generic arbitrary module mutation | New verified module instance/generation where host permits; no JS monkey patching |
+
+**Control plane contract:** privileged `telemetry.enable`,
+`telemetry.disable`, `telemetry.set_filter`, and
+`telemetry.snapshot_status` operations are proposed, not presently
+implemented Atto APIs. Reconfiguration MUST be authorized, budgeted,
+audited, rate-limited, generation-fenced and coordinated at safe points.
+It cannot widen the program's filesystem/network authorities, acquire actor
+state, delay supervisor CONTROL, or induce unbounded JIT churn. A dynamic
+activation reports whether it enabled existing probes, attached new JIT
+probes, or required a new code generation. Avoid claiming coverage of
+**already executed frames**: start spans on subsequent function entries;
+never fabricate timestamps or replay operations. Handle in-flight spans
+during disable/enable by retained generation tokens and idempotent cleanup;
+an off transition stops new recording and may drain or discard outstanding
+spans under explicit bounded policy.
+
+### Test gates (source-only proposal)
+
+- Parser/typechecker: valid existing `using` with `as` and braces, wrong
+  resource type, malformed binder, duplicate/shadowed names, escaping scope
+  token and illegal borrow/actor transfer.
+- Runtime: exactly-once `close_scope` on fallthrough, early `?`, normal
+  `return`, trap/throw/raise/panic/cancel, `await`/select and hot-reload
+  actor generation transitions. Confirm only one cleanup on duplicate
+  cancellation notifications; span collector failure changes no guest result.
+- Truffle JIT: same artifact, tracing off => attach event filter while
+  application runs => real function calls generate spans => detach =>
+  subsequent calls stop; prove source tags/IDs and deopt/recompilation,
+  logical parentage and overhead, and enforce backpressure with a small
+  sample/filter budget. Must not be scored from an unexecuted host example.
+- AOT: compile `none` and `boundaries`; enabling tracing on `none`
+  must report `instrumentation_unavailable` (no fabricated spans);
+  enabling probes on `boundaries` works without JIT. Signed hot-loaded
+  module tests require explicit permission and generation fencing.
+- Security: denial of control plane access, unsupported runtime type,
+  invalid filter, nested telemetry recursion, exporter egress denial and
+  remote untrusted traceparent cannot bypass budget/capability gates.
+
+Implementation is independently gated per backend and compilation profile.
+Java/Truffle's documented runtime instrumentation support demonstrates
+feasibility, **not that AttoLang already exposes it**.
+
+References:
+[Truffle Instrumenter](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/instrumentation/Instrumenter.html),
+[Truffle Bytecode DSL Instrumentation](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/bytecode/Instrumentation.html).
