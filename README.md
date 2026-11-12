@@ -81,6 +81,8 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Migration roadmap and acceptance gates](docs/ROADMAP.md)
 - [Decisions, non-goals and unresolved choices](docs/DECISIONS.md)
 
+- [AttoLang instrumentation API v1](docs/INSTRUMENTATION_API_V1.md) — native core/std span timing, function/HTTP/TCP/I-O/actor phase IDs, W3C propagation design, and strict execution gates (partial Java proposal; no distributed-tracing parity claim).
+
 ## Decision status
 
 **Agreed direction:** keep Java/Graal and LLVM separate now; use this repository for future shared HIR → MIR work.
