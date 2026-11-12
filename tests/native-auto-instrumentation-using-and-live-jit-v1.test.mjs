@@ -113,3 +113,40 @@ test("portable .atto lexical span fixtures have pinned source-only oracles", () 
     assert.equal(item.expected_exit, 0);
   }
 });
+
+test("scoped SpanScope compiler target distinguishes executable subset from full parity", () => {
+  const parity = c.scoped_span_parity_v1;
+  assert.equal(parity.status, "PARTIAL_EXECUTED_LLVM_NO_FULL_PARITY");
+  assert.equal(parity.portable_target.factory, "trusted_stdlib_telemetry_span");
+  assert.equal(parity.portable_target.resource_type, "opaque_linear_SpanScope");
+  assert.equal(parity.portable_target.factory_evaluated_once, true);
+  assert.equal(parity.portable_target.scope_name_does_not_escape, true);
+  assert.equal(parity.portable_target.cleanup_exactly_once, true);
+  assert.equal(parity.portable_target.cleanup_nonthrowing, true);
+  assert.equal(parity.portable_target.cleanup_nonsuspending, true);
+  assert.equal(parity.portable_target.continuation_owns_scope_across_await, true);
+  assert.equal(parity.portable_target.thread_local_context_is_not_authority, true);
+  assert.equal(parity.portable_target.guest_cannot_enable_host_probes, true);
+  assert.equal(parity.backend_slices.java.status, "SOURCE_IMPLEMENTED_NOT_EXECUTED");
+  assert.equal(parity.backend_slices.llvm.status, "EXECUTED_NONSUSPENDING_SUBSET_ONLY");
+  for (const name of ["forge", "net", "wasm"])
+    assert.equal(parity.backend_slices[name].status, "NOT_IMPLEMENTED_NOT_EXECUTED");
+});
+
+test("LLVM native subset has exact executable receipt, not invented all-backend status", () => {
+  const receipt = c.scoped_span_parity_v1.execution_evidence;
+  assert.match(receipt.source_pr_head, /^[a-f0-9]{40}$/);
+  assert.equal(receipt.source_blobs_verified, 47);
+  assert.equal(receipt.full_git_tree_mirrored, false);
+  assert.equal(receipt.source_carrier_approved, true);
+  assert.equal(receipt.run_conclusion, "success");
+  assert.match(receipt.carrier_run, /^https:\/\/github\.com\/streempilot-test\/browser-studio-e2e\/actions\/runs\/[0-9]+$/);
+  assert.equal(receipt.guest_positive_cases, 3);
+  assert.equal(receipt.guest_negative_cases, 5);
+  assert.deepEqual(receipt.clang_optimization_levels, ["O0", "O2"]);
+  assert.equal(receipt.full_backend_matrix_certified, false);
+  // Do not upgrade source-only/five-backend contract execution on the basis
+  // of a verified limited native-LLVM guest test.
+  for (const status of Object.values(c.evidence.backend_execution_status))
+    assert.equal(status, "NOT_EXECUTED");
+});
