@@ -82,8 +82,12 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
                "test_defined_nominal_class_not_trusted_runtime_intrinsic");
   assert.equal(backends.java_graal.operation_argument,
                "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
-  assert.equal(backends.java_graal.source_scope_test_methods, 19);
-  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 20);
+  assert.equal(backends.java_graal.source_scope_test_methods, 21);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 22);
+  assert.equal(backends.java_graal.suspension,
+               "syntactic_await_yield_select_task_denied_unverified_transitive_effects");
+  assert.equal(backends.java_graal.unwind,
+               "throw_raise_panic_parser_denied_not_execution_proven");
   assert.equal(backends.java_graal.test_evidence.runtime_execution, "NOT_EXECUTED");
   assert.equal(backends.java_graal.test_evidence.source_ci_failure_reason,
                "JOB_ADMISSION_ZERO_STEPS");
