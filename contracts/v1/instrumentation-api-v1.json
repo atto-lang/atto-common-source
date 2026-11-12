@@ -121,7 +121,9 @@
     "zero_code_guest_end_to_end": "NOT_EXECUTED",
     "scoped_using_java_guest": "NOT_EXECUTED",
     "java_runtime_probe_gate_test": "NOT_EXECUTED",
-    "auto_otel_e2e": "NOT_IMPLEMENTED"
+    "auto_otel_e2e": "NOT_IMPLEMENTED",
+    "native_std_telemetry_guest": "NOT_EXECUTED",
+    "llvm_trace_policy_ctest": "NOT_EXECUTED"
   },
   "vectors": [
     {
@@ -310,7 +312,7 @@
     }
   },
   "scoped_using": {
-    "status": "JAVA_PARSER_LOWERING_PROPOSED_GUEST_TESTS_NOT_EXECUTED",
+    "status": "JAVA_PARSER_AND_NATIVE_NOOP_MODULE_AUTHORED_GUEST_TESTS_NOT_EXECUTED",
     "spelling": "using telemetry.span(name) as span { body }",
     "compatibility": "retains existing contextual using resource.borrow() as view and does not repurpose using effect declarations",
     "compiler_ast": "lexical BlockStmt with single-evaluation binding and checked TryStmt finally closing span.end()",
@@ -325,15 +327,14 @@
       "return type and guest-visible effects unchanged"
     ],
     "current_limitations": [
-      "parser sugar currently accepts identifier telemetry with method span and lowers into existing finally;",
-      "native std.telemetry Span type and nonthrowing protocol checks not implemented",
-      "runtime context activation and telemetry collector not implemented",
-      "real guest tests authored, not executed",
-      "LLVM lowering not implemented"
+      "Java parser currently lowers exact telemetry.span(...) as a binding plus try/finally; trusted SpanScope type/provenance is not yet checked",
+      "native ores.std/telemetry.atto no-op Span provider added with span() and span(name) and idempotent end(); real guest tests authored but NOT_EXECUTED",
+      "automatic runtime context activation/restoration and asynchronous collector/OTLP export NOT_IMPLEMENTED",
+      "LLVM frontend and source guest lowering NOT_IMPLEMENTED"
     ]
   },
   "dynamic_activation": {
-    "status": "JAVA_GRAAL_HOST_GATE_IMPLEMENTED_AS_UNINTEGRATED_FOUNDATION_TESTS_NOT_EXECUTED",
+    "status": "JAVA_GRAAL_HOST_GATE_AND_LLVM_ATOMIC_GATE_AUTHORED_NOT_INTEGRATED_OR_GUEST_VERIFIED",
     "no_redeploy_if": "all desired sites pre-emitted, or JIT enabled with retained validated HIR/MIR and ability to compile new instrumented bodies",
     "no_monkey_patching": true,
     "allowed_mechanisms": [
