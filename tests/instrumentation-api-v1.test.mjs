@@ -247,3 +247,23 @@ test('bounded POST transport and native .atto OTLP JSON source are partial, with
   }
   assert.equal(contract.e2e_http_actor_client_otlp.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
 });
+
+test('audited hardening evidence never upgrades source-free private runner to source authorization', () => {
+  const audit = contract.audit_hardening_2026_11_12;
+  assert.equal(audit.source_free_private_runner.conclusion, 'SUCCESS');
+  assert.ok(audit.source_free_private_runner.executed_steps >= 1);
+  assert.equal(audit.source_free_private_runner.source_transferred, false);
+  assert.match(audit.security_policy.source_transfer, /NOT_PERFORMED/);
+  assert.match(audit.security_policy.java, /NOT authorized/);
+  assert.match(audit.security_policy.llvm, /do not authorize/);
+  assert.match(audit.java_local.w3c_blob, /^[0-9a-f]{40}$/);
+  assert.match(audit.java_local.semantic_buffer_blob, /^[0-9a-f]{40}$/);
+  assert.equal(audit.java_local.assertions, 8026);
+  assert.match(audit.java_local.result, /PASS/);
+  assert.match(audit.java_local.limitations, /not full Java compiler/);
+  assert.equal(audit.llvm_local.compilers.length, 2);
+  assert.match(audit.llvm_local.result, /ASan\/UBSan/);
+  assert.equal(audit.full_atto_guest_and_otel, 'NOT_EXECUTED');
+  assert.equal(contract.evidence.java_native_actor_otlp_post_guest, 'NOT_EXECUTED');
+  assert.equal(contract.e2e_http_actor_client_otlp.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
+});
