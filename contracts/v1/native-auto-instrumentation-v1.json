@@ -50,7 +50,17 @@
     "capture_request_bodies": false,
     "capture_arbitrary_headers": false,
     "capture_sql_bindings": false,
-    "capture_guest_objects": false
+    "capture_guest_objects": false,
+    "propagation": "off",
+    "capture_trace_baggage": false,
+    "capture_file_paths": false,
+    "probe_self_exclusion": [
+      "collector_actor",
+      "otlp_exporter_actor",
+      "raw_export_transport",
+      "sampling_clock",
+      "trace_allocator"
+    ]
   },
   "hooks": [
     {
@@ -135,6 +145,42 @@
       "id": 60,
       "name": "collector.drop",
       "kind": "internal",
+      "profile": "boundaries"
+    },
+    {
+      "id": 14,
+      "name": "channel.send",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 15,
+      "name": "channel.receive",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 16,
+      "name": "fs.operation",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 17,
+      "name": "critical.contention",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 18,
+      "name": "supervisor.restart",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 19,
+      "name": "io.submit",
+      "kind": "boundary",
       "profile": "boundaries"
     }
   ],
@@ -319,6 +365,182 @@
         "new_host_imports": 0,
         "fail_closed_if_unavailable": true
       }
+    },
+    {
+      "id": "propagation-only",
+      "build": "boundaries",
+      "runtime": "off",
+      "operation": "runtime_off_propagation_on",
+      "expect": {
+        "span_records": 0,
+        "clock_reads": 0,
+        "trace_headers_admitted_only": true
+      }
+    },
+    {
+      "id": "sdk-disabled",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "OTEL_SDK_DISABLED=true",
+      "expect": {
+        "span_records": 0,
+        "exports": 0,
+        "explicit_propagator_unaffected": true
+      }
+    },
+    {
+      "id": "untrusted-sampled",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "remote_traceparent_sampled_with_no_egress_permission",
+      "expect": {
+        "recorded_spans_bounded": true,
+        "network_exports": 0,
+        "remote_flag_grants_permission": false
+      }
+    },
+    {
+      "id": "parentbased-sampling",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "local_and_remote_parent_plus_root",
+      "expect": {
+        "span_context_preserved": true,
+        "sampled_distinct_from_is_recording": true,
+        "whole_trace_consistency": true
+      }
+    },
+    {
+      "id": "http-semantic-dedup",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "http_handler_with_function_probe",
+      "expect": {
+        "server_spans": 1,
+        "additional_function_span_possible": true,
+        "duplicate_server_semantic_span": false
+      }
+    },
+    {
+      "id": "critical-guard",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "critical_write_under_contention",
+      "expect": {
+        "borrow_or_lock_acquired_by_probe": false,
+        "probe_awaits": 0,
+        "metric_bounded": true
+      }
+    },
+    {
+      "id": "exporter-unsupported-io",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "strict_backend_without_async_export_provider",
+      "expect": {
+        "worker_blocking_fallback": false,
+        "network_exports": 0,
+        "application_continues": true
+      }
+    },
+    {
+      "id": "otel-config",
+      "build": "boundaries",
+      "runtime": "off",
+      "operation": "OTEL_EXPORTER_OTLP_ENDPOINT_present_while_runtime_off",
+      "expect": {
+        "enabled_spans": 0,
+        "auto_enable": false,
+        "collector_network_requests": 0
+      }
+    },
+    {
+      "id": "scope-early-exit",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "guest_return_trap_throw_raise_panic_cancel",
+      "expect": {
+        "exactly_one_terminal_transition": true,
+        "guest_effects": "unchanged",
+        "scope_generation_fenced": true
+      }
+    },
+    {
+      "id": "collector-recursion",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "collector_sends_otlp_over_std_network",
+      "expect": {
+        "nested_auto_span_count": 0,
+        "bounded_exporter_activity": true,
+        "recording_does_not_recurse": true
+      }
+    },
+    {
+      "id": "fs-privacy",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "std_fs_read_async",
+      "expect": {
+        "path_text_collected": false,
+        "span_or_metric_follows_policy": true,
+        "io_semantics": "unchanged"
+      }
+    },
+    {
+      "id": "mailbox-migration",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor_continuation_migrated_between_os_carriers",
+      "expect": {
+        "same_logical_trace_context": true,
+        "thread_local_not_required": true,
+        "actor_private_state_not_read": true
+      }
+    },
+    {
+      "id": "restart-fencing",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor_supervisor_restart_and_hot_upgrade",
+      "expect": {
+        "old_scope_reactivation": false,
+        "supervisor_control_blocked": false,
+        "span_end_idempotent": true
+      }
+    },
+    {
+      "id": "message-batch-fanout",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "nats_kafka_rabbitmq_batch_adapter",
+      "expect": {
+        "uses_links_for_multiple_causes": true,
+        "actor_payload_unmodified": true,
+        "operation_kinds_follow_messaging_semconv": true
+      }
+    },
+    {
+      "id": "build-reproducibility",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "identical_source_compiler_flags_and_manifest",
+      "expect": {
+        "descriptor_identity_deterministic": true,
+        "no_runtime_reflection": true,
+        "registration_static": true
+      }
+    },
+    {
+      "id": "default-no-wire-change",
+      "build": "boundaries",
+      "runtime": "off",
+      "operation": "runtime_off_and_propagation_off",
+      "expect": {
+        "injected_trace_headers": 0,
+        "export_attempts": 0,
+        "guest_effects": "unchanged"
+      }
     }
   ],
   "evidence": {
@@ -343,5 +565,99 @@
       "forge": "NOT_EXECUTED",
       "net": "NOT_EXECUTED"
     }
+  },
+  "architecture_v1_reconciliation": {
+    "target_public_core": "ores.core.trace",
+    "target_public_std": "ores.std.telemetry",
+    "public_grammar": "no_new_keyword_required",
+    "producers": [
+      "typed_compiler_mir",
+      "trusted_actor_scheduler_runtime",
+      "registered_native_atto_stdlib"
+    ],
+    "common_abi": "versioned_fixed_id_typed_nonthrowing_nonsuspending",
+    "semantic_probe_deduplication": true,
+    "scope_terminal_paths": [
+      "return",
+      "question_early_exit",
+      "trap",
+      "throw",
+      "raise",
+      "panic",
+      "cancel",
+      "preempt",
+      "unwind"
+    ],
+    "scope_reclamation": "exactly_once_with_generation_fence",
+    "descriptor_id": "stable_for_identical_artifact_input",
+    "context_storage": "immutable_envelope_and_continuation_not_tls_or_guest_payload",
+    "non_recording_context_propagates": true,
+    "recording_and_sampled_distinct": true,
+    "sampling": "otel_parentbased_root_sampler_and_local_rate_cap",
+    "untrusted_remote_sampled_flag_is_not_permission": true,
+    "propagation_separate_from_recording": true,
+    "no_new_trace_headers_when_default_off": true,
+    "tracing_off_does_not_implicitly_disable_explicit_propagators": true,
+    "no_implicit_default_exporter": true,
+    "no_default_new_io_permissions": true,
+    "std_implementation_language": ".atto_when_expressible",
+    "producer_and_exporter_recursion_prevented": true,
+    "collector_transport": "nonblocking_bounded_async_actor",
+    "strict_io": "fail_closed_if_no_nonblocking_provider",
+    "otlp_initial_protocol": "http/protobuf",
+    "hard_real_time": "compile_none_or_prove_bounded_probes",
+    "excludes_automatic_native_ffi_introspection": true
+  },
+  "otel_environment": {
+    "variables": [
+      "OTEL_SERVICE_NAME",
+      "OTEL_RESOURCE_ATTRIBUTES",
+      "OTEL_SDK_DISABLED",
+      "OTEL_TRACES_SAMPLER",
+      "OTEL_TRACES_SAMPLER_ARG",
+      "OTEL_PROPAGATORS",
+      "OTEL_TRACES_EXPORTER",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_EXPORTER_OTLP_PROTOCOL"
+    ],
+    "semantics": "compatible_with_otel_sdk_environment_spec_when_supported",
+    "interpret_once_per_runtime_start": true,
+    "precedence": [
+      "capability_denial",
+      "sdk_disabled_for_recording_export_only",
+      "explicit_atto_cli",
+      "otel_sdk_environment_for_enabled_sdk",
+      "atto_package_defaults"
+    ],
+    "endpoint_alone_enables_tracing": false,
+    "sdk_disabled_implicitly_disables_propagators": false,
+    "unsupported_configuration": "fail_closed"
+  },
+  "capability_policy": {
+    "traces_require_runtime_enable": true,
+    "network_export_requires_explicit_host_permission": true,
+    "emitter_may_not_suspend": true,
+    "emitter_may_not_throw_or_panic": true,
+    "emitter_may_not_execute_guest_callbacks": true,
+    "emitter_no_per_event_allocation_when_disabled": true,
+    "memory_is_bounded": true,
+    "exporter_errors_are_isolated": true
+  },
+  "package_configuration_target": {
+    "implemented": false,
+    "proposed_keys": [
+      "telemetry.enabled",
+      "telemetry.instrumentation",
+      "telemetry.sampling_rate",
+      "telemetry.auto.functions",
+      "telemetry.auto.http",
+      "telemetry.auto.network",
+      "telemetry.auto.database",
+      "telemetry.auto.actors",
+      "telemetry.auto.tasks",
+      "telemetry.auto.channels",
+      "telemetry.auto.filesystem",
+      "telemetry.export.protocol"
+    ]
   }
 }
