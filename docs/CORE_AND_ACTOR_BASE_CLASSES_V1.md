@@ -60,7 +60,7 @@ runtime capabilities. These are **candidates**, not verified definitions.
 
 1. **Actor** (existing actor language intrinsic): implicit base of inline
    `define actor` and out-of-line `declare actor`, runtime-owned mailbox,
-   heap and effective serialized turns. No explicit `extends Actor` needed.
+   heap and bounded concurrent turns. `serial actor` admits at most one active guest turn. No explicit `extends Actor` needed.
 2. **SupervisorActor** (proposed compiler/runtime-checked base): legitimate
    supervision identity and private CONTROL hooks, policy admission, restart
    ordering and escalation to parent supervisors. No actor may intercept its
@@ -83,7 +83,11 @@ backpressured and closed outcomes. A rejected or cancelled admission must not
 retain message ownership or leak quota. Dispatch, close, restart, cancellation
 and pending futures require exactly-once accounting and generation fencing.
 
-Every effective actor turn is serialized. Checked `critical-read` and
+Ordinary actors may have multiple concurrent effective turns. Only `serial actor`
+limits guest execution to one active turn at a time; configured physical carrier
+counts may be lower than permitted logical concurrency. Compatible immutable
+`critical-read` loans may overlap when the backend supports them; every
+`critical-write` excludes conflicting readers and writers. Checked `critical-read` and
 `critical-write` lend state only inside their scoped callback; the loan may
 not cross `await` or escape into a closure, mailbox payload or returned view.
 A valid `ActorMail<T>` envelope is **not** a sender capability. `ActorId`
@@ -96,6 +100,29 @@ trait, or structural match may never authorize supervision. Child panic must
 reach the trusted parent supervisor; the panicking actor may not intercept it.
 On retirement and hot-reload, stale references and pending callbacks cannot
 admit messages into a new generation.
+
+## Actor-local task execution and continuation ownership
+
+Tasks spawned within an actor must be scheduled on its **own actor task executor**
+(or an explicitly authorized actor-pool executor), **never** on the supervisor's
+trusted CONTROL execution pool. The actor may share physical worker threads
+with other ordinary actors only when ownership, quotas and isolation permit;
+this does not delegate scheduler authority to the child.
+
+An `await`, mailbox backpressure or cancellation suspends an **Atto
+continuation**, not the physical runtime carrier. The continuation retains
+actor ID, incarnation, generation and immutable code-image identity through
+resumption and hot loading. Physical carrier migration is permitted only after
+that identity is revalidated; a retired actor cannot resume tasks or publish
+outputs into a successor generation. Stop/cancel/restart waits for physical
+callback quiescence and performs bounded quota refund / terminal future
+settlement exactly once. No state borrow may escape its critical scope, be
+captured by a child task, or cross suspension.
+
+These requirements have **no compiled Atto actor-task proof** in this
+source-only branch. Java and LLVM must independently demonstrate real guest
+actor tasks, concurrent readers, exclusive writers, cancellation races and
+CONTROL isolation on their own compiler/runtime paths.
 
 ## Hosted actor adapters (candidate classes in ores.std)
 
