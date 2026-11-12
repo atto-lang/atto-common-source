@@ -1,6 +1,6 @@
 {
   "schema": "attolang.instrumentation.v1",
-  "status": "PARTIAL_JAVA_SEMANTIC_SPAN_STAGING_NATIVE_ATTO_BATCH_AND_VERIFIED_EXACT_BLOB_HOST_SMOKES_NO_GUEST_OTLP",
+  "status": "PARTIAL_JAVA_BOUNDED_POST_AND_NATIVE_ATTO_OTLP_ENCODER_ACTOR_FIXTURE_UNVERIFIED_NO_E2E",
   "version": 1,
   "layers": {
     "ores.core/diagnostics": {
@@ -132,7 +132,11 @@
     "java_inbound_w3c_context_test": "NOT_EXECUTED",
     "java_host_trace_composition_test": "NOT_EXECUTED",
     "llvm_native_semantic_staging_ctest": "NOT_EXECUTED",
-    "llvm_guest_semantic_spans": "NOT_IMPLEMENTED"
+    "llvm_guest_semantic_spans": "NOT_IMPLEMENTED",
+    "java_post_transport_host_test": "NOT_EXECUTED",
+    "java_post_guest_loopback_test": "NOT_EXECUTED",
+    "java_native_otlp_json_codec_guest": "NOT_EXECUTED",
+    "java_native_actor_otlp_post_guest": "NOT_EXECUTED"
   },
   "vectors": [
     {
@@ -400,12 +404,12 @@
     ],
     "forbidden_shortcut": "synthetic trace fixtures, source-free checkers, Java-only fake userland spans and zero-step Actions never count as E2E PASS",
     "blockers": [
-      "no JDK25/Graal optimizing execution of this branch's new native .atto tests or HTTP wire oracles (source org CI runner admission failures)",
-      "missing trusted no-throw scoped SpanScope typecheck and active logical manual span binding across await",
-      "SemanticTraceBuffer is bounded host staging only; runtime-to-native-Atto SpanBatch delivery/ack/drain is missing",
-      "no native Atto collector actor, OTLP JSON encoder or permission-checked bounded HTTP POST with body in current GET/HEAD-only client",
-      "LLVM currently has host W3C ABI and AOT policy gate, not full .atto parser/HTTP actor/client/span exporter",
-      "no actual guest → OTLP receiver capture or end-to-end source SHA/CI execution receipt"
+      "Source org Java/Graal, LLVM and shared CI runs still fail at 0 steps; exact-head JDK25/Graal, Native Image and LLVM source guest tests remain NOT_EXECUTED",
+      "Trusted no-throw using telemetry.span typed scope, logical activation and propagation across await not implemented",
+      "SemanticTraceBuffer still has fixed append-only staging, no bounded reusable source->native Atto collector handoff, delivery acknowledgements or shutdown drain",
+      "Native OTLP encoder + POST helper and one-shot real actor test fixture are authored, not verified guest-executed; no production collector actor, retry/backoff, export recursion suppression or partialSuccess response parser",
+      "LLVM host C++ semantic buffers/parsers exist, but source-level Atto parser/HTTP POST actor export and conformance are not implemented",
+      "No independently captured automatic HTTP SERVER->actor INTERNAL->HTTP CLIENT->OTLP exported trace exists"
     ]
   },
   "implementation_progress": {
@@ -416,12 +420,15 @@
       "recording": "trusted --ores-telemetry=calls starts bounded automatic numeric dispatcher + bounded semantic W3C SERVER/INTERNAL ACTOR TURN/CLIENT span staging; sampled only; no OTLP export, no native collector drain, no full HIR/MIR span pass",
       "actor_context": "immutable W3C TraceParent on private mailbox metadata at sync/async admission; Java actor delivery creates a new sampled INTERNAL dispatch-turn child span, installs logical context, restores on exit; source async task span completion remains missing; NOT_EXECUTED",
       "task_context": "immutable TraceParent on heap-retained TaskContext across logical source task suspend/resume; not a host threadlocal authority; NOT_EXECUTED",
-      "outbound_http": "permission-checked http.request injects W3C v00 child if logical parent exists, or true root if absent; async CLIENT span completes only after physical I/O settles; real Atto HTTP wire test authored NOT_EXECUTED; no tracestate or POST body support",
+      "outbound_http": "permission-checked http.request injects W3C v00 child/root, creates sampled async CLIENT span, and now also accepts bounded POST with copied UTF-8 String or list-octet body over pinned SelectorTransportConnection; real guest, body write cancellation and CTest-like exact-head receipts NOT_EXECUTED; no tracestate",
       "inbound_http": "NativeHttp receive admits strict W3C remote parent or root, SERVER span starts at admission and finishes exactly once at physical exchange retirement; Handler.dispatch carries context in actor mailbox; real JDK25/Graal guest test NOT_EXECUTED",
-      "exporter": "PARTIAL_NATIVE_ATTO_DATA_ONLY: stdlib/telemetry.atto now defines immutable CompletedSpan and actor-owned bounded SpanBatch with drop counter and guest fixture; actual source collector ACTOR, native bridge, bounded draining, OTLP JSON and HTTP POST export NOT_IMPLEMENTED",
+      "exporter": "PARTIAL_NATIVE_ATTO_TRANSPORT_ONLY: native CompletedSpan, SpanBatch and bounded OTLP JSON encoder plus async HTTP POST helper authored. No built-in actor collector, runtime-to-actor delivery, bounded reusable draining, partialSuccess confirmation, retries, export suppression, hard shutdown flush or real exact-head guest network receipt: NOT_IMPLEMENTED/NOT_EXECUTED.",
       "runtime_jit": "Truffle assumption policy gate present; integrated into callable dispatcher recording entry; no physical JIT deopt/reoptimization receipt and no new probe site compilation",
       "host_composition_test": "HostOnlyTracePathCompositionTest authored: inbound context helper → real JVM actor mailbox → outbound header construction. No socket, Atto guest compiler or OTLP receiver was executed.",
-      "semantic_span_lifecycle": "HOST STAGING IMPLEMENTED: SemanticTraceBuffer has sampled immutable parent/child OTLP span kind, numeric operation, start/end Unix nanos, status, error, nonblocking bounded CAS slots and idempotent Scope.finish; host-only exact-blob smoke passed; not production collector"
+      "semantic_span_lifecycle": "HOST STAGING IMPLEMENTED: SemanticTraceBuffer has sampled immutable parent/child OTLP span kind, numeric operation, start/end Unix nanos, status, error, nonblocking bounded CAS slots and idempotent Scope.finish; host-only exact-blob smoke passed; not production collector",
+      "post_transport": "SOURCE_IMPLEMENTED_NOT_EXECUTED: 4-arg http.request(method,url,headers,body) supports POST (max 1 MiB), UTF-8 String or List<int> octets copied before physical worker; transport-owned Content-Length, header budgets, canonical loopback egress and NET checks, selector-based writes and phase/overall deadlines. PinnedHttpPostTest, OutboundHttpPostGuestTest and byte admission negatives authored, not executed.",
+      "otlp_json_encoder": "SOURCE_IMPLEMENTED_NOT_EXECUTED: native stdlib/telemetry.atto has low-cardinality ExportTraceServiceRequest OTLP/JSON encoder for batches 1..64, hex W3C IDs, integer kind, quoted decimal int64 timestamps, safe ID character gate; no full verified exact-length native ID admission, no response partialSuccess parser, and no autonomous async exporter actor.",
+      "actor_export_fixture": "SOURCE_AUTHORED_NOT_EXECUTED: NativeTelemetryActorOtlpGuestTest uses a real Atto actor to post one native-encoded batch to a loopback receiver using post_otlp_json_async. This is a one-shot application fixture, NOT a built-in supervised collector or automated runtime->actor delivery."
     },
     "llvm": {
       "source_revision": "See draft PR #1713 for exact head",
@@ -486,5 +493,6 @@
       "result": "both executable tests exit 0: SERVER→ACTOR→CLIENT parent links; 8 producers×100 attempts, capacity64, 736 drops; invalid/unsampled disabled",
       "scope_limit": "Does not execute full CMake/CTest or any LLVM-compiled Atto guest, real actor dispatch, HTTP wire or OTLP export."
     }
-  }
+  },
+  "otlp_schema_reference": "https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding"
 }
