@@ -890,6 +890,78 @@
     "links_to_automatic_trace_pipeline": true,
     "generate_source_parse_typecheck_guest_tests": true
   },
+  "scoped_span_parity_v1": {
+    "status": "PARTIAL_EXECUTED_LLVM_NO_FULL_PARITY",
+    "syntax": "using telemetry.span(operation) as scoped_name { statements }",
+    "portable_target": {
+      "factory": "trusted_stdlib_telemetry_span",
+      "resource_type": "opaque_linear_SpanScope",
+      "factory_evaluated_once": true,
+      "scope_name_does_not_escape": true,
+      "cleanup_exactly_once": true,
+      "cleanup_nonthrowing": true,
+      "cleanup_nonsuspending": true,
+      "continuation_owns_scope_across_await": true,
+      "thread_local_context_is_not_authority": true,
+      "runtime_probe_activation_does_not_add_new_aot_probes": true,
+      "observer_calls_require_verified_typed_intrinsics": true,
+      "guest_cannot_enable_host_probes": true
+    },
+    "backend_slices": {
+      "java": {
+        "status": "SOURCE_IMPLEMENTED_NOT_EXECUTED",
+        "pull_request": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2993",
+        "implementation": "parser_lowered_test_defined_nominal_SpanScope_try_finally",
+        "known_gap": [
+          "runtime_scoped_resource_provenance",
+          "transitive_cleanup_effects",
+          "suspension_and_cancellation_execution",
+          "actual_GraalVM_guest_test_execution",
+          "live_Truffle_attach_detach"
+        ]
+      },
+      "llvm": {
+        "status": "EXECUTED_NONSUSPENDING_SUBSET_ONLY",
+        "pull_request": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1716",
+        "implementation": "compiler_owned_opaque_token_C11_dormant_aot_probe",
+        "supported": [
+          "literal_operation",
+          "normal_exit",
+          "early_return",
+          "nested_scope",
+          "strict_no_handle_escape",
+          "bounded_64_scope_stack",
+          "host_only_recording_switch"
+        ],
+        "known_gap": [
+          "dynamic_operation_expression",
+          "typed_span_observer_calls",
+          "await_or_carrier_migration",
+          "exception_and_cancellation_unwinding",
+          "OTLP_export",
+          "cross_backend_stdlib_SpanScope"
+        ]
+      },
+      "wasm": {"status": "NOT_IMPLEMENTED_NOT_EXECUTED"},
+      "forge": {"status": "NOT_IMPLEMENTED_NOT_EXECUTED"},
+      "net": {"status": "NOT_IMPLEMENTED_NOT_EXECUTED"}
+    },
+    "execution_evidence": {
+      "scope": "only_nonsuspending_llvm_native_guest_subset",
+      "source_pr_head": "4b123a29f9d390d07f31d9bf7d6a8f338da712db",
+      "source_blobs_verified": 47,
+      "full_git_tree_mirrored": false,
+      "source_carrier": "streempilot-test/browser-studio-e2e",
+      "source_carrier_approved": true,
+      "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43322278786",
+      "run_conclusion": "success",
+      "guest_positive_cases": 3,
+      "guest_negative_cases": 5,
+      "clang_optimization_levels": ["O0", "O2"],
+      "runtime_tests": ["gcc_c11", "clang_c11", "pthread_cross_carrier"],
+      "full_backend_matrix_certified": false
+    }
+  },
   "live_instrumentation_v1": {
     "status": "TARGET_NOT_IMPLEMENTED",
     "control_actions": [
