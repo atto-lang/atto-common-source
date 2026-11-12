@@ -79,6 +79,13 @@ function check(candidate) {
     [41, 98, 7]);
   assert.equal(candidate.experimental_java_witness.scenarios.negative_compile_or_admission_variants,
     15);
+  assert.equal(candidate.experimental_java_witness.computed_git_blob_sha,
+    '10695cb41e3e5250567593b1d173bfd5dc2ed192');
+  assert.deepEqual(candidate.experimental_java_witness.computed_scenarios.guest_values, [42, 99, 8]);
+  assert.equal(candidate.experimental_java_witness.computed_scenarios.checked_addend, 1);
+  assert.equal(candidate.experimental_java_witness.computed_scenarios.invalid_expression_variants, 9);
+  assert.equal(candidate.experimental_java_witness.computed_scenarios.overflow_must_fail_without_output, true);
+  assert.equal(candidate.experimental_java_witness.computed_scenarios.unaffected_sibling_continues, true);
   assert.equal(candidate.experimental_java_witness.scenarios.supported_number_of_inputs_per_actor, 1);
   assert.deepEqual(candidate.baseline_scoped_receipts.map(x => x.backend),
     ['java_jvm21', 'java_graalvm25_jvm']);
@@ -131,6 +138,8 @@ test('security and backend evidence mutations cannot launder claims', () => {
     x => x.normative_actor_semantics.experimental_scalar_projection = 'GENERAL_LANGUAGE_API',
     x => x.full_backend_execution.llvm = 'PASSED',
     x => x.full_backend_execution.java = 'PASSED',
+    x => x.experimental_java_witness.computed_git_blob_sha = 'not-verified',
+    x => x.experimental_java_witness.computed_scenarios.overflow_must_fail_without_output = false,
     x => x.baseline_scoped_receipts[0].kind = 'FULL_SOURCE_TREE',
     x => x.baseline_scoped_receipts[1].optimizing_machine_code_tier_proven = true,
     x => x.baseline_scoped_receipts[1].native_image_proven = true,
@@ -159,4 +168,25 @@ test('exact native source witness is pinned without making experimental syntax c
   assert.doesNotMatch(source, /\b(?:java\.|filesystem|ffi|shell)\b/);
   assert.match(model.experimental_java_witness.known_limitations.join(' '),
     /not general typed spawn\/await/);
+});
+
+test('checked native actor computation witness is pinned and never broadens authority', () => {
+  const proof = model.experimental_java_witness;
+  assert.match(proof.computed_source_path,
+    /^tests\/fixtures\/native-actor-result-v1\/[a-z0-9-]+\.atto$/);
+  const file = new URL(proof.computed_source_path, root);
+  assert.equal(lstatSync(file).isSymbolicLink(), false);
+  const bytes = readFileSync(file);
+  const blob = createHash('sha1').update('blob ' + bytes.length + '\0')
+    .update(bytes).digest('hex');
+  assert.equal(blob, proof.computed_git_blob_sha);
+  const native = bytes.toString('utf8');
+  for (const token of ['use namespace foo;', 'declare actor Meter;',
+    'define state on actor Meter', 'critical mtd (Meter p)',
+    'p.send(mail.value + 1);', 'return a.output_value();']) {
+    assert.ok(native.includes(token), token);
+  }
+  assert.doesNotMatch(native, /\b(?:java\.|ffi|shell|filesystem)\b/);
+  assert.equal(model.supervisor_contract.implementation_status, 'PROPOSED_NOT_EXECUTABLE');
+  assert.equal(model.service_contract.implementation_status, 'PROPOSED_NOT_EXECUTABLE');
 });
