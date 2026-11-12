@@ -63,7 +63,7 @@ export function validateToStringV1(doc, root=ROOT) {
    throw Error('unsafe or missing to_string .atto fixture: '+c.path);
   const bytes=readFileSync(file);
   const digest=createHash('sha1')
-    .update(Buffer.from('blob '+bytes.length+'\\0'))
+    .update(Buffer.from('blob '+bytes.length+String.fromCharCode(0)))
     .update(bytes).digest('hex');
   if(digest!==pin.sha)throw Error('modified exact .atto Git blob: '+c.id);
   const src=bytes.toString('utf8');
