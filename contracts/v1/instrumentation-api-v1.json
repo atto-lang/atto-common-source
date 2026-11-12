@@ -128,7 +128,9 @@
     "java_actor_mail_context": "NOT_EXECUTED",
     "java_outbound_w3c_headers": "NOT_EXECUTED",
     "java_traceparent_test": "NOT_EXECUTED",
-    "llvm_traceparent_ctest": "NOT_EXECUTED"
+    "llvm_traceparent_ctest": "NOT_EXECUTED",
+    "java_inbound_w3c_context_test": "NOT_EXECUTED",
+    "java_host_trace_composition_test": "NOT_EXECUTED"
   },
   "vectors": [
     {
@@ -396,7 +398,7 @@
     ],
     "forbidden_shortcut": "synthetic trace fixtures, source-free checkers, Java-only fake userland spans and zero-step Actions never count as E2E PASS",
     "blockers": [
-      "Java HTTP SERVER receive does not yet extract W3C trace context and create a semantic SERVER span",
+      "Java HTTP SERVER receive parses W3C context but does not record/export semantic SERVER spans; no exact-head guest HTTP execution",
       "Java CALLS recorder emits numeric events only; async completion and semantic CLIENT/ACTOR span conversion not implemented",
       "Java outbound HTTP traceparent injection is code-authored but real wire execution on exact branch not proven",
       "Native Atto collector/OTLP exporter not implemented",
@@ -413,9 +415,10 @@
       "actor_context": "immutable W3C TraceParent in private mailbox metadata, sync send and async admission, restored for actor user turn; disabled default; NOT_EXECUTED",
       "task_context": "immutable TraceParent on heap-retained TaskContext across logical source task suspend/resume; not a host threadlocal authority; NOT_EXECUTED",
       "outbound_http": "http.request captures logical context at permission-checked admission and injects one W3C child traceparent in immutable headers; no CLIENT span or tracestate yet; NOT_EXECUTED",
-      "inbound_http": "NOT_IMPLEMENTED: need strict HTTP receive extraction, semantic SERVER span, receive-to-actor handoff",
+      "inbound_http": "PARTIAL: NativeHttp.Server.receive parses one strict W3C v00 traceparent and stores a child/root context in the exchange; Handler.dispatch transfers immutable context via real actor mailbox; semantic SERVER span and actual guest/W3C wire execution NOT_IMPLEMENTED/NOT_EXECUTED",
       "exporter": "NOT_IMPLEMENTED: actor-owned async span collector and OTLP emitter",
-      "runtime_jit": "Truffle assumption policy gate present; integrated into callable dispatcher recording entry; no physical JIT deopt/reoptimization receipt and no new probe site compilation"
+      "runtime_jit": "Truffle assumption policy gate present; integrated into callable dispatcher recording entry; no physical JIT deopt/reoptimization receipt and no new probe site compilation",
+      "host_composition_test": "HostOnlyTracePathCompositionTest authored: inbound context helper → real JVM actor mailbox → outbound header construction. No socket, Atto guest compiler or OTLP receiver was executed."
     },
     "llvm": {
       "source_revision": "See draft PR #1713 for exact head",
