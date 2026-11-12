@@ -36,7 +36,7 @@
     "child_parent_generation": "RUNTIME_VERIFIED",
     "control_may_be_forged_by_guest": false,
     "panic_interceptable_by_panicking_actor": false,
-    "terminal_failure_notices": "ONE_PER_CHILD_INCARCATION_UNTIL_ACK",
+    "terminal_failure_notices": "ONE_PER_CHILD_INCARNATION_UNTIL_ACK",
     "saturated_user_mailbox_may_drop_terminal_notice": false,
     "manual_retry_required": false,
     "child_physical_done_before_terminal_ack": false,
