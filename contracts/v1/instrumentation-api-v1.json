@@ -1,6 +1,6 @@
 {
   "schema": "attolang.instrumentation.v1",
-  "status": "PROPOSED_PARTIAL_JAVA_GUEST_IMPLEMENTATION_NOT_EXECUTED",
+  "status": "PROPOSED_PARTIAL_JAVA_AUTO_CALL_CONTEXT_WIRE_AND_LLVM_HOST_PROOFS_NOT_EXECUTED",
   "version": 1,
   "layers": {
     "ores.core/diagnostics": {
@@ -123,7 +123,12 @@
     "java_runtime_probe_gate_test": "NOT_EXECUTED",
     "auto_otel_e2e": "NOT_IMPLEMENTED",
     "native_std_telemetry_guest": "NOT_EXECUTED",
-    "llvm_trace_policy_ctest": "NOT_EXECUTED"
+    "llvm_trace_policy_ctest": "NOT_EXECUTED",
+    "java_auto_calls_guest": "NOT_EXECUTED",
+    "java_actor_mail_context": "NOT_EXECUTED",
+    "java_outbound_w3c_headers": "NOT_EXECUTED",
+    "java_traceparent_test": "NOT_EXECUTED",
+    "llvm_traceparent_ctest": "NOT_EXECUTED"
   },
   "vectors": [
     {
@@ -391,10 +396,39 @@
     ],
     "forbidden_shortcut": "synthetic trace fixtures, source-free checkers, Java-only fake userland spans and zero-step Actions never count as E2E PASS",
     "blockers": [
-      "missing compiler-inserted probe entry/exit to application spans",
-      "no native async collector exporter",
-      "no complete native std HTTP server/client ownership and loopback path on both Java and LLVM",
-      "no W3C propagation in actor send and HTTP client"
+      "Java HTTP SERVER receive does not yet extract W3C trace context and create a semantic SERVER span",
+      "Java CALLS recorder emits numeric events only; async completion and semantic CLIENT/ACTOR span conversion not implemented",
+      "Java outbound HTTP traceparent injection is code-authored but real wire execution on exact branch not proven",
+      "Native Atto collector/OTLP exporter not implemented",
+      "LLVM source parser, actor context and native HTTP guest plumbing not implemented",
+      "Source Java/LLVM GitHub Actions fail before job steps and cannot provide test receipts"
     ]
+  },
+  "implementation_progress": {
+    "java_graal": {
+      "source_revision": "See draft PR #2989 for exact head",
+      "scoped_using": "Java parser lowers exact telemetry.span() scope; native nonrecording std provider authored; guest tests NOT_EXECUTED",
+      "call_probe": "automatic (no guest imports) source callable-dispatch entry/exit numeric timing, default off; not full compiler HIR/MIR pass and async completion is not traced",
+      "recording": "bounded per-context numeric recorder; trusted --ores-telemetry=calls; optional cold stderr receipt; NO OTLP export",
+      "actor_context": "immutable W3C TraceParent in private mailbox metadata, sync send and async admission, restored for actor user turn; disabled default; NOT_EXECUTED",
+      "task_context": "immutable TraceParent on heap-retained TaskContext across logical source task suspend/resume; not a host threadlocal authority; NOT_EXECUTED",
+      "outbound_http": "http.request captures logical context at permission-checked admission and injects one W3C child traceparent in immutable headers; no CLIENT span or tracestate yet; NOT_EXECUTED",
+      "inbound_http": "NOT_IMPLEMENTED: need strict HTTP receive extraction, semantic SERVER span, receive-to-actor handoff",
+      "exporter": "NOT_IMPLEMENTED: actor-owned async span collector and OTLP emitter",
+      "runtime_jit": "Truffle assumption policy gate present; integrated into callable dispatcher recording entry; no physical JIT deopt/reoptimization receipt and no new probe site compilation"
+    },
+    "llvm": {
+      "source_revision": "See draft PR #1713 for exact head",
+      "probe_gate": "per-runtime-domain atomic AOT mode controller, host-only test authored",
+      "w3c_v00": "no-allocation std::array parser/formatter/child ID validation, C++17 host test authored",
+      "isolated_w3c_smoke": "PASS on local isolated equivalent C++17 code under GCC and Clang, NOT an exact GitHub head build",
+      "source_guest": "NOT_IMPLEMENTED: no .atto using parser, real compiler call probes, actor trace envelopes or HTTP exporter",
+      "native_telemetry_actor": "NOT_IMPLEMENTED"
+    },
+    "shared_test_harness": {
+      "w3c_otlp_validator": "source-free trace-topology and privacy checker; synthetic tests do not certify runtime",
+      "otlp_receiver": "loopback bounded Node OTLP/HTTP JSON receiver only, not native Atto SDK/exporter",
+      "full_guest_trace": "NOT_EXECUTED"
+    }
   }
 }
