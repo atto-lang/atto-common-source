@@ -298,6 +298,12 @@
       "real guest return/error/cancel/panic/mailbox/critical behavior equals uninstrumented run",
       "sampling and nonrecording propagation align with OpenTelemetry",
       "runtime cross-backend verifiers execute actual guest and I/O rather than source-only simulations"
-    ]
+    ],
+    "namespaces": {
+      "ores.core/trace": "proposed freestanding immutable TraceId, SpanId, SpanContext, TraceFlags and local propagation descriptors; no OS clocks, I/O or exporters",
+      "ores.std/trace": "existing hosted Atto timing Event and bounded Buffer, manual span utilities; preserve std/trace alias",
+      "ores.std/telemetry": "proposed hosted Tracer/Span/metrics API and bounded asynchronous collector/export; optional in user applications",
+      "internal/probe_abi": "not importable from guest code; compiler and trusted runtime-only entry/exit/suspend/resume hooks"
+    }
   }
 }
