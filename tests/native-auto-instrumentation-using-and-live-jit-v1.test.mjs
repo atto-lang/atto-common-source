@@ -96,3 +96,20 @@ test("fixture count is unique and cannot certify backend parity", () => {
   for(const r of Object.values(c.evidence.backend_execution_status))
     assert.equal(r, "NOT_EXECUTED");
 });
+
+
+test("portable .atto lexical span fixtures have pinned source-only oracles", () => {
+  const root = new URL("../fixtures/native-auto-instrumentation-v1/", import.meta.url);
+  const oracle = JSON.parse(readFileSync(new URL("using-span-expected.json", root), "utf8"));
+  assert.equal(oracle.status, "SOURCE_ONLY_NOT_EXECUTED");
+  assert.equal(oracle.cases.length, 2);
+  assert.deepEqual(oracle.cases.map(x => x.expected_stdout), ["FBCA", "FBC"]);
+  for (const item of oracle.cases) {
+    assert.match(item.source, /^[a-z0-9-]+\\.atto$/);
+    const source = readFileSync(new URL(item.source, root), "utf8");
+    assert.ok(source.includes('using telemetry.span("checkout") as span {'));
+    assert.ok(source.includes("pub fnc main(): void"));
+    assert.ok(source.includes("pub close_scope(): void"));
+    assert.equal(item.expected_exit, 0);
+  }
+});
