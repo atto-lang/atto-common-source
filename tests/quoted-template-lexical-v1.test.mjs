@@ -31,3 +31,14 @@ test('caps and backend-specific comment depth cannot silently drift',()=>{
  w.generated_boundaries[3].profile='all backends';
  assert.throws(()=>validateQuotedTemplateContract(w),/comment budget/);
 });
+
+test('manifest cannot rebind a fixture to another valid path and hash',()=>{
+ const swapped=structuredClone(loadQuotedTemplateContract());
+ swapped.cases[0].path=swapped.cases[1].path;
+ swapped.cases[0].git_blob_sha=swapped.cases[1].git_blob_sha;
+ assert.throws(()=>validateQuotedTemplateContract(swapped),/pinned path/);
+ const rehomed=structuredClone(loadQuotedTemplateContract());
+ rehomed.cases[2].path='fixtures/quoted-template-v1/quoted-raw-newline.atto';
+ rehomed.cases[2].git_blob_sha=rehomed.cases[1].git_blob_sha;
+ assert.throws(()=>validateQuotedTemplateContract(rehomed),/pinned path/);
+});
