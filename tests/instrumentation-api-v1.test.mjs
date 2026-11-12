@@ -164,7 +164,9 @@ test('Java source milestones are partial and still require executed guest eviden
   assert.match(java.actor_context, /private mailbox metadata/);
   assert.match(java.task_context, /heap-retained TaskContext/);
   assert.match(java.outbound_http, /W3C child traceparent/);
-  assert.match(java.inbound_http, /NOT_IMPLEMENTED/);
+  assert.match(java.inbound_http, /PARTIAL/);
+  assert.match(java.inbound_http, /semantic SERVER span/);
+  assert.match(java.host_composition_test, /No socket/);
   assert.match(java.exporter, /NOT_IMPLEMENTED/);
   assert.equal(contract.evidence.java_auto_calls_guest, 'NOT_EXECUTED');
   assert.equal(contract.evidence.java_actor_mail_context, 'NOT_EXECUTED');
