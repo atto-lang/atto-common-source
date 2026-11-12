@@ -16,6 +16,20 @@ const CASES = new Map([
  ['template-empty-interpolation','REJECT'],
  ['template-comment-only','REJECT'],
 ]);
+// Independent immutable v1 oracle: updating both the manifest and the
+// physical file must not silently redefine a reviewed fixture.
+const PINNED_GIT_BLOBS = new Map([
+ ['ordinary-single-double',['fixtures/quoted-template-v1/quoted-single-double.atto','482f4d445b1362a6e25afebe21b31dddf4089610']],
+ ['ordinary-raw-newline',['fixtures/quoted-template-v1/quoted-raw-newline.atto','d14a06e3c4d97abd7f5a52a639e61b37fe1bc932']],
+ ['ordinary-unknown-escape',['fixtures/quoted-template-v1/quoted-unknown-escape.atto','ecd686c9d699c1feaa036a877eae07914afb92c6']],
+ ['ordinary-paired-surrogates',['fixtures/quoted-template-v1/quoted-paired-surrogates.atto','eabfa239411992233ef3e11e1d5c03b6a1f6ee7e']],
+ ['template-nested-quote',['fixtures/quoted-template-v1/template-nested-quote.atto','bcebbd9b8e7ab845fe3159b60e87289c6ab66c25']],
+ ['template-multiline',['fixtures/quoted-template-v1/template-multiline.atto','477ea27739cb82a9c5b6010c000ba38096a1c5b2']],
+ ['ordinary-lone-surrogate',['fixtures/quoted-template-v1/quoted-lone-surrogate.atto','d214352ede41c3f87b35745695603823a85fad13']],
+ ['template-invalid-escape',['fixtures/quoted-template-v1/template-invalid-escape.atto','54bb6e47d5c60123871de1eeb5167b5d0807c1fd']],
+ ['template-empty-interpolation',['fixtures/quoted-template-v1/template-empty-interpolation.atto','d9710c2432be5d2b7166bbff7a12687ea32f4bce']],
+ ['template-comment-only',['fixtures/quoted-template-v1/template-comment-only.atto','ec4e84df719ce63a8e3127ea8bea798166196c0d']],
+]);
 const BACKENDS = ['java','llvm','wasm','forge','net'];
 const EXPECTED_LIMITS = {
  template_interpolation_frame_depth:32,
@@ -51,6 +65,9 @@ export function validateQuotedTemplateContract(contract, root=ROOT) {
      c.expect_lexical!==CASES.get(c.id))
    throw Error('fixture identity or expected result drift');
   seen.add(c.id);
+  const pinned=PINNED_GIT_BLOBS.get(c.id);
+  if(!pinned || c.path!==pinned[0] || c.git_blob_sha!==pinned[1])
+   throw Error('fixture pinned path/Git blob identity drift: '+c.id);
   if(c.typed_runtime_outcome!=='NOT_EXECUTED')
    throw Error('lexical fixture promoted to unverified guest pass');
   // File names are fixed independently of the ID; the path must remain local.
