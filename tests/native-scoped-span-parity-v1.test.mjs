@@ -43,7 +43,7 @@ test("LLVM has narrow exact-head executable proof, not general parity", () => {
   assert.equal(llvm.test_evidence.run_result, "SUCCESS");
   assert.match(llvm.test_evidence.source_sha, /^[a-f0-9]{40}$/);
   assert.equal(llvm.test_evidence.source_tree_mirrored, false);
-  assert.equal(llvm.test_evidence.exact_blob_count, 47);
+  assert.equal(llvm.test_evidence.exact_blob_count, 48);
   assert.equal(llvm.test_evidence.positive_native_guest_cases, 5);
   assert.equal(llvm.test_evidence.negative_compiler_cases, 5);
   assert.deepEqual(llvm.test_evidence.host_linker_optimization, ["O0", "O2"]);
@@ -57,10 +57,33 @@ test("LLVM has narrow exact-head executable proof, not general parity", () => {
   assert.ok(llvm.limitations.includes("full_shared_nominal_SpanScope"));
 });
 
+test("LLVM same-process live activation is AOT dormant-probe control, never invented JIT", () => {
+  const llvm = backends.llvm_host_aot;
+  const live = llvm.live_probe_control;
+  assert.equal(live.status, "EXECUTED_RESTRICTED_SUBSET");
+  assert.equal(live.activation_kind, "precompiled_dormant_aot_probe");
+  assert.equal(live.authority, "trusted_host_only");
+  assert.equal(live.process_restarted, false);
+  assert.equal(live.jit_added_new_probes, false);
+  assert.equal(live.source_sha, llvm.test_evidence.source_sha);
+  assert.equal(live.exact_blob_count, llvm.test_evidence.exact_blob_count);
+  assert.equal(live.carrier_run, llvm.test_evidence.carrier_run);
+  assert.equal(live.result, "SUCCESS");
+  assert.equal(live.receipt, "LLVM_AOT_LIVE_PROBE_TOGGLE_EXECUTION_PASS:O0:O2");
+  assert.deepEqual(live.same_process_activation, ["off", "on", "off", "on"]);
+  assert.equal(live.guest_calls, 4);
+  assert.equal(live.spans_recorded, 2);
+  assert.equal(live.unchanged_guest_result, 51);
+});
+
 test("Java and other unexecuted backends cannot inherit LLVM execution status", () => {
   assert.equal(backends.java_graal.status, "SOURCE_ONLY_COMPILER_CANDIDATE");
   assert.equal(backends.java_graal.provider_identity,
                "test_defined_nominal_class_not_trusted_runtime_intrinsic");
+  assert.equal(backends.java_graal.operation_argument,
+               "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
+  assert.equal(backends.java_graal.source_scope_test_methods, 19);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 20);
   assert.equal(backends.java_graal.test_evidence.runtime_execution, "NOT_EXECUTED");
   assert.equal(backends.java_graal.test_evidence.source_ci_failure_reason,
                "JOB_ADMISSION_ZERO_STEPS");
