@@ -712,6 +712,30 @@
         "deterministic_descriptor_ids": true,
         "no_opaque_binary_guessing": true
       }
+    },
+    {
+      "id": "jit-none-with-retained-tags",
+      "build": "none",
+      "runtime": "on",
+      "operation": "truffle_dynamic_attach_when_no_static_probes_but_instrumentable_nodes_retained",
+      "expect": {
+        "static_probe_sites": 0,
+        "retained_instrumentation_tags": true,
+        "authorized_new_jit_probes": true,
+        "future_function_entries_traced": true
+      }
+    },
+    {
+      "id": "jit-none-no-metadata",
+      "build": "none",
+      "runtime": "on",
+      "operation": "strict_stripped_no_ast_tags_ir_or_dynamic_runtime",
+      "expect": {
+        "static_probe_sites": 0,
+        "dynamic_jit_probes": 0,
+        "activation_result": "instrumentation_unavailable",
+        "guest_effects": "unchanged"
+      }
     }
   ],
   "evidence": {
@@ -917,7 +941,6 @@
       }
     ],
     "no_silent_jit_in_full_guest_aot": true,
-    "instrumentation_none_cannot_enable_missing_probes": true,
     "runtime_activation_requires_authorized_control_plane": true,
     "runtime_activation_no_extra_capabilities": true,
     "control_rate_limited": true,
@@ -929,6 +952,9 @@
     "in_flight_scopes_generation_fenced": true,
     "source_metadata_or_ir_required_for_late_jit_attach": true,
     "default_no_remote_attach_port": true,
-    "wasm_no_monkey_patching": true
+    "wasm_no_monkey_patching": true,
+    "instrumentation_none_cannot_enable_missing_precompiled_probes": true,
+    "instrumentation_none_may_support_separate_dynamic_jit_attach": true,
+    "strict_none_without_tagged_ir_has_no_dynamic_attach": true
   }
 }
