@@ -60,8 +60,12 @@ explicit host-controlled tracing/export policy, not merely core diagnostic flags
 
 A **runtime-off capable** build still pays a predictable branch/probe-site code
 size cost. It cannot truthfully claim *zero CPU instruction overhead*. A build
-with `--instrument=none` removes instrumentation entirely but **cannot turn
-tracing on without recompilation**. Strict hard-real-time profiles should use
+with `--instrument=none` removes **static optional probe sites**. On a fully
+stripped closed-world AOT artifact, those probes cannot be enabled without
+a new precompiled artifact. A separately admitted JIT/Truffle runtime may
+still attach **new** probes if it retained instrumentable AST/bytecode tags
+and a trusted runtime instrumentation API, even when no static probes were
+emitted. A strict hard-real-time build must also disable that dynamic substrate. Strict hard-real-time profiles should use
 `none` or separately certify bounded probes and export isolation. Configuration
 is parsed once using the project's approved CLI policy, not at every hook.
 
@@ -439,7 +443,12 @@ arbitrary new guest JIT code and unauthorized runtime executable modification.
 **Unsupported case:** a `--instrument=none` fully-AOT closed binary with
 no instrumentation slots, no allowed dynamic-loader surface and no code
 generation capability cannot start function tracing purely by flipping a
-runtime flag. External eBPF/system profiling may reveal OS/network/system
+runtime flag. Conversely, **JIT attaching new probes is a distinct capability**:
+`--instrument=none` may suppress static probes without preventing a
+separately authorized dynamic Truffle instrument from attaching to retained
+language nodes. Explicitly advertise whether JIT metadata/tags are present;
+never claim `none` has zero optional runtime/metadata overhead while dynamic
+instrumentation is still available. External eBPF/system profiling may reveal OS/network/system
 behaviors but cannot guarantee Atto semantic function/actor spans, or replace
 Atto's immutable continuation trace context.
 
