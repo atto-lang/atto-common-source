@@ -115,3 +115,12 @@ test('OTel configuration does not provide new permissions', () => {
   assert.match(c.environment_cannot_grant, /network\/filesystem/);
   assert.match(c.otel_disabled_semantics, /propagation policy remains independent/);
 });
+
+
+test('freestanding context remains separated from hosted exporter and compiler ABI', () => {
+  const n = contract.auto_instrumentation.namespaces;
+  assert.match(n['ores.core/trace'], /freestanding immutable/);
+  assert.match(n['ores.std/trace'], /existing hosted Atto timing/);
+  assert.match(n['ores.std/telemetry'], /bounded asynchronous collector/);
+  assert.match(n['internal/probe_abi'], /not importable from guest code/);
+});
