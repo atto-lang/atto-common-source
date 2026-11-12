@@ -42,3 +42,12 @@ test('manifest cannot rebind a fixture to another valid path and hash',()=>{
  rehomed.cases[2].git_blob_sha=rehomed.cases[1].git_blob_sha;
  assert.throws(()=>validateQuotedTemplateContract(rehomed),/pinned path/);
 });
+
+test('draft Java/LLVM comment-budget PRs cannot be relabeled merged in evidence',()=>{
+ const claim=structuredClone(loadQuotedTemplateContract());
+ claim.pending_review.status='MERGED';
+ assert.throws(()=>validateQuotedTemplateContract(claim),/unverified Java\/LLVM/);
+ const forged=structuredClone(loadQuotedTemplateContract());
+ forged.pending_review.llvm='https://github.com/other/other/pull/1';
+ assert.throws(()=>validateQuotedTemplateContract(forged),/unverified Java\/LLVM/);
+});
