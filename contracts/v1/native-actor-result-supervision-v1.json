@@ -89,6 +89,19 @@
       "run_url": "https://github.com/voxletra/voxletra-e2e/actions/runs/43240063996",
       "source_pr_sha": "d20098a7270e98a91b34fb2a5f7d17a78fccbd07",
       "carrier_sha": "16c78bd931e39469853991fd5bb35aaae3ec7264"
+    },
+    {
+      "backend": "java_graalvm25_jvm",
+      "kind": "SELECTED_SOURCE_GIT_BLOBS_ONLY",
+      "outcome": "PASSED",
+      "total_tests": 94,
+      "failed": 0,
+      "skipped": 0,
+      "run_url": "https://github.com/voxletra/voxletra-e2e/actions/runs/43240482935",
+      "source_pr_sha": "d20098a7270e98a91b34fb2a5f7d17a78fccbd07",
+      "carrier_sha": "e2bc743a8a135ca1c728c7cbb9b480160c40d48a",
+      "optimizing_machine_code_tier_proven": false,
+      "native_image_proven": false
     }
   ],
   "full_backend_execution": {
