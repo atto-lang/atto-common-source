@@ -82,6 +82,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 - [Decisions, non-goals and unresolved choices](docs/DECISIONS.md)
 
 - [AttoLang instrumentation API v1](docs/INSTRUMENTATION_API_V1.md) — native core/std span timing, function/HTTP/TCP/I-O/actor phase IDs, W3C propagation design, and strict execution gates (partial Java proposal; no distributed-tracing parity claim).
+- [Zero-code AOT automatic tracing v1](docs/AUTO_INSTRUMENTATION_AND_DISTRIBUTED_TRACING_V1.md) — compiler-emitted typed probes, runtime and std-lib hooks, runtime opt-in, actors/await propagation, bounded collection and OpenTelemetry interoperability; **proposed, not yet implemented**.
 
 ## Decision status
 
