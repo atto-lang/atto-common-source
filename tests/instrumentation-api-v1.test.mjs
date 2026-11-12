@@ -79,7 +79,7 @@ test('zero-code automatic instrumentation has no dynamic interception requiremen
   assert.match(a.mechanisms.compiler, /HIR\/MIR/);
   assert.match(a.mechanisms.runtime, /actor/);
   assert.match(a.mechanisms.stdlib, /HTTP/);
-  assert.match(a.mechanisms.foreign_ffi, /not.*arbitrary third-party internals/);
+  assert.match(a.mechanisms.foreign_ffi, /never promise arbitrary third-party internals/);
 });
 
 test('trace-capable binaries start off and never turn missing probe sites on', () => {
