@@ -16,6 +16,17 @@ Three trusted producers cover distinct events:
 
 Call-site and runtime events may feed the same **versioned bounded observation transport**, but **do not collapse the security boundaries**: core-only fixed numeric diagnostics must stay host-owned and must not automatically instantiate or import `oreslang-otel`. A privileged, explicitly enabled, sanitized translator may emit approved semantic spans to a separate hosted telemetry-export actor. This preserves [core logging and observability policy](CORE_LOGGING_AND_OTEL.md).
 
+## Public namespaces versus internal ABI
+
+Keep the existing compiler-owned import prefixes rather than introducing a new keyword:
+
+- **`ores.core/trace`** (proposed, freestanding): pure immutable trace and span identifier types, trace flags and context descriptors. Must not depend on clocks, I/O, allocation-heavy hosted components or exporters.
+- **`ores.std/trace`** (existing hosted module, `std/trace` alias): `Trace.Event`, `Trace.Buffer`, monotonic manual timing, and compatibility with the first Java guest feature branch.
+- **`ores.std/telemetry`** (proposed hosted module): optional manual `Tracer`, scoped spans, sampling, actor collector and OTLP exporter that can also consume explicitly sanitized automatic observations.
+- **Internal compiler/runtime probe ABI**: not a guest-importable or user-overrideable hook registry; this is what makes zero-code tracing work without application imports.
+
+The freestanding layer defines the types, not the operating-system facilities needed for secure random IDs, wall time, network injection or OTLP export. Native context creation and export require capability-checked hosted/runtime primitives. An unsupported freestanding or no-import Wasm target must fail closed rather than silently add imports.
+
 ## Build profiles and operator controls
 
 | Build profile | Instrumentation sites in binary | Runtime startup default |
