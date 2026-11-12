@@ -130,7 +130,9 @@
     "java_traceparent_test": "NOT_EXECUTED",
     "llvm_traceparent_ctest": "NOT_EXECUTED",
     "java_inbound_w3c_context_test": "NOT_EXECUTED",
-    "java_host_trace_composition_test": "NOT_EXECUTED"
+    "java_host_trace_composition_test": "NOT_EXECUTED",
+    "llvm_native_semantic_staging_ctest": "NOT_EXECUTED",
+    "llvm_guest_semantic_spans": "NOT_IMPLEMENTED"
   },
   "vectors": [
     {
@@ -427,7 +429,8 @@
       "w3c_v00": "no-allocation std::array parser/formatter/child ID validation, C++17 host test authored",
       "isolated_w3c_smoke": "PASS exact GitHub blob SHA-matched native W3C header/test under local GCC 14 and Clang C++17 with ASan+UBSan; NOT LLVM-compiled Atto guest or exact full repo CMake job",
       "source_guest": "NOT_IMPLEMENTED: no .atto using parser, real compiler call probes, actor trace envelopes or HTTP exporter",
-      "native_telemetry_actor": "NOT_IMPLEMENTED: native Atto actor collector/exporter absent on LLVM; existing host-only W3C/parity gate tests are exact-blob executed but source guest remains missing"
+      "native_telemetry_actor": "HOST-ONLY SEMANTIC STAGING IMPLEMENTED: NativeSemanticSpanBuffer caller-owned fixed capacity, no allocation, concurrency-safe publication, sampled W3C parent and bounded drops; actual compiler probe insertion, native .atto actor collector, HTTP POST and OTLP exporter NOT_IMPLEMENTED",
+      "semantic_span_staging": "NativeCompletedSpan carries W3C v00 trace/span ID bytes, parent, numeric operation ID, kind, Unix timestamps, status, error; fixed-size MPSC CAS with release/acquire per-slot publishing; host-only exact-GitHub-blob GCC/Clang sanitizer tests PASSED, no guest or full CMake."
     },
     "shared_test_harness": {
       "w3c_otlp_validator": "source-free trace-topology and privacy checker; synthetic tests do not certify runtime",
@@ -469,6 +472,19 @@
       "result": "two zero-exit test runs",
       "scope_limit": "Not exact-head CMake/CTest or LLVM-compiled Atto guest"
     },
-    "runner_admission": "source-org Actions re-run requested for common and LLVM, previously zero-step failures; never substitute as guest evidence"
+    "runner_admission": "source-org Actions re-run requested for common and LLVM, previously zero-step failures; never substitute as guest evidence",
+    "llvm_semantic_staging": {
+      "status": "PASS_ISOLATED_EXACT_GITHUB_BLOBS",
+      "header_sha": "e9e00d7efa5c60b0d5dcb4792dec74b8afe8e008",
+      "test_sha": "cb5f92dd152cb80c5ddb617148279c2ce4b9eddc",
+      "compilers": [
+        "GCC 14.2 C++17",
+        "Clang 17 C++17"
+      ],
+      "sanitizer_flags": "-fsanitize=address,undefined",
+      "compilation_flags": "-std=c++17 -pthread -Wall -Wextra -Wpedantic -Werror -UNDEBUG",
+      "result": "both executable tests exit 0: SERVER→ACTOR→CLIENT parent links; 8 producers×100 attempts, capacity64, 736 drops; invalid/unsampled disabled",
+      "scope_limit": "Does not execute full CMake/CTest or any LLVM-compiled Atto guest, real actor dispatch, HTTP wire or OTLP export."
+    }
   }
 }
