@@ -1,0 +1,129 @@
+{
+  "schema": "atto-native-scoped-span-parity.v1",
+  "status": "PARTIAL_EXECUTABLE_CONFORMANCE",
+  "updated_at": "2026-11-12",
+  "source_language": "atto",
+  "public_contract": {
+    "surface": "using telemetry.span(operation) as span { statements }",
+    "keyword": "using",
+    "logical_type": "ScopedResource<SpanScope>",
+    "constructor": "telemetry.span",
+    "canonical_cleanup": "close_scope",
+    "function_names": "snake_case",
+    "span_identity": "runtime_owned_unforgeable",
+    "scope_alias": "affine_non_escaping",
+    "resource_expression_evaluated_once": true,
+    "normal_exit_cleanup_exactly_once": true,
+    "nonlocal_exit_cleanup_exactly_once": true,
+    "in_flight_scope_end_after_runtime_disable": true,
+    "disabled_probe_must_not_read_clock": true,
+    "disabled_probe_must_not_allocate": true,
+    "no_implicit_network_export": true,
+    "no_implicit_egress_permission": true,
+    "cancellation_cleanup_requires_continuation_ownership": true,
+    "suspension_must_not_end_live_scope": true,
+    "no_unbudgeted_hard_realtime_probe": true,
+    "no_user_defined_namespace_impersonation": true,
+    "cleanup_effects": {
+      "no_throw": true,
+      "no_raise": true,
+      "no_panic": true,
+      "no_suspend": true,
+      "no_blocking_io": true
+    },
+    "permitted_observers": [
+      "set_attribute",
+      "add_event",
+      "record_error",
+      "set_status"
+    ],
+    "source_must_not_call_cleanup_directly": true,
+    "actor_transfer_of_scope_alias": "forbidden",
+    "inter_actor_trace_context": "immutable_value_separate_from_span_scope"
+  },
+  "profiles": {
+    "llvm_host_aot": {
+      "status": "EXECUTED_RESTRICTED_SUBSET",
+      "implementation": "opaque_compiler_owned_token",
+      "operation_argument": "string_literal_only",
+      "in_scope_alias_observers": "not_yet_supported",
+      "suspension": "compile_time_rejected",
+      "actor_migration": "compile_time_rejected",
+      "cleanup_paths_proven": [
+        "fallthrough",
+        "return",
+        "nested_return"
+      ],
+      "test_evidence": {
+        "source_sha": "4b123a29f9d390d07f31d9bf7d6a8f338da712db",
+        "source_tree_mirrored": false,
+        "exact_blob_count": 47,
+        "source_approval": "streempilot-test/browser-studio-e2e",
+        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43322278786",
+        "run_result": "SUCCESS",
+        "test_receipt": "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:3:5",
+        "compiler": "LLVM 19",
+        "host_linker_optimization": [
+          "O0",
+          "O2"
+        ],
+        "positive_native_guest_cases": 3,
+        "negative_compiler_cases": 5
+      },
+      "limitations": [
+        "full_shared_nominal_SpanScope",
+        "async_await",
+        "cancel",
+        "throw_raise_panic",
+        "runtime_observers",
+        "otlp_export",
+        "trace_context_actor_transfer"
+      ]
+    },
+    "java_graal": {
+      "status": "SOURCE_ONLY_COMPILER_CANDIDATE",
+      "implementation": "synthetic_lexical_binding_try_finally",
+      "provider_identity": "test_defined_nominal_class_not_trusted_runtime_intrinsic",
+      "in_scope_alias_observers": "test_provider_only",
+      "suspension": "unverified",
+      "actor_migration": "unverified",
+      "test_evidence": {
+        "runtime_execution": "NOT_EXECUTED",
+        "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
+        "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054"
+      },
+      "limitations": [
+        "trusted_native_span_provider",
+        "transitive_cleanup_effects",
+        "suspension_and_cancel",
+        "runtime_jit_attach",
+        "native_otel_export"
+      ]
+    },
+    "forge": {
+      "status": "NOT_EXECUTED"
+    },
+    "net": {
+      "status": "NOT_EXECUTED"
+    },
+    "wasm": {
+      "status": "NOT_EXECUTED"
+    }
+  },
+  "equivalence_gate": {
+    "current": "NOT_MET",
+    "must_match": [
+      "syntax",
+      "nominal_resource_ownership",
+      "constructor_trust",
+      "cleanup_paths",
+      "effect_constraints",
+      "no_escape",
+      "disabled_semantics"
+    ],
+    "aot_compiler_backends_may_use_opaque_lowering": true,
+    "cannot_claim_full_parity_with_source_only_tests": true,
+    "cannot_claim_full_parity_with_host_C_tests": true,
+    "authorized_exact_head_receipts_required": true
+  }
+}
