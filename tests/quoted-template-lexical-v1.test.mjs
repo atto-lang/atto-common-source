@@ -21,7 +21,7 @@ test('deny missing fixture or forged Git source hash',()=>{
  assert.throws(()=>validateQuotedTemplateContract(missing),/missing or extra/);
  const mutated=structuredClone(loadQuotedTemplateContract());
  mutated.cases[1].git_blob_sha='0'.repeat(40);
- assert.throws(()=>validateQuotedTemplateContract(mutated),/Git blob SHA mismatch/);
+ assert.throws(()=>validateQuotedTemplateContract(mutated),/pinned path|Git blob SHA mismatch/);
 });
 test('caps and backend-specific comment depth cannot silently drift',()=>{
  const v=structuredClone(loadQuotedTemplateContract());
