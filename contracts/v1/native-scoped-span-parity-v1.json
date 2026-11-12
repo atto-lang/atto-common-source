@@ -57,11 +57,11 @@
         "conditional_not_taken"
       ],
       "test_evidence": {
-        "source_sha": "a9da61553ff81a24d3ffb373aedbed9ba76f6bf0",
+        "source_sha": "3466e3702094eaeb413382c16cdadd9a7a56161f",
         "source_tree_mirrored": false,
-        "exact_blob_count": 47,
+        "exact_blob_count": 48,
         "source_approval": "streempilot-test/browser-studio-e2e",
-        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880",
+        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43325381462",
         "run_result": "SUCCESS",
         "test_receipt": "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:5:5",
         "compiler": "LLVM 19",
@@ -80,7 +80,28 @@
         "runtime_observers",
         "otlp_export",
         "trace_context_actor_transfer"
-      ]
+      ],
+      "live_probe_control": {
+        "status": "EXECUTED_RESTRICTED_SUBSET",
+        "activation_kind": "precompiled_dormant_aot_probe",
+        "authority": "trusted_host_only",
+        "process_restarted": false,
+        "jit_added_new_probes": false,
+        "source_sha": "3466e3702094eaeb413382c16cdadd9a7a56161f",
+        "exact_blob_count": 48,
+        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43325381462",
+        "result": "SUCCESS",
+        "receipt": "LLVM_AOT_LIVE_PROBE_TOGGLE_EXECUTION_PASS:O0:O2",
+        "same_process_activation": [
+          "off",
+          "on",
+          "off",
+          "on"
+        ],
+        "guest_calls": 4,
+        "spans_recorded": 2,
+        "unchanged_guest_result": 51
+      }
     },
     "java_graal": {
       "status": "SOURCE_ONLY_COMPILER_CANDIDATE",
@@ -92,15 +113,19 @@
       "test_evidence": {
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
-        "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054"
+        "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
+        "scope_junit_minimum_with_borrow_regression": 20
       },
       "limitations": [
         "trusted_native_span_provider",
         "transitive_cleanup_effects",
         "suspension_and_cancel",
         "runtime_jit_attach",
-        "native_otel_export"
-      ]
+        "native_otel_export",
+        "guest_compiler_literal_gate_unexecuted"
+      ],
+      "operation_argument": "nonempty_string_literal_at_most_256_utf8_bytes_candidate",
+      "source_scope_test_methods": 19
     },
     "forge": {
       "status": "NOT_EXECUTED"
