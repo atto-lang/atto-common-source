@@ -80,11 +80,22 @@ function check(candidate) {
   assert.equal(candidate.experimental_java_witness.scenarios.negative_compile_or_admission_variants,
     15);
   assert.equal(candidate.experimental_java_witness.scenarios.supported_number_of_inputs_per_actor, 1);
-  assert.equal(candidate.baseline_scoped_receipts.length, 1);
-  assert.equal(candidate.baseline_scoped_receipts[0].kind, 'SELECTED_SOURCE_GIT_BLOBS_ONLY');
-  assert.equal(candidate.baseline_scoped_receipts[0].total_tests, 94);
-  assert.equal(candidate.baseline_scoped_receipts[0].failed, 0);
-  assert.equal(candidate.baseline_scoped_receipts[0].skipped, 0);
+  assert.deepEqual(candidate.baseline_scoped_receipts.map(x => x.backend),
+    ['java_jvm21', 'java_graalvm25_jvm']);
+  assert.deepEqual(candidate.baseline_scoped_receipts.map(x => x.run_url), [
+    'https://github.com/voxletra/voxletra-e2e/actions/runs/43240063996',
+    'https://github.com/voxletra/voxletra-e2e/actions/runs/43240482935'
+  ]);
+  for (const receipt of candidate.baseline_scoped_receipts) {
+    assert.equal(receipt.kind, 'SELECTED_SOURCE_GIT_BLOBS_ONLY');
+    assert.equal(receipt.outcome, 'PASSED');
+    assert.equal(receipt.total_tests, 94);
+    assert.equal(receipt.failed, 0);
+    assert.equal(receipt.skipped, 0);
+    assert.equal(receipt.source_pr_sha, 'd20098a7270e98a91b34fb2a5f7d17a78fccbd07');
+  }
+  assert.equal(candidate.baseline_scoped_receipts[1].optimizing_machine_code_tier_proven, false);
+  assert.equal(candidate.baseline_scoped_receipts[1].native_image_proven, false);
   assert.deepEqual(Object.keys(candidate.full_backend_execution).sort(),
     ['forge','java','llvm','net','wasm']);
   assert.equal(candidate.full_backend_execution.java, 'NOT_EXECUTED_FULL_TREE');
@@ -121,6 +132,8 @@ test('security and backend evidence mutations cannot launder claims', () => {
     x => x.full_backend_execution.llvm = 'PASSED',
     x => x.full_backend_execution.java = 'PASSED',
     x => x.baseline_scoped_receipts[0].kind = 'FULL_SOURCE_TREE',
+    x => x.baseline_scoped_receipts[1].optimizing_machine_code_tier_proven = true,
+    x => x.baseline_scoped_receipts[1].native_image_proven = true,
     x => x.required_scenarios.pop()
   ];
   for(const [i, mutate] of changes.entries()) {
