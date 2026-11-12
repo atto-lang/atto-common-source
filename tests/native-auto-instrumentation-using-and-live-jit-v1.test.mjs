@@ -136,7 +136,7 @@ test("scoped SpanScope compiler target distinguishes executable subset from full
 test("LLVM native subset has exact executable receipt, not invented all-backend status", () => {
   const receipt = c.scoped_span_parity_v1.execution_evidence;
   assert.match(receipt.source_pr_head, /^[a-f0-9]{40}$/);
-  assert.equal(receipt.source_blobs_verified, 47);
+  assert.equal(receipt.source_blobs_verified, 48);
   assert.equal(receipt.full_git_tree_mirrored, false);
   assert.equal(receipt.source_carrier_approved, true);
   assert.equal(receipt.run_conclusion, "success");
@@ -144,6 +144,15 @@ test("LLVM native subset has exact executable receipt, not invented all-backend 
   assert.equal(receipt.guest_positive_cases, 5);
   assert.deepEqual(receipt.enabled_disabled_modes_executed, ["on", "off"]);
   assert.equal(receipt.conditional_taken_and_untaken_executed, true);
+  const liveAot = receipt.same_process_aot_toggle;
+  assert.equal(liveAot.status, "EXECUTED_HOST_CONTROLLED_PROBES_ONLY");
+  assert.deepEqual(liveAot.cycles, ["off", "on", "off", "on"]);
+  assert.equal(liveAot.guest_invocations, 4);
+  assert.equal(liveAot.recorded_spans, 2);
+  assert.equal(liveAot.no_process_restart, true);
+  assert.equal(liveAot.no_recompilation_between_invocations, true);
+  assert.equal(liveAot.dynamic_jit_probe_insertion, false);
+  assert.deepEqual(liveAot.clang_optimization_levels, ["O0", "O2"]);
   assert.equal(receipt.guest_negative_cases, 5);
   assert.deepEqual(receipt.clang_optimization_levels, ["O0", "O2"]);
   assert.equal(receipt.full_backend_matrix_certified, false);
