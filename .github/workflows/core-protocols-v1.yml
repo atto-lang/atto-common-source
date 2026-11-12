@@ -7,6 +7,7 @@ on:
       - 'tests/core-protocols-v1.test.mjs'
       - 'tests/core-actor-foundation-v1.test.mjs'
       - 'tests/core-actor-security-v1.test.mjs'
+      - 'tests/core-actor-concurrency-affinity-v1.test.mjs'
       - 'tests/native-actor-result-supervision-v1.test.mjs'
       - 'contracts/v1/native-actor-result-supervision-v1.json'
       - 'docs/NATIVE_ACTOR_RESULT_SUPERVISION_V1.md'
@@ -36,5 +37,5 @@ jobs:
           git diff --cached --quiet
       - name: Verify source-only protocol contract
         run: |
-          node --test tests/core-protocols-v1.test.mjs tests/core-actor-foundation-v1.test.mjs tests/core-actor-security-v1.test.mjs tests/native-actor-result-supervision-v1.test.mjs
+          node --test tests/core-protocols-v1.test.mjs tests/core-actor-foundation-v1.test.mjs tests/core-actor-security-v1.test.mjs tests/core-actor-concurrency-affinity-v1.test.mjs tests/native-actor-result-supervision-v1.test.mjs
           echo "ATTO_CORE_PROTOCOLS_GUEST_EXECUTION=NOT_EXECUTED"
