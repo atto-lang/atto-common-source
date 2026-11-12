@@ -52,22 +52,24 @@
       "cleanup_paths_proven": [
         "fallthrough",
         "return",
-        "nested_return"
+        "nested_return",
+        "conditional_taken",
+        "conditional_not_taken"
       ],
       "test_evidence": {
-        "source_sha": "4b123a29f9d390d07f31d9bf7d6a8f338da712db",
+        "source_sha": "a9da61553ff81a24d3ffb373aedbed9ba76f6bf0",
         "source_tree_mirrored": false,
         "exact_blob_count": 47,
         "source_approval": "streempilot-test/browser-studio-e2e",
-        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43322278786",
+        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880",
         "run_result": "SUCCESS",
-        "test_receipt": "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:3:5",
+        "test_receipt": "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:5:5",
         "compiler": "LLVM 19",
         "host_linker_optimization": [
           "O0",
           "O2"
         ],
-        "positive_native_guest_cases": 3,
+        "positive_native_guest_cases": 5,
         "negative_compiler_cases": 5
       },
       "limitations": [
