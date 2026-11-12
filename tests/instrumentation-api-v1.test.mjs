@@ -15,7 +15,7 @@ function classify(v) {
 
 test('instrumentation status is honest about missing execution and parity', () => {
   assert.equal(contract.schema, 'attolang.instrumentation.v1');
-  assert.match(contract.status, /NOT_EXECUTED/);
+  assert.match(contract.status, /NO_GUEST_OTLP/);
   for (const status of Object.values(contract.evidence)) {
     assert.ok(['NOT_EXECUTED', 'NOT_IMPLEMENTED'].includes(status));
   }
@@ -132,7 +132,7 @@ test('scoped using preserves existing borrow semantics and requires typed unwind
   assert.match(scoped.compatibility, /retains existing contextual using resource\.borrow/);
   assert.match(scoped.compiler_ast, /TryStmt finally/);
   assert.ok(scoped.behavior.some(x => x.includes('exactly once')));
-  assert.ok(scoped.current_limitations.some(x => x.includes('not executed')));
+  assert.ok(scoped.current_limitations.some(x => /NOT_EXECUTED|not executed/i.test(x)));
 });
 
 test('runtime policy switches only precompiled sites and does not permit patching', () => {
@@ -159,13 +159,13 @@ test('end-to-end target is not claimed as completed by synthetic harness tests',
 
 test('Java source milestones are partial and still require executed guest evidence', () => {
   const java = contract.implementation_progress.java_graal;
-  assert.match(java.call_probe, /automatic.*numeric timing/);
-  assert.match(java.recording, /NO OTLP export/);
+  assert.match(java.call_probe, /automatic.*numeric admission timing/);
+  assert.match(java.recording, /no OTLP export/i);
   assert.match(java.actor_context, /private mailbox metadata/);
   assert.match(java.task_context, /heap-retained TaskContext/);
-  assert.match(java.outbound_http, /W3C child traceparent/);
-  assert.match(java.inbound_http, /PARTIAL/);
-  assert.match(java.inbound_http, /semantic SERVER span/);
+  assert.match(java.outbound_http, /W3C v00 child/);
+  assert.match(java.inbound_http, /SERVER span starts/);
+  assert.match(java.inbound_http, /physical exchange retirement/);
   assert.match(java.host_composition_test, /No socket/);
   assert.match(java.exporter, /NOT_IMPLEMENTED/);
   assert.equal(contract.evidence.java_auto_calls_guest, 'NOT_EXECUTED');
@@ -177,6 +177,33 @@ test('LLVM W3C wire carrier is host ABI only, never promoted to guest parity', (
   const llvm = contract.implementation_progress.llvm;
   assert.match(llvm.w3c_v00, /no-allocation/);
   assert.match(llvm.source_guest, /NOT_IMPLEMENTED/);
-  assert.match(llvm.isolated_w3c_smoke, /NOT an exact GitHub head build/);
+  assert.match(llvm.isolated_w3c_smoke, /NOT LLVM-compiled Atto guest/);
   assert.equal(contract.evidence.llvm_traceparent_ctest, 'NOT_EXECUTED');
+});
+
+
+test('isolated exact-blob host smoke is real but cannot substitute for backend guests', () => {
+  const e = contract.host_smoke_evidence;
+  assert.equal(e.java_w3c.status, 'PASS_ISOLATED_EXACT_GITHUB_BLOB');
+  assert.match(e.java_w3c.blob_sha, /^[0-9a-f]{40}$/);
+  assert.match(e.java_w3c.scope_limit, /Not JDK25/);
+  assert.equal(e.java_semantic_staging.blobs.length, 3);
+  assert.equal(e.java_semantic_staging.status, 'PASS_ISOLATED_EXACT_GITHUB_BLOBS_WITH_TEST_STUBS');
+  assert.match(e.java_semantic_staging.result, /736 dropped/);
+  assert.equal(e.llvm_w3c_host.status, 'PASS_ISOLATED_EXACT_GITHUB_BLOBS');
+  assert.ok(e.llvm_w3c_host.sanitizers.includes('ASan'));
+  assert.ok(e.llvm_w3c_host.sanitizers.includes('UBSan'));
+  assert.match(e.llvm_w3c_host.scope_limit, /Not exact-head CMake/);
+  assert.equal(contract.evidence.zero_code_guest_end_to_end, 'NOT_EXECUTED');
+});
+
+test('staged semantic spans and native Atto batch are not misrepresented as OTLP export', () => {
+  const java = contract.implementation_progress.java_graal;
+  assert.match(java.semantic_span_lifecycle, /HOST STAGING IMPLEMENTED/);
+  assert.match(java.semantic_span_lifecycle, /idempotent Scope.finish/);
+  assert.match(java.exporter, /PARTIAL_NATIVE_ATTO_DATA_ONLY/);
+  assert.match(java.exporter, /actual source collector ACTOR/);
+  assert.match(java.exporter, /NOT_IMPLEMENTED/);
+  assert.match(java.scoped_using, /trusted SpanScope type\/effect.*NOT_IMPLEMENTED/);
+  assert.equal(contract.e2e_http_actor_client_otlp.status, 'NOT_IMPLEMENTED_NOT_EXECUTED');
 });
