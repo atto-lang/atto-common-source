@@ -77,7 +77,7 @@
   "caveats": [
     "Forge/.NET String guest lowering unsupported; positive lexical fixture must still fail with explicit STRING_BACKEND_UNSUPPORTED.",
     "Wasm host quote preflight is not LLVM wasm32 guest execution.",
-    "Java/LLVM comments above depth 128 have not been harmonized; do not claim global negative parity above this ceiling.",
+    "Java/LLVM 128-comment enforcement exists only in unmerged draft PRs #2967 and #1704; mainline five-backend parity is not yet established.",
     "No private Git objects may be transferred to unapproved cross-org CI destinations."
   ],
   "cases": [
@@ -160,6 +160,22 @@
       "reason": "comment-only interpolation is invalid",
       "typed_runtime_outcome": "NOT_EXECUTED",
       "git_blob_sha": "ec4e84df719ce63a8e3127ea8bea798166196c0d"
+    },
+    {
+      "id": "template-comment-within-limit",
+      "path": "fixtures/quoted-template-v1/template-comment-within-limit.atto",
+      "expect_lexical": "ACCEPT",
+      "reason": "128 nested interpolation block comments must be admitted",
+      "typed_runtime_outcome": "NOT_EXECUTED",
+      "git_blob_sha": "492454a4338ae06ed8d17c27a0b87f3d701ec6bb"
+    },
+    {
+      "id": "template-comment-over-limit",
+      "path": "fixtures/quoted-template-v1/template-comment-over-limit.atto",
+      "expect_lexical": "REJECT",
+      "reason": "129 nested interpolation block comments must fail closed",
+      "typed_runtime_outcome": "NOT_EXECUTED",
+      "git_blob_sha": "9d340ab2c63afc476f83c6aa339342881e656f73"
     }
   ],
   "generated_boundaries": [
@@ -185,5 +201,10 @@
       "profile": "forge/wasm/net only"
     }
   ],
-  "source_identity": "Every committed .atto fixture is anchored to its exact Git blob SHA; edits require a new manifest receipt."
+  "source_identity": "Every committed .atto fixture is anchored to its exact Git blob SHA; edits require a new manifest receipt.",
+  "pending_review": {
+    "java": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2967",
+    "llvm": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1704",
+    "status": "DRAFT_NOT_MERGED_NOT_EXECUTED"
+  }
 }
