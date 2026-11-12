@@ -65,11 +65,11 @@ suspends fnc get_profile(String id): String {
 }
 ~~~
 
-No annotation, new keyword or manual span call is required for compiler-selected function instrumentation or built-in I/O boundaries. Optional manual `using telemetry.span(...)` requires separate compiler validation, including deterministic cleanup across suspension and cancellation. `@trace` can optionally serve as a compile-time selection hint but must never be mandatory. Blanket per-function tracing stays disabled by default.
+No annotation, new keyword or manual span call is required for compiler-selected function instrumentation or built-in I/O boundaries. The existing `using` keyword MUST support `using telemetry.span(...) as span { ... }` as official scoped-resource syntax. The feature still requires compiler/parser/type/ownership/lowering implementation and verification. `@trace` can optionally serve as a compile-time selection hint but must never be mandatory. Blanket per-function tracing stays disabled by default.
 
 ## Automatic instrumentation from compiler, runtime and standard library
 
-AttoLang should generate AOT-compatible, fixed, typed probes at **compiler-known call sites, runtime lifecycle boundaries and standard-library I/O adapters**. Ordinary application code is unchanged. There must be no monkey patching, reflection, JVM agent, bytecode rewriting, dynamic proxy, or runtime source compilation.
+AttoLang should generate AOT-compatible, fixed, typed probes at **compiler-known call sites, runtime lifecycle boundaries and standard-library I/O adapters**. Ordinary application code is unchanged. There must be no arbitrary monkey patching, reflection, Java agent, dynamic proxy, unsafe in-place machine-code patching or untrusted runtime source compilation. An explicitly authorized JIT-enabled execution profile MAY compile a fresh immutable code version with probes from retained, verified typed IR.
 
 | Operation | Probe owner | Default signal |
 | --- | --- | --- |
@@ -93,13 +93,43 @@ probe_resume(scope_slot, suspension_id)
 probe_exit(scope_slot, outcome)
 ~~~
 
-These are *conceptual internal ABI calls*, not guest API or implemented functions. The opaque slot is a stack or continuation field; do not allocate a heap span object on the disabled path. Probe IDs and names come from compiler metadata rather than runtime reflection or request-derived strings. A runtime policy switch changes guards, never patches AOT code.
+These are *conceptual internal ABI calls*, not guest API or implemented functions. The opaque slot is a stack or continuation field; do not allocate a heap span object on the disabled path. Probe IDs and names come from compiler metadata rather than runtime reflection or request-derived strings. A runtime policy switch changes compiled dormant probe guards and never patches AOT code. Separately, a privileged opt-in JIT-enabled profile may publish a newly compiled immutable instrumented code generation from pinned typed IR.
 
 The compiler must insert exactly **one entry and one eventual exit per logical invocation**, not one per carrier turn. At `suspends` / `await`, retain the immutable context and slot in the continuation. Restore them at resume before guest execution, even after carrier migration. Optional suspension and queue events are not new function spans. Preserve nested spans, child task inheritance, detached-task explicit propagation, non-reentrant actor execution and per-actor lifetime ownership.
 
 All normal returns, propagated errors and cancellation/unwind paths must be modeled, including deterministic `using` and `finally` cleanup. Do not catch uncatchable panics, change application result/error, alter evaluation order, break `routine` direct-call requirements, or silently disable compiler-mandated tail-call optimization. A fatal process kill cannot guarantee an end event. A compiler that cannot preserve semantics must diagnose unsupported instrumentation rather than silently change the program. Compiler-inserted probes are trusted nonblocking bookkeeping, **not** user-visible effect grants or new capabilities.
 
 Static call-site selection is by bounded build-time filters, stable symbol identities and function kinds. Default production coverage is **boundaries**, not every function. Full-call/recursive instrumentation needs sample, depth, cardinality, memory and per-tenant quotas. FFI and third-party native internals can only be observed through AttoLang ABI adapters or an explicit native adapter.
+
+### Required compiler-owned scoped resource semantics
+
+This extends AttoLang's **existing** `using` keyword instead of creating a second keyword or conflating namespace imports (`use`), function effect declarations (`with`), and lexical state loans (`using state.read/write`). Existing state loans grant explicit critical read/write authority and prohibit suspension while a live non-suspendable state loan exists. A tracing span guard has different lifetime and may cross `await`, but it cannot authorize state access or privilege escalation.
+
+Proposed grammar target (not a claim of current compiler admission):
+
+~~~ebnf
+UsingSpan ::= "using" TelemetrySpanExpr "as" Identifier Block
+TelemetrySpanExpr ::= "telemetry" "." "span" "(" Expression ["," Expression] ")"
+Block ::= "{" Statement* "}"
+~~~
+
+Resolve the resource through trusted typed symbol identity, **not textual spelling**: an arbitrary user method named `telemetry.span` must not forge privileged cleanup. A sealed, statically verified scoped-resource descriptor/admitted type guarantees the guard is non-Sendable, nonescaping, owned by its lexical continuation/actor, cannot be double-ended, and can release without user I/O, arbitrary destructor code, or a new host capability. Nested guards restore the parent logical context.
+
+Conceptual lowering, not AttoLang source:
+
+~~~text
+guard = internal_span_enter(name, current_logical_execution)
+register_guard_in_continuation(guard)
+try: execute_block()
+finally:
+    internal_span_end_once(guard, terminal_reason)
+    restore_previous_context()
+~~~
+
+On `await`, store the live guard in the actor-owned continuation; resume on any carrier without starting a second span. Wall duration includes suspension. On normal exit/return/error/cancellation/STOP/restart invoke nonblocking terminalization exactly once *if the runtime can execute cleanup*; sudden process death is not recoverable. A matching `using state.write` loan cannot remain live across the same await. Cleanup cannot block a carrier, release a foreign actor's resource, or affect the function's result. Disabled telemetry creates no heap allocation, reads no clock and exports no record.
+
+Require compiler-backed positive/negative tests for early return, exception, nested spans, child tasks, await/resume on a different carrier, cancellation race, actor STOP/hot upgrade, explicit `span.end()` before scope exit, resource escape/alias, forged `telemetry.span`, invalid effect grants, and state.write loan live across await.
+
 
 ### Two-axis build and activation model
 
@@ -109,8 +139,9 @@ Static call-site selection is by bounded build-time filters, stable symbol ident
 | `boundaries` | HTTP/network/files/database, actors/tasks/channels/critical hooks | Off |
 | `calls` | Boundaries plus statically selected guest function/method probes | Off |
 | `full` | Broad call probes and detailed runtime diagnostics, strongly bounded | Off |
+| `adaptive` (JIT-only) | Trusted typed IR and JIT retained; trace-selected code versions compiled on demand | Off |
 
-A production trace-capable artifact should use `--instrument=boundaries`, while `[telemetry].enabled = false` is the default. Operators can activate only *compiled* probe sites without rebuilding. A `none` artifact cannot enable tracing by changing config. Context-only propagation may be configured independently of collection; it can incur W3C parsing/ID generation overhead and must not be called zero-overhead.
+A production trace-capable artifact should use `--instrument=boundaries` with `[telemetry].enabled=false` by default. Operators can activate dormant compiled sites without rebuilding; explicit `--instrument=adaptive` may instead generate probes with a resident trusted JIT compiler, subject to authorization. A strict `none` build remains uninstrumentable at runtime. Context-only propagation is independent and not free.
 
 **Example proposed package configuration; not accepted by a verified compiler:**
 
@@ -136,15 +167,43 @@ protocol = "otlp"
 
 The build flag is the maximum coverage; package policy can select a subset; runtime policy can only activate already compiled sites. Sampled span collection must distinguish OpenTelemetry `IsRecording` from the propagated `Sampled` trace flag: recording-but-unsampled is allowed; **sampled-but-nonrecording is not allowed** by the SDK. A nonrecording context can still propagate. Read supported `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SDK_DISABLED` at trusted initialization, tenant-scoped and capability-checked; never on the probe hot path. Untrusted remote trace flags are not authorization.
 
+### Opt-in live JIT re-instrumentation (no redeploy on supported runtimes)
+
+An authorized **JIT-capable** AttoLang runtime MAY recompile selected already deployed AttoLang functions from retained, immutable, source-hash-pinned and compiler-validated typed IR into new instrumented code. This is **not** the same as modifying an existing function object in place, injecting a Java agent, reflecting over user objects, patching machine bytes or executing new untrusted source. It is controlled-dynamism code-generation governed by tenant policy, ownership, effects and actor-generation fencing.
+
+GraalVM Truffle exposes first-party dynamic instrumentation, including execution listeners and dynamically enabled Bytecode DSL instrumentation. Its generic listener path can insert AST wrappers and force deoptimization. Prefer an **Atto-owned static probe/JIT code-versioning path** for the production ABI; do not equate generic Truffle attachment with proven AttoLang span, effects or continuation correctness. Source references: https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/bytecode/Instrumentation.html ; https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/instrumentation/Instrumenter.html .
+
+Proposed `--instrument=adaptive` (JIT-capable only) is an **explicitly allowed fifth coverage profile**: no call tracing active initially, but the build retains signed/hash-pinned typed IR, a trusted resident runtime compiler, and a capability-scoped control path. `none` remains strict: all probes stripped and **no** dynamic re-instrumentation. For hard realtime or full guest sealed AOT, use precompiled dormant probes (`boundaries` / `calls`), not a resident JIT.
+
+An operator-only example (control-plane pseudocode, not guest API):
+
+~~~text
+telemetry.trace.enable(
+  target = "InventoryService.*",
+  sampling_rate = 0.1,
+  duration = "60s"
+)
+~~~
+
+Protocol:
+1. Authenticate operator and tenant, check code-image ID, generation, target-function allowlist, budget, source hash, compiler version and JIT permission. No arbitrary source/code injection or cross-tenant attachment.
+2. Produce fresh immutable instrumented code from *the same* typed IR and semantics; preserve effects, borrow constraints, method identity/ABI, tail calls, state/stack layout and cancellation. Bound compilation time, code-cache bytes, frequency and number of instrumented functions.
+3. Publish a new versioned callable/dispatch target atomically after runtime admission/fencing. **New invocations** use traced code; old active/suspended frames continue using old code and context without retroactive span injection. No speculative on-stack replacement without a separate safety proof.
+4. On disable/TTL expiry, publish the baseline target for new calls. Reclaim retired code only after active and suspended frames quiesce; guard identity and exact-once exit remain tied to their original code generation.
+5. Log bounded administrative receipts (source/compiler/code-generation identities, who enabled, which functions, effective epoch, TTL, number of affected new calls, drops, quota hits) without leaking request payloads.
+
+Limitations: A sealed LLVM/native AOT executable or Graal Native Image without guest JIT/retained IR cannot synthesize missing function probes just by changing configuration. The existing **JVM/Truffle** profile may be able to do so once integrated; the mere fact a host is built with GraalVM does not establish live JIT support. Dynamic compilation requires host executable-memory permission and has unpredictable recompilation/deoptimization costs. Hard realtime deployments should prefer fixed dormant probes. Mark unsupported profiles `JIT_REINSTRUMENTATION_UNAVAILABLE` rather than claiming zero-redeploy tracing.
+
+
 ### Automatic span lifecycle and de-duplication
 
 An HTTP client instrumentation owns the one logical HTTP CLIENT span per documented operation/attempt; underlying TCP/read/write may add nested diagnostic spans or simple metrics, not duplicate HTTP CLIENT spans. Keep end-to-end wall duration (includes awaits) distinct from active CPU time, queue delay and I/O time. Instrument actual retries without counting them twice. Message creation/send and processing contexts should follow OTel messaging conventions, with links for batching, fan-in and non-parent message relations. No automatic recording of body, cookie, auth header, raw URL, query, customer payload or arbitrary SQL.
 
 The exporter itself must be excluded from auto-instrumentation to avoid recursive tracing. A privileged telemetry-collector actor (or supervisor-owned exporter when needed) drains bounded actor/scheduler buffers and exports asynchronously with explicit endpoint permissions, no synchronous request-path output. On saturation it drops telemetry, increments saturating counters and preserves application progress.
 
-### Optional manual `using` API
+### Required scoped `using telemetry.span(...) as span { ... }` API
 
-Manual business spans may use this future surface; it is not needed for ordinary automatic HTTP, actor, task or selected call traces. Syntax below is **proposed only**, pending full `use`/`using` grammar and effects conformance.
+**Normative language requirement:** AttoLang `using` MUST bind the lexical `telemetry.span(name)` resource with `as span { body }`. This is required language semantics, distinct from optional use in an application. Current compiler/guest execution acceptance is **NOT EXECUTED**; do not claim the parser already supports this exact form.
 
 ~~~atto
 use std.telemetry as telemetry;
@@ -156,7 +215,7 @@ pub fnc checkout(Order order): Result {
 }
 ~~~
 
-A `using` guard must be deterministic across errors, cancellations, suspension and actor STOP, without transferring a mutable live span to another actor. Until proven, use explicit try/finally and no claim of compiler support.
+`using` span guards MUST be exactly-once closed while the owning runtime remains alive across normal return, early return, exception, cancellation, STOP, generation retirement and async suspension. A fatal process kill cannot guarantee delivery. Guards stay actor/execution-owned and non-Sendable; only immutable context crosses mailboxes. A disabled span uses a nonrecording zero-allocation guard; there is no blocking I/O or guest callback in cleanup. Existing state-loan `using state.read/write` remains non-suspendable. Syntax is required but **not yet implemented**.
 
 
 ## Logical context, actors and suspends/await
@@ -210,12 +269,12 @@ Follow OpenTelemetry semantic conventions where applicable: stable operation nam
 
 P0: Approve versioned API, fixed compiler/runtime probe ABI, build-coverage/runtime-enable policy split, pure context data model and W3C parser/vector contract; keep Trace and oreslang-otel compatibility.
 
-P1: Add Java compiler-generated call enter/exit/unwind probes; core execution-context continuation capture/restore and immutable actor envelope metadata; prove await/suspension, cancellation/STOP and generation fencing.
+P1: Add Java compiler-generated call enter/exit/unwind probes, `using telemetry.span(...) as span { }` parsing/type/lowering, core execution-context continuation capture/restore and immutable actor envelope metadata; prove await/suspension, cancellation/STOP and generation fencing.
 
-P2: Implement .atto-facing std.telemetry facade, bounded actor buffers/collector, optional manual spans/logs/metrics, and automatic HTTP client/server hooks on the Java reference lane. Execute real .atto positive and negative fixtures.
+P2: Implement .atto-facing std.telemetry facade, bounded actor buffers/collector, required scoped spans/logs/metrics, and automatic HTTP client/server hooks on the Java reference lane. Execute real .atto positive and negative fixtures.
 
 P3: Add off-carrier, authorized OTLP exporter, scope sampling, privacy controls, metrics label budget and failure/drop receipts.
 
-P4: Port and prove LLVM/.NET/Wasm/Forge/JS, sealed full guest AOT, and steady-state/disabled-path benchmarks; only then promote cross-backend production claims.
+P4: Prototype/validate privileged JIT-adaptive compiler versioning and prove LLVM/.NET/Wasm/Forge/JS, sealed full guest AOT with dormant probes, and baseline/traced/adaptive performance under stress; only then promote cross-backend production claims.
 
 References: https://www.w3.org/TR/trace-context/ ; https://opentelemetry.io/docs/specs/otel/trace/api/ ; https://opentelemetry.io/docs/specs/semconv/http/http-spans/ ; https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/ .
