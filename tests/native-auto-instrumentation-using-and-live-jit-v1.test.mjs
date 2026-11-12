@@ -141,7 +141,9 @@ test("LLVM native subset has exact executable receipt, not invented all-backend 
   assert.equal(receipt.source_carrier_approved, true);
   assert.equal(receipt.run_conclusion, "success");
   assert.match(receipt.carrier_run, /^https:\/\/github\.com\/streempilot-test\/browser-studio-e2e\/actions\/runs\/[0-9]+$/);
-  assert.equal(receipt.guest_positive_cases, 3);
+  assert.equal(receipt.guest_positive_cases, 5);
+  assert.deepEqual(receipt.enabled_disabled_modes_executed, ["on", "off"]);
+  assert.equal(receipt.conditional_taken_and_untaken_executed, true);
   assert.equal(receipt.guest_negative_cases, 5);
   assert.deepEqual(receipt.clang_optimization_levels, ["O0", "O2"]);
   assert.equal(receipt.full_backend_matrix_certified, false);
