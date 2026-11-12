@@ -169,3 +169,175 @@ Required backend evidence includes:
 - [OTel tracing SDK and sampling](https://opentelemetry.io/docs/specs/otel/trace/sdk/)
 - [OTel HTTP semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/)
 - [OTel messaging spans](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/)
+
+## v1 reconciliation: three native producers, one trace plane
+
+This section refines the initial proposal with the 2026-11-12 automatic-
+instrumentation design. Its detailed requirements take priority over vague
+examples above; it does **not** certify implementation. In particular
+`using telemetry.span(...)` is **illustrative non-normative syntax**; do not
+introduce a new `using` language construct merely for instrumentation.
+
+**Three independent producers share one versioned span/event ABI:**
+
+| Producer | Source of semantic identity | Emissions |
+| --- | --- | --- |
+| Compiler | verified, typed callable/async MIR and static source descriptor | selected function entry/exit, suspend/resume, guaranteed terminal cleanup |
+| Runtime | actor, task, mailbox, supervisor, continuation, channel and critical-state transition | context handoff, processing spans, bounded scheduling/wait/lock metrics |
+| Atto stdlib | `ores.std.http`, `ores.std.net`, `ores.std.fs`, registered database and messaging drivers | server/client span, I/O outcome, producer/consumer process spans |
+
+The compiler and runtime MUST **deduplicate** overlapping semantic boundaries:
+a compiler probe around a built-in HTTP handler does not produce a second
+HTTP server span. Function-level child spans are optionally independent but
+must be distinguishable from semantic boundary spans. No dynamic hooks,
+monkey patching, method wrappers, Java agents, reflection or JIT-only paths.
+
+### Instrumentation lowering and effect safety
+
+Conceptual typed-MIR operation:
+`probe_enter(descriptor_id, context_slot) -> scope_token`;
+`probe_leave(scope_token, outcome)`. An `invalid` token means no recording.
+The compiler inserts terminal cleanup on **all paths**: normal return,
+`?` early return, `trap`, `throw`, `raise`, `panic`, cancellation,
+cooperative preemption, and exceptional unwinding. The scope token is opaque,
+owned by one logical execution, and generation-fenced on actor restart or
+hot reload. An aborted or duplicated terminal path cannot publish twice.
+
+The probe ABI is a privileged, non-throwing, non-allocating-if-disabled,
+non-suspending side-channel. It MUST NOT evaluate lazy user expressions,
+change borrowed data, invoke guest callbacks, introduce an observable
+`throws`/`raises`/`panics` effect or cause an actor carrier to park.
+Clock reads and numeric buffering occur only after enabled/sampled checks.
+The emitted code can retain a cheap branch when disabled. Only
+`--instrument=none` removes all probe sites and their instruction cost.
+
+**Descriptor identity:** stable within a compiled artifact by canonical
+module, qualified callable, semantic signature, compiler source position and
+manifest version; deterministic across identical inputs. Static descriptors
+are cold-path data, not formatted on the hot path. Instrumented inlined
+functions need an explicit profile policy for logical spans; never silently
+advertise complete call coverage.
+
+### Logical context, not carrier thread state
+
+Each active continuation/task stores immutable trace context and an owned
+span-scope token. The actor-message **envelope** carries immutable correlation
+metadata; neither actor-private memory nor raw pointers are transferred.
+Capture/restore occurs at `await`, task spawn, select, actor enqueue/receive,
+cross-carrier migration, supervision and restart. On batch/fan-in, create
+OTel **links** when there are multiple causal inputs; do not fabricate one
+parent. For messaging operations, choose OTel `PRODUCER`, `CLIENT` and
+`CONSUMER` kinds by operation type (`create`, `send`, `receive`,
+`process`, `settle`), not by whether the code uses an actor.
+
+Recording and propagation are independent state:
+a non-recording span can keep a valid trace/span ID, flags and tracestate.
+`is_recording` suppresses expensive attributes, but the sampling decision
+belongs to a sampler, not to the instrumentation check alone. Root, local-
+parent and remote-parent policies must be separately handled. A remote sampled
+bit is **untrusted advice**, not permission to escape a local sample/memory/
+egress budget. Use an OTel-compatible parent-based sampler, not an ad-hoc
+per-span Bernoulli sampler that fragments whole traces.
+
+### Runtime modes, configuration precedence and privacy
+
+Separate **compile availability** (`none`, `boundaries`,
+`functions`, optionally a future diagnostic profile) from runtime
+**collection** (`off`/`on`) and **propagation** (`off`/`on`).
+The Atto package config is a proposed non-normative TOML surface, not a
+guaranteed parser. Default: runtime off, exporter none, no unexpected
+outbound trace headers when tracing is off. Explicit propagation-only
+operation MAY be enabled independently in a compatible build, but never
+creates spans, touches a clock or exports data.
+
+The canonical proposed package fields are `telemetry.enabled`,
+`telemetry.instrumentation`, `telemetry.sampling_rate`,
+`telemetry.auto.{functions,http,network,database,actors,tasks,channels,filesystem}`
+and `telemetry.export.protocol`. Do not equate this package configuration
+with a compiler feature already present.
+
+Hosted SDK adapters SHOULD accept the standard OpenTelemetry environment
+variables `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`,
+`OTEL_SDK_DISABLED`, `OTEL_TRACES_SAMPLER`,
+`OTEL_TRACES_SAMPLER_ARG`, `OTEL_PROPAGATORS`,
+`OTEL_TRACES_EXPORTER`, `OTEL_EXPORTER_OTLP_ENDPOINT` and
+`OTEL_EXPORTER_OTLP_PROTOCOL`. Parse once at startup and follow OpenTelemetry
+value semantics. Proposed precedence:
+(1) explicit capability/security denies always win, including egress deny;
+(2) `OTEL_SDK_DISABLED=true` disables SDK recording/exports, **not**
+independently enabled propagation (OTel requirement);
+(3) explicit CLI instrumentation/runtime flags override Atto package defaults;
+(4) explicit OTEL SDK settings configure the opted-in SDK, but an OTEL
+endpoint by itself **does not turn Atto tracing on**.
+Invalid conflicting policy must fail closed before application execution.
+
+`--trace=off` means no automatic span collection/export. Unless
+propagation was separately opted in, it also means no injected trace headers.
+Enabled propagation mutates HTTP wire headers by design and therefore MUST
+be distinguished from the "application results unchanged" tracing-disabled
+test. Trace headers are permitted *only* on admitted network operations
+using a trusted stdlib transport. Incoming trace identifiers do not confer
+authority and can be dropped at untrusted boundaries.
+
+Use W3C Trace Context IDs (128-bit trace and 64-bit span IDs, nonzero,
+lowercase hex encoding), validate version and lengths, cap `tracestate`,
+and never auto-capture baggage, secrets, arbitrary headers, query text,
+bind parameters, request bodies, filenames or userland object graphs.
+OTLP export requires a separately granted egress capability, endpoint
+allowlist, timeout, byte budget and bounded retry policy. If permissions or
+strict nonblocking transport support are unavailable, fail closed without
+host-worker I/O fallback. Start with OTLP/HTTP protobuf; add gRPC only on
+verified async transport implementations.
+
+### Span duration and signal choices
+
+- Server HTTP spans begin at request admission and end on response completion
+  or terminal failure; record method, **route template**, status and bounded
+  error type. Avoid per-request unique path/URL attributes.
+- HTTP client spans cover individual attempted sends; correctly model
+  redirects/retries and cancellation. No required user code.
+- Database client spans begin at recognized driver operations and do not
+  introspect arbitrary native FFI or serialize SQL bind values.
+- Actor processing spans attach to the message's causal context. Mailbox
+  queue latency, runnable delay, admission drops and CONTROL priority are
+  primarily low-cardinality numeric metrics/events; do not emit a span for
+  every scheduler tick or raw socket read.
+- Filesystem operations may use a bounded I/O span where one logical call
+  justifies it; network socket readiness is usually a metric/event.
+- Critical-read/write contention and hold duration are bounded
+  metrics/events. No trace recording may acquire the guarded state or await
+  while a critical borrow is held.
+
+Collect into preallocated per-worker/actor shards, hand off via
+nonblocking `try_send` to a dedicated native Atto collector actor, and
+export through an **independent** async exporter actor. Instrumentation
+**must exclude the collector/exporter and their low-level transport**
+to avoid infinite recursive spans. On pressure, drop and count; limits
+cover span count, per-span attribute count/bytes, event count, sampler
+CPU, queue bytes, export retries and collector shutdown work.
+Crash delivery is best-effort, not guaranteed.
+
+### Cross-backend admission priority
+
+P0: lock immutable context/event ABI, source descriptor registry, typed
+compiler probes, actor/continuation context and terminal exact-once
+contracts for Java/Graal and LLVM.
+P1: Atto-owned HTTP/network hooks, native bounded collector actor,
+W3C context propagation, OTLP export and real end-to-end trace checks.
+P2: independent `.net` Native AOT, Wasm workers, Forge and
+JavaScript lowering; registered DB/messaging adapters; call filtering,
+sampling performance and hot-reload generation fences.
+
+Each backend must separately publish exact source/toolchain hashes,
+real `.atto` compiler invocation, output artifact digest, positive and
+negative guest execution, sanitizer/ownership cases where supported,
+nonblocking and backpressure proof, and overhead measurements for
+`none`, `off`, and `on`. Source-only schema or host-model tests are
+not proof of executable instrumentation parity.
+
+See also:
+[OTel SDK tracing](https://opentelemetry.io/docs/specs/otel/trace/sdk/),
+[OTel environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/),
+[OTel messaging conventions](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/),
+[OTLP exporter](https://opentelemetry.io/docs/specs/otel/protocol/exporter/)
+and [W3C Trace Context](https://www.w3.org/TR/trace-context/).
