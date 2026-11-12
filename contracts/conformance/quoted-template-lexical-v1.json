@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "atto.quoted-template.lexical.v1",
   "source_extension": ".atto",
-  "scope": "compiler frontend lexical and syntactic admission; neither guest String results nor execution receipts",
+  "scope": "compiler frontend admission (scanner plus parser/lowering), not scanner-only or guest String execution",
   "oracle": "Java/Graal and LLVM native ordinary-string semantics, with strict template escapes",
   "semantics": {
     "ordinary_quotes": {
@@ -78,104 +78,105 @@
     "Forge/.NET String guest lowering unsupported; positive lexical fixture must still fail with explicit STRING_BACKEND_UNSUPPORTED.",
     "Wasm host quote preflight is not LLVM wasm32 guest execution.",
     "Java/LLVM 128-comment enforcement exists only in unmerged draft PRs #2967 and #1704; mainline five-backend parity is not yet established.",
-    "No private Git objects may be transferred to unapproved cross-org CI destinations."
+    "No private Git objects may be transferred to unapproved cross-org CI destinations.",
+    "For empty/comment-only interpolation the complete Java/LLVM frontends reject during expression parsing/lowering, not during initial quote-boundary scanning. Per-backend stages are pinned; expect_frontend is not a scanner-only oracle."
   ],
   "cases": [
     {
       "id": "ordinary-single-double",
       "path": "fixtures/quoted-template-v1/quoted-single-double.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "both ordinary quote delimiters preserve opposite quote",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "482f4d445b1362a6e25afebe21b31dddf4089610"
+      "git_blob_sha": "482f4d445b1362a6e25afebe21b31dddf4089610",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "ordinary-raw-newline",
       "path": "fixtures/quoted-template-v1/quoted-raw-newline.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "legacy ordinary quotes preserve raw multiline data",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "d14a06e3c4d97abd7f5a52a639e61b37fe1bc932"
+      "git_blob_sha": "d14a06e3c4d97abd7f5a52a639e61b37fe1bc932",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "ordinary-unknown-escape",
       "path": "fixtures/quoted-template-v1/quoted-unknown-escape.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "legacy ordinary unknown escape preserves escaped character, not a lexical error",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "ecd686c9d699c1feaa036a877eae07914afb92c6"
+      "git_blob_sha": "ecd686c9d699c1feaa036a877eae07914afb92c6",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "ordinary-paired-surrogates",
       "path": "fixtures/quoted-template-v1/quoted-paired-surrogates.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "paired UTF-16 unicode escapes represent one scalar",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "eabfa239411992233ef3e11e1d5c03b6a1f6ee7e"
+      "git_blob_sha": "eabfa239411992233ef3e11e1d5c03b6a1f6ee7e",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "template-nested-quote",
       "path": "fixtures/quoted-template-v1/template-nested-quote.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "quoted braces stay inside interpolation expression",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "bcebbd9b8e7ab845fe3159b60e87289c6ab66c25"
+      "git_blob_sha": "bcebbd9b8e7ab845fe3159b60e87289c6ab66c25",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "template-multiline",
       "path": "fixtures/quoted-template-v1/template-multiline.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "template raw LF is admitted",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "477ea27739cb82a9c5b6010c000ba38096a1c5b2"
+      "git_blob_sha": "477ea27739cb82a9c5b6010c000ba38096a1c5b2",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "ordinary-lone-surrogate",
       "path": "fixtures/quoted-template-v1/quoted-lone-surrogate.atto",
-      "expect_lexical": "REJECT",
       "reason": "unpaired Unicode escape fails before typed lowering",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "d214352ede41c3f87b35745695603823a85fad13"
+      "git_blob_sha": "d214352ede41c3f87b35745695603823a85fad13",
+      "expect_frontend": "REJECT"
     },
     {
       "id": "template-invalid-escape",
       "path": "fixtures/quoted-template-v1/template-invalid-escape.atto",
-      "expect_lexical": "REJECT",
       "reason": "backtick escape grammar is strict",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "54bb6e47d5c60123871de1eeb5167b5d0807c1fd"
+      "git_blob_sha": "54bb6e47d5c60123871de1eeb5167b5d0807c1fd",
+      "expect_frontend": "REJECT"
     },
     {
       "id": "template-empty-interpolation",
       "path": "fixtures/quoted-template-v1/template-empty-interpolation.atto",
-      "expect_lexical": "REJECT",
       "reason": "empty interpolation is invalid",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "d9710c2432be5d2b7166bbff7a12687ea32f4bce"
+      "git_blob_sha": "d9710c2432be5d2b7166bbff7a12687ea32f4bce",
+      "expect_frontend": "REJECT"
     },
     {
       "id": "template-comment-only",
       "path": "fixtures/quoted-template-v1/template-comment-only.atto",
-      "expect_lexical": "REJECT",
       "reason": "comment-only interpolation is invalid",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "ec4e84df719ce63a8e3127ea8bea798166196c0d"
+      "git_blob_sha": "ec4e84df719ce63a8e3127ea8bea798166196c0d",
+      "expect_frontend": "REJECT"
     },
     {
       "id": "template-comment-within-limit",
       "path": "fixtures/quoted-template-v1/template-comment-within-limit.atto",
-      "expect_lexical": "ACCEPT",
       "reason": "128 nested interpolation block comments must be admitted",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "492454a4338ae06ed8d17c27a0b87f3d701ec6bb"
+      "git_blob_sha": "492454a4338ae06ed8d17c27a0b87f3d701ec6bb",
+      "expect_frontend": "ACCEPT"
     },
     {
       "id": "template-comment-over-limit",
       "path": "fixtures/quoted-template-v1/template-comment-over-limit.atto",
-      "expect_lexical": "REJECT",
       "reason": "129 nested interpolation block comments must fail closed",
       "typed_runtime_outcome": "NOT_EXECUTED",
-      "git_blob_sha": "9d340ab2c63afc476f83c6aa339342881e656f73"
+      "git_blob_sha": "9d340ab2c63afc476f83c6aa339342881e656f73",
+      "expect_frontend": "REJECT"
     }
   ],
   "generated_boundaries": [
@@ -206,5 +207,28 @@
     "java": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2967",
     "llvm": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1704",
     "status": "DRAFT_NOT_MERGED_NOT_EXECUTED"
+  },
+  "admission_stage_profiles": {
+    "template-empty-interpolation": {
+      "java": "PARSER_LOWERING",
+      "llvm": "PARSER_LOWERING",
+      "forge": "SCANNER",
+      "wasm": "HOST_PREFLIGHT",
+      "net": "SCANNER"
+    },
+    "template-comment-only": {
+      "java": "PARSER_LOWERING",
+      "llvm": "PARSER_LOWERING",
+      "forge": "SCANNER",
+      "wasm": "HOST_PREFLIGHT",
+      "net": "SCANNER"
+    }
+  },
+  "backend_specific_source_limits": {
+    "wasm": {
+      "max_utf8_bytes": 1048576,
+      "unpaired_utf16": "REJECT_BEFORE_TOKENIZATION",
+      "portability": "WASM_HOST_ONLY_NOT_SHARED_COMPILER_LIMIT"
+    }
   }
 }
