@@ -1,16 +1,19 @@
 {
-  "schema": "attolang.core-std.instrumentation.v1",
+  "schema": "attolang.auto-instrumentation.v1",
   "status": "PROPOSED_NOT_IMPLEMENTED",
   "source_extension": ".atto",
   "legacy_alias_policy": "preserve existing .ores imports; no silent ABI rename",
   "owners": {
-    "core": "core.instrumentation",
-    "std": "std.instrumentation",
+    "core": "core.trace",
+    "std": "std.telemetry",
     "compatibility": [
       "stdlib/trace.ores",
       "oreslang-otel/src/otel.ores",
       "CorePerf"
-    ]
+    ],
+    "resolved_core_namespace": "ores.core",
+    "resolved_std_namespace": "ores.std",
+    "internal_abi": "compiler-runtime fixed telemetry probe v1"
   },
   "surface": {
     "types": [
@@ -36,7 +39,7 @@
       "ERROR"
     ],
     "methods": [
-      "trace.start",
+      "telemetry.span.start",
       "trace.current",
       "span.context",
       "span.is_recording",
@@ -51,7 +54,8 @@
       "metrics.gauge",
       "metrics.histogram",
       "log.emit"
-    ]
+    ],
+    "optional_manual_scope": "using telemetry.span(name) as span (proposed, not compiler-verified)"
   },
   "boundaries": {
     "context_storage": "logical_execution_or_continuation_not_carrier_tls",
@@ -135,7 +139,81 @@
       "disabled_no_clock_or_allocation",
       "untrusted_otlp_endpoint_fails_capability_admission",
       "exporter_recursion_and_shutdown_bounded",
-      "actual_otlp_decode_and_trace_join"
+      "actual_otlp_decode_and_trace_join",
+      "compiler_function_exactly_one_scope_across_suspends_resume",
+      "full_diagnostic_sampling_and_depth_limit",
+      "instrumented_uninstrumented_observational_equivalence",
+      "probes_do_not_add_guest_visible_effects",
+      "tracing_context_and_span_lifetime_across_critical_section",
+      "compiler_tail_call_and_routine_direct_call_semantics",
+      "recording_and_sampled_flag_matrix"
+    ],
+    "compiler_runtime": [
+      {
+        "id": "normal_return",
+        "mode": "calls",
+        "expect": "one enter, one exit; unchanged return"
+      },
+      {
+        "id": "recursive_depth_budget",
+        "mode": "full",
+        "expect": "bounded spans and deterministic drop count"
+      },
+      {
+        "id": "exception_and_uncatchable_trap",
+        "mode": "calls",
+        "expect": "original error/trap unchanged; best-effort terminal probe"
+      },
+      {
+        "id": "await_resume_carrier_migration",
+        "mode": "calls",
+        "expect": "one enter/exit, no new function span on resume"
+      },
+      {
+        "id": "cancel_race_same_scope",
+        "mode": "calls",
+        "expect": "exactly one terminal outcome; no continuation leak"
+      },
+      {
+        "id": "actor_restart_generation_fence",
+        "mode": "boundaries",
+        "expect": "old generation cannot reenter or export new actor span"
+      },
+      {
+        "id": "critical_contention",
+        "mode": "boundaries",
+        "expect": "no telemetry blocking, wait and hold timing only"
+      },
+      {
+        "id": "http_retries_and_native_io",
+        "mode": "boundaries",
+        "expect": "no duplicate HTTP CLIENT spans; nested diagnostic spans only"
+      },
+      {
+        "id": "disabled_trace_capable",
+        "mode": "boundaries",
+        "expect": "no clock, record allocation, format, network export"
+      },
+      {
+        "id": "stripped_build_runtime_enabled",
+        "mode": "none",
+        "expect": "no probes despite runtime request; explicit config handling"
+      },
+      {
+        "id": "otel_sample_flags",
+        "mode": "boundaries",
+        "expect": "sampled nonrecording forbidden; recording unsampled allowed"
+      },
+      {
+        "id": "using_scope_suspension_cancel",
+        "mode": "calls",
+        "expect": "exactly once cleanup; not executable until grammar admission"
+      },
+      {
+        "id": "native_ffi_limit",
+        "mode": "calls",
+        "expect": "external native function internals not observed without adapter"
+      }
     ]
   },
   "targets": [
@@ -148,5 +226,116 @@
     "js"
   ],
   "evidence_rule": "exact_head_and_tree_nonzero_steps_real_guest_and_wire_receipts_independent_review",
-  "claims": "No runtime behavior, backend parity or OTLP exporter is added by this contract."
+  "claims": "Contract-only update to PR #277; no compiler/runtime instrumentation implementation, guest execution, CI evidence or OTel wire interoperability is certified.",
+  "compiler": {
+    "no_monkey_patching": true,
+    "no_java_agents": true,
+    "no_reflection": true,
+    "no_runtime_bytecode_rewriting": true,
+    "aot_probe_ids": "stable within immutable build; statically linked numeric symbol ids",
+    "probe_abi": {
+      "version": 1,
+      "conceptual_only": true,
+      "events": [
+        "ENTER",
+        "SUSPEND",
+        "RESUME",
+        "EXIT"
+      ],
+      "exits": [
+        "RETURN",
+        "ERROR",
+        "CANCEL",
+        "TRAP",
+        "ACTOR_STOP",
+        "GENERATION_REVOKED"
+      ],
+      "scope_storage": "stack_or_continuation_slot_no_heap_allocation_disabled",
+      "function_span_rule": "one_enter_one_exit_per_logical_invocation_not_per_resume",
+      "implicit_effect": "trusted_nonblocking_bookkeeping_without_guest_capabilities",
+      "semantics": "preserve_return_trap_error_cancellation_tail_call_critical_nonreentrancy"
+    },
+    "coverage": {
+      "none": {
+        "probes": "stripped",
+        "runtime_toggle": false
+      },
+      "boundaries": {
+        "probes": "http_io_actor_task_channel_critical",
+        "runtime_toggle": true
+      },
+      "calls": {
+        "probes": "boundaries_plus_selected_functions",
+        "runtime_toggle": true
+      },
+      "full": {
+        "probes": "calls_plus_diagnostic_scheduler_allocator",
+        "runtime_toggle": true
+      }
+    },
+    "runtime_enabled_by_default": false,
+    "function_selection": "build_time_filters_static_symbol_metadata",
+    "limits": [
+      "per_tenant_byte_budget",
+      "per_actor_event_budget",
+      "max_nested_spans",
+      "max_links",
+      "max_event_attributes",
+      "drop_counter_saturates"
+    ],
+    "guarantees": [
+      "no_export_from_app_carrier",
+      "no_probes_in_critical_that_suspend",
+      "no_exporter_self_instrumentation",
+      "exact_one_end_per_admitted_scope_except_process_death",
+      "disabled_no_clock_no_format_no_record_alloc"
+    ]
+  },
+  "telemetry_configuration": {
+    "file": ".ores.pkg.toml",
+    "status": "PROPOSED_NOT_COMPILER_VERIFIED",
+    "telemetry": {
+      "enabled": false,
+      "instrumentation": "boundaries",
+      "sampling_rate": 0.05
+    },
+    "auto": {
+      "functions": false,
+      "http": true,
+      "network": true,
+      "database": true,
+      "actors": true,
+      "tasks": true,
+      "channels": true,
+      "filesystem": true
+    },
+    "export": {
+      "protocol": "otlp"
+    },
+    "standard_environment": [
+      "OTEL_SERVICE_NAME",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_SDK_DISABLED"
+    ],
+    "requires_privileged_startup_and_export_capability": true,
+    "compiler_stripping_is_upper_bound": true,
+    "context_propagation_independent_of_collection": true
+  },
+  "otel_semantics": {
+    "kinds": [
+      "INTERNAL",
+      "SERVER",
+      "CLIENT",
+      "PRODUCER",
+      "CONSUMER"
+    ],
+    "nonrecording_sampled_invalid": true,
+    "recording_unsampled_allowed": true,
+    "valid_span_context_may_propagate_while_not_recording": true,
+    "messaging_process_uses_links_for_fan_in": true,
+    "no_body_credentials_cookies_raw_query_or_user_sql_by_default": true,
+    "w3c_traceparent_and_tracestate_required_for_wire_interop": true,
+    "otlp_exporter_not_yet_implemented": true,
+    "legacy_jsonl_not_otlp": true
+  }
 }
