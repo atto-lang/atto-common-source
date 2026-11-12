@@ -76,7 +76,21 @@
       "Native actor output is an immutable scalar sample, not owned generic request/reply",
       "Host compiler/actor subset does not establish whole original Git tree identity",
       "No LLVM/Wasm/Forge/.NET compiled conformance to the Java test syntax"
-    ]
+    ],
+    "computed_source_path": "tests/fixtures/native-actor-result-v1/java-checked-computed-output.atto",
+    "computed_git_blob_sha": "10695cb41e3e5250567593b1d173bfd5dc2ed192",
+    "computed_pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2982",
+    "computed_scenarios": {
+      "guest_values": [
+        42,
+        99,
+        8
+      ],
+      "checked_addend": 1,
+      "invalid_expression_variants": 9,
+      "overflow_must_fail_without_output": true,
+      "unaffected_sibling_continues": true
+    }
   },
   "baseline_scoped_receipts": [
     {
