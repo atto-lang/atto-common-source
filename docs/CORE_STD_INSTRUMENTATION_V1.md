@@ -1,4 +1,4 @@
-# AttoLang core/std instrumentation API v1 (proposed)
+# AttoLang automatic compiler/runtime/core/std instrumentation API v1 (proposed)
 
 **Status: API and cross-backend conformance proposal only.** The compiler/runtime implementation, new guest module, automated hooks, W3C propagation and OTLP transport described here are **NOT IMPLEMENTED** by this document. Nothing in this proposal certifies guest execution, native AOT, or parity.
 
@@ -10,11 +10,11 @@
 - Runtime CorePerf is a distinct fixed-phase diagnostic profiler, not a user-visible distributed tracing SDK.
 - Do not add new guest algorithms primarily in Java. Implement public composition in .atto; keep host code to minimal scheduler, clock, wire I/O, secure entropy and capability-enforcement primitives. Rust is preferred for tooling; do not introduce Python.
 
-The new API should be a coherent facade/adaptor above these pieces, not an incompatible recorder.
+The new API should be a coherent facade/adaptor above these pieces, not an incompatible recorder. The established public tiers remain `ores.core` (freestanding) and `ores.std` (hosted); proposed ergonomic `core.trace` / `std.telemetry` spelling must respect trusted resolution and legacy aliases.
 
 ## Modules and API
 
-### Pure core: core.instrumentation
+### Pure core: core.trace (canonical ores.core.trace)
 
 Contains no I/O or exporter:
 
@@ -24,7 +24,7 @@ Contains no I/O or exporter:
 - SpanContext.is_valid(), is_sampled(), parse_traceparent(String) and format_traceparent(TraceContext) as pure functions. Invalid remote identifiers are rejected. An absent/invalid traceparent starts a fresh locally generated context at the admitting server layer, not here.
 - No mutable global tracer, thread/carrier-local ambient context, reflection, dynamic class creation or runtime code generation.
 
-### Standard library: std.instrumentation
+### Standard library: std.telemetry (canonical ores.std.telemetry)
 
 Proposed public operations, names to be proven by compiler-backed guest tests:
 
@@ -40,16 +40,16 @@ Proposed public operations, names to be proven by compiler-backed guest tests:
 | trace.inject_http(context, mutable_header_writer), trace.extract_http(headers) | W3C Trace Context, trust- and size-checked, no general header capture. |
 | metrics.counter(name, delta, labels?), gauge(name, value, labels?), histogram(name, sample, unit, labels?) | Stable metric identity, bounded label cardinality; never a per-request ID label. |
 | log.emit(level, message, attributes?) | Structured log correlated to current immutable context; privacy policy applies. |
-| instrumentation.configure(config) | A privileged supervisor/startup operation, not a per-call mutable global or guest escape hatch. |
+| telemetry.configure(config) | A privileged supervisor/startup operation, not a per-call mutable global or guest escape hatch. |
 
 API examples below are **illustrative expected syntax**, NOT current executable fixtures:
 
 ~~~atto
 // Proposed, not compiler-verified. New module implemented primarily in .atto.
-import module instrumentation from "std/instrumentation";
+import module telemetry from "std/telemetry";
 
 suspends fnc get_profile(String id): String {
-  val span = instrumentation.trace.start("profile.get", "INTERNAL");
+  val span = telemetry.trace.start("profile.get", "INTERNAL");
   // Compiler/runtime will eventually guarantee end on success/error,
   // cancellation, STOP and panic. Until then callers use try/finally.
   try {
@@ -65,7 +65,99 @@ suspends fnc get_profile(String id): String {
 }
 ~~~
 
-No new keyword is required. An opt-in compile-time annotation such as @trace may be considered later; it must lower to static AOT probes and real cleanup edges, not reflective wrappers. Blanket per-function spans are OFF by default because they amplify overhead and cardinality.
+No annotation, new keyword or manual span call is required for compiler-selected function instrumentation or built-in I/O boundaries. Optional manual `using telemetry.span(...)` requires separate compiler validation, including deterministic cleanup across suspension and cancellation. `@trace` can optionally serve as a compile-time selection hint but must never be mandatory. Blanket per-function tracing stays disabled by default.
+
+## Automatic instrumentation from compiler, runtime and standard library
+
+AttoLang should generate AOT-compatible, fixed, typed probes at **compiler-known call sites, runtime lifecycle boundaries and standard-library I/O adapters**. Ordinary application code is unchanged. There must be no monkey patching, reflection, JVM agent, bytecode rewriting, dynamic proxy, or runtime source compilation.
+
+| Operation | Probe owner | Default signal |
+| --- | --- | --- |
+| Selected function/method enter and exit | Compiler HIR/MIR or backend-equivalent lowering | INTERNAL span, Calls mode |
+| Async suspend, resume, completion; task spawn | Continuation compiler and scheduler | Wait/resume timing, Boundaries mode |
+| Actor mailbox send/receive, STOP, restart | Runtime and supervisor | Message PROCESS link, queue and lifecycle metrics |
+| Channel and pub/sub delivery, select handoff | Runtime | Queue/wait metrics and optional span link |
+| Critical section acquire/contention/release | Runtime and effects engine | Wait/hold duration metrics; never block tracing |
+| HTTP client/server, TCP, filesystem, DNS, TLS | Standard library at actual privileged boundary | SERVER/CLIENT spans, I/O metrics |
+| Database and Kafka/NATS/RabbitMQ-style drivers | Trusted implementation adapters | DB CLIENT, message PRODUCER/CONSUMER |
+| Scheduler internals, allocator, hot paths | Separate CorePerf or fixed numeric diagnostic probes | Full diagnostic events |
+
+### Compiler probe ABI (v1 proposal)
+
+Use versioned, statically emitted `probe_id` and metadata (`symbol_id`, kind, source location, optional build/source identity). Probe sites have a fixed signature conceptually equivalent to:
+
+~~~text
+probe_enter(probe_id, logical_execution_id) -> opaque_scope_slot
+probe_suspend(scope_slot, suspension_id)
+probe_resume(scope_slot, suspension_id)
+probe_exit(scope_slot, outcome)
+~~~
+
+These are *conceptual internal ABI calls*, not guest API or implemented functions. The opaque slot is a stack or continuation field; do not allocate a heap span object on the disabled path. Probe IDs and names come from compiler metadata rather than runtime reflection or request-derived strings. A runtime policy switch changes guards, never patches AOT code.
+
+The compiler must insert exactly **one entry and one eventual exit per logical invocation**, not one per carrier turn. At `suspends` / `await`, retain the immutable context and slot in the continuation. Restore them at resume before guest execution, even after carrier migration. Optional suspension and queue events are not new function spans. Preserve nested spans, child task inheritance, detached-task explicit propagation, non-reentrant actor execution and per-actor lifetime ownership.
+
+All normal returns, propagated errors and cancellation/unwind paths must be modeled, including deterministic `using` and `finally` cleanup. Do not catch uncatchable panics, change application result/error, alter evaluation order, break `routine` direct-call requirements, or silently disable compiler-mandated tail-call optimization. A fatal process kill cannot guarantee an end event. A compiler that cannot preserve semantics must diagnose unsupported instrumentation rather than silently change the program. Compiler-inserted probes are trusted nonblocking bookkeeping, **not** user-visible effect grants or new capabilities.
+
+Static call-site selection is by bounded build-time filters, stable symbol identities and function kinds. Default production coverage is **boundaries**, not every function. Full-call/recursive instrumentation needs sample, depth, cardinality, memory and per-tenant quotas. FFI and third-party native internals can only be observed through AttoLang ABI adapters or an explicit native adapter.
+
+### Two-axis build and activation model
+
+| Compile-time `--instrument` mode (proposed) | Coverage available in AOT artifact | Default runtime state |
+| --- | --- | --- |
+| `none` | Optional probes stripped, cannot be enabled later | Off |
+| `boundaries` | HTTP/network/files/database, actors/tasks/channels/critical hooks | Off |
+| `calls` | Boundaries plus statically selected guest function/method probes | Off |
+| `full` | Broad call probes and detailed runtime diagnostics, strongly bounded | Off |
+
+A production trace-capable artifact should use `--instrument=boundaries`, while `[telemetry].enabled = false` is the default. Operators can activate only *compiled* probe sites without rebuilding. A `none` artifact cannot enable tracing by changing config. Context-only propagation may be configured independently of collection; it can incur W3C parsing/ID generation overhead and must not be called zero-overhead.
+
+**Example proposed package configuration; not accepted by a verified compiler:**
+
+~~~toml
+[telemetry]
+enabled = false
+instrumentation = "boundaries"
+sampling_rate = 0.05
+
+[telemetry.auto]
+functions = false
+http = true
+network = true
+database = true
+actors = true
+tasks = true
+channels = true
+filesystem = true
+
+[telemetry.export]
+protocol = "otlp"
+~~~
+
+The build flag is the maximum coverage; package policy can select a subset; runtime policy can only activate already compiled sites. Sampled span collection must distinguish OpenTelemetry `IsRecording` from the propagated `Sampled` trace flag: recording-but-unsampled is allowed; **sampled-but-nonrecording is not allowed** by the SDK. A nonrecording context can still propagate. Read supported `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SDK_DISABLED` at trusted initialization, tenant-scoped and capability-checked; never on the probe hot path. Untrusted remote trace flags are not authorization.
+
+### Automatic span lifecycle and de-duplication
+
+An HTTP client instrumentation owns the one logical HTTP CLIENT span per documented operation/attempt; underlying TCP/read/write may add nested diagnostic spans or simple metrics, not duplicate HTTP CLIENT spans. Keep end-to-end wall duration (includes awaits) distinct from active CPU time, queue delay and I/O time. Instrument actual retries without counting them twice. Message creation/send and processing contexts should follow OTel messaging conventions, with links for batching, fan-in and non-parent message relations. No automatic recording of body, cookie, auth header, raw URL, query, customer payload or arbitrary SQL.
+
+The exporter itself must be excluded from auto-instrumentation to avoid recursive tracing. A privileged telemetry-collector actor (or supervisor-owned exporter when needed) drains bounded actor/scheduler buffers and exports asynchronously with explicit endpoint permissions, no synchronous request-path output. On saturation it drops telemetry, increments saturating counters and preserves application progress.
+
+### Optional manual `using` API
+
+Manual business spans may use this future surface; it is not needed for ordinary automatic HTTP, actor, task or selected call traces. Syntax below is **proposed only**, pending full `use`/`using` grammar and effects conformance.
+
+~~~atto
+use std.telemetry as telemetry;
+pub fnc checkout(Order order): Result {
+  using telemetry.span("checkout") as span {
+    span.attribute("order.type", order.kind);
+    return process_order(order);
+  }
+}
+~~~
+
+A `using` guard must be deterministic across errors, cancellations, suspension and actor STOP, without transferring a mutable live span to another actor. Until proven, use explicit try/finally and no claim of compiler support.
+
 
 ## Logical context, actors and suspends/await
 
@@ -116,11 +208,11 @@ Follow OpenTelemetry semantic conventions where applicable: stable operation nam
 
 ## Implementation order
 
-P0: Approve versioned API, pure context data model and W3C parser/vector contract; keep Trace and oreslang-otel compatibility.
+P0: Approve versioned API, fixed compiler/runtime probe ABI, build-coverage/runtime-enable policy split, pure context data model and W3C parser/vector contract; keep Trace and oreslang-otel compatibility.
 
-P1: Add core execution-context continuation capture/restore and immutable actor envelope metadata; prove cancellation/STOP and generation fencing.
+P1: Add Java compiler-generated call enter/exit/unwind probes; core execution-context continuation capture/restore and immutable actor envelope metadata; prove await/suspension, cancellation/STOP and generation fencing.
 
-P2: Implement .atto-facing std instrumentation facade, bounded actor buffers, manual spans/logs/metrics, and HTTP client/server hooks on the Java reference lane. Execute real .atto positive and negative fixtures.
+P2: Implement .atto-facing std.telemetry facade, bounded actor buffers/collector, optional manual spans/logs/metrics, and automatic HTTP client/server hooks on the Java reference lane. Execute real .atto positive and negative fixtures.
 
 P3: Add off-carrier, authorized OTLP exporter, scope sampling, privacy controls, metrics label budget and failure/drop receipts.
 
