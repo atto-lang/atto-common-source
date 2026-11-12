@@ -44,11 +44,15 @@ test("LLVM has narrow exact-head executable proof, not general parity", () => {
   assert.match(llvm.test_evidence.source_sha, /^[a-f0-9]{40}$/);
   assert.equal(llvm.test_evidence.source_tree_mirrored, false);
   assert.equal(llvm.test_evidence.exact_blob_count, 47);
-  assert.equal(llvm.test_evidence.positive_native_guest_cases, 3);
+  assert.equal(llvm.test_evidence.positive_native_guest_cases, 5);
   assert.equal(llvm.test_evidence.negative_compiler_cases, 5);
   assert.deepEqual(llvm.test_evidence.host_linker_optimization, ["O0", "O2"]);
   assert.equal(llvm.test_evidence.test_receipt,
-    "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:3:5");
+    "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:5:5");
+  assert.deepEqual(llvm.cleanup_paths_proven, [
+    "fallthrough", "return", "nested_return",
+    "conditional_taken", "conditional_not_taken"
+  ]);
   assert.ok(llvm.limitations.includes("async_await"));
   assert.ok(llvm.limitations.includes("full_shared_nominal_SpanScope"));
 });
