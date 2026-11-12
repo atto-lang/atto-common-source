@@ -108,13 +108,13 @@
       "implementation": "synthetic_lexical_binding_try_finally",
       "provider_identity": "test_defined_nominal_class_not_trusted_runtime_intrinsic",
       "in_scope_alias_observers": "test_provider_only",
-      "suspension": "unverified",
+      "suspension": "syntactic_await_yield_select_task_denied_unverified_transitive_effects",
       "actor_migration": "unverified",
       "test_evidence": {
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
         "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
-        "scope_junit_minimum_with_borrow_regression": 20
+        "scope_junit_minimum_with_borrow_regression": 22
       },
       "limitations": [
         "trusted_native_span_provider",
@@ -122,10 +122,12 @@
         "suspension_and_cancel",
         "runtime_jit_attach",
         "native_otel_export",
-        "guest_compiler_literal_gate_unexecuted"
+        "guest_compiler_literal_gate_unexecuted",
+        "continuation_owned_frames_unimplemented"
       ],
       "operation_argument": "nonempty_string_literal_at_most_256_utf8_bytes_candidate",
-      "source_scope_test_methods": 19
+      "source_scope_test_methods": 21,
+      "unwind": "throw_raise_panic_parser_denied_not_execution_proven"
     },
     "forge": {
       "status": "NOT_EXECUTED"
