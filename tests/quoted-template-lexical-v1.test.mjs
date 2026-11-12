@@ -51,3 +51,29 @@ test('draft Java/LLVM comment-budget PRs cannot be relabeled merged in evidence'
  forged.pending_review.llvm='https://github.com/other/other/pull/1';
  assert.throws(()=>validateQuotedTemplateContract(forged),/unverified Java\/LLVM/);
 });
+
+test('complete frontend outcome is distinct from scanner-only rejection',()=>{
+ const m=loadQuotedTemplateContract();
+ for(const id of ['template-empty-interpolation','template-comment-only']) {
+  assert.equal(m.cases.find(c=>c.id===id).expect_frontend,'REJECT');
+  assert.equal(m.admission_stage_profiles[id].java,'PARSER_LOWERING');
+  assert.equal(m.admission_stage_profiles[id].llvm,'PARSER_LOWERING');
+ }
+ const forged=structuredClone(m);
+ forged.admission_stage_profiles['template-comment-only'].java='SCANNER';
+ assert.throws(()=>validateQuotedTemplateContract(forged),/scanner-vs-parser stage/);
+ const stale=structuredClone(m);
+ stale.cases[0].expect_lexical='ACCEPT';
+ assert.throws(()=>validateQuotedTemplateContract(stale),/fixture identity/);
+});
+
+test('Wasm-specific UTF-8 byte bound is not a global source limit',()=>{
+ const m=loadQuotedTemplateContract();
+ assert.equal(m.backend_specific_source_limits.wasm.max_utf8_bytes,1048576);
+ const bad=structuredClone(m);
+ bad.backend_specific_source_limits.wasm.max_utf8_bytes=1048577;
+ assert.throws(()=>validateQuotedTemplateContract(bad),/Wasm byte-budget/);
+ const other=structuredClone(m);
+ other.backend_specific_source_limits.java={max_utf8_bytes:1048576};
+ assert.throws(()=>validateQuotedTemplateContract(other),/Wasm byte-budget/);
+});
