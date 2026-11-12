@@ -118,7 +118,10 @@
     "auto_compiler_probes": "NOT_IMPLEMENTED",
     "auto_runtime_probes": "NOT_IMPLEMENTED",
     "auto_stdlib_hooks": "NOT_IMPLEMENTED",
-    "zero_code_guest_end_to_end": "NOT_EXECUTED"
+    "zero_code_guest_end_to_end": "NOT_EXECUTED",
+    "scoped_using_java_guest": "NOT_EXECUTED",
+    "java_runtime_probe_gate_test": "NOT_EXECUTED",
+    "auto_otel_e2e": "NOT_IMPLEMENTED"
   },
   "vectors": [
     {
@@ -305,5 +308,92 @@
       "ores.std/telemetry": "proposed hosted Tracer/Span/metrics API and bounded asynchronous collector/export; optional in user applications",
       "internal/probe_abi": "not importable from guest code; compiler and trusted runtime-only entry/exit/suspend/resume hooks"
     }
+  },
+  "scoped_using": {
+    "status": "JAVA_PARSER_LOWERING_PROPOSED_GUEST_TESTS_NOT_EXECUTED",
+    "spelling": "using telemetry.span(name) as span { body }",
+    "compatibility": "retains existing contextual using resource.borrow() as view and does not repurpose using effect declarations",
+    "compiler_ast": "lexical BlockStmt with single-evaluation binding and checked TryStmt finally closing span.end()",
+    "protocols": "future normative using Scope with typed no-throw, non-suspending end; module alias must resolve to trusted ores.std/telemetry",
+    "behavior": [
+      "evaluate span expression exactly once before entering body",
+      "activate scope on entry and restore previous logical TraceContext on exit",
+      "close exactly once on fallthrough, return, guest failure, throw, raise and cancellation",
+      "async suspension stores immutable parent context in owned continuation, not host thread",
+      "actor loan/generation/tenant enforcement; no mutable Span across actor mail",
+      "cleanup cannot mask original guest failure, panic CONTROL or cancellation",
+      "return type and guest-visible effects unchanged"
+    ],
+    "current_limitations": [
+      "parser sugar currently accepts identifier telemetry with method span and lowers into existing finally;",
+      "native std.telemetry Span type and nonthrowing protocol checks not implemented",
+      "runtime context activation and telemetry collector not implemented",
+      "real guest tests authored, not executed",
+      "LLVM lowering not implemented"
+    ]
+  },
+  "dynamic_activation": {
+    "status": "JAVA_GRAAL_HOST_GATE_IMPLEMENTED_AS_UNINTEGRATED_FOUNDATION_TESTS_NOT_EXECUTED",
+    "no_redeploy_if": "all desired sites pre-emitted, or JIT enabled with retained validated HIR/MIR and ability to compile new instrumented bodies",
+    "no_monkey_patching": true,
+    "allowed_mechanisms": [
+      "trace-capable AOT pre-emitted dormant probe slots toggled atomically by trusted operator",
+      "Java/Graal Truffle Assumption invalidation and deoptimization then recompilation of existing probe-capable nodes",
+      "future governed LLVM ORC JIT of retained typed MIR with versioned function-dispatch cells and quiescent epoch swap"
+    ],
+    "rejected_mechanisms": [
+      "runtime bytecode rewriting",
+      "Java agents",
+      "untrusted dynamic imports",
+      "patching arbitrary executable pages",
+      "reinterpreting sealed AOT as JIT",
+      "replacing live function bodies without generation fencing"
+    ],
+    "backend_constraints": {
+      "java_graal_jvm": "runtime mode toggles precompiled probe sites; assumption invalidates optimized call targets; JIT must be enabled",
+      "java_graal_native_image": "only precompiled optional probes and runtime gate unless separately verified hybrid JIT; Native Image alone cannot inject absent call sites",
+      "llvm_aot": "no new probes if stripped; pre-emitted sites can toggle; governed ORC JIT only in explicit hybrid profile with retained verified MIR and W^X policy",
+      "wasm": "only retained precompiled hooks; host worker code may be separately redeployed under approved policy, not patched by userland",
+      "forge": "JIT can replace versioned compiled code from validated IR with quiescence; AOT only has precompiled hooks",
+      "net_native_aot": "precompiled probes only, no arbitrary runtime IL emission or JIT"
+    },
+    "control": {
+      "per_isolate": true,
+      "authorization": "trusted operator control plane only",
+      "max_coverage": "compiled coverage ceiling is never exceeded",
+      "generation": "atomically publish new policy, invalidate old assumptions, fence stale callbacks and collector context",
+      "change_semantics": "eventually visible to future call entries; in-flight spans close under captured policy; no hard real-time recompile on critical path",
+      "off_semantics": "no new event allocation, clock read, formatting, I/O or user callback after policy disabled and quiesced",
+      "restore": "old functions/binaries retained until last active frame finishes; reject unsupported profile"
+    }
+  },
+  "e2e_http_actor_client_otlp": {
+    "status": "NOT_IMPLEMENTED_NOT_EXECUTED",
+    "goal": "first actual unmodified .atto handler receiving inbound request, sending immutable trace context through actor mail, making outbound HTTP, and delivering parented spans to OTLP receiver",
+    "steps": [
+      "compile same .atto fixture in Java/Graal JIT trace-capable mode and run guest server",
+      "issue inbound HTTP request with valid W3C traceparent; verify SERVER span created automatically",
+      "send actor message and verify immutable Context metadata attached outside payload and reconstructed on receive",
+      "perform outbound loopback HTTP request and verify injected traceparent parent/span and CLIENT span without manually supplied headers",
+      "capture async native collector batch with bounded queue and dropped counter through OTLP receiver",
+      "assert correct trace IDs, parent/child or link semantics, no secrets/raw URLs/credentials, nonblocking producer",
+      "rerun exact same compiled .atto source under LLVM; require real native code compilation/execution and equivalent context/span topology"
+    ],
+    "required_evidence": [
+      "exact source Git SHA",
+      "actual backend compiler command and exit",
+      "nonempty runner steps",
+      "raw application stdout/stderr hash",
+      "actual incoming/outgoing wire capture",
+      "OTLP receiver payload and validation",
+      "monotonic timing and saturation evidence"
+    ],
+    "forbidden_shortcut": "synthetic trace fixtures, source-free checkers, Java-only fake userland spans and zero-step Actions never count as E2E PASS",
+    "blockers": [
+      "missing compiler-inserted probe entry/exit to application spans",
+      "no native async collector exporter",
+      "no complete native std HTTP server/client ownership and loopback path on both Java and LLVM",
+      "no W3C propagation in actor send and HTTP client"
+    ]
   }
 }
