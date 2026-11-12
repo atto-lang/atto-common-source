@@ -15,6 +15,8 @@ const CASES = new Map([
  ['template-invalid-escape','REJECT'],
  ['template-empty-interpolation','REJECT'],
  ['template-comment-only','REJECT'],
+ ['template-comment-within-limit','ACCEPT'],
+ ['template-comment-over-limit','REJECT'],
 ]);
 // Independent immutable v1 oracle: updating both the manifest and the
 // physical file must not silently redefine a reviewed fixture.
@@ -29,6 +31,8 @@ const PINNED_GIT_BLOBS = new Map([
  ['template-invalid-escape',['fixtures/quoted-template-v1/template-invalid-escape.atto','54bb6e47d5c60123871de1eeb5167b5d0807c1fd']],
  ['template-empty-interpolation',['fixtures/quoted-template-v1/template-empty-interpolation.atto','d9710c2432be5d2b7166bbff7a12687ea32f4bce']],
  ['template-comment-only',['fixtures/quoted-template-v1/template-comment-only.atto','ec4e84df719ce63a8e3127ea8bea798166196c0d']],
+ ['template-comment-within-limit',['fixtures/quoted-template-v1/template-comment-within-limit.atto','492454a4338ae06ed8d17c27a0b87f3d701ec6bb']],
+ ['template-comment-over-limit',['fixtures/quoted-template-v1/template-comment-over-limit.atto','9d340ab2c63afc476f83c6aa339342881e656f73']],
 ]);
 const BACKENDS = ['java','llvm','wasm','forge','net'];
 const EXPECTED_LIMITS = {
