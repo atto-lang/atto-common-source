@@ -105,7 +105,7 @@ test("portable .atto lexical span fixtures have pinned source-only oracles", () 
   assert.equal(oracle.cases.length, 2);
   assert.deepEqual(oracle.cases.map(x => x.expected_stdout), ["FBCA", "FBC"]);
   for (const item of oracle.cases) {
-    assert.match(item.source, /^[a-z0-9-]+\\.atto$/);
+    assert.match(item.source, /^[a-z0-9-]+\.atto$/);
     const source = readFileSync(new URL(item.source, root), "utf8");
     assert.ok(source.includes('using telemetry.span("checkout") as span {'));
     assert.ok(source.includes("pub fnc main(): void"));
