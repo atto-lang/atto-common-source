@@ -92,13 +92,15 @@
     "propagation": "inject/extract W3C headers at trust boundary; preserve context across await, actor send/receive, restart generation fencing",
     "export": "bounded async collector; OTLP exporter optional and capability-gated; no hot-path I/O",
     "automatic_hooks": [
-      "function annotation",
-      "outbound HTTP",
-      "inbound HTTP",
-      "TCP read/write/connect",
+      "compiler-selected function and method entry/exit without annotations",
+      "HTTP server receive and response lifecycle",
+      "HTTP client request/response",
+      "TCP connect/read/write",
       "file read/write",
-      "actor send/receive",
-      "await suspend/resume"
+      "database driver query boundary",
+      "actor message send/admit/receive and supervisor lifecycle",
+      "await suspend/resume and task spawn",
+      "channel send/receive and critical-section wait/hold"
     ],
     "attribute_policy": "static low cardinality keys; route templates not raw URLs; no credentials, headers, bodies, query strings or raw payloads",
     "default": "off, opt in and sample; existing core log/debug/perf flags are independent"
@@ -112,7 +114,11 @@
     "forge": "NOT_EXECUTED",
     "net": "NOT_EXECUTED",
     "distributed_propagation": "NOT_IMPLEMENTED",
-    "otel_export": "NOT_IMPLEMENTED"
+    "otel_export": "NOT_IMPLEMENTED",
+    "auto_compiler_probes": "NOT_IMPLEMENTED",
+    "auto_runtime_probes": "NOT_IMPLEMENTED",
+    "auto_stdlib_hooks": "NOT_IMPLEMENTED",
+    "zero_code_guest_end_to_end": "NOT_EXECUTED"
   },
   "vectors": [
     {
@@ -188,5 +194,110 @@
       "started_ns": 1,
       "buffer_full": true
     }
-  ]
+  ],
+  "auto_instrumentation": {
+    "status": "PROPOSED_NOT_IMPLEMENTED",
+    "goal": "zero-code tracing; no application-level imports, annotations or wrappers needed",
+    "forbidden": [
+      "monkey patching",
+      "Java agents",
+      "reflection-based interception",
+      "dynamic bytecode rewriting",
+      "linker injection",
+      "uncontrolled host callbacks"
+    ],
+    "mechanisms": {
+      "compiler": "typed HIR/MIR instrumentation of selected callable bodies and async state machine exits",
+      "runtime": "fixed scheduling, actor, mailbox, continuation, channel and critical admission lifecycle probes",
+      "stdlib": "semantic spans at Atto-native HTTP, network, filesystem, database and messaging boundaries",
+      "foreign_ffi": "only native adapter hooks at explicit capability boundaries; never promise arbitrary third-party internals"
+    },
+    "build": {
+      "default": "trace_capable",
+      "variants": [
+        "trace_capable",
+        "trace_stripped"
+      ],
+      "trace_capable": "compile fixed low-cardinality boundaries; emit optional callable probes only if selected by build profile; all tracing disabled at runtime until explicit opt-in",
+      "trace_stripped": "elide optional probes entirely; cannot turn on missing call-site coverage without rebuilding",
+      "options": {
+        "emit": "--instrument=none|boundaries|calls|full",
+        "scopes": "compile-time include/exclude stable fully qualified symbols; use snake_case and avoid dynamic user strings",
+        "precedence": "build-time coverage is an upper bound; runtime can enable a subset but cannot add missing probes"
+      }
+    },
+    "runtime": {
+      "enabled_default": false,
+      "modes": [
+        "off",
+        "boundaries",
+        "calls",
+        "full"
+      ],
+      "default_enabled_mode": "boundaries",
+      "sampling_default_when_enabled": 0.05,
+      "sampling": "parent-based deterministic root sampling, bounded for traces and spans; sampled=false context remains propagate-able when explicitly authorized",
+      "config": "operator CLI or package config; no application source edits",
+      "effective_mode": "min(compiled_coverage, runtime_selected_mode); off overrides all",
+      "backpressure": "drop eligible telemetry, increment bounded drop counters, never block actor execution"
+    },
+    "configuration": {
+      "package_table": "telemetry",
+      "environment": [
+        "OTEL_SERVICE_NAME",
+        "OTEL_SDK_DISABLED",
+        "OTEL_TRACES_SAMPLER",
+        "OTEL_TRACES_SAMPLER_ARG",
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "OTEL_PROPAGATORS"
+      ],
+      "operator_control": "--telemetry=off|boundaries|calls|full; --telemetry-sampling-rate=0..1 (proposed)",
+      "environment_cannot_grant": "network/filesystem/trace-export capabilities and cross-tenant context propagation",
+      "otel_disabled_semantics": "OTEL_SDK_DISABLED disables recording and export; any explicit propagation policy remains independent as specified by OTEL_PROPAGATORS",
+      "attributes": "allowlisted semantic attributes; bounded key/value sizes and cardinality"
+    },
+    "probe_abi": {
+      "purpose": "compiler intrinsic/runtime internal only, not a callable userland hook interface",
+      "recording": "disabled guard and sampler must run before timestamp or expensive argument construction",
+      "shape": [
+        "should_record(site_id, context) -> decision",
+        "enter(site_id, kind, context, decision) -> token",
+        "exit(token, outcome, duration_ns)",
+        "suspend(token, continuation_id, actor_generation)",
+        "resume(continuation_id, actor_generation)"
+      ],
+      "storage": "preallocated bounded actor/scheduler shards or nonblocking collector try_send; no guest object references",
+      "site_id": "stable compiler-defined numeric canonical symbol/operation identity; disambiguated independently of source line offsets",
+      "outcome": [
+        "return",
+        "throw",
+        "raise",
+        "panic",
+        "cancel"
+      ],
+      "error_handling": "telemetry failure never replaces guest error, modifies authorization, or suppresses supervisor CONTROL notice",
+      "lifecycle": "exactly once completed spans where execution unwinds normally, including cancel/recover; fatal process abort may only preserve bounded crash-safe data opportunistically",
+      "async": "trace context attached to owned continuation and message envelope; not OS/JVM thread local",
+      "deduplication": "one semantic HTTP/DB operation span; optional lower-level TCP events are children/metrics and must not duplicate operation spans",
+      "host_boundary": "separate runtime-internal diagnostic events from optional exported application-safe spans"
+    },
+    "propagation": {
+      "default_off": "do not capture, export or automatically forward untrusted context unless propagation explicitly permitted",
+      "enabled_unsampled": "preserve immutable valid W3C parent context even for nonrecording spans, without allocating local span events",
+      "carrier": "logical task, continuation, channel envelope or actor-mail metadata; no pointers or mutable guest span transfer",
+      "messaging": "producer and consumer spans plus links when topology is fan-out/batch; single-parent rules otherwise",
+      "security": "strict W3C parsing, baggage allowlist, quotas, actor incarnation/generation and tenant trust checks",
+      "restart": "revoked generation cannot revive context on late callback"
+    },
+    "behavior_gates": [
+      "disabled record/clock/allocation/format/IO counters remain zero",
+      "compiled stripped profiles contain no optional probe references",
+      "trace-capable binary toggles emission via operator config without rebuild",
+      "real user guest has no instrumentation calls and still emits HTTP/actor spans when enabled",
+      "real guest return/error/cancel/panic/mailbox/critical behavior equals uninstrumented run",
+      "sampling and nonrecording propagation align with OpenTelemetry",
+      "runtime cross-backend verifiers execute actual guest and I/O rather than source-only simulations"
+    ]
+  }
 }
