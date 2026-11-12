@@ -50,6 +50,11 @@ export function validateQuotedTemplateContract(contract, root=ROOT) {
  for(const [name,value] of Object.entries(EXPECTED_LIMITS))
   if(contract.semantics?.limits?.[name]!==value)
    throw Error('quoted-template lexical limit drift: '+name);
+ const pending=contract.pending_review;
+ if(pending?.status!=='DRAFT_NOT_MERGED_NOT_EXECUTED' ||
+    pending.java!=='https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2967' ||
+    pending.llvm!=='https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1704')
+  throw Error('unverified Java/LLVM comment-budget promotion or review drift');
  const backendKeys=Object.keys(contract.backend_evidence??{}).sort();
  if(JSON.stringify(backendKeys)!==JSON.stringify([...BACKENDS].sort()))
   throw Error('incomplete backend evidence inventory');
