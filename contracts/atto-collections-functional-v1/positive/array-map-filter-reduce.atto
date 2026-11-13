@@ -1,0 +1,11 @@
+import module collections from "ores.core/collections";
+pub fnc main(): int {
+  let mut Array<int> xs = new Array<int>();
+  xs.add(1); xs.add(2); xs.add(3);
+  val Array<int> doubled = collections.map_array<int, int>(xs,
+      |int n| -> int { return n * 2; });
+  val Array<int> kept = collections.filter_array<int>(doubled,
+      |int n| -> bool { return n > 2; });
+  return collections.reduce_array<int, int>(kept, 0,
+      |int acc, int n| -> int { return acc + n; });
+}
