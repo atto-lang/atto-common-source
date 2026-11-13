@@ -672,7 +672,7 @@
     },
     {
       "id": "aot-instrument-boundaries",
-      "build": "functions",
+      "build": "boundaries",
       "runtime": "on",
       "operation": "aot-instrument-boundaries",
       "expect": {
@@ -942,9 +942,15 @@
           "cross_backend_stdlib_SpanScope"
         ]
       },
-      "wasm": {"status": "NOT_IMPLEMENTED_NOT_EXECUTED"},
-      "forge": {"status": "NOT_IMPLEMENTED_NOT_EXECUTED"},
-      "net": {"status": "NOT_IMPLEMENTED_NOT_EXECUTED"}
+      "wasm": {
+        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+      },
+      "forge": {
+        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+      },
+      "net": {
+        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+      }
     },
     "execution_evidence": {
       "scope": "only_nonsuspending_llvm_native_guest_subset",
@@ -957,20 +963,38 @@
       "run_conclusion": "success",
       "guest_positive_cases": 5,
       "guest_negative_cases": 5,
-      "enabled_disabled_modes_executed": ["on", "off"],
+      "enabled_disabled_modes_executed": [
+        "on",
+        "off"
+      ],
       "conditional_taken_and_untaken_executed": true,
       "same_process_aot_toggle": {
         "status": "EXECUTED_HOST_CONTROLLED_PROBES_ONLY",
-        "cycles": ["off", "on", "off", "on"],
+        "cycles": [
+          "off",
+          "on",
+          "off",
+          "on"
+        ],
         "guest_invocations": 4,
         "recorded_spans": 2,
         "no_process_restart": true,
         "no_recompilation_between_invocations": true,
-        "clang_optimization_levels": ["O0", "O2"],
+        "clang_optimization_levels": [
+          "O0",
+          "O2"
+        ],
         "dynamic_jit_probe_insertion": false
       },
-      "clang_optimization_levels": ["O0", "O2"],
-      "runtime_tests": ["gcc_c11", "clang_c11", "pthread_cross_carrier"],
+      "clang_optimization_levels": [
+        "O0",
+        "O2"
+      ],
+      "runtime_tests": [
+        "gcc_c11",
+        "clang_c11",
+        "pthread_cross_carrier"
+      ],
       "full_backend_matrix_certified": false
     }
   },
