@@ -82,8 +82,8 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
                "test_defined_nominal_class_not_trusted_runtime_intrinsic");
   assert.equal(backends.java_graal.operation_argument,
                "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
-  assert.equal(backends.java_graal.source_scope_test_methods, 21);
-  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 22);
+  assert.equal(backends.java_graal.source_scope_test_methods, 22);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 33);
   assert.equal(backends.java_graal.suspension,
                "syntactic_await_yield_select_task_denied_unverified_transitive_effects");
   assert.equal(backends.java_graal.unwind,
@@ -98,6 +98,31 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
   assert.equal(parity.cannot_claim_full_parity_with_source_only_tests, true);
   assert.equal(parity.cannot_claim_full_parity_with_host_C_tests, true);
   assert.equal(parity.authorized_exact_head_receipts_required, true);
+});
+
+test("Java opaque continuation scope primitive is not mislabeled as guest integration", () => {
+  const j = backends.java_graal;
+  const core = j.native_scope_runtime_core;
+  assert.equal(core.status, "SOURCE_ONLY_HOST_RUNTIME_CANDIDATE");
+  assert.equal(core.component, "dev.oreslang.runtime.NativeTelemetryScopes");
+  assert.equal(core.identity, "host_constructed_opaque_continuation_carrier_token");
+  assert.equal(core.test_methods, 10);
+  assert.equal(j.test_evidence.native_scope_host_junit_methods, 10);
+  for (const flag of [
+    "executed", "compiler_using_integrated", "guest_value_export_allowed",
+    "live_truffle_attach_integrated", "actor_task_continuation_integrated",
+  ]) assert.equal(core[flag], false, flag);
+  assert.equal(core.same_process_host_toggle_source_only, true);
+  assert.equal(core.disabled_begin_token_allocation, false);
+  assert.equal(core.disabled_begin_clock_read, false);
+  assert.equal(core.bounded_depth, 64);
+  assert.equal(core.operation_utf8_max_bytes, 256);
+  assert.deepEqual(core.negative_cases, [
+    "cross_carrier", "stale_token", "double_close", "out_of_order_close",
+    "retired_continuation", "stack_overflow", "invalid_utf8_operation"
+  ]);
+  assert.equal(j.test_evidence.runtime_execution, "NOT_EXECUTED");
+  assert.equal(parity.current, "NOT_MET");
 });
 
 test("backend capability claims are one-way, never silently upgraded", () => {
