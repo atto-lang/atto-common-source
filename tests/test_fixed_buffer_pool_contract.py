@@ -26,11 +26,16 @@ class FixedBufferPoolContractTest(unittest.TestCase):
             "live_read_loan_blocks_recycle", "stale_generation_rejected",
             "generation_overflow_fails_closed", "pool_retirement_rejects_admission",
             "outstanding_lease_pins_storage", "tenant_reuse_zeroized",
-            "io_completion_pin_required",
+            "io_completion_pin_required", "actor_incarnation_generation_required",
+            "cross_tenant_transfer_rejected", "mailbox_credit_retained_until_release",
+            "unacknowledged_delivery_fail_closed",
         }
         self.assertTrue(required.issubset(set(self.c["invariants"])))
         self.assertEqual(self.c["resource"]["ownership"], "affine")
         self.assertEqual(self.c["resource"]["external_identity"], "trusted_runtime_only")
+        self.assertEqual(self.c["resource"]["owner_identity"],
+                         ["tenant_id", "actor_id", "actor_generation"])
+        self.assertEqual(self.c["resource"]["cross_tenant_transfer"], "denied_v1")
         self.assertEqual(set(self.c["evidence"]["backend_targets"]), {"java","llvm","net"})
 
     def test_no_guest_proof_from_host_only_coverage(self):
