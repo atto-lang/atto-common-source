@@ -10,7 +10,14 @@ Each collection has native functions `map_array`, `filter_array`, `reduce_array`
 `filter_array<T>(Array<T>, Fnc<bool(T)>): Array<T>`;
 `reduce_array<T,Acc>(Array<T>, Acc, Fnc<Acc(Acc,T)>): Acc`.
 Corresponding Vector/List functions return their source collection kind.
-These are free functions today, not `values.map(...)` member methods.
+The canonical algorithms are free native .atto functions. Java/Graal also has a
+draft member-call adapter in oreslang-source.java PR #3052:
+`values.map(callback)`, `values.filter(predicate)`, and
+`values.reduce(seed, reducer)` for Array, Vector, and List. The receiver is
+passed into the same native .atto functions; the host runtime must not
+implement the algorithms itself. This is syntactic method sugar, **not** yet
+a public extension-method/trait declaration in native .atto. LLVM and .NET
+must implement equivalent source-to-native lowering independently.
 
 ## Semantics
 - Traverse indexes 0..size-1; preserve order and do not mutate inputs.
@@ -32,6 +39,13 @@ These are free functions today, not `values.map(...)` member methods.
 - Prove empty, singleton, callback order/counts, non-associative reduce,
   mutability, error cleanup, ownership negatives, cross-type map,
   allocation failure, and exact-tree Java/Graal/LLVM/.NET executions.
-- Do not claim member-style map/filter/reduce until separately implemented.
+- Member syntax is authored for the Java compiler but is NOT CI/guest parity
+  certified; method calls must be direct until higher-order generic method
+  extraction is proven safe.
+- Slice/FixedArray/FixedList/Tuple variants require shape-preserving semantics
+  or explicit dynamic result types; do not treat these as generic List aliases.
+- Callback reentrancy can invalidate read bounds or iteration assumptions.
+  The source captures entry-time size, but a compiler/runtime guard against
+  concurrent/reentrant input mutation still needs ownership proof.
 
 Source presence, static checks and host-only tests are not runtime parity.
