@@ -83,6 +83,11 @@
       "id": "SIP14",
       "name": "source compiled zero copy",
       "expected": "real .atto compilation and runtime allocator proof"
+    },
+    {
+      "id": "SIP15",
+      "name": "scheduler DATA-mail sequence binding",
+      "expected": "descriptor ticket must match exact scheduler-minted target DATA admission sequence; reject cross-mail substitution and replay"
     }
   ]
 }
