@@ -82,8 +82,8 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
                "runtime_owned_opaque_token_source_integrated_not_executed");
   assert.equal(backends.java_graal.operation_argument,
                "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
-  assert.equal(backends.java_graal.source_scope_test_methods, 25);
-  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 39);
+  assert.equal(backends.java_graal.source_scope_test_methods, 26);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 40);
   assert.equal(backends.java_graal.suspension,
                "syntactic_await_yield_select_task_denied_unverified_transitive_effects");
   assert.equal(backends.java_graal.unwind,
@@ -117,6 +117,7 @@ test("Java compiler-native scope integration is source-only without guest CI rec
   assert.equal(core.observers_exported, false);
   assert.equal(core.synchronous_exit_cleanup_source_implemented, true);
   assert.equal(core.full_async_unwind_or_actor_migration_verified, false);
+  assert.equal(core.transitive_user_calls_without_effect_summary, "compile_time_rejected");
   assert.equal(core.same_process_host_toggle_source_only, true);
   assert.equal(core.disabled_begin_token_allocation, false);
   assert.equal(core.disabled_begin_clock_read, false);
