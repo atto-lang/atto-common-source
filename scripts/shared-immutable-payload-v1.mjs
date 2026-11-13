@@ -3,13 +3,15 @@
 // be proved separately with executed backend-specific tests.
 const fail = (reason) => { throw new Error('SHARED_PAYLOAD_V1: ' + reason); };
 let nextId = 1;
+const INTERNAL_TOKEN = Symbol('shared-payload-oracle-internal');
 
 export class SharedPayloadRefOracle {
   #backing;
   #offset;
   #length;
   #live = true;
-  constructor(backing, offset, length) {
+  constructor(token, backing, offset, length) {
+    if (token !== INTERNAL_TOKEN) fail('forged descriptor');
     this.#backing = backing;
     this.#offset = offset;
     this.#length = length;
@@ -23,7 +25,7 @@ export class SharedPayloadRefOracle {
       if (!Number.isInteger(x) || x < 0 || x > 255) fail('invalid octet');
     }
     const bytesCopy = Uint8Array.from(bytes);
-    return new SharedPayloadRefOracle({id:nextId++, bytes:bytesCopy, refs:0, freed:false}, 0, bytesCopy.length);
+    return new SharedPayloadRefOracle(INTERNAL_TOKEN, {id:nextId++, bytes:bytesCopy, refs:0, freed:false}, 0, bytesCopy.length);
   }
   #requireLive() {
     if (!this.#live || this.#backing.freed) fail('stale handle');
@@ -31,13 +33,13 @@ export class SharedPayloadRefOracle {
   get size() { this.#requireLive(); return this.#length; }
   get backingBytes() { this.#requireLive(); return this.#backing.bytes.length; }
   get backingId() { this.#requireLive(); return this.#backing.id; }
-  clone() { this.#requireLive(); return new SharedPayloadRefOracle(this.#backing, this.#offset, this.#length); }
+  clone() { this.#requireLive(); return new SharedPayloadRefOracle(INTERNAL_TOKEN, this.#backing, this.#offset, this.#length); }
   slice(offset,length) {
     this.#requireLive();
     if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) ||
         offset < 0 || length < 0 || offset > this.#length || length > this.#length - offset)
       fail('slice out of bounds');
-    return new SharedPayloadRefOracle(this.#backing, this.#offset + offset, length);
+    return new SharedPayloadRefOracle(INTERNAL_TOKEN, this.#backing, this.#offset + offset, length);
   }
   readByte(index) {
     this.#requireLive();
