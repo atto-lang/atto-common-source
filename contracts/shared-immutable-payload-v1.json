@@ -1,0 +1,88 @@
+{
+  "schema": "atto.actor.shared_immutable_payload.v1",
+  "status": "DESIGN_ONLY_NOT_EXECUTED",
+  "primitive": "immutable backing allocation plus bounded mailbox descriptor",
+  "localOnly": true,
+  "rawGuestPointers": false,
+  "actorPrivateArenasRemainSealed": true,
+  "guestImplementation": "NOT_EXECUTED",
+  "backendReceipts": {
+    "llvm": "NOT_EXECUTED",
+    "java": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "SIP01",
+      "name": "large local immutable fanout",
+      "expected": "same backing, per-recipient descriptor"
+    },
+    {
+      "id": "SIP02",
+      "name": "slice range and overflow",
+      "expected": "reject invalid offsets and lengths"
+    },
+    {
+      "id": "SIP03",
+      "name": "small slice retention",
+      "expected": "charge full backing bytes"
+    },
+    {
+      "id": "SIP04",
+      "name": "bounded mailbox admission",
+      "expected": "failure leaves counters and refs unchanged"
+    },
+    {
+      "id": "SIP05",
+      "name": "mailbox close",
+      "expected": "drop queued refs, preserve active receiver refs"
+    },
+    {
+      "id": "SIP06",
+      "name": "sender handle drop",
+      "expected": "receiver remains valid"
+    },
+    {
+      "id": "SIP07",
+      "name": "double drop and stale use",
+      "expected": "reject"
+    },
+    {
+      "id": "SIP08",
+      "name": "mutable sender alias",
+      "expected": "no mutation of frozen published bytes"
+    },
+    {
+      "id": "SIP09",
+      "name": "foreign private arena handle",
+      "expected": "reject"
+    },
+    {
+      "id": "SIP10",
+      "name": "cross-isolate raw pointer",
+      "expected": "reject; serialize or approved copy"
+    },
+    {
+      "id": "SIP11",
+      "name": "cross-node raw pointer",
+      "expected": "reject; wire serialization required"
+    },
+    {
+      "id": "SIP12",
+      "name": "mutable alias with read loans",
+      "expected": "reject until leases/borrows quiesce"
+    },
+    {
+      "id": "SIP13",
+      "name": "TCP completion cancellation",
+      "expected": "retain until completion or cancellation fence"
+    },
+    {
+      "id": "SIP14",
+      "name": "source compiled zero copy",
+      "expected": "real .atto compilation and runtime allocator proof"
+    }
+  ]
+}
