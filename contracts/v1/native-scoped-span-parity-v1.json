@@ -114,8 +114,8 @@
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
         "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
-        "scope_junit_minimum_with_borrow_regression": 33,
-        "native_scope_host_junit_methods": 10
+        "scope_junit_minimum_with_borrow_regression": 34,
+        "native_scope_host_junit_methods": 11
       },
       "limitations": [
         "trusted_native_span_provider",
@@ -136,7 +136,7 @@
         "component": "dev.oreslang.runtime.NativeTelemetryScopes",
         "identity": "host_constructed_opaque_continuation_carrier_token",
         "tests": "dev.oreslang.runtime.NativeTelemetryScopesTest",
-        "test_methods": 10,
+        "test_methods": 11,
         "executed": false,
         "compiler_using_integrated": false,
         "guest_value_export_allowed": false,
