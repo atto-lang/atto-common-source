@@ -85,6 +85,7 @@ test('SIP05/06: cancel queued while received reference keeps its own lifetime', 
 });
 
 test('source octet validation and mailbox quota rejection', () => {
+  rejected(()=>new Payload({id:9,bytes:new Uint8Array([7]),refs:0},0,1),'forged descriptor');
   rejected(()=>Payload.freeze([256]),'invalid octet');
   rejected(()=>Payload.freeze([-1]),'invalid octet');
   rejected(()=>Payload.freeze([NaN]),'invalid octet');
