@@ -83,7 +83,7 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
   assert.equal(backends.java_graal.operation_argument,
                "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
   assert.equal(backends.java_graal.source_scope_test_methods, 22);
-  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 33);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 34);
   assert.equal(backends.java_graal.suspension,
                "syntactic_await_yield_select_task_denied_unverified_transitive_effects");
   assert.equal(backends.java_graal.unwind,
@@ -106,8 +106,8 @@ test("Java opaque continuation scope primitive is not mislabeled as guest integr
   assert.equal(core.status, "SOURCE_ONLY_HOST_RUNTIME_CANDIDATE");
   assert.equal(core.component, "dev.oreslang.runtime.NativeTelemetryScopes");
   assert.equal(core.identity, "host_constructed_opaque_continuation_carrier_token");
-  assert.equal(core.test_methods, 10);
-  assert.equal(j.test_evidence.native_scope_host_junit_methods, 10);
+  assert.equal(core.test_methods, 11);
+  assert.equal(j.test_evidence.native_scope_host_junit_methods, 11);
   for (const flag of [
     "executed", "compiler_using_integrated", "guest_value_export_allowed",
     "live_truffle_attach_integrated", "actor_task_continuation_integrated",
