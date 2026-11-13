@@ -114,8 +114,8 @@
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
         "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
-        "scope_junit_minimum_with_borrow_regression": 40,
-        "native_scope_host_junit_methods": 13
+        "scope_junit_minimum_with_borrow_regression": 42,
+        "native_scope_host_junit_methods": 15
       },
       "limitations": [
         "trusted_native_span_provider",
@@ -139,7 +139,7 @@
         "component": "dev.oreslang.runtime.NativeTelemetryScopes",
         "identity": "host_constructed_opaque_continuation_carrier_token",
         "tests": "dev.oreslang.runtime.NativeTelemetryScopesTest",
-        "test_methods": 13,
+        "test_methods": 15,
         "executed": false,
         "compiler_using_integrated": true,
         "guest_value_export_allowed": false,
@@ -171,7 +171,11 @@
         "observers_exported": false,
         "synchronous_exit_cleanup_source_implemented": true,
         "full_async_unwind_or_actor_migration_verified": false,
-        "transitive_user_calls_without_effect_summary": "compile_time_rejected"
+        "transitive_user_calls_without_effect_summary": "compile_time_rejected",
+        "telemetry_budget_policy": "drop_probe_without_guest_error",
+        "max_active_frames": 64,
+        "max_observers_per_recorded_scope": 256,
+        "max_observer_string_utf16_units": 1024
       }
     },
     "forge": {
