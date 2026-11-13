@@ -1,0 +1,8 @@
+// Expected exit 42 with a native guest List receiver.
+pub fnc main(): int {
+  let mut List<int> values = new List<int>();
+  values.add(20);
+  values.add(22);
+  return values.filter(|int n| -> bool { return n > 0; })
+      .reduce(0, |int sum, int n| -> int { return sum + n; });
+}
