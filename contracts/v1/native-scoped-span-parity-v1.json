@@ -114,7 +114,7 @@
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
         "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
-        "scope_junit_minimum_with_borrow_regression": 39,
+        "scope_junit_minimum_with_borrow_regression": 40,
         "native_scope_host_junit_methods": 13
       },
       "limitations": [
@@ -128,10 +128,11 @@
         "host_junit_unexecuted",
         "native_using_intrinsic_execution_unverified",
         "native_observers_not_exported",
-        "no_authorized_live_controller"
+        "no_authorized_live_controller",
+        "transitive_callable_effect_summaries_not_proven"
       ],
       "operation_argument": "nonempty_string_literal_at_most_256_utf8_bytes_candidate",
-      "source_scope_test_methods": 25,
+      "source_scope_test_methods": 26,
       "unwind": "throw_raise_panic_parser_denied_not_execution_proven",
       "native_scope_runtime_core": {
         "status": "SOURCE_ONLY_COMPILER_RUNTIME_INTEGRATION_CANDIDATE",
@@ -169,7 +170,8 @@
         ],
         "observers_exported": false,
         "synchronous_exit_cleanup_source_implemented": true,
-        "full_async_unwind_or_actor_migration_verified": false
+        "full_async_unwind_or_actor_migration_verified": false,
+        "transitive_user_calls_without_effect_summary": "compile_time_rejected"
       }
     },
     "forge": {
