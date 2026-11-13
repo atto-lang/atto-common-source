@@ -114,7 +114,8 @@
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
         "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
-        "scope_junit_minimum_with_borrow_regression": 22
+        "scope_junit_minimum_with_borrow_regression": 33,
+        "native_scope_host_junit_methods": 10
       },
       "limitations": [
         "trusted_native_span_provider",
@@ -123,11 +124,39 @@
         "runtime_jit_attach",
         "native_otel_export",
         "guest_compiler_literal_gate_unexecuted",
-        "continuation_owned_frames_unimplemented"
+        "continuation_owned_frames_unimplemented",
+        "native_opaque_scope_core_not_wired_to_guest_using",
+        "host_junit_unexecuted"
       ],
       "operation_argument": "nonempty_string_literal_at_most_256_utf8_bytes_candidate",
-      "source_scope_test_methods": 21,
-      "unwind": "throw_raise_panic_parser_denied_not_execution_proven"
+      "source_scope_test_methods": 22,
+      "unwind": "throw_raise_panic_parser_denied_not_execution_proven",
+      "native_scope_runtime_core": {
+        "status": "SOURCE_ONLY_HOST_RUNTIME_CANDIDATE",
+        "component": "dev.oreslang.runtime.NativeTelemetryScopes",
+        "identity": "host_constructed_opaque_continuation_carrier_token",
+        "tests": "dev.oreslang.runtime.NativeTelemetryScopesTest",
+        "test_methods": 10,
+        "executed": false,
+        "compiler_using_integrated": false,
+        "guest_value_export_allowed": false,
+        "live_truffle_attach_integrated": false,
+        "actor_task_continuation_integrated": false,
+        "same_process_host_toggle_source_only": true,
+        "disabled_begin_token_allocation": false,
+        "disabled_begin_clock_read": false,
+        "bounded_depth": 64,
+        "operation_utf8_max_bytes": 256,
+        "negative_cases": [
+          "cross_carrier",
+          "stale_token",
+          "double_close",
+          "out_of_order_close",
+          "retired_continuation",
+          "stack_overflow",
+          "invalid_utf8_operation"
+        ]
+      }
     },
     "forge": {
       "status": "NOT_EXECUTED"
