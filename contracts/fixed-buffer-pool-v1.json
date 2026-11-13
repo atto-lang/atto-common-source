@@ -14,7 +14,14 @@
     "ownership": "affine",
     "recycle": "scrub_before_reuse",
     "generation": "strict_monotonic_no_wrap",
-    "external_identity": "trusted_runtime_only"
+    "external_identity": "trusted_runtime_only",
+    "owner_identity": [
+      "tenant_id",
+      "actor_id",
+      "actor_generation"
+    ],
+    "owner_identity_authentication": "trusted_scheduler_not_guest_token",
+    "cross_tenant_transfer": "denied_v1"
   },
   "transitions": {
     "available": [
@@ -53,7 +60,11 @@
     "pool_retirement_rejects_admission",
     "outstanding_lease_pins_storage",
     "tenant_reuse_zeroized",
-    "io_completion_pin_required"
+    "io_completion_pin_required",
+    "actor_incarnation_generation_required",
+    "cross_tenant_transfer_rejected",
+    "mailbox_credit_retained_until_release",
+    "unacknowledged_delivery_fail_closed"
   ],
   "evidence": {
     "host_runtime": "HOST_ONLY",
