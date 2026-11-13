@@ -21,7 +21,9 @@
       "actor_generation"
     ],
     "owner_identity_authentication": "trusted_scheduler_not_guest_token",
-    "cross_tenant_transfer": "denied_v1"
+    "cross_tenant_transfer": "denied_v1",
+    "authenticated_host_bridge": "ActorResourceRegistry.handoff_and_loan",
+    "authenticated_host_zero_allocation": "NOT_PROVEN_dynamic_activity_ticket_nodes"
   },
   "transitions": {
     "available": [
@@ -64,7 +66,11 @@
     "actor_incarnation_generation_required",
     "cross_tenant_transfer_rejected",
     "mailbox_credit_retained_until_release",
-    "unacknowledged_delivery_fail_closed"
+    "unacknowledged_delivery_fail_closed",
+    "sender_resource_handoff_ticket_settled",
+    "receiver_registry_loan_retained_until_physical_ack",
+    "retired_receiver_denies_admission",
+    "dropped_unacknowledged_delivery_blocks_registry_reclaim"
   ],
   "evidence": {
     "host_runtime": "HOST_ONLY",
@@ -76,6 +82,7 @@
       "java",
       "llvm",
       "net"
-    ]
+    ],
+    "native_actor_registry_host_subset": "GCC_CLANG_ASAN_UBSAN_REQUIRED"
   }
 }
