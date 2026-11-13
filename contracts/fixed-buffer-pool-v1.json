@@ -1,0 +1,70 @@
+{
+  "schema": "atto.fixed-buffer-pool.v1",
+  "version": 1,
+  "status": "PROPOSED_NOT_GUEST_EXECUTED",
+  "source_extension": ".atto",
+  "hot_path": {
+    "requires_preallocation": true,
+    "policy": "fixed_capacity_fail_closed",
+    "max_dynamic_allocations": 0,
+    "allocation_scope": "try_acquire, transfer, scoped_access, release after warmup"
+  },
+  "resource": {
+    "kind": "BufferLease",
+    "ownership": "affine",
+    "recycle": "scrub_before_reuse",
+    "generation": "strict_monotonic_no_wrap",
+    "external_identity": "trusted_runtime_only"
+  },
+  "transitions": {
+    "available": [
+      "leased"
+    ],
+    "leased": [
+      "escrow",
+      "released"
+    ],
+    "escrow": [
+      "leased",
+      "transferred"
+    ],
+    "transferred": [
+      "released",
+      "escrow"
+    ],
+    "released": [
+      "leased_with_new_generation"
+    ],
+    "retired": []
+  },
+  "invariants": [
+    "zero_capacity_rejected",
+    "invalid_size_rejected",
+    "overflow_rejected",
+    "exhaustion_no_growth",
+    "double_release_rejected",
+    "sender_inaccessible_after_transfer",
+    "sender_inaccessible_in_escrow",
+    "failed_send_restores_sender_lease",
+    "live_mutable_loan_exclusive",
+    "live_read_loan_blocks_recycle",
+    "stale_generation_rejected",
+    "generation_overflow_fails_closed",
+    "pool_retirement_rejects_admission",
+    "outstanding_lease_pins_storage",
+    "tenant_reuse_zeroized",
+    "io_completion_pin_required"
+  ],
+  "evidence": {
+    "host_runtime": "HOST_ONLY",
+    "compiled_guest": "NOT_EXECUTED",
+    "zero_copy": "must prove backing identity",
+    "zero_alloc": "must count dynamic allocations after warmup",
+    "minimum_operations": 100000,
+    "backend_targets": [
+      "java",
+      "llvm",
+      "net"
+    ]
+  }
+}
