@@ -1,0 +1,6 @@
+// Must fail static type checking: callback must take accumulator and item.
+pub fnc main(): int {
+  val Array<int> values = new Array<int>();
+  val invalid = values.reduce(0, |int sum| -> int { return sum; });
+  return 0;
+}
