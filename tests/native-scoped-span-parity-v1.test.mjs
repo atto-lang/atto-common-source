@@ -79,11 +79,11 @@ test("LLVM same-process live activation is AOT dormant-probe control, never inve
 test("Java and other unexecuted backends cannot inherit LLVM execution status", () => {
   assert.equal(backends.java_graal.status, "SOURCE_ONLY_COMPILER_CANDIDATE");
   assert.equal(backends.java_graal.provider_identity,
-               "test_defined_nominal_class_not_trusted_runtime_intrinsic");
+               "runtime_owned_opaque_token_source_integrated_not_executed");
   assert.equal(backends.java_graal.operation_argument,
                "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
-  assert.equal(backends.java_graal.source_scope_test_methods, 22);
-  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 34);
+  assert.equal(backends.java_graal.source_scope_test_methods, 25);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 39);
   assert.equal(backends.java_graal.suspension,
                "syntactic_await_yield_select_task_denied_unverified_transitive_effects");
   assert.equal(backends.java_graal.unwind,
@@ -100,18 +100,23 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
   assert.equal(parity.authorized_exact_head_receipts_required, true);
 });
 
-test("Java opaque continuation scope primitive is not mislabeled as guest integration", () => {
+test("Java compiler-native scope integration is source-only without guest CI receipt", () => {
   const j = backends.java_graal;
   const core = j.native_scope_runtime_core;
-  assert.equal(core.status, "SOURCE_ONLY_HOST_RUNTIME_CANDIDATE");
+  assert.equal(core.status, "SOURCE_ONLY_COMPILER_RUNTIME_INTEGRATION_CANDIDATE");
   assert.equal(core.component, "dev.oreslang.runtime.NativeTelemetryScopes");
   assert.equal(core.identity, "host_constructed_opaque_continuation_carrier_token");
-  assert.equal(core.test_methods, 11);
-  assert.equal(j.test_evidence.native_scope_host_junit_methods, 11);
+  assert.equal(core.test_methods, 13);
+  assert.equal(j.test_evidence.native_scope_host_junit_methods, 13);
   for (const flag of [
-    "executed", "compiler_using_integrated", "guest_value_export_allowed",
+    "executed", "compiler_using_execution_verified", "guest_value_export_allowed",
     "live_truffle_attach_integrated", "actor_task_continuation_integrated",
   ]) assert.equal(core[flag], false, flag);
+  assert.equal(core.compiler_using_integrated, true);
+  assert.equal(core.opaque_token_guest_binding, false);
+  assert.equal(core.observers_exported, false);
+  assert.equal(core.synchronous_exit_cleanup_source_implemented, true);
+  assert.equal(core.full_async_unwind_or_actor_migration_verified, false);
   assert.equal(core.same_process_host_toggle_source_only, true);
   assert.equal(core.disabled_begin_token_allocation, false);
   assert.equal(core.disabled_begin_clock_read, false);
@@ -127,7 +132,7 @@ test("Java opaque continuation scope primitive is not mislabeled as guest integr
 
 test("backend capability claims are one-way, never silently upgraded", () => {
   const implementationTypes = new Set([
-    "opaque_compiler_owned_token", "synthetic_lexical_binding_try_finally"
+    "opaque_compiler_owned_token", "compiler_marked_native_scope_intrinsic_sync_only"
   ]);
   assert.ok(implementationTypes.has(backends.llvm_host_aot.implementation));
   assert.ok(implementationTypes.has(backends.java_graal.implementation));
