@@ -1,0 +1,9 @@
+// Expected exit 42. Homogeneous Vector currently uses list-like Java storage.
+pub fnc main(): int {
+  let mut Vector<int> values = new Array<int>();
+  values.add(21);
+  val Vector<int> doubled =
+      values.map(|int n| -> int { return n * 2; });
+  return doubled.reduce(0,
+      |int sum, int n| -> int { return sum + n; });
+}
