@@ -105,17 +105,17 @@
     },
     "java_graal": {
       "status": "SOURCE_ONLY_COMPILER_CANDIDATE",
-      "implementation": "synthetic_lexical_binding_try_finally",
-      "provider_identity": "test_defined_nominal_class_not_trusted_runtime_intrinsic",
-      "in_scope_alias_observers": "test_provider_only",
+      "implementation": "compiler_marked_native_scope_intrinsic_sync_only",
+      "provider_identity": "runtime_owned_opaque_token_source_integrated_not_executed",
+      "in_scope_alias_observers": "compiler_typed_native_dispatch_source_only",
       "suspension": "syntactic_await_yield_select_task_denied_unverified_transitive_effects",
       "actor_migration": "unverified",
       "test_evidence": {
         "runtime_execution": "NOT_EXECUTED",
         "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
         "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
-        "scope_junit_minimum_with_borrow_regression": 34,
-        "native_scope_host_junit_methods": 11
+        "scope_junit_minimum_with_borrow_regression": 39,
+        "native_scope_host_junit_methods": 13
       },
       "limitations": [
         "trusted_native_span_provider",
@@ -125,20 +125,22 @@
         "native_otel_export",
         "guest_compiler_literal_gate_unexecuted",
         "continuation_owned_frames_unimplemented",
-        "native_opaque_scope_core_not_wired_to_guest_using",
-        "host_junit_unexecuted"
+        "host_junit_unexecuted",
+        "native_using_intrinsic_execution_unverified",
+        "native_observers_not_exported",
+        "no_authorized_live_controller"
       ],
       "operation_argument": "nonempty_string_literal_at_most_256_utf8_bytes_candidate",
-      "source_scope_test_methods": 22,
+      "source_scope_test_methods": 25,
       "unwind": "throw_raise_panic_parser_denied_not_execution_proven",
       "native_scope_runtime_core": {
-        "status": "SOURCE_ONLY_HOST_RUNTIME_CANDIDATE",
+        "status": "SOURCE_ONLY_COMPILER_RUNTIME_INTEGRATION_CANDIDATE",
         "component": "dev.oreslang.runtime.NativeTelemetryScopes",
         "identity": "host_constructed_opaque_continuation_carrier_token",
         "tests": "dev.oreslang.runtime.NativeTelemetryScopesTest",
-        "test_methods": 11,
+        "test_methods": 13,
         "executed": false,
-        "compiler_using_integrated": false,
+        "compiler_using_integrated": true,
         "guest_value_export_allowed": false,
         "live_truffle_attach_integrated": false,
         "actor_task_continuation_integrated": false,
@@ -155,7 +157,19 @@
           "retired_continuation",
           "stack_overflow",
           "invalid_utf8_operation"
-        ]
+        ],
+        "compiler_using_execution_verified": false,
+        "compiler_mode": "marked_using_scope_bypasses_guest_factory_and_close_scope",
+        "opaque_token_guest_binding": false,
+        "typed_observers": [
+          "set_attribute",
+          "add_event",
+          "record_error",
+          "set_status"
+        ],
+        "observers_exported": false,
+        "synchronous_exit_cleanup_source_implemented": true,
+        "full_async_unwind_or_actor_migration_verified": false
       }
     },
     "forge": {
