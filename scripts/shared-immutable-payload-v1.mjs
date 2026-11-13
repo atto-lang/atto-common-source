@@ -64,6 +64,7 @@ export class SharedPayloadInboxOracle {
   #queue = [];
   #used = 0;
   #closed = false;
+  #nextSequence = 1;
   constructor({slots, bytes}) {
     if (!Number.isSafeInteger(slots) || slots < 1 ||
         !Number.isSafeInteger(bytes) || bytes < 0) fail('invalid mailbox quota');
@@ -77,12 +78,19 @@ export class SharedPayloadInboxOracle {
     // Validate handle before admission or payload refcount increment.
     const charge = payload.backingBytes;
     if (this.#closed) return 'closed';
-    if (this.#queue.length === this.slots || charge > this.maxBytes - this.#used)
+    if (this.#queue.length === this.slots || charge > this.maxBytes - this.#used ||
+        this.#nextSequence >= Number.MAX_SAFE_INTEGER)
       return 'full';
     const descriptor = payload.clone();
-    this.#queue.push({descriptor,charge});
+    this.#queue.push({descriptor,charge,sequence:this.#nextSequence++});
     this.#used += charge;
     return 'admitted';
+  }
+  tryReceiveAt(sequence) {
+    if (!this.#queue.length) return null;
+    if (!Number.isSafeInteger(sequence) || sequence <= 0 ||
+        this.#queue[0].sequence !== sequence) fail('mail sequence mismatch');
+    return this.tryReceive();
   }
   tryReceive() {
     if (!this.#queue.length) return null;
