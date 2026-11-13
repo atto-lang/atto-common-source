@@ -15,7 +15,7 @@ test('contract requires explicit unexecuted backend evidence', () => {
   assert.equal(contract.localOnly, true);
   assert.equal(contract.rawGuestPointers, false);
   assert.equal(contract.actorPrivateArenasRemainSealed, true);
-  assert.deepEqual(contract.cases.map(c=>c.id), Array.from({length:14}, (_,i)=>'SIP'+String(i+1).padStart(2,'0')));
+  assert.deepEqual(contract.cases.map(c=>c.id), Array.from({length:15}, (_,i)=>'SIP'+String(i+1).padStart(2,'0')));
 });
 
 test('SIP01/03/04: 1 MiB immutable fanout, conservative quota and rollback', () => {
@@ -92,4 +92,27 @@ test('source octet validation and mailbox quota rejection', () => {
   rejected(()=>Payload.freeze([1,2],1),'slab quota');
   rejected(()=>new Inbox({slots:0,bytes:10}),'invalid mailbox quota');
   rejected(()=>new Inbox({slots:1,bytes:-1}),'invalid mailbox quota');
+});
+
+test('SIP15: exact mailbox admission sequence prevents cross-mail redemption', () => {
+  const value = Payload.freeze([99, 100]);
+  const box = new Inbox({slots:3, bytes:6});
+  assert.equal(box.trySend(value), 'admitted');
+  assert.equal(box.trySend(value), 'admitted');
+  // A different DATA turn cannot claim the head descriptor, and failed
+  // redemption does not alter its credit or reference ownership.
+  rejected(() => box.tryReceiveAt(2), 'mail sequence mismatch');
+  rejected(() => box.tryReceiveAt(0), 'mail sequence mismatch');
+  assert.equal(box.queued, 2);
+  assert.equal(box.bufferedBytes, 4);
+  const first = box.tryReceiveAt(1);
+  assert.equal(first.readByte(0), 99);
+  rejected(() => box.tryReceiveAt(1), 'mail sequence mismatch');
+  const second = box.tryReceiveAt(2);
+  assert.equal(second.readByte(1), 100);
+  first.drop();
+  second.drop();
+  value.drop();
+  assert.equal(box.bufferedBytes, 0);
+  assert.equal(box.queued, 0);
 });
