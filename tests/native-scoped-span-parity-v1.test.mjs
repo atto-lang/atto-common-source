@@ -83,7 +83,7 @@ test("Java and other unexecuted backends cannot inherit LLVM execution status", 
   assert.equal(backends.java_graal.operation_argument,
                "nonempty_string_literal_at_most_256_utf8_bytes_candidate");
   assert.equal(backends.java_graal.source_scope_test_methods, 26);
-  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 40);
+  assert.equal(backends.java_graal.test_evidence.scope_junit_minimum_with_borrow_regression, 42);
   assert.equal(backends.java_graal.suspension,
                "syntactic_await_yield_select_task_denied_unverified_transitive_effects");
   assert.equal(backends.java_graal.unwind,
@@ -106,8 +106,8 @@ test("Java compiler-native scope integration is source-only without guest CI rec
   assert.equal(core.status, "SOURCE_ONLY_COMPILER_RUNTIME_INTEGRATION_CANDIDATE");
   assert.equal(core.component, "dev.oreslang.runtime.NativeTelemetryScopes");
   assert.equal(core.identity, "host_constructed_opaque_continuation_carrier_token");
-  assert.equal(core.test_methods, 13);
-  assert.equal(j.test_evidence.native_scope_host_junit_methods, 13);
+  assert.equal(core.test_methods, 15);
+  assert.equal(j.test_evidence.native_scope_host_junit_methods, 15);
   for (const flag of [
     "executed", "compiler_using_execution_verified", "guest_value_export_allowed",
     "live_truffle_attach_integrated", "actor_task_continuation_integrated",
@@ -118,6 +118,10 @@ test("Java compiler-native scope integration is source-only without guest CI rec
   assert.equal(core.synchronous_exit_cleanup_source_implemented, true);
   assert.equal(core.full_async_unwind_or_actor_migration_verified, false);
   assert.equal(core.transitive_user_calls_without_effect_summary, "compile_time_rejected");
+  assert.equal(core.telemetry_budget_policy, "drop_probe_without_guest_error");
+  assert.equal(core.max_active_frames, 64);
+  assert.equal(core.max_observers_per_recorded_scope, 256);
+  assert.equal(core.max_observer_string_utf16_units, 1024);
   assert.equal(core.same_process_host_toggle_source_only, true);
   assert.equal(core.disabled_begin_token_allocation, false);
   assert.equal(core.disabled_begin_clock_read, false);
