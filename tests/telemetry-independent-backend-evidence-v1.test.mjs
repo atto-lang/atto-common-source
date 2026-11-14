@@ -146,3 +146,23 @@ test('audited source identity fixes do not bypass pending compiler evidence', ()
   assert.match(java.verified_scope, /unexecuted/);
   assert.ok(java.not_verified.includes('actual Truffle guest log.info runtime event'));
 });
+
+test('linked synthetic IR and synthetic Java AST cannot masquerade as real guest compilers', () => {
+  for (const name of [
+    'ordinary_llvm_cli_verified_manifest_to_generated_guest',
+    'linked_guest_exit42_and_both_source_sites',
+    'real_java_parser_to_guest_log_execution',
+  ]) assert.ok(contract.gate_names.includes(name), name);
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'source_free_linked_llvm_ir_as_atto_compiler_generated_guest'));
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'synthetic_java_ast_as_real_java_parser_or_truffle_guest'));
+
+  const llvm = contract.candidate_adapters.find(item => item.backend === 'llvm');
+  assert.match(llvm.verified_scope, /source-free manually authored LLVM IR/);
+  assert.ok(llvm.not_verified.some(item =>
+    item.includes('ordinary --source-log-ids .atto compiler')));
+  const java = contract.candidate_adapters.find(item => item.backend === 'java');
+  assert.match(java.verified_scope, /synthetic AST fixture/);
+  assert.ok(java.not_verified.includes('real Java Parser.parse + Maven/JUnit suite'));
+});
