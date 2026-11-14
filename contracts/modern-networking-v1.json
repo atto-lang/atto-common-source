@@ -1,0 +1,112 @@
+{
+  "schema": "atto.stdlib.modern-networking.v1",
+  "status": "SOURCE_STAGED_PROTOCOL_ENGINES_NOT_IMPLEMENTED",
+  "canonical_source": {
+    "path": "stdlib/net/http_policy.atto",
+    "git_blob_sha": "68831fd1022f09ac5a4fd74b29fc34a6dcf9e13a",
+    "language": "AttoLang",
+    "source_extension": ".atto",
+    "scope": "PURE_POLICY_ONLY"
+  },
+  "backend_copy_path": "stdlib/net/http_policy.atto",
+  "backends": [
+    {
+      "backend": "llvm",
+      "source_blob_identical": true,
+      "compile_execution": "NOT_EXECUTED",
+      "http3_network_execution": "NOT_EXECUTED",
+      "native_aot_proven": false,
+      "zero_gc_proven": false
+    },
+    {
+      "backend": "java",
+      "source_blob_identical": true,
+      "compile_execution": "NOT_EXECUTED",
+      "http3_network_execution": "NOT_EXECUTED",
+      "native_aot_proven": false,
+      "zero_gc_proven": false
+    },
+    {
+      "backend": "net",
+      "source_blob_identical": true,
+      "compile_execution": "NOT_EXECUTED",
+      "http3_network_execution": "NOT_EXECUTED",
+      "native_aot_proven": false,
+      "zero_gc_proven": false
+    },
+    {
+      "backend": "rs",
+      "source_blob_identical": true,
+      "compile_execution": "NOT_EXECUTED",
+      "http3_network_execution": "NOT_EXECUTED",
+      "native_aot_proven": false,
+      "zero_gc_proven": false
+    },
+    {
+      "backend": "wasm",
+      "source_blob_identical": true,
+      "compile_execution": "NOT_EXECUTED",
+      "http3_network_execution": "NOT_EXECUTED",
+      "native_aot_proven": false,
+      "zero_gc_proven": false
+    }
+  ],
+  "wire_protocols": {
+    "http_1_1": {
+      "spec": "RFC 9112",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "http_2": {
+      "spec": "RFC 9113",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "http_3": {
+      "spec": "RFC 9114",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "quic_v1": {
+      "spec": "RFC 9000",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "quic_v2": {
+      "spec": "RFC 9369",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "quic_datagram": {
+      "spec": "RFC 9221",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "websocket_h3": {
+      "spec": "RFC 9220",
+      "implementation": "NOT_IMPLEMENTED"
+    },
+    "webtransport_h3": {
+      "spec": "draft-ietf-webtrans-http3-17 (2026-11-02)",
+      "implementation": "NOT_IMPLEMENTED",
+      "draft": true
+    }
+  },
+  "requirements": [
+    "Portable public APIs and policy live in canonical .atto source; backend copies must match exact bytes.",
+    "Transport implementation may call per-backend native TLS, QUIC, UDP, and OS/event-loop primitives; no .java standard library implementation.",
+    "In browser WASM, raw UDP sockets are unavailable; use browser-exposed networking capabilities and fail closed for missing features.",
+    "Do not report an actual HTTP/3 implementation on the strength of policy functions or source-byte parity alone.",
+    "Only advertise h3 after successful QUIC/TLS negotiation and HTTP/3 SETTINGS, ALPN h3, peer certificate validation, and required feature negotiation.",
+    "HTTP/3 to TCP HTTP/2 or HTTP/1.1 fallback is opt-in/allowed by policy, never silently downgrade when require_http3 is set.",
+    "QUIC datagrams are unreliable and must be bounded by negotiated peer limit, path MTU, actor memory budgets and permissions.",
+    "Zero-RTT requires explicit opt-in and replay-safe request handling; do not automatically replay unsafe requests.",
+    "Actor-owned buffers and logical stacks cannot escape their owner, suspend across unpinned loans, or be used after close.",
+    "Cancellation and deadlines must propagate to streams and I/O; backpressure controls both connection and actor mailboxes.",
+    "All socket and TLS operations exposed to Atto guest code must be nonblocking; blocking wrapper names must end in _blocking.",
+    "Guest compilation, executable AOT artifacts, interop tests, and workload benchmarks need independent per-backend CI evidence."
+  ],
+  "acceptance": [
+    "Canonical and backend source-file Git blob identity at pinned heads",
+    "RS compiler executes .atto smoke guest exit 42 and rejects invalid source",
+    "Independent LLVM, Java/Graal, .NET NativeAOT, RS, and WASM guest executions",
+    "TLS 1.3/ALPN h3, cert rejection, UDP-blocked fallback and require-h3 no-fallback tests",
+    "QUIC loss/reordering/datagram MTU/flow-control/cancellation tests",
+    "Actor teardown and 100K+ request/connection cycles with memory and GC measurements",
+    "External h3/QUIC implementation interop and benchmarks against h2/h1 using same workload"
+  ]
+}
