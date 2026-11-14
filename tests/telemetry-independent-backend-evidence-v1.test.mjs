@@ -95,3 +95,16 @@ test('canonical source ID byte-order vectors preserve independent native layouts
     assert.equal(valid, false, vector.reason);
   }
 });
+
+test('candidate metadata and execution gates do not certify guest callsites', () => {
+  for (const id of ['rs', 'llvm', 'java']) {
+    const candidate = contract.candidate_adapters.find(x => x.backend === id);
+    assert.ok(candidate, id);
+    assert.ok(candidate.not_verified.some(x =>
+      /guest|probe|OTel|OTLP|lowering|Maven|Cargo|IR integration/i.test(x)), id);
+  }
+  assert.ok(contract.gate_names.includes('compiler_owned_guest_source_id_binding'));
+  assert.ok(contract.gate_names.includes('runtime_site_probe_in_compiled_guest_not_only_host'));
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'source_only_registry_validation_as_compiled_site_instrumentation'));
+});
