@@ -1,0 +1,94 @@
+{
+  "schema": "atto.stdlib.http3-codec.v1",
+  "status": "RUST_FRONTEND_WASM_GUEST_CODEC_PASSED_TRANSPORT_NOT_IMPLEMENTED",
+  "canonical_modules": [
+    {
+      "path": "stdlib/net/http_policy.atto",
+      "git_blob_sha": "68831fd1022f09ac5a4fd74b29fc34a6dcf9e13a",
+      "category": "pure_policy"
+    },
+    {
+      "path": "stdlib/net/quic_varint.atto",
+      "git_blob_sha": "838929f85b66a646fb7b018dd0a882e7fe96a5d5",
+      "category": "quic_varint_decoder"
+    },
+    {
+      "path": "stdlib/net/http3_frames.atto",
+      "git_blob_sha": "9762849fcc1e6c307ce291f9fc096df934eae130",
+      "category": "http3_frame_admission"
+    }
+  ],
+  "source_repo": "atto-lang/atto-common-source",
+  "source_scope": "native .atto guest source, no host language stdlib implementations",
+  "protocol_engine_status": "NOT_IMPLEMENTED",
+  "run": {
+    "url": "https://github.com/athlet-o/athleto-e2e/actions/runs/43645771501",
+    "carrier_repository": "athlet-o/athleto-e2e",
+    "carrier_head_sha": "20fa8c4e421d5a438c1db337868bd66bbeb7a184",
+    "compiler_repository": "atto-lang/atto-source.rs",
+    "pinned_compiler_source_commit": "860137bcdc50684ab6cb6aa8f89932506b3beec4",
+    "compiler_source_slice_tree_sha": "3a6eadd731418b979a5154b6d8b00739d23d883e",
+    "rust_toolchain": "1.85.1",
+    "actual_guest_compiled": true,
+    "actual_guest_executed": true,
+    "guest_target": "wasm",
+    "host_import_count": 0,
+    "quic_varint": {
+      "source_fixture_git_blob_sha": "cc92894305401e8858561d2cd3d62c6e37b1be63",
+      "cases": 308,
+      "guest_exit_code": 42,
+      "guest_wasm_sha256": "c3345d79ca64c02c596cd988fbc17285ff6c487148ab81633194e71f20ba94f9"
+    },
+    "http3_frames": {
+      "source_fixture_git_blob_sha": "0f30aec95e90c42317b2b97cca6d8791a90ce80e",
+      "cases": 406,
+      "guest_exit_code": 42,
+      "guest_wasm_sha256": "87e35a17d6b16b63031a19f03088604c6d52ab6ad325ca83df5f935f3fb2b161"
+    },
+    "negative_guest": "E_UNBOUND_FAIL_CLOSED",
+    "replayed_identical_source_generated_identical_wasm": true,
+    "includes_real_network_io": false,
+    "native_machine_aot": false,
+    "five_backend_parity": false
+  },
+  "backend_evidence": [
+    {
+      "backend": "rs",
+      "native_atto_source_present": true,
+      "guest_execution": "PASS_RUST_COMPILER_TO_WASM_PURE_PROTOCOL",
+      "http3_network": "NOT_IMPLEMENTED"
+    },
+    {
+      "backend": "llvm",
+      "native_atto_source_present": true,
+      "guest_execution": "NOT_EXECUTED",
+      "http3_network": "NOT_IMPLEMENTED"
+    },
+    {
+      "backend": "java",
+      "native_atto_source_present": true,
+      "guest_execution": "NOT_EXECUTED",
+      "http3_network": "NOT_IMPLEMENTED"
+    },
+    {
+      "backend": "net",
+      "native_atto_source_present": true,
+      "guest_execution": "NOT_EXECUTED",
+      "http3_network": "NOT_IMPLEMENTED"
+    },
+    {
+      "backend": "wasm",
+      "native_atto_source_present": true,
+      "guest_execution": "NOT_EXECUTED",
+      "http3_network": "NOT_IMPLEMENTED"
+    }
+  ],
+  "release_gates": [
+    "Actual HTTP3 client/server over QUIC TLS1.3 with ALPN h3",
+    "QPACK and HTTP3 frame wire parsing with stream fragmentation",
+    "Actor-owned async I/O and bounded backpressure",
+    "Five-backend guest execution or explicitly documented unsupported profile",
+    "Exact pinned source/compiler/artifact SHAs and independent interop plus adversarial tests",
+    "Native AOT and memory/GC measurement per applicable target"
+  ]
+}
