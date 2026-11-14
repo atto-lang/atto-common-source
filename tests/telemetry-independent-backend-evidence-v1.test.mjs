@@ -166,3 +166,19 @@ test('linked synthetic IR and synthetic Java AST cannot masquerade as real guest
   assert.match(java.verified_scope, /synthetic AST fixture/);
   assert.ok(java.not_verified.includes('real Java Parser.parse + Maven/JUnit suite'));
 });
+
+test('full native AOT guest requires actual compiler, not linked synthetic stand-in', () => {
+  for (const gate of [
+    'physical_source_log_path_and_manifest_alias_denial',
+    'real_compiler_generated_ir_not_synthetic_abi',
+    'native_guest_link_exit42_and_two_static_site_receipts',
+  ]) assert.ok(contract.gate_names.includes(gate), gate);
+  for (const denied of [
+    'linked_guest_script_smoke_using_fake_compiler_as_real_atto_aot',
+    'synthetic_source_log_manifest_as_authenticated_protected_source'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(denied), denied);
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  assert.match(llvm.verified_scope, /physical path gate 11 negatives/);
+  assert.match(llvm.verified_scope, /synthetic IR, not actual compiler/);
+  assert.ok(llvm.not_verified.some(x => x.includes('real ordinary .atto')));
+});
