@@ -14,7 +14,7 @@
     },
     {
       "path": "stdlib/net/http3_frames.atto",
-      "git_blob_sha": "9762849fcc1e6c307ce291f9fc096df934eae130",
+      "git_blob_sha": "a30d5301be194e91737fa17ac8c17d976619929a",
       "category": "http3_frame_admission"
     }
   ],
