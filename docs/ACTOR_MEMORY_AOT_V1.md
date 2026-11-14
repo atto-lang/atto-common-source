@@ -53,4 +53,4 @@ clang++ -std=c++20 -O1 -g -Wall -Wextra -Werror -pedantic -fsanitize=address,und
 /tmp/atto-actor-model-san
 ```
 
-The model checks 14 focused scenarios (including heap/stack ownership, overlapping receivers, serial mode, unbalanced loans, mailbox admission, quiescent drop, and restart fences) using deterministic single-threaded interleavings. **It is not a thread-race test, production allocator, parser/guest test, or proof of full AOT or zero-GC backend behavior.** Production implementation must remain independent per backend and use the same semantic fixtures.
+The model checks 15 focused scenarios (including heap/stack ownership, overlapping receivers, serial mode, unbalanced loans, mailbox admission, quiescent drop, and restart fences) using deterministic single-threaded interleavings. **It is not a thread-race test, production allocator, parser/guest test, or proof of full AOT or zero-GC backend behavior.** Production implementation must remain independent per backend and use the same semantic fixtures.
