@@ -37,10 +37,30 @@
     {
       "backend": "rs",
       "source_blob_identical": true,
-      "compile_execution": "NOT_EXECUTED",
+      "compile_execution": "ATTO_GUEST_WASM_EXECUTED",
       "http3_network_execution": "NOT_EXECUTED",
       "native_aot_proven": false,
-      "zero_gc_proven": false
+      "zero_gc_proven": false,
+      "execution_evidence": {
+        "runner_repository": "athlet-o/athleto-e2e",
+        "workflow_url": "https://github.com/athlet-o/athleto-e2e/actions/runs/43644258623",
+        "carrier_head": "115f3028405bd77074228fad218f7cd248fd0e9b",
+        "compiler_source_repository": "atto-lang/atto-source.rs",
+        "compiler_source_commit": "860137bcdc50684ab6cb6aa8f89932506b3beec4",
+        "compiler_source_slice_tree_sha": "3a6eadd731418b979a5154b6d8b00739d23d883e",
+        "exact_source_files": 18,
+        "rustc": "1.85.1",
+        "basic_guest_artifact_sha256": "a71efb3d311cca584823e446e3d7b3ddebc5a76a586281ad317e2005b6992dc5",
+        "exhaustive_guest_source_blob_sha": "113b450f4f6197223fd3bb948fb984c6d999dfbd",
+        "exhaustive_guest_artifact_sha256": "f34e3f6512425b60b3f35f24b2bc20656633df5ed4781be713ae8c725d86bd02",
+        "exhaustive_cases": 48,
+        "expected_exit_code": 42,
+        "guest_artifact_kind": "wasm",
+        "host_compile_result": "PASS",
+        "guest_execution_result": "PASS",
+        "negative_guest_result": "E_UNBOUND_FAIL_CLOSED",
+        "scope": "PURE_POLICY_GUEST_ONLY_NOT_HTTP3_NETWORK"
+      }
     },
     {
       "backend": "wasm",
