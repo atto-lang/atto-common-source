@@ -30,3 +30,39 @@ node --test tests/telemetry-independent-backend-evidence-v1.test.mjs
 ~~~
 
 This result, even if passing, only validates the common schema's invariants. It does not certify Java/LLVM/.NET/Rust/Forge/Cranelift/Wasm compiled guest execution or OTel transport.
+
+## 2026-11-14 first literal logging candidates and execution boundaries
+
+The first `log.info("fixed literal")` candidate is intentionally a
+**backend-owned lowering**, not a shared compiler implementation.
+
+- **LLVM [#1799]:** Its own native frontend parses literal calls, requires exact
+  (function, literal) to `rid_`/`sid_` registry coverage, and emits a compiler
+  LLVM call to the bounded C11 telemetry ring with two immutable site IDs.
+  Codegen rejects missing, wrong-kind, duplicated, foreign or stale site
+  bindings, and forbids actor/suspension/Cortex-M/Wasm contexts at this stage.
+  The exact native runtime/header/test Git blobs were locally compiled with
+  GCC and Clang ASan/UBSan, both PASS. **LLVM SDK compiler IR and linked guest
+  native execution are not yet executed**; normal CLI manifest loading is
+  still absent. The C11 ring uses a carrier-local span token, not W3C IDs.
+- **Java [#3096]:** Its independent Java AST binder maps immutable parsed
+  `log.info` `Ast.CallExpr` identities to checked routine/site descriptors
+  within non-suspending lexical spans. The existing Java atomic bounded ring
+  passed a local JDK21 host stress test, but the parser-to-evaluator event
+  lowering, Maven/JUnit execution, and actual guest logging are **pending**.
+- **Rust [#64]:** Its own Logos/MIR-validated `atto_telemetry_ids` tool now
+  supports review-only `check`, `locate` and Unix CSPRNG-backed scalar routine
+  `sync` proposals, with explicit exact whole-file moves and non-overwriting
+  output. `sid_` generation and log-guest codegen are not implemented and
+  Cargo tests have **not run** in the available toolchain.
+
+No cross-org private source tree was transferred. The protected-source
+authorization gate and incidents #22/#77 remain unresolved; an organization
+having Actions minutes is not permission to export source. Zero-step Actions
+failures are not evidence of compiler test execution.
+
+The promotion order remains **source registry → checked frontend AST/MIR →
+compiler-emitted guest IR → linked native/Truffle guest runtime execution →
+distinct W3C trace/span correlation → governed JIT/async/actors → authenticated
+exact-head CI**. Host-runtime-only success may never skip a stage.
+
