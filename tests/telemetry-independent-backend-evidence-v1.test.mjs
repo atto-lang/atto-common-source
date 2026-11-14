@@ -73,3 +73,25 @@ test('experimental implementation reports explicitly exclude unsupported tracing
     assert.ok(candidate.not_verified.length > 0);
   }
 });
+
+test('canonical source ID byte-order vectors preserve independent native layouts', () => {
+  assert.match(contract.rules.source_id_binary_encoding, /network byte order/);
+  assert.equal(contract.source_id_test_vectors.length, 2);
+  for (const vector of contract.source_id_test_vectors) {
+    const prefix = vector.kind === 'routine' ? 'rid_' : 'sid_';
+    assert.equal(vector.text.slice(0, 4), prefix);
+    const hex = vector.text.slice(4);
+    assert.match(hex, /^[0-9a-f]{32}$/);
+    assert.equal(hex, vector.bytes_hex);
+    assert.equal(hex.slice(0, 16), vector.lane_high_hex);
+    assert.equal(hex.slice(16), vector.lane_low_hex);
+    assert.notEqual(hex, '0'.repeat(32));
+  }
+  for (const vector of contract.invalid_source_id_test_vectors) {
+    const prefix = vector.kind === 'routine' ? 'rid_' : 'sid_';
+    const valid = vector.text.startsWith(prefix) &&
+      /^[0-9a-f]{32}$/.test(vector.text.slice(4)) &&
+      vector.text.slice(4) !== '0'.repeat(32);
+    assert.equal(valid, false, vector.reason);
+  }
+});
