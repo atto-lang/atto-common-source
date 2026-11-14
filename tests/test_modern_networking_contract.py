@@ -10,7 +10,7 @@ SOURCE = ROOT / "stdlib" / "net" / "http_policy.atto"
 
 
 def git_blob_sha(raw: bytes) -> str:
-    return hashlib.sha1(b"blob " + str(len(raw)).encode("ascii") + b"\\0" + raw).hexdigest()
+    return hashlib.sha1(b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw).hexdigest()
 
 
 class ModernNetworkingContractTest(unittest.TestCase):
@@ -24,10 +24,10 @@ class ModernNetworkingContractTest(unittest.TestCase):
         self.assertEqual(source["source_extension"], ".atto")
         self.assertEqual(source["scope"], "PURE_POLICY_ONLY")
         self.assertEqual(git_blob_sha(self.data), source["git_blob_sha"])
-        self.assertTrue(self.data.endswith(b"\\n"))
-        self.assertNotIn(b"\\r", self.data)
-        self.assertNotIn(b"\\xef\\xbb\\xbf", self.data[:3])
-        self.assertNotIn(b"\\0", self.data)
+        self.assertTrue(self.data.endswith(b"\n"))
+        self.assertNotIn(b"\r", self.data)
+        self.assertNotIn(b"\xef\xbb\xbf", self.data[:3])
+        self.assertNotIn(b"\0", self.data)
 
     def test_backends_not_claimed_executed(self):
         self.assertEqual(
