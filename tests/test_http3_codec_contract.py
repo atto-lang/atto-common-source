@@ -78,7 +78,9 @@ class Http3CodecContractTest(unittest.TestCase):
                      "http3_request_frame_allowed",
                      "http3_push_frame_allowed",
                      "http3_frame_payload_fits",
-                     "http3_settings_id_valid"):
+                     "http3_settings_id_valid",
+                     "http3_valid_wire_integer",
+                     "http3_message_frame_allowed"):
             self.assertIn("pub fnc " + name + "(", frames)
 
 
