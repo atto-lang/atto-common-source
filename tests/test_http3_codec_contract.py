@@ -119,6 +119,34 @@ class Http3CodecContractTest(unittest.TestCase):
         self.assertFalse(evidence["real_http3_wire"])
         self.assertFalse(evidence["complete_language_aot"])
 
+    def test_llvm_output_hardening_receipt_is_sha_exact(self):
+        ref = self.contract["llvm_aot_output_hardening"]
+        source = ROOT / ref["source"]
+        raw = source.read_bytes()
+        self.assertEqual(git_blob_sha(raw), ref["source_git_blob_sha"])
+        proof = json.loads(raw)
+        self.assertEqual(proof["schema"], "atto.llvm.native-aot-atomic-publish.v1")
+        self.assertEqual(proof["runner"]["run"], ref["verified_runner"])
+        self.assertEqual(proof["audited_source_commit"],
+                         ref["audited_source_commit"])
+        self.assertEqual(proof["audited_full_tree"],
+                         ref["audited_source_tree"])
+        self.assertEqual(proof["runner"]["job_conclusion"], "success")
+        self.assertTrue(proof["runner"]["sha_exact_local_mirror"])
+        self.assertFalse(proof["runner"]["cross_org_checkout_credentials"])
+        self.assertEqual(sum(x["cases"] for x in proof["generated_artifacts"]), 1255)
+        for name, expected in proof["verification"].items():
+            if isinstance(expected, bool):
+                self.assertEqual(expected,
+                                 name not in ("guest_vm_required",
+                                              "guest_gc_required_for_scalar_subset"),
+                                 name)
+        self.assertFalse(proof["limitations"]["real_quic_tls_network"])
+        self.assertFalse(proof["limitations"]["actor_runtime_implemented"])
+        self.assertFalse(ref["http3_network_executed"])
+        self.assertFalse(ref["full_language_aot"])
+        self.assertFalse(ref["actor_runtime_executed"])
+
     def test_codec_guards_have_required_entrypoints(self):
         src = (ROOT / "stdlib/net/quic_varint.atto").read_text()
         for name in ("quic_varint_width", "quic_varint_min_width",
