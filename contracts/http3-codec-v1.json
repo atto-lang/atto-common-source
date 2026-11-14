@@ -158,5 +158,21 @@
     "actor_runtime_proven": false,
     "real_http3_wire": false,
     "complete_language_aot": false
+  },
+  "llvm_aot_output_hardening": {
+    "status": "PASS_NATIVE_ELF_ARTIFACT_ATOMICITY",
+    "source": "contracts/native-llvm-aot-hardening-v1.json",
+    "source_git_blob_sha": "e3914edcd5a6d7c885c504f56c6f6edafe83e716",
+    "verified_runner": "https://github.com/athlet-o/athleto-e2e/actions/runs/43651073559",
+    "audited_source_commit": "ec2c04024b10f0dc1005c90fa73c6e741615df39",
+    "audited_source_tree": "bf71ea154bf87bb80c7534678e716d5daa94f455",
+    "native_scalar_cases": 1255,
+    "atomic_publish": true,
+    "unsafe_source_alias_rejected": true,
+    "invalid_elf_production_rejected": true,
+    "clang_failure_preserved_previous_output": true,
+    "full_language_aot": false,
+    "actor_runtime_executed": false,
+    "http3_network_executed": false
   }
 }
