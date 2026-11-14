@@ -128,3 +128,21 @@ test('host ring proof cannot satisfy linked guest logging evidence', () => {
   const rs = contract.candidate_adapters.find(x => x.backend === 'rs');
   assert.ok(rs.not_verified.includes('automatic site-ID assignment'));
 });
+
+test('audited source identity fixes do not bypass pending compiler evidence', () => {
+  for (const gate of [
+    'exact_ast_verified_function_binding',
+    'source_log_return_expression_fail_closed',
+    'rust_root_level_proposal_no_clobber',
+    'native_log_50k_fifo_model_evidence'
+  ]) assert.ok(contract.gate_names.includes(gate), gate);
+  const rs = contract.candidate_adapters.find(c => c.backend === 'rs');
+  assert.match(rs.verified_scope, /Cargo tests not executed/);
+  const llvm = contract.candidate_adapters.find(c => c.backend === 'llvm');
+  assert.match(llvm.verified_scope, /3\/3 local CTest/);
+  assert.match(llvm.verified_scope, /50k operation FIFO model/);
+  assert.ok(llvm.not_verified.includes('LLVM SDK compiler IR selftest'));
+  const java = contract.candidate_adapters.find(c => c.backend === 'java');
+  assert.match(java.verified_scope, /unexecuted/);
+  assert.ok(java.not_verified.includes('actual Truffle guest log.info runtime event'));
+});
