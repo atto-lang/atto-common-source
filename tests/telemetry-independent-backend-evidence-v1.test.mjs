@@ -108,3 +108,23 @@ test('candidate metadata and execution gates do not certify guest callsites', ()
   assert.ok(contract.prohibited_evidence_substitutions.includes(
     'source_only_registry_validation_as_compiled_site_instrumentation'));
 });
+
+test('host ring proof cannot satisfy linked guest logging evidence', () => {
+  for (const key of [
+    'distinct_checked_guest_log_site_ids',
+    'compiled_guest_log_callsite_and_host_ring_both_executed',
+    'exact_head_compiler_linked_guest_native_evidence'
+  ]) assert.ok(contract.gate_names.includes(key), key);
+  for (const key of [
+    'java_source_ast_binding_as_executed_guest_logging',
+    'llvm_host_static_log_ring_as_compiled_guest_ir_or_linked_aot_proof'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(key), key);
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  assert.match(llvm.verified_scope, /C11 static log ring compiled and executed/);
+  assert.ok(llvm.not_verified.includes('LLVM SDK compiler IR selftest'));
+  assert.ok(llvm.not_verified.includes('actual linked AOT guest fixture with log.info'));
+  const java = contract.candidate_adapters.find(x => x.backend === 'java');
+  assert.ok(java.not_verified.includes('actual Truffle guest log.info runtime event'));
+  const rs = contract.candidate_adapters.find(x => x.backend === 'rs');
+  assert.ok(rs.not_verified.includes('automatic site-ID assignment'));
+});
