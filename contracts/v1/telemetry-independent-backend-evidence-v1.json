@@ -110,7 +110,9 @@
     "actor_and_continuation_context",
     "authorization_denies_and_bounded_nonblocking_recorder",
     "jit_codegen_proof_if_claimed",
-    "nonzero_step_ci_and_exact_source_sha"
+    "nonzero_step_ci_and_exact_source_sha",
+    "compiler_owned_guest_source_id_binding",
+    "runtime_site_probe_in_compiled_guest_not_only_host"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -125,22 +127,34 @@
     {
       "backend": "rs",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.rs/pull/64",
-      "verified_scope": "source-only reviewed code, independently checked MIR-to-native object-sidecar candidate",
+      "verified_scope": "independent Rust parser/MIR source ID verification code; source check/locate CLI and native object sidecar candidate authored, not executed",
       "not_verified": [
-        "cargo execution",
+        "cargo CLI and native object execution",
         "site probe lowering",
-        "distributed tracing",
-        "JIT"
+        "JIT/OTel",
+        "compiler guest logging"
       ]
     },
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "Clang/GCC executed native host descriptor parsing and duplicate validation only",
+      "verified_scope": "C++ static descriptor parse/fuzz host-native tests executed; exact LLVM frontend-to-function-IR routine ID metadata test authored but not executed",
       "not_verified": [
-        "LLVM guest object emission from .atto",
-        "IR probes",
-        "ORC compilation",
+        "LLVM SDK compiler IR integration test",
+        "compiled guest log-site probes",
+        "native linked guest AOT",
+        "ORC JIT",
+        "OTLP"
+      ]
+    },
+    {
+      "backend": "java",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3096",
+      "verified_scope": "Java 21 host-native static ID parse and bounded ring smoke stress executed; exact Java AST routine binding candidate authored but not Maven executed",
+      "not_verified": [
+        "Maven/JUnit execution",
+        "guest logging AST node lowering",
+        "Truffle tagged-node JIT",
         "OTLP"
       ]
     }
