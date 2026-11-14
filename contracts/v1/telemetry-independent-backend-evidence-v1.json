@@ -112,7 +112,10 @@
     "jit_codegen_proof_if_claimed",
     "nonzero_step_ci_and_exact_source_sha",
     "compiler_owned_guest_source_id_binding",
-    "runtime_site_probe_in_compiled_guest_not_only_host"
+    "runtime_site_probe_in_compiled_guest_not_only_host",
+    "distinct_checked_guest_log_site_ids",
+    "compiled_guest_log_callsite_and_host_ring_both_executed",
+    "exact_head_compiler_linked_guest_native_evidence"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -121,40 +124,43 @@
     "host_dispatch_pointer_swap_as_jit_generated_guest_code",
     "wasm_using_llvm_compiler_as_independent_wasm_frontend",
     "source_only_registry_validation_as_compiled_site_instrumentation",
-    "zero_step_ci_failure_as_failing_or_passing_test"
+    "zero_step_ci_failure_as_failing_or_passing_test",
+    "java_source_ast_binding_as_executed_guest_logging",
+    "llvm_host_static_log_ring_as_compiled_guest_ir_or_linked_aot_proof"
   ],
   "candidate_adapters": [
     {
       "backend": "rs",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.rs/pull/64",
-      "verified_scope": "independent Rust parser/MIR source ID verification code; source check/locate CLI and native object sidecar candidate authored, not executed",
+      "verified_scope": "Independent Rust source-ID check/locate and review-only routine sync with CSPRNG proposals and explicit source moves authored; not Cargo-executed",
       "not_verified": [
-        "cargo CLI and native object execution",
-        "site probe lowering",
-        "JIT/OTel",
-        "compiler guest logging"
+        "Rust Cargo build and CLI execution",
+        "automatic site-ID assignment",
+        "compiled guest log probe lowering",
+        "JIT/OTLP"
       ]
     },
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "C++ static descriptor parse/fuzz host-native tests executed; exact LLVM frontend-to-function-IR routine ID metadata test authored but not executed",
+      "verified_scope": "Exact C++ parser/fuzz host tests plus fixed-capacity C11 static log ring compiled and executed on GCC/Clang ASan/UBSan with exact Git blob checks; native Atto parser-to-LLVM guest logging IR candidate authored but SDK test not executed",
       "not_verified": [
-        "LLVM SDK compiler IR integration test",
-        "compiled guest log-site probes",
-        "native linked guest AOT",
-        "ORC JIT",
-        "OTLP"
+        "LLVM SDK compiler IR selftest",
+        "actual linked AOT guest fixture with log.info",
+        "authenticated source manifest intake in ordinary CLI",
+        "W3C trace-span correlation and OTLP",
+        "ORC JIT"
       ]
     },
     {
       "backend": "java",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3096",
-      "verified_scope": "Java 21 host-native static ID parse and bounded ring smoke stress executed; exact Java AST routine binding candidate authored but not Maven executed",
+      "verified_scope": "JDK21 static descriptor parser and bounded host ring locally executed; real Java parsed guest log.info AST binding authored, Maven/JUnit and guest runtime lowering pending",
       "not_verified": [
         "Maven/JUnit execution",
-        "guest logging AST node lowering",
-        "Truffle tagged-node JIT",
+        "actual Truffle guest log.info runtime event",
+        "tagged-node JIT",
+        "actor and suspension context",
         "OTLP"
       ]
     }
