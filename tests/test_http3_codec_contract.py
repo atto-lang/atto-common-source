@@ -49,6 +49,29 @@ class Http3CodecContractTest(unittest.TestCase):
         self.assertFalse(run["native_machine_aot"])
         self.assertFalse(run["five_backend_parity"])
 
+    def test_hardened_1255_cases_have_separate_exact_guest_evidence(self):
+        r = self.contract["hardening_run"]
+        self.assertEqual(r["status"], "PASS_RUST_FRONTEND_WASM_GUEST_ONLY")
+        self.assertIn("/actions/runs/43647064377", r["url"])
+        self.assertEqual(r["carrier_head"], "943f4186932bc9a49a1067e0f5535273cd0d2665")
+        self.assertEqual(r["compiler_slice_tree"],
+                         "3a6eadd731418b979a5154b6d8b00739d23d883e")
+        self.assertEqual([x["cases"] for x in r["fixtures"]], [308, 435, 256, 256])
+        self.assertEqual(sum(x["cases"] for x in r["fixtures"]), 1255)
+        self.assertEqual(r["new_hardening_cases"], 541)
+        self.assertEqual(r["fixtures"][1]["fixture_blob"],
+                         "70f70bdfa037468e78496dc7637ce9851e1a66aa")
+        self.assertEqual(r["guest_unit_tests_passed"], 4)
+        self.assertEqual(r["host_imports"], 0)
+        self.assertTrue(r["deterministic_artifacts"])
+        self.assertEqual(r["invalid_guest"], "E_UNBOUND_FAIL_CLOSED")
+        self.assertTrue(all(x["exit_code"] == 42 for x in r["fixtures"]))
+        self.assertFalse(r["actual_quic_http3_network_io"])
+        self.assertFalse(r["native_aot_proven"])
+        self.assertFalse(r["other_backend_execution_proven"])
+        self.assertEqual(self.contract["run"]["evidence_scope"],
+                         "HISTORICAL_GUEST_RESULT_BEFORE_62_BIT_HARDENING")
+
     def test_protocols_and_unimplemented_backends_fail_closed(self):
         self.assertEqual(self.contract["protocol_engine_status"], "NOT_IMPLEMENTED")
         self.assertEqual(self.abi["status"], "SPECIFICATION_ONLY_NO_TRANSPORT_ENGINE_BOUND")
