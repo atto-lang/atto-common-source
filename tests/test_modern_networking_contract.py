@@ -35,7 +35,22 @@ class ModernNetworkingContractTest(unittest.TestCase):
             {"llvm", "java", "net", "rs", "wasm"},
         )
         for target in self.contract["backends"]:
-            self.assertEqual(target["compile_execution"], "NOT_EXECUTED")
+            if target["backend"] == "rs":
+                self.assertEqual(target["compile_execution"], "ATTO_GUEST_WASM_EXECUTED")
+                evidence = target["execution_evidence"]
+                self.assertEqual(evidence["compiler_source_commit"],
+                                 "860137bcdc50684ab6cb6aa8f89932506b3beec4")
+                self.assertEqual(evidence["compiler_source_slice_tree_sha"],
+                                 "3a6eadd731418b979a5154b6d8b00739d23d883e")
+                self.assertEqual(evidence["exhaustive_guest_source_blob_sha"],
+                                 "113b450f4f6197223fd3bb948fb984c6d999dfbd")
+                self.assertEqual(evidence["exhaustive_cases"], 48)
+                self.assertEqual(evidence["expected_exit_code"], 42)
+                self.assertEqual(evidence["scope"], "PURE_POLICY_GUEST_ONLY_NOT_HTTP3_NETWORK")
+                self.assertIn("/actions/runs/43644258623", evidence["workflow_url"])
+            else:
+                self.assertEqual(target["compile_execution"], "NOT_EXECUTED")
+                self.assertNotIn("execution_evidence", target)
             self.assertEqual(target["http3_network_execution"], "NOT_EXECUTED")
             self.assertFalse(target["native_aot_proven"])
             self.assertFalse(target["zero_gc_proven"])
