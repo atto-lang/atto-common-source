@@ -28,7 +28,7 @@ enum class Region { Persistent, Scratch };
 struct Allocation {
     ActorId owner;
     Region region;
-    u32 offset, length, scratch_epoch, turn;
+    u32 offset, length, scratch_epoch, turn, allocation_id;
 };
 
 // Fixed-size, actor-private heap; no source-visible raw native pointer and no GC.
@@ -39,14 +39,20 @@ class Arena {
     std::vector<std::uint8_t> memory_;
     u32 persistent_limit_, persistent_top_ = 0, scratch_top_, scratch_epoch_ = 1;
     u32 loans_ = 0;
+    u32 next_allocation_id_ = 1;
+    std::map<u32, Allocation> live_allocations_;
     bool closed_ = false;
+    static std::size_t checked_capacity(u32 persistent, u32 scratch) {
+        demand(persistent <= std::numeric_limits<u32>::max() - scratch, "Ref32 capacity overflow");
+        return static_cast<std::size_t>(persistent) + scratch;
+    }
     static u32 align8(u32 value) {
         demand(value <= std::numeric_limits<u32>::max() - 7u, "alignment overflow");
         return (value + 7u) & ~7u;
     }
 public:
     Arena(ActorId id, u32 persistent_bytes, u32 scratch_bytes)
-        : owner_(id), memory_(static_cast<std::size_t>(persistent_bytes) + scratch_bytes, 0),
+        : owner_(id), memory_(checked_capacity(persistent_bytes, scratch_bytes), 0),
           persistent_limit_(persistent_bytes), scratch_top_(persistent_bytes) {
         demand(memory_.size() <= std::numeric_limits<u32>::max(), "arena larger than Ref32");
         demand((persistent_bytes & 7u) == 0u, "persistent boundary unaligned");
@@ -59,12 +65,23 @@ public:
         const u32 limit = region == Region::Persistent ? persistent_limit_ : static_cast<u32>(memory_.size());
         demand(top <= limit && padded <= limit - top, "heap quota");
         const u32 old = top;
+        demand(next_allocation_id_ != std::numeric_limits<u32>::max(), "allocation ID exhausted");
+        const u32 id = next_allocation_id_++;
+        Allocation h{owner_, region, old, bytes, scratch_epoch_, turn, id};
+        live_allocations_.emplace(id, h);
         top += padded;
-        return {owner_, region, old, bytes, scratch_epoch_, turn};
+        return h;
     }
     void check(const Allocation& h, const ActorId& caller, u32 current_turn,
                const std::set<u32>& active_turns) const {
         demand(!closed_ && caller == owner_ && h.owner == owner_, "foreign/stale actor heap");
+        const auto it = live_allocations_.find(h.allocation_id);
+        demand(it != live_allocations_.end(), "unknown Ref32 allocation");
+        const Allocation& original = it->second;
+        demand(original.owner == h.owner && original.region == h.region &&
+               original.offset == h.offset && original.length == h.length &&
+               original.scratch_epoch == h.scratch_epoch && original.turn == h.turn,
+               "forged Ref32 provenance");
         const u32 end = h.region == Region::Persistent ? persistent_top_ : scratch_top_;
         demand(h.offset <= end && h.length <= end - h.offset, "invalid Ref32 bounds");
         if (h.region == Region::Scratch) {
@@ -91,6 +108,10 @@ public:
         demand(loans_ == 0 && !closed_, "outstanding scratch loan");
         std::fill(memory_.begin() + persistent_limit_, memory_.begin() + scratch_top_, 0);
         scratch_top_ = persistent_limit_;
+        for (auto it = live_allocations_.begin(); it != live_allocations_.end();) {
+            if (it->second.region == Region::Scratch) it = live_allocations_.erase(it);
+            else ++it;
+        }
         demand(scratch_epoch_ != std::numeric_limits<u32>::max(), "scratch epoch exhausted");
         ++scratch_epoch_;
     }
@@ -99,6 +120,7 @@ public:
         std::fill(memory_.begin(), memory_.end(), 0);
         persistent_top_ = 0;
         scratch_top_ = persistent_limit_;
+        live_allocations_.clear();
         closed_ = true;
     }
     bool zeroized() const { return std::all_of(memory_.begin(), memory_.end(), [](auto b) { return b == 0; }); }
@@ -249,7 +271,11 @@ class Mailbox {
     std::size_t capacity_;
     std::vector<OwnedMessage> queued_;
 public:
-    Mailbox(ActorId receiver, std::size_t capacity) : receiver_(receiver), capacity_(capacity) {}
+    Mailbox(ActorId receiver, std::size_t capacity) : receiver_(receiver), capacity_(capacity) {
+        // Preallocate admission slots: after quota checks a noexcept vector move
+        // can no longer lose ownership to an allocation failure.
+        queued_.reserve(capacity);
+    }
     bool admit(OwnedMessage& source, ActorId sender) {
         demand(!source.consumed && source.owner == sender, "sender lacks owned payload");
         demand(sender.tenant == receiver_.tenant, "cross-tenant payload requires broker copy");
@@ -286,6 +312,17 @@ int main() {
         expect_reject([&] { (void)first.read_as(h, b, 0, 0); }, "foreign actor accepted");
         expect_reject([&] { (void)second.read_as(h, a, 0, 0); }, "foreign heap accepted");
         expect_reject([&] { (void)first.read(h, 0, 8); }, "out-of-bounds read accepted");
+    });
+    test("Ref32 provenance cannot be forged inside another allocation", [&] {
+        Actor actor(a, false);
+        auto first = actor.alloc(Region::Persistent, 8);
+        (void)actor.alloc(Region::Persistent, 8);
+        auto forged_offset = first; forged_offset.offset += 8;
+        expect_reject([&] { (void)actor.read(forged_offset, 0, 0); }, "forged offset accepted");
+        auto forged_length = first; forged_length.length += 1;
+        expect_reject([&] { (void)actor.read(forged_length, 0, 0); }, "forged size accepted");
+        auto forged_id = first; forged_id.allocation_id += 800;
+        expect_reject([&] { (void)actor.read(forged_id, 0, 0); }, "forged allocation accepted");
     });
     test("persistent survives while scratch expires between turns", [&] {
         Actor actor(a, false);
@@ -427,5 +464,5 @@ int main() {
         expect_reject([&] { (void)actor.alloc(Region::Scratch, 1, 1); }, "scratch quota exceeded");
         actor.end_turn(1);
     });
-    std::cout << "14 source-free model tests passed; NO guest/AOT/parity certification.\n";
+    std::cout << "15 source-free model tests passed; NO guest/AOT/parity certification.\n";
 }
