@@ -71,6 +71,35 @@ must fail validation. When passing symbols **across processes**, encode
 qualified symbol declarations and re-intern at the destination; do not equate
 two unrelated runtimes' numeric IDs.
 
+## Executable browser profile: private ordinals and qualified host link grants
+
+The Rust browser subset now compiles both `define pub symbol #ready;`
+and `define symbol #secret;`. Public spellings are sorted into **positive**
+1-based guest ordinals; private spellings are independently sorted into
+**negative** 1-based ordinals. A private ordinal is interpreted only inside
+the running supervisor/actor isolate. The host maintains different immutable
+registrations for sibling actors, with no cross-actor heap reference.
+`atto.symbols` lists only exported identities; `atto.private_symbols`
+lists local identities, and `atto.actor_mail` declares the exact mailbox
+payload type. Direct sends of private literals are rejected by the compiler;
+indirect private values are rejected at runtime mailbox admission.
+
+The first host-level cross-module linker, `createAuthorizedSymbolLinker`,
+accepts **separately compiled Wasm modules** and canonical module IDs from a
+trusted package plan. Exports are decoded from each Wasm module's manifest;
+imports resolve to the identical canonical handle **only** with an exact
+trusted grant `(consumer, provider, #name)`. Ambiguous, forged, private and
+same-name-conflicting imports fail closed. The host registry is tenant-scoped
+and mutable only by the supervisor.
+
+**Not yet complete:** the browser compiler has no source-level qualified
+import lowering or guest Wasm relocation contract for imported symbols.
+Host link grants prove identity resolution and authorization of the host's
+package graph; they must not be treated as compiler-attested source imports.
+No claim of cross-module compiled guest execution, native backend parity,
+actor-to-supervisor CONTROL routing or source formatter support is made.
+A Symbol's identity is never itself permission to send a message.
+
 ## Minimum conformance gates
 
 1. A supervisor and two actors importing one public declaration compare equal.
