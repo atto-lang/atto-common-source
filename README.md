@@ -88,3 +88,7 @@ Backend code generation, machine-specific layout, runtime implementation, GC str
 **Proposals requiring implementation evidence:** exact IR forms, packaging, frontend consolidation, shared optimizations, and adapter APIs.
 
 No runtime parity, performance improvement, or completed migration is claimed by these documents.
+
+## Actor fault classes (draft target)
+
+The [v1 failure-class taxonomy](contracts/v1/actor-fatal-fault-classes-v1.json) records eight recoverable-guest versus process-fatal failure classes and seven independent **pending** backend entries. Run `node --test tests/actor-fatal-fault-classes-v1.test.mjs` to verify the contract's classifications; this is a source-only test, never proof of isolation. Native segfaults, host OOM, VM corruption and whole-process kills cannot be advertised as same-process actor recovery. See [AttoLang fault-containment spec draft #64](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/64) and [conformance validator draft #723](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/723).
