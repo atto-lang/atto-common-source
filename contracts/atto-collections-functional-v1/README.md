@@ -31,9 +31,14 @@ must implement equivalent source-to-native lowering independently.
 ## Release blockers
 - Generic Copy/borrow/move bounds and effect tracking must be enforced
   by compilers, not comments. Current signatures do not prove Copy safety.
-- No reentrant mutation of source while callbacks run is proven safe yet.
-- Java currently lowers Array, List and homogeneous Vector to list-like type.
-  Java evaluator allocates Array and List; Vector outputs use Array backing.
+- The Java draft adds a nonparking read-loan admission guard for guest
+  Array/List/Vector storage: writers during map/filter/reduce fail immediately
+  and the read loan retires through finally, including callback failure.
+  This is authored code and must still pass race/guest execution tests.
+- Java resolves homogeneous Array, List and Vector to a common ListType at
+  static typing time. The draft runtime uses a source-constructor kind marker
+  and selects the matching native .atto implementation; this does not yet
+  establish distinct physical layouts or fully nominal literal typing.
 - LLVM embeds core source in C++; .NET still has legacy .ores core files.
   Both require independently registered .atto source and native guest proofs.
 - Prove empty, singleton, callback order/counts, non-associative reduce,
@@ -44,8 +49,12 @@ must implement equivalent source-to-native lowering independently.
   extraction is proven safe.
 - Slice/FixedArray/FixedList/Tuple variants require shape-preserving semantics
   or explicit dynamic result types; do not treat these as generic List aliases.
-- Callback reentrancy can invalidate read bounds or iteration assumptions.
-  The source captures entry-time size, but a compiler/runtime guard against
-  concurrent/reentrant input mutation still needs ownership proof.
+- Callback reentrancy is allowed only for read-only nested reads. All
+  source mutation must be denied while a read loan is active. Literal
+  constructors and callback ownership across actor/tenant boundaries need
+  independent review and backend-native proofs.
+- The Java source registry and byte-identical .atto file do not constitute a
+  signed exact-tree guest receipt. Private source mirroring must obey the
+  target repository's CI transfer-authorization policy.
 
 Source presence, static checks and host-only tests are not runtime parity.
