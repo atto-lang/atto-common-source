@@ -1,0 +1,107 @@
+{
+  "schema": "atto.symbol.identity.v1",
+  "description": "Supervisor-owned immutable symbol identities for actor-isolated Atto runtimes",
+  "limits": {
+    "symbols_per_tenant": 16384,
+    "utf8_key_bytes_per_tenant": 1048576,
+    "utf8_key_bytes_per_symbol": 4096
+  },
+  "source_syntax": {
+    "literal": "#ready",
+    "spaced_literal": "#with spaces",
+    "module_private_declaration": "define symbol #ready;",
+    "public_declaration": "define pub symbol #ready;",
+    "global_semantics": "Only declared and resolved exported/core symbols enter the process/tenant global registry. A bare literal remains isolate-local unless resolved to such a declaration.",
+    "visibility": "Import/export resolution is required for userland global references. A symbol identity grants no access permissions."
+  },
+  "identity": {
+    "global_key": ["canonical_module_id", "exact_utf8_symbol_spelling"],
+    "local_key": ["isolate_id", "canonical_module_id", "exact_utf8_symbol_spelling"],
+    "comparison": "identity_handles",
+    "string_equals_symbol": false,
+    "unicode_normalization": "none",
+    "case_sensitive": true,
+    "global_placement": "supervisor/runtime-owned immutable registry, never in an actor heap",
+    "native_representations": ["canonical runtime integer handle", "read-only interned data, optionally shared read-only mapping"],
+    "wasm_representation": "host-owned tenant registry with structured-clone-safe value handle",
+    "lifecycle": "tenant or process lifetime; no slot reuse while handles can exist",
+    "copyable_sendable": true,
+    "symbol_handles_are_capabilities": false,
+    "wire_format": "Do not send bare process-local handles between processes; encode qualified symbol spelling and re-intern at receiving runtime",
+    "hot_reload": "Preexisting canonical identity survives module reload; unloading does not recycle a live symbol ID",
+    "aot": "Compile exported/core symbols into a sorted immutable descriptor table; initialize/link prior to actor start",
+    "thread_safety": "Concurrent intern publication is linearizable; readers see fully initialized immutable entries"
+  },
+  "conformance_cases": [
+    {
+      "id": "global-supervisor-actor",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 0},
+      "right": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "same": true
+    },
+    {
+      "id": "global-two-actors",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "right": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 8},
+      "same": true
+    },
+    {
+      "id": "private-two-actors",
+      "left": {"scope": "local", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "right": {"scope": "local", "module": "app.events", "symbol": "#ready", "isolate": 8},
+      "same": false
+    },
+    {
+      "id": "private-same-actor",
+      "left": {"scope": "local", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "right": {"scope": "local", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "same": true
+    },
+    {
+      "id": "public-versus-private",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "right": {"scope": "local", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "same": false
+    },
+    {
+      "id": "different-module",
+      "left": {"scope": "global", "module": "app.alpha", "symbol": "#ready", "isolate": 7},
+      "right": {"scope": "global", "module": "app.beta", "symbol": "#ready", "isolate": 7},
+      "same": false
+    },
+    {
+      "id": "symbol-versus-string",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 7},
+      "right": {"type": "string", "value": "#ready"},
+      "same": false
+    },
+    {
+      "id": "spaced-literal",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#with spaces", "isolate": 0},
+      "right": {"scope": "global", "module": "app.events", "symbol": "#with spaces", "isolate": 7},
+      "same": true
+    },
+    {
+      "id": "exact-unicode",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#café", "isolate": 0},
+      "right": {"scope": "global", "module": "app.events", "symbol": "#cafe\u0301", "isolate": 7},
+      "same": false
+    },
+    {
+      "id": "different-case",
+      "left": {"scope": "global", "module": "app.events", "symbol": "#ready", "isolate": 0},
+      "right": {"scope": "global", "module": "app.events", "symbol": "#Ready", "isolate": 7},
+      "same": false
+    }
+  ],
+  "negative_requirements": [
+    "No actor-owned pointer or mutable heap allocation crosses the symbol boundary",
+    "No raw JavaScript Symbol is sent via postMessage",
+    "No hash-only identity, hash collision aliasing, ID recycling, or partially published interning",
+    "No actor may bypass compiler import visibility by fabricating a global spelling",
+    "No local symbol may resolve in another actor's isolate context",
+    "No unbounded dynamic intern allocation or unchecked integer wraparound",
+    "No process-local symbol handle is treated as globally meaningful across processes or tenants",
+    "No inheritance of symbol identity across supervisor restart without explicit re-interning"
+  ]
+}
