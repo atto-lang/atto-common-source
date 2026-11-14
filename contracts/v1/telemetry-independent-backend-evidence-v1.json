@@ -122,7 +122,10 @@
     "native_log_50k_fifo_model_evidence",
     "ordinary_llvm_cli_verified_manifest_to_generated_guest",
     "linked_guest_exit42_and_both_source_sites",
-    "real_java_parser_to_guest_log_execution"
+    "real_java_parser_to_guest_log_execution",
+    "physical_source_log_path_and_manifest_alias_denial",
+    "real_compiler_generated_ir_not_synthetic_abi",
+    "native_guest_link_exit42_and_two_static_site_receipts"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -135,7 +138,9 @@
     "java_source_ast_binding_as_executed_guest_logging",
     "llvm_host_static_log_ring_as_compiled_guest_ir_or_linked_aot_proof",
     "source_free_linked_llvm_ir_as_atto_compiler_generated_guest",
-    "synthetic_java_ast_as_real_java_parser_or_truffle_guest"
+    "synthetic_java_ast_as_real_java_parser_or_truffle_guest",
+    "linked_guest_script_smoke_using_fake_compiler_as_real_atto_aot",
+    "synthetic_source_log_manifest_as_authenticated_protected_source"
   ],
   "candidate_adapters": [
     {
@@ -152,13 +157,13 @@
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "Exact committed C++ manifest header/JSON fixture/tests passed GCC O2 and Clang ASan/UBSan (20 negatives); source-free manually authored LLVM IR linked to production C native log runtime and returned 42 with two site receipts, toggling OFF/ON. Native C ring and 8x1500 carriers and 50k FIFO model previously passed. Full compiler guest unexecuted",
+      "verified_scope": "Exact LLVM native C runtime passed local 3/3 CTest + GCC/Clang ASan; C++17 source-log manifest parser 20 negatives and physical path gate 11 negatives each passed GCC+Clang ASan with exact Git blobs. Source-free LLVM IR linked to C runtime and returned 42 with two matching receipts; full linked-guest CMake script plumbing smoke passed with synthetic IR, not actual compiler.",
       "not_verified": [
-        "full LLVM SDK compiler IR selftest",
-        "actual ordinary --source-log-ids .atto compiler to LLVM IR to linked guest AOT test",
-        "authorized exact-head Actions with executed steps",
-        "ORC JIT",
-        "W3C/OTLP actor trace propagation"
+        "LLVM SDK source frontend/compiler IR selftest",
+        "real ordinary .atto + --source-log-ids generated LLVM IR → linked guest exit42/receipts",
+        "exact-head nonzero-step source-org CI",
+        "ORC JIT and AOT optimization identity mapping",
+        "actor/await W3C/OTLP"
       ]
     },
     {
