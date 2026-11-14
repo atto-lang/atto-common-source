@@ -24,7 +24,8 @@
     "jit_attach_not_proven_by_probe_toggle": true,
     "hot_load_generation_must_pin_source_map": true,
     "foreign_compiler_reuse_only_if_explicitly_reported": true,
-    "no_python_tooling": true
+    "no_python_tooling": true,
+    "source_id_binary_encoding": "16 bytes, successive pairs of lowercase hex digits in left-to-right network byte order; no endian-dependent native memory reinterpretation"
   },
   "backends": [
     {
@@ -142,6 +143,49 @@
         "ORC compilation",
         "OTLP"
       ]
+    }
+  ],
+  "source_id_test_vectors": [
+    {
+      "kind": "routine",
+      "text": "rid_d5f8e146ba97430dac6bf17430477e2a",
+      "bytes_hex": "d5f8e146ba97430dac6bf17430477e2a",
+      "lane_high_hex": "d5f8e146ba97430d",
+      "lane_low_hex": "ac6bf17430477e2a"
+    },
+    {
+      "kind": "site",
+      "text": "sid_652e1632e7464fdb936fc40fe24f1c7b",
+      "bytes_hex": "652e1632e7464fdb936fc40fe24f1c7b",
+      "lane_high_hex": "652e1632e7464fdb",
+      "lane_low_hex": "936fc40fe24f1c7b"
+    }
+  ],
+  "invalid_source_id_test_vectors": [
+    {
+      "kind": "routine",
+      "text": "rid_00000000000000000000000000000000",
+      "reason": "all-zero"
+    },
+    {
+      "kind": "routine",
+      "text": "rid_D5f8e146ba97430dac6bf17430477e2a",
+      "reason": "uppercase"
+    },
+    {
+      "kind": "routine",
+      "text": "sid_d5f8e146ba97430dac6bf17430477e2a",
+      "reason": "wrong-kind"
+    },
+    {
+      "kind": "site",
+      "text": "sid_652e1632e7464fdb936fc40fe24f1c7",
+      "reason": "truncated"
+    },
+    {
+      "kind": "routine",
+      "text": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "reason": "runtime trace id not source"
     }
   ]
 }
