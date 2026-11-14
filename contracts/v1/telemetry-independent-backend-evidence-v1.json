@@ -1,0 +1,147 @@
+{
+  "schema": "atto.telemetry.independent-backends.v1",
+  "status": "TARGET_SOURCE_CONTRACT_NOT_EXECUTABLE_PARITY",
+  "date": "2026-11-14",
+  "rules": {
+    "compiler_implementation_shared": false,
+    "shared_mir_required": false,
+    "cross_backend_source_id_format": true,
+    "source_registry_schema": "atto.telemetry.source-ids.v1",
+    "source_ids_in_source_control": true,
+    "routine_id_type": "rid_ + 32 lowercase hexadecimal characters (128-bit, nonzero)",
+    "site_id_type": "sid_ + 32 lowercase hexadecimal characters (128-bit, nonzero)",
+    "runtime_trace_id": "W3C trace-id 128-bit, distinct from routine_id and site_id",
+    "runtime_span_id": "W3C span-id 64-bit, distinct from source identities",
+    "source_id_rekey_on_jit_recompile": false,
+    "source_id_rekey_on_source_formatting": false,
+    "runtime_jit_required_for_tracing": false,
+    "unregistered_jit_code_allowed": false,
+    "mode_coverage": [
+      "none",
+      "boundaries",
+      "functions"
+    ],
+    "jit_attach_not_proven_by_probe_toggle": true,
+    "hot_load_generation_must_pin_source_map": true,
+    "foreign_compiler_reuse_only_if_explicitly_reported": true,
+    "no_python_tooling": true
+  },
+  "backends": [
+    {
+      "id": "java",
+      "repository": "ores-truffle-oreslang/oreslang-source.java",
+      "compiler_family": "Java/Truffle own parser and AST",
+      "source_map": "Truffle guest source sections/tags, compiler-owned sites",
+      "aot": "precompiled guest probes only in proven full guest AOT",
+      "jit": "Graal/Truffle tagged-node attach and safe deopt/recompile only if implemented",
+      "current_compiler_dependency": "none",
+      "independent_source_frontend": true
+    },
+    {
+      "id": "llvm",
+      "repository": "ores-truffle-oreslang/oreslang-source.llvm",
+      "compiler_family": "native LLVM/C++ own frontend and MIR",
+      "source_map": "LLVM IR metadata/native object descriptor table",
+      "aot": "own LLVM IR-inserted static probes",
+      "jit": "optional independently verified LLVM ORC variant codegen",
+      "current_compiler_dependency": "none",
+      "independent_source_frontend": true
+    },
+    {
+      "id": "net",
+      "repository": "ores-truffle-oreslang/oreslang-source.net",
+      "compiler_family": "C# CIL compiler with NativeAOT host",
+      "source_map": "compile-time CIL/source descriptors and NativeAOT-safe tables",
+      "aot": "native-AOT-safe precompiled probe activation",
+      "jit": "no CLR Reflection.Emit or arbitrary guest JIT assumed",
+      "current_compiler_dependency": "none",
+      "independent_source_frontend": true
+    },
+    {
+      "id": "rs",
+      "repository": "ores-truffle-oreslang/oreslang-source.rs",
+      "compiler_family": "Rust Logos own frontend/MIR + Cranelift object",
+      "source_map": "independently validated Rust MIR and native object sidecar",
+      "aot": "Cranelift object codegen; embedded probes separately gated",
+      "jit": "no automatic linkage to independent oreslang-source.cranelift",
+      "current_compiler_dependency": "none",
+      "independent_source_frontend": true
+    },
+    {
+      "id": "cranelift",
+      "repository": "ores-truffle-oreslang/oreslang-source.cranelift",
+      "compiler_family": "standalone Rust frontend and Cranelift JIT",
+      "source_map": "independently generated source descriptor metadata",
+      "aot": "AOT must independently compile real object; no silent JIT fallback",
+      "jit": "Cranelift JIT tier compiled actual machine code",
+      "current_compiler_dependency": "none",
+      "independent_source_frontend": true
+    },
+    {
+      "id": "forge",
+      "repository": "ores-truffle-oreslang/oreslang-source.forge",
+      "compiler_family": "C++20 Forge independent frontend and codegen",
+      "source_map": "Forge IR/assembly source descriptors",
+      "aot": "Forge-owned static native assembly probe sites",
+      "jit": "Forge's own tiered codegen, never borrowed Graal/LLVM/Cranelift mechanisms",
+      "current_compiler_dependency": "none",
+      "independent_source_frontend": true
+    },
+    {
+      "id": "wasm",
+      "repository": "ores-truffle-oreslang/oreslang-source.wasm",
+      "compiler_family": "Wasm adapter/runtime and experimental compiler integration",
+      "source_map": "Wasm source map/custom section and bounded runtime ABI",
+      "aot": "precompiled Wasm module instrumentation and opted-in imports",
+      "jit": "host engine JIT is not a governed Atto guest JIT",
+      "current_compiler_dependency": "LLVM source compiler bridge currently",
+      "independent_source_frontend": false
+    }
+  ],
+  "gate_names": [
+    "independent_frontend_and_type_checker",
+    "verified_registry_and_duplicate_rejection",
+    "own_lowering_and_compiled_guest_artifact",
+    "exact_source_build_map",
+    "off_on_off_on_in_single_artifact",
+    "source_ids_stable_through_optimization",
+    "log_trace_context_distinct_and_correlated",
+    "actor_and_continuation_context",
+    "authorization_denies_and_bounded_nonblocking_recorder",
+    "jit_codegen_proof_if_claimed",
+    "nonzero_step_ci_and_exact_source_sha"
+  ],
+  "prohibited_evidence_substitutions": [
+    "java_guest_execution_as_llvm_guest_proof",
+    "llvm_native_host_unit_as_native_guest_compiler_proof",
+    "nativeaot_host_binary_as_guest_aot_proof",
+    "host_dispatch_pointer_swap_as_jit_generated_guest_code",
+    "wasm_using_llvm_compiler_as_independent_wasm_frontend",
+    "source_only_registry_validation_as_compiled_site_instrumentation",
+    "zero_step_ci_failure_as_failing_or_passing_test"
+  ],
+  "candidate_adapters": [
+    {
+      "backend": "rs",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.rs/pull/64",
+      "verified_scope": "source-only reviewed code, independently checked MIR-to-native object-sidecar candidate",
+      "not_verified": [
+        "cargo execution",
+        "site probe lowering",
+        "distributed tracing",
+        "JIT"
+      ]
+    },
+    {
+      "backend": "llvm",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
+      "verified_scope": "Clang/GCC executed native host descriptor parsing and duplicate validation only",
+      "not_verified": [
+        "LLVM guest object emission from .atto",
+        "IR probes",
+        "ORC compilation",
+        "OTLP"
+      ]
+    }
+  ]
+}
