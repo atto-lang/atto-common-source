@@ -83,11 +83,41 @@ class Http3CodecContractTest(unittest.TestCase):
             self.assertEqual(row["http3_network"], "NOT_IMPLEMENTED")
             if row["backend"] == "rs":
                 self.assertEqual(row["guest_execution"], "PASS_RUST_COMPILER_TO_WASM_PURE_PROTOCOL")
+            elif row["backend"] == "llvm":
+                self.assertEqual(row["guest_execution"], "PASS_LLVM_ELF64_SCALAR_NATIVE_AOT")
+                self.assertTrue(row["native_machine_aot_scalar"])
+                self.assertFalse(row["actor_runtime_executed"])
+                self.assertFalse(row["quic_tls_transport_executed"])
             else:
                 self.assertEqual(row["guest_execution"], "NOT_EXECUTED")
         for row in self.abi["backend_status"]:
             self.assertEqual(row["host_transport_binding"], "NOT_IMPLEMENTED")
             self.assertEqual(row["guest_http3"], "NOT_EXECUTED")
+
+    def test_native_llvm_receipt_is_exact_and_does_not_claim_http3_networking(self):
+        evidence = self.contract["llvm_aot_evidence"]
+        raw = (ROOT / evidence["receipt"]).read_bytes()
+        self.assertEqual(git_blob_sha(raw), evidence["receipt_blob"])
+        receipt = json.loads(raw)
+        self.assertEqual(receipt["status"], "PASS_X86_64_ELF_SCALAR_GUEST_ONLY")
+        self.assertEqual(receipt["runner"]["run"], evidence["runner"])
+        self.assertEqual(receipt["source_snapshot"]["commit"],
+                         evidence["verified_source_commit"])
+        self.assertEqual(receipt["source_snapshot"]["full_tree"],
+                         evidence["verified_exact_full_tree"])
+        self.assertEqual(sum(row["cases"] for row in receipt["fixtures"]), 1255)
+        self.assertEqual(receipt["execution"]["total_cases"], 1255)
+        self.assertTrue(receipt["execution"]["direct_cli_native_elf_verified"])
+        self.assertTrue(receipt["execution"]["checked_i64_add_sub_mul_neg_trap_passed"])
+        self.assertTrue(receipt["execution"]["asan_ubsan_smoke_passed"])
+        self.assertFalse(receipt["execution"]["runtime_guest_vm"])
+        self.assertFalse(receipt["execution"]["guest_gc"])
+        for field in ("real_quic_udp_tls", "http3_client_server_wire",
+                      "actor_runtime", "native_aot_full_language",
+                      "zero_gc_full_language", "other_backend_parity"):
+            self.assertFalse(receipt["unsupported"][field])
+        self.assertFalse(evidence["real_http3_wire"])
+        self.assertFalse(evidence["complete_language_aot"])
 
     def test_codec_guards_have_required_entrypoints(self):
         src = (ROOT / "stdlib/net/quic_varint.atto").read_text()
