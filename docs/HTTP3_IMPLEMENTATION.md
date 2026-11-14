@@ -27,7 +27,7 @@ Private, token-free, exact-SHA Git blob transfer to `athlet-o/athleto-e2e` carri
 - Rejected source returns `E_UNBOUND` and must not emit an executable.
 - Green hardened carrier run: https://github.com/athlet-o/athleto-e2e/actions/runs/43647064377 (historical pre-hardening run: https://github.com/athlet-o/athleto-e2e/actions/runs/43645771501).
 
-This is an executed **Rust compiler → Wasm guest pure protocol slice**, not a compiler-backed full network stack or evidence of Java, LLVM, .NET and standalone Wasm backend execution.
+The Rust frontend -> Wasm guest proof remains valid, but the LLVM backend now independently compiles the **same native .atto scalar fixtures directly to x86-64 ELF machine-code executables**, with no Wasm runtime or guest interpreter. The native compiler and Clang 18 passed all 1,255 cases, checked signed arithmetic traps, a direct compile-to-ELF test, and ASan/UBSan smoke tests: https://github.com/athlet-o/athleto-e2e/actions/runs/43649930185. This proves LLVM **scalar** native-AOT execution only; it does not prove an actor runtime, networking I/O, cross-platform builds, zero-GC for all language features, or Java/.NET/standalone-Wasm execution. The pinned detailed receipt is `contracts/native-llvm-aot-v1.json`.
 
 ## Security properties and missing work
 
@@ -35,7 +35,7 @@ The codec accepts QUIC variable-length integers in 1/2/4/8 octets, including non
 
 The HTTP/3 frame admission functions correctly gate a control stream's first SETTINGS, reject forbidden HTTP/2 frame type IDs and reject incompatible known stream/frame combinations. They treat all type IDs, SETTINGS IDs and frame limits outside the unsigned QUIC 62-bit range as invalid. Unknown extension frames may be boundedly skipped, including before the initial HEADERS on request/push streams, but the first control-stream frame must be SETTINGS. The new `http3_message_frame_allowed` guard rejects DATA before initial HEADERS and DATA/HEADERS after recorded trailers. Its caller must still enforce actual payload bytes, QPACK/headers, interim/final response semantics, duplicate SETTINGS IDs, critical stream teardown, and actor-owned lifetimes. These functions do not parse raw frames or implement QPACK yet.
 
-A complete **HTTP/3 client/server loopback is currently BLOCKED by missing actual QUIC/TLS runtime bindings and incomplete independent compiler backends**. Do not claim transport support, Native AOT production readiness, zero-GC, 5-backend behavioral parity or external interoperability.
+A complete **HTTP/3 client/server loopback is currently BLOCKED by missing actual QUIC/TLS runtime bindings, the LLVM actor/networking runtime, and incomplete independent Java/.NET/WASM compiler backends**. Do not claim transport support, Native AOT production readiness, zero-GC, 5-backend behavioral parity or external interoperability.
 
 ## Next concrete implementation path
 
