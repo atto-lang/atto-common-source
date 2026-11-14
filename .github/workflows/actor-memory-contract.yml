@@ -1,0 +1,24 @@
+name: actor memory AOT contract (source-free model)
+on:
+  pull_request:
+    paths:
+      - 'docs/ACTOR_MEMORY_AOT_V1.md'
+      - 'tools/actor_memory_aot_v1.cpp'
+      - '.github/workflows/actor-memory-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build strict standalone model
+        run: g++ -std=c++20 -O2 -Wall -Wextra -Werror -pedantic tools/actor_memory_aot_v1.cpp -o /tmp/atto-actor-model
+      - name: Run source-free adversarial model
+        run: /tmp/atto-actor-model
+      - name: Build and execute sanitizer model
+        run: |
+          clang++ -std=c++20 -O1 -g -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer tools/actor_memory_aot_v1.cpp -o /tmp/atto-actor-model-san
+          /tmp/atto-actor-model-san
