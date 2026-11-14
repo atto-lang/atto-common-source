@@ -119,7 +119,10 @@
     "exact_ast_verified_function_binding",
     "source_log_return_expression_fail_closed",
     "rust_root_level_proposal_no_clobber",
-    "native_log_50k_fifo_model_evidence"
+    "native_log_50k_fifo_model_evidence",
+    "ordinary_llvm_cli_verified_manifest_to_generated_guest",
+    "linked_guest_exit42_and_both_source_sites",
+    "real_java_parser_to_guest_log_execution"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -130,7 +133,9 @@
     "source_only_registry_validation_as_compiled_site_instrumentation",
     "zero_step_ci_failure_as_failing_or_passing_test",
     "java_source_ast_binding_as_executed_guest_logging",
-    "llvm_host_static_log_ring_as_compiled_guest_ir_or_linked_aot_proof"
+    "llvm_host_static_log_ring_as_compiled_guest_ir_or_linked_aot_proof",
+    "source_free_linked_llvm_ir_as_atto_compiler_generated_guest",
+    "synthetic_java_ast_as_real_java_parser_or_truffle_guest"
   ],
   "candidate_adapters": [
     {
@@ -147,21 +152,21 @@
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "Exact source blobs native C ring passed 3/3 local CTest, GCC O2, Clang ASan/UBSan; 8x1500 carrier test and 50k operation FIFO model; LLVM SDK guest IR compiler and linked AOT still unexecuted",
+      "verified_scope": "Exact committed C++ manifest header/JSON fixture/tests passed GCC O2 and Clang ASan/UBSan (20 negatives); source-free manually authored LLVM IR linked to production C native log runtime and returned 42 with two site receipts, toggling OFF/ON. Native C ring and 8x1500 carriers and 50k FIFO model previously passed. Full compiler guest unexecuted",
       "not_verified": [
-        "LLVM SDK compiler IR selftest",
-        "actual linked AOT guest fixture with log.info",
-        "authenticated source manifest intake in ordinary CLI",
-        "W3C trace-span correlation and OTLP",
-        "ORC JIT"
+        "full LLVM SDK compiler IR selftest",
+        "actual ordinary --source-log-ids .atto compiler to LLVM IR to linked guest AOT test",
+        "authorized exact-head Actions with executed steps",
+        "ORC JIT",
+        "W3C/OTLP actor trace propagation"
       ]
     },
     {
       "backend": "java",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3096",
-      "verified_scope": "Exact committed Java static ID parser and bounded ring recompiled and locally executed: 66k negative parser checks and 8x1500 publisher host tests; strict same-AST verified-function/source-log binding authored but unexecuted",
+      "verified_scope": "Exact production Java source-ID and site-binder Git blobs compiled with JDK21 -Xlint:all -Werror using synthetic AST fixture; eight admission negative cases passed. Exact runtime ring 8x1500 host tests previously passed. Real parser/JUnit/Truffle guest unexecuted",
       "not_verified": [
-        "Maven/JUnit execution",
+        "real Java Parser.parse + Maven/JUnit suite",
         "actual Truffle guest log.info runtime event",
         "tagged-node JIT",
         "actor and suspension context",
