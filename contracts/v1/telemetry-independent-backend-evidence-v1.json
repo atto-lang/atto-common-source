@@ -115,7 +115,11 @@
     "runtime_site_probe_in_compiled_guest_not_only_host",
     "distinct_checked_guest_log_site_ids",
     "compiled_guest_log_callsite_and_host_ring_both_executed",
-    "exact_head_compiler_linked_guest_native_evidence"
+    "exact_head_compiler_linked_guest_native_evidence",
+    "exact_ast_verified_function_binding",
+    "source_log_return_expression_fail_closed",
+    "rust_root_level_proposal_no_clobber",
+    "native_log_50k_fifo_model_evidence"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -132,7 +136,7 @@
     {
       "backend": "rs",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.rs/pull/64",
-      "verified_scope": "Independent Rust source-ID check/locate and review-only routine sync with CSPRNG proposals and explicit source moves authored; not Cargo-executed",
+      "verified_scope": "Rust compiler-backed routine ID check/locate/sync code authored; explicit whole-file move and root-level no-clobber proposal fixes added; Cargo tests not executed",
       "not_verified": [
         "Rust Cargo build and CLI execution",
         "automatic site-ID assignment",
@@ -143,7 +147,7 @@
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "Exact C++ parser/fuzz host tests plus fixed-capacity C11 static log ring compiled and executed on GCC/Clang ASan/UBSan with exact Git blob checks; native Atto parser-to-LLVM guest logging IR candidate authored but SDK test not executed",
+      "verified_scope": "Exact source blobs native C ring passed 3/3 local CTest, GCC O2, Clang ASan/UBSan; 8x1500 carrier test and 50k operation FIFO model; LLVM SDK guest IR compiler and linked AOT still unexecuted",
       "not_verified": [
         "LLVM SDK compiler IR selftest",
         "actual linked AOT guest fixture with log.info",
@@ -155,7 +159,7 @@
     {
       "backend": "java",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3096",
-      "verified_scope": "JDK21 static descriptor parser and bounded host ring locally executed; real Java parsed guest log.info AST binding authored, Maven/JUnit and guest runtime lowering pending",
+      "verified_scope": "Exact committed Java static ID parser and bounded ring recompiled and locally executed: 66k negative parser checks and 8x1500 publisher host tests; strict same-AST verified-function/source-log binding authored but unexecuted",
       "not_verified": [
         "Maven/JUnit execution",
         "actual Truffle guest log.info runtime event",
