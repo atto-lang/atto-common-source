@@ -135,7 +135,8 @@
     "typed_source_signature_beyond_name_and_arity",
     "span_alias_lexical_shadowing_checks",
     "compiled_guest_not_inferred_from_host_literal_tests",
-    "structured_host_evidence_cannot_promote_guest"
+    "structured_host_evidence_cannot_promote_guest",
+    "rust_proposal_newline_part_of_file_budget"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
