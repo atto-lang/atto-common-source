@@ -129,7 +129,12 @@
     "source_log_physical_path_error_redaction",
     "java_public_bind_rechecks_routine_registry",
     "rust_source_manifest_hardlink_and_mutation_admission",
-    "llvm_flattend_import_function_provenance_denial"
+    "llvm_flattend_import_function_provenance_denial",
+    "source_telemetry_literal_java_10k_host_validated",
+    "native_telemetry_literal_llvm_10k_sanitized",
+    "typed_source_signature_beyond_name_and_arity",
+    "span_alias_lexical_shadowing_checks",
+    "compiled_guest_not_inferred_from_host_literal_tests"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -147,7 +152,10 @@
     "synthetic_source_log_manifest_as_authenticated_protected_source",
     "java_arbitrary_map_as_verified_routine_identity",
     "rust_source_registry_inode_alias_as_independent_files",
-    "llvm_imported_callable_as_root_source_unit_identity"
+    "llvm_imported_callable_as_root_source_unit_identity",
+    "host_literal_admission_as_actual_guest_runtime_instrumentation",
+    "name_arity_only_as_exact_compiled_signature_id_binding",
+    "unicode_control_mismatch_between_java_and_llvm"
   ],
   "candidate_adapters": [
     {
@@ -164,7 +172,7 @@
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "Exact LLVM native C log ring, C++ manifest 20-negative admission test, source-free linked IR ABI, and C++ physical source path sanitizer 12 negatives passed local GCC/Clang sanitizer tests. LLVM emitter also rejects flattened imported function source-ID provenance; its actual compiler/linked-guest acceptance is unexecuted.",
+      "verified_scope": "Exact LLVM native C log ring passed 3/3 local CTest including 50k operation FIFO model. Strict C++ manifest parser rejected 20 forged cases; source-free manually authored LLVM IR linked to native C telemetry ABI and returned 42 (synthetic IR, not actual compiler). Physical source path sanitizer 16 negatives passed GCC/Clang ASan/UBSan. Production native literal validator passed 10k adversarial Unicode/boundary vectors under GCC O2 and Clang ASan/UBSan with exact Git blob checks. LLVM typed int-only signature and import-provenance compiler gates authored but unexecuted; actual compiler/linked-guest acceptance is unexecuted.",
       "not_verified": [
         "LLVM SDK source frontend/compiler IR selftest",
         "real ordinary .atto + --source-log-ids generated LLVM IR → linked guest exit42/receipts",
@@ -176,7 +184,7 @@
     {
       "backend": "java",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3096",
-      "verified_scope": "JDK21 exact committed Java source-ID/parser/binder classes compiled with -Xlint:all -Werror against synthetic AST; updated public API internally invokes independent routine registry binding; 16 negative host admission checks passed. Real Java Parser/JUnit/Truffle guest unexecuted.",
+      "verified_scope": "JDK21 exact committed Java source-ID and site-binder classes compiled with -Xlint:all -Werror against synthetic AST fixture; independent routine registry binding passed 16 negative host admission checks. New exact production Java log/span literal validator passed 10k Unicode/boundary vectors under javac --release 21 -Xlint:all -Werror. Real Java Parser/JUnit/Truffle guest unexecuted.",
       "not_verified": [
         "real Java Parser.parse + Maven/JUnit suite",
         "actual Truffle guest log.info runtime event",
