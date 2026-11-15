@@ -71,7 +71,10 @@
       "actor_runtime_limit": "32 actors, 128 mailbox slots, 64KiB arena and 256KiB stack per actor",
       "sealed_state_enforced": false,
       "new_declare_mtd_executed": false,
-      "supervisor_control_executed": false
+      "supervisor_control_executed": false,
+      "native_target_mtd_state": "PASS_SCALAR_CRITICAL_CALLBACK_NATIVE_ELF",
+      "full_borrow_checker": false,
+      "concurrent_rw_locks": false
     },
     {
       "backend": "java",
@@ -196,5 +199,18 @@
     "production_actor_runtime": false,
     "new_declare_mtd_lowered": false,
     "http3_wire_network_executed": false
+  },
+  "llvm_target_mtd_evidence": {
+    "receipt": "contracts/native-llvm-target-mtd-v1.json",
+    "receipt_blob": "62a95b145ab596db38cbf2068f1e92c6b5399934",
+    "exact_run": "https://github.com/athlet-o/athleto-e2e/actions/runs/43666674489",
+    "source_head": "93e20d12b0284233e1dcb6aa98076f4fd119d2ed",
+    "source_tree": "a6d2f2ab5155fac02d29fec426c2014c30ad4a98",
+    "native_actor_guest_executions": 120,
+    "negative_actor_diagnostics": 15,
+    "zero_guest_gc_in_bounded_profile": true,
+    "full_borrow_checker": false,
+    "full_concurrent_rw_locks": false,
+    "real_http3_network": false
   }
 }
