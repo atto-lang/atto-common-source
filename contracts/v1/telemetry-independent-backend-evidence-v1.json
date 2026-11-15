@@ -134,7 +134,8 @@
     "native_telemetry_literal_llvm_10k_sanitized",
     "typed_source_signature_beyond_name_and_arity",
     "span_alias_lexical_shadowing_checks",
-    "compiled_guest_not_inferred_from_host_literal_tests"
+    "compiled_guest_not_inferred_from_host_literal_tests",
+    "structured_host_evidence_cannot_promote_guest"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -155,7 +156,8 @@
     "llvm_imported_callable_as_root_source_unit_identity",
     "host_literal_admission_as_actual_guest_runtime_instrumentation",
     "name_arity_only_as_exact_compiled_signature_id_binding",
-    "unicode_control_mismatch_between_java_and_llvm"
+    "unicode_control_mismatch_between_java_and_llvm",
+    "host_only_literal_validation_as_compiler_guest_pass"
   ],
   "candidate_adapters": [
     {
@@ -167,7 +169,14 @@
         "automatic site-ID assignment",
         "compiled guest log probe lowering",
         "JIT/OTLP"
-      ]
+      ],
+      "evidence_tiers": {
+        "cold_literal_validation": "unsupported",
+        "backend_compiler_ir": "unexecuted",
+        "linked_atto_guest_aot": "unexecuted",
+        "guest_runtime_log_receipts": "unexecuted",
+        "jit_generated_guest_machine_code": "unexecuted"
+      }
     },
     {
       "backend": "llvm",
@@ -179,7 +188,14 @@
         "exact-head nonzero-step source-org CI",
         "ORC JIT and AOT optimization identity mapping",
         "actor/await W3C/OTLP"
-      ]
+      ],
+      "evidence_tiers": {
+        "cold_literal_validation": "passed_host_only",
+        "backend_compiler_ir": "unexecuted",
+        "linked_atto_guest_aot": "unexecuted",
+        "guest_runtime_log_receipts": "unexecuted",
+        "jit_generated_guest_machine_code": "unexecuted"
+      }
     },
     {
       "backend": "java",
@@ -191,7 +207,14 @@
         "tagged-node JIT",
         "actor and suspension context",
         "OTLP"
-      ]
+      ],
+      "evidence_tiers": {
+        "cold_literal_validation": "passed_host_only",
+        "backend_compiler_ir": "unexecuted",
+        "linked_atto_guest_aot": "unexecuted",
+        "guest_runtime_log_receipts": "unexecuted",
+        "jit_generated_guest_machine_code": "unexecuted"
+      }
     }
   ],
   "source_id_test_vectors": [
