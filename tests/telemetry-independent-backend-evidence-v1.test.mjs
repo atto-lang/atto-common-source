@@ -224,3 +224,26 @@ test('independent Java and LLVM bounded literals reject Unicode control spoofing
   assert.match(llvm.verified_scope, /actual compiler\/linked-guest acceptance is unexecuted/);
   assert.match(java.verified_scope, /Real Java Parser\/JUnit\/Truffle guest unexecuted/);
 });
+
+test('structured telemetry evidence cannot promote host-only tests to compiler/guest passes', () => {
+  assert.ok(contract.gate_names.includes('structured_host_evidence_cannot_promote_guest'));
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'host_only_literal_validation_as_compiler_guest_pass'));
+  const allowed = new Set(['passed_host_only', 'unexecuted', 'unsupported']);
+  const runtimeGates = [
+    'backend_compiler_ir',
+    'linked_atto_guest_aot',
+    'guest_runtime_log_receipts',
+    'jit_generated_guest_machine_code'
+  ];
+  for (const candidate of contract.candidate_adapters) {
+    const tiers = candidate.evidence_tiers;
+    assert.ok(tiers && typeof tiers === 'object', candidate.backend);
+    for (const value of Object.values(tiers))
+      assert.ok(allowed.has(value), candidate.backend + ':invalid evidence status');
+    for (const gate of runtimeGates)
+      assert.equal(tiers[gate], 'unexecuted', candidate.backend + ':' + gate);
+    assert.equal(tiers.cold_literal_validation,
+      candidate.backend === 'rs' ? 'unsupported' : 'passed_host_only');
+  }
+});
