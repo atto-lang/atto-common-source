@@ -66,17 +66,14 @@ class Registration:
 
 class RuntimeLoops:
     """Sequential transition oracle with explicit adversarial event ordering."""
-    def __init__(self, max_control=16, control_burst=4):
+    def __init__(self, max_control=16):
         require(type(max_control) is int and max_control > 0, "CONTROL_LIMIT")
-        require(type(control_burst) is int and control_burst > 0, "BURST_LIMIT")
         self.actors = {}
         self.generations = {}
         self.ready = deque()
         self.control = deque()
         self.control_pending = {}
         self.control_max = max_control
-        self.control_burst_max = control_burst
-        self.control_streak = 0
         self.registrations = {}
         self.io_generation = 0
         self.parked = False
@@ -160,17 +157,16 @@ class RuntimeLoops:
             state.abandoned += len(state.inbox)
             state.inbox.clear()
         self._maybe_retire(state)
-        self.control_streak += 1
         return ("CONTROL", ref, kind)
 
     def select_next(self):
-        """CONTROL priority with a bounded burst so ready DATA makes progress."""
+        """Strict CONTROL priority; fairness among DATA requires finite controls."""
         while self.ready and (self.actors.get(self.ready[0].name) is None or
                               self.actors[self.ready[0].name].ref is not self.ready[0] or
                               self.actors[self.ready[0].name].retired or
                               not self.actors[self.ready[0].name].scheduled):
             self.ready.popleft()
-        if self.control and (self.control_streak < self.control_burst_max or not self.ready):
+        if self.control:
             return self._dispatch_control()
         while self.ready:
             ref = self.ready.popleft()
@@ -181,10 +177,7 @@ class RuntimeLoops:
             message_id, _ = state.inbox.popleft()
             turn = TurnRef(ref, message_id)
             state.in_flight = turn
-            self.control_streak = 0
             return ("DATA", turn)
-        if self.control:
-            return self._dispatch_control()
         return None
 
     def settle(self, turn, failed=False):
