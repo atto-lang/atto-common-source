@@ -212,6 +212,33 @@ class Http3CodecContractTest(unittest.TestCase):
         self.assertFalse(x["full_concurrent_rw_locks"])
         self.assertFalse(x["real_http3_network"])
 
+    def test_llvm_nominal_index_and_sealed_state_audit_exact_provenance(self):
+        x = self.contract["llvm_nominal_sealed_hardening"]
+        raw = (ROOT / x["receipt"]).read_bytes()
+        self.assertEqual(git_blob_sha(raw), x["git_blob"])
+        proof = json.loads(raw)
+        self.assertEqual(proof["schema"], "atto.llvm.nominal-sealed-hardening.v1")
+        self.assertEqual(proof["carrier"]["run"], x["private_runner"])
+        self.assertEqual(proof["carrier"]["conclusion"], "success")
+        self.assertTrue(proof["carrier"]["exact_full_tree_verified"])
+        self.assertFalse(proof["carrier"]["cross_org_checkout_secrets"])
+        self.assertEqual(proof["source"]["verified_commit"], x["source_commit"])
+        self.assertEqual(proof["source"]["exact_git_tree"], x["source_tree"])
+        self.assertEqual(proof["executed"]["native_guest_actor_executions"],
+                         x["actor_native_executions"])
+        self.assertEqual(proof["executed"]["fail_closed_actor_compilation_cases"],
+                         x["actor_negative_compilations"])
+        self.assertEqual(len(proof["adversarial_fixtures"]), 4)
+        self.assertEqual(proof["audit_fixes"]["unresolved_type_index_checked"],
+                         "E_TYPE_INDEX")
+        self.assertTrue(x["nominal_type_index_fail_closed"])
+        self.assertTrue(x["pub_actor_state_rejected"])
+        self.assertTrue(x["checked_receiver_abi"])
+        self.assertFalse(x["full_borrow_checker"])
+        self.assertFalse(x["concurrent_rw_locks"])
+        self.assertFalse(x["actual_http3_network"])
+        self.assertFalse(proof["scope"]["real_quic_tls_http3_wire"])
+
     def test_codec_guards_have_required_entrypoints(self):
         src = (ROOT / "stdlib/net/quic_varint.atto").read_text()
         for name in ("quic_varint_width", "quic_varint_min_width",
