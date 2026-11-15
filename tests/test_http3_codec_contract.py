@@ -93,6 +93,10 @@ class Http3CodecContractTest(unittest.TestCase):
                 self.assertFalse(row["new_declare_mtd_executed"])
                 self.assertFalse(row["supervisor_control_executed"])
                 self.assertFalse(row["quic_tls_transport_executed"])
+                self.assertEqual(row["native_target_mtd_state"],
+                                 "PASS_SCALAR_CRITICAL_CALLBACK_NATIVE_ELF")
+                self.assertFalse(row["full_borrow_checker"])
+                self.assertFalse(row["concurrent_rw_locks"])
             else:
                 self.assertEqual(row["guest_execution"], "NOT_EXECUTED")
         for row in self.abi["backend_status"]:
@@ -183,6 +187,30 @@ class Http3CodecContractTest(unittest.TestCase):
         self.assertFalse(e["http3_wire_network_executed"])
         self.assertFalse(initial["unsupported"]["supervisor_priority_control"])
         self.assertFalse(later["unsupported"]["critical_read_write_sealed_state"])
+
+    def test_llvm_target_receivers_and_sealed_scalar_receipt(self):
+        x = self.contract["llvm_target_mtd_evidence"]
+        raw = (ROOT / x["receipt"]).read_bytes()
+        self.assertEqual(git_blob_sha(raw), x["receipt_blob"])
+        proof = json.loads(raw)
+        self.assertEqual(proof["schema"], "atto.llvm.target-mtd-critical-aot.v1")
+        self.assertEqual(proof["runner"]["run"], x["exact_run"])
+        self.assertEqual(proof["runner"]["conclusion"], "success")
+        self.assertTrue(proof["runner"]["full_tree_match"])
+        self.assertEqual(proof["source"]["verified_commit"], x["source_head"])
+        self.assertEqual(proof["source"]["exact_git_tree"], x["source_tree"])
+        self.assertEqual(proof["verified"]["total_native_atto_actor_executions"],
+                         x["native_actor_guest_executions"])
+        self.assertEqual(proof["verified"]["negative_actor_compilation_fixtures"],
+                         x["negative_actor_diagnostics"])
+        self.assertEqual(sum(r["executions"] for r in proof["positive_guest_blobs"]), 40)
+        self.assertEqual(len(proof["negative_guest_blobs"]), 12)
+        self.assertTrue(proof["verified"]["independent_actor_guarded_state_pass"])
+        self.assertTrue(proof["verified"]["unrelocated_nominal_type_rejected"])
+        self.assertFalse(proof["unsupported"]["full_actor_supervisor_control"])
+        self.assertFalse(x["full_borrow_checker"])
+        self.assertFalse(x["full_concurrent_rw_locks"])
+        self.assertFalse(x["real_http3_network"])
 
     def test_codec_guards_have_required_entrypoints(self):
         src = (ROOT / "stdlib/net/quic_varint.atto").read_text()
