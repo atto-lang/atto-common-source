@@ -1,6 +1,6 @@
 {
   "schema": "atto.stdlib.http3-codec.v1",
-  "status": "RS_WASM_AND_LLVM_SCALAR_GUESTS_PASSED_HTTP3_NETWORK_NOT_IMPLEMENTED",
+  "status": "RS_WASM_LLVM_SCALAR_AND_BOUNDED_NATIVE_ACTOR_PASSED_NO_HTTP3_NETWORK",
   "canonical_modules": [
     {
       "path": "stdlib/net/http_policy.atto",
@@ -65,8 +65,13 @@
       "guest_execution": "PASS_LLVM_ELF64_SCALAR_NATIVE_AOT",
       "http3_network": "NOT_IMPLEMENTED",
       "native_machine_aot_scalar": true,
-      "actor_runtime_executed": false,
-      "quic_tls_transport_executed": false
+      "actor_runtime_executed": true,
+      "quic_tls_transport_executed": false,
+      "actor_runtime_scope": "PASS_LLVM_BOUNDED_NATIVE_LEGACY_DEFINE_ACTOR",
+      "actor_runtime_limit": "32 actors, 128 mailbox slots, 64KiB arena and 256KiB stack per actor",
+      "sealed_state_enforced": false,
+      "new_declare_mtd_executed": false,
+      "supervisor_control_executed": false
     },
     {
       "backend": "java",
@@ -174,5 +179,22 @@
     "full_language_aot": false,
     "actor_runtime_executed": false,
     "http3_network_executed": false
+  },
+  "llvm_actor_native_evidence": {
+    "baseline_receipt": "contracts/native-llvm-actor-aot-v1.json",
+    "baseline_git_blob_sha": "b6511bfb60d2a837db08b555aa6acacc1034bac6",
+    "original_run": "https://github.com/athlet-o/athleto-e2e/actions/runs/43657189906",
+    "original_exact_tree": "f40cb5044af7ffb55cbd05dd7024cc7963d6042d",
+    "capacity_receipt": "contracts/native-llvm-actor-capacity-v1.json",
+    "capacity_git_blob_sha": "d5384b231710387420417f9853795815ae807d2b",
+    "capacity_run": "https://github.com/athlet-o/athleto-e2e/actions/runs/43657779372",
+    "capacity_exact_tree": "099b089383525f0da89dd734fc7d86e659450f2c",
+    "real_atto_actor_native_executed": true,
+    "actor_guest_runs": 80,
+    "abi_mailbox_messages": 8000,
+    "max_actor_instances_tested": 32,
+    "production_actor_runtime": false,
+    "new_declare_mtd_lowered": false,
+    "http3_wire_network_executed": false
   }
 }
