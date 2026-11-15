@@ -86,7 +86,12 @@ class Http3CodecContractTest(unittest.TestCase):
             elif row["backend"] == "llvm":
                 self.assertEqual(row["guest_execution"], "PASS_LLVM_ELF64_SCALAR_NATIVE_AOT")
                 self.assertTrue(row["native_machine_aot_scalar"])
-                self.assertFalse(row["actor_runtime_executed"])
+                self.assertTrue(row["actor_runtime_executed"])
+                self.assertEqual(row["actor_runtime_scope"],
+                                 "PASS_LLVM_BOUNDED_NATIVE_LEGACY_DEFINE_ACTOR")
+                self.assertFalse(row["sealed_state_enforced"])
+                self.assertFalse(row["new_declare_mtd_executed"])
+                self.assertFalse(row["supervisor_control_executed"])
                 self.assertFalse(row["quic_tls_transport_executed"])
             else:
                 self.assertEqual(row["guest_execution"], "NOT_EXECUTED")
@@ -146,6 +151,38 @@ class Http3CodecContractTest(unittest.TestCase):
         self.assertFalse(ref["http3_network_executed"])
         self.assertFalse(ref["full_language_aot"])
         self.assertFalse(ref["actor_runtime_executed"])
+
+    def test_actual_llvm_native_actor_receipts_are_exact_and_scope_bounded(self):
+        e = self.contract["llvm_actor_native_evidence"]
+        raw1 = (ROOT / e["baseline_receipt"]).read_bytes()
+        raw2 = (ROOT / e["capacity_receipt"]).read_bytes()
+        self.assertEqual(git_blob_sha(raw1), e["baseline_git_blob_sha"])
+        self.assertEqual(git_blob_sha(raw2), e["capacity_git_blob_sha"])
+        initial = json.loads(raw1)
+        later = json.loads(raw2)
+        self.assertEqual(initial["carrier"]["run"], e["original_run"])
+        self.assertEqual(initial["source"]["full_git_tree"],
+                         e["original_exact_tree"])
+        self.assertEqual(initial["status"],
+                         "PASS_LINUX_X86_64_BOUNDED_LEGACY_ACTOR_AOT")
+        self.assertEqual(later["runner"]["run"], e["capacity_run"])
+        self.assertEqual(later["code_source"]["full_tree"],
+                         e["capacity_exact_tree"])
+        self.assertEqual(later["base_actor_receipt_blob"],
+                         e["baseline_git_blob_sha"])
+        self.assertEqual(later["verified"]["maximum_actor_instances"],
+                         e["max_actor_instances_tested"])
+        self.assertEqual(later["verified"]["actor_native_guest_executions"],
+                         e["actor_guest_runs"])
+        self.assertEqual(later["verified"]["abi_accepted_messages_total"],
+                         e["abi_mailbox_messages"])
+        self.assertTrue(later["verified"]["thirty_third_spawn_rejected"])
+        self.assertTrue(e["real_atto_actor_native_executed"])
+        self.assertFalse(e["production_actor_runtime"])
+        self.assertFalse(e["new_declare_mtd_lowered"])
+        self.assertFalse(e["http3_wire_network_executed"])
+        self.assertFalse(initial["unsupported"]["supervisor_priority_control"])
+        self.assertFalse(later["unsupported"]["critical_read_write_sealed_state"])
 
     def test_codec_guards_have_required_entrypoints(self):
         src = (ROOT / "stdlib/net/quic_varint.atto").read_text()
