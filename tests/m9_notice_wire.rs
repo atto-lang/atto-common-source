@@ -61,11 +61,11 @@ impl Notice<'_> {
         ))
     }
 }
-fn stop() -> Notice<'static> {
+fn stop<'a>() -> Notice<'a> {
     Notice {kind:"STOP",actor_id:0,generation:1,supervisor_id:777,
         message_id:0,fault_code:0,reason:"graceful stop"}
 }
-fn panic() -> Notice<'static> {
+fn panic<'a>() -> Notice<'a> {
     Notice {kind:"PANIC",actor_id:0,generation:1,supervisor_id:777,
         message_id:1,fault_code:1,reason:"checked arithmetic"}
 }
@@ -151,6 +151,8 @@ mod tests {
             assert!(POLICY.contains(term),"missing legacy M9 rule: {term}");
         }
         assert!(POLICY.contains("\"general_actor\": false"));
+        assert!(POLICY.contains("\"max\": 10000"));
+        assert!(POLICY.contains("\"max\": 4"));
         assert!(POLICY.contains("\"await_select\": false"));
         assert!(POLICY.contains("\"hard_real_time\": false"));
     }
