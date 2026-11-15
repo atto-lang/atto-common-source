@@ -182,3 +182,24 @@ test('full native AOT guest requires actual compiler, not linked synthetic stand
   assert.match(llvm.verified_scope, /synthetic IR, not actual compiler/);
   assert.ok(llvm.not_verified.some(x => x.includes('real ordinary .atto')));
 });
+
+test('private source path and compiler-owned routine IDs remain fail-closed', () => {
+  for (const gate of [
+    'source_log_physical_path_error_redaction',
+    'java_public_bind_rechecks_routine_registry',
+    'rust_source_manifest_hardlink_and_mutation_admission',
+    'llvm_flattend_import_function_provenance_denial'
+  ]) assert.ok(contract.gate_names.includes(gate), gate);
+  for (const substitution of [
+    'java_arbitrary_map_as_verified_routine_identity',
+    'rust_source_registry_inode_alias_as_independent_files',
+    'llvm_imported_callable_as_root_source_unit_identity'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(substitution), substitution);
+  const java = contract.candidate_adapters.find(x => x.backend === 'java');
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  const rust = contract.candidate_adapters.find(x => x.backend === 'rs');
+  assert.match(java.verified_scope, /16 negative host admission checks/);
+  assert.match(java.verified_scope, /Real Java Parser\/JUnit\/Truffle guest unexecuted/);
+  assert.match(llvm.verified_scope, /actual compiler\/linked-guest acceptance is unexecuted/);
+  assert.match(rust.verified_scope, /Rust Cargo build and new tests not executed/);
+});
