@@ -23,6 +23,23 @@ class M8IRContract(unittest.TestCase):
         self.assertIn("increasing", self.ir["frame"]["generation"])
         for flag in ("full_language", "await_select", "production_borrow_checker", "hard_real_time"):
             self.assertIs(self.ir["scope"][flag], False)
+    def test_failed_frame_is_terminal_and_distinct_from_running(self):
+        frame = self.ir["frame"]
+        self.assertIn("FAILED", frame["status"])
+        self.assertIn("RUNNING", frame["status"])
+        self.assertNotEqual(frame["status"].index("FAILED"), frame["status"].index("RUNNING"))
+        self.assertIn("no result/PC", frame["fault_visibility"])
+    def test_fault_codes_and_explicit_safe_cleanup(self):
+        codes = self.ir["frame"]["fault_codes"]
+        self.assertEqual(codes, {
+            "none": 0, "checked_add_overflow": 1, "checked_index_increment_overflow": 2
+        })
+        obs = self.ir["observable"]
+        self.assertIn("before trapping", obs["fault"])
+        self.assertIn("explicitly closeable", obs["fault_cleanup"])
+        self.assertIn("increases generation", obs["fault_cleanup"])
+    def test_panic_export_is_not_supervisor_delivery(self):
+        self.assertIs(self.ir["scope"]["supervisor_control_integrated"], False)
     def test_stop_panic_serial_contracts(self):
         obs = self.ir["observable"]
         for key in ("stop","panic","serial","yield","resume"):
