@@ -125,7 +125,11 @@
     "real_java_parser_to_guest_log_execution",
     "physical_source_log_path_and_manifest_alias_denial",
     "real_compiler_generated_ir_not_synthetic_abi",
-    "native_guest_link_exit42_and_two_static_site_receipts"
+    "native_guest_link_exit42_and_two_static_site_receipts",
+    "source_log_physical_path_error_redaction",
+    "java_public_bind_rechecks_routine_registry",
+    "rust_source_manifest_hardlink_and_mutation_admission",
+    "llvm_flattend_import_function_provenance_denial"
   ],
   "prohibited_evidence_substitutions": [
     "java_guest_execution_as_llvm_guest_proof",
@@ -140,13 +144,16 @@
     "source_free_linked_llvm_ir_as_atto_compiler_generated_guest",
     "synthetic_java_ast_as_real_java_parser_or_truffle_guest",
     "linked_guest_script_smoke_using_fake_compiler_as_real_atto_aot",
-    "synthetic_source_log_manifest_as_authenticated_protected_source"
+    "synthetic_source_log_manifest_as_authenticated_protected_source",
+    "java_arbitrary_map_as_verified_routine_identity",
+    "rust_source_registry_inode_alias_as_independent_files",
+    "llvm_imported_callable_as_root_source_unit_identity"
   ],
   "candidate_adapters": [
     {
       "backend": "rs",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.rs/pull/64",
-      "verified_scope": "Rust compiler-backed routine ID check/locate/sync code authored; explicit whole-file move and root-level no-clobber proposal fixes added; Cargo tests not executed",
+      "verified_scope": "Independent Rust source-identity check/locate/sync authored, with root-level exclusive proposal, source/registry hardlink denial and pre/post bounded-read inode/time stability. Source-org CI latest exact head has pre-execution failures. Rust Cargo build and new tests not executed.",
       "not_verified": [
         "Rust Cargo build and CLI execution",
         "automatic site-ID assignment",
@@ -157,7 +164,7 @@
     {
       "backend": "llvm",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1799",
-      "verified_scope": "Exact LLVM native C runtime passed local 3/3 CTest + GCC/Clang ASan; C++17 source-log manifest parser 20 negatives and physical path gate 11 negatives each passed GCC+Clang ASan with exact Git blobs. Source-free LLVM IR linked to C runtime and returned 42 with two matching receipts; full linked-guest CMake script plumbing smoke passed with synthetic IR, not actual compiler.",
+      "verified_scope": "Exact LLVM native C log ring, C++ manifest 20-negative admission test, source-free linked IR ABI, and C++ physical source path sanitizer 12 negatives passed local GCC/Clang sanitizer tests. LLVM emitter also rejects flattened imported function source-ID provenance; its actual compiler/linked-guest acceptance is unexecuted.",
       "not_verified": [
         "LLVM SDK source frontend/compiler IR selftest",
         "real ordinary .atto + --source-log-ids generated LLVM IR → linked guest exit42/receipts",
@@ -169,7 +176,7 @@
     {
       "backend": "java",
       "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3096",
-      "verified_scope": "Exact production Java source-ID and site-binder Git blobs compiled with JDK21 -Xlint:all -Werror using synthetic AST fixture; eight admission negative cases passed. Exact runtime ring 8x1500 host tests previously passed. Real parser/JUnit/Truffle guest unexecuted",
+      "verified_scope": "JDK21 exact committed Java source-ID/parser/binder classes compiled with -Xlint:all -Werror against synthetic AST; updated public API internally invokes independent routine registry binding; 16 negative host admission checks passed. Real Java Parser/JUnit/Truffle guest unexecuted.",
       "not_verified": [
         "real Java Parser.parse + Maven/JUnit suite",
         "actual Truffle guest log.info runtime event",
