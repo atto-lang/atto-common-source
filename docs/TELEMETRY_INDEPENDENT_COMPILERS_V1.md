@@ -66,3 +66,39 @@ compiler-emitted guest IR → linked native/Truffle guest runtime execution →
 distinct W3C trace/span correlation → governed JIT/async/actors → authenticated
 exact-head CI**. Host-runtime-only success may never skip a stage.
 
+
+
+## Audit evidence update — 2026-11-14
+
+The candidate adapter contract now uses a structured `evidence_tiers`
+record. `cold_literal_validation` is `passed_host_only` for
+**Java and LLVM**, but `unsupported` for Rust. Across all three
+candidate adapters, `backend_compiler_ir`, `linked_atto_guest_aot`,
+`guest_runtime_log_receipts` and `jit_generated_guest_machine_code`
+remain **unexecuted**. Prose changes cannot silently promote those tiers.
+
+- **LLVM host tests:** exact Git-blob production literal validator and its
+  10,000-vector source-free suite passed GCC optimized and Clang ASan/UBSan;
+  exact native source-path suite passed 16 admission negatives under both.
+  A separate source signature bug was hardened: IDs in
+  `main(int):int` manifests now require actual typed `int` parameters and
+  returns, not only name/arity. The compiler-level negative tests are
+  authored but **unexecuted** without LLVM SDK.
+- **Java host tests:** exact Git-blob `SourceTelemetryLiteralV1` and its
+  standalone 10,000-vector Unicode test passed JDK21
+  `-Xlint:all -Werror`; the actual Java compiler binder now validates
+  span lengths, malformed surrogate pairs, active alias collisions and
+  parameter shadowing. JUnit/real-parser/Truffle execution **pending**.
+- **Rust source check:** output proposals now reserve the final newline
+  within the 1 MiB file budget. Test authored, **Cargo not executed**.
+
+The shared contract and regression file have been repaired to remove
+obsolete evidence-description assumptions and to enforce the structured
+host/compiled-guest separation. Source-level invariant checks passed.
+Full Node test execution, authorized exact-SHA GitHub Actions, LLVM
+full-AOT and Java Truffle guest tracing are **not certified**.
+
+Private-source export incidents #22 and #77 remain a blocker to an
+alternate-organization Git-tree mirror, even with private branches and
+token-free `GITHUB_TOKEN` checkout. Use approved source-org runners or
+record exact snapshot authorization before any source export.
