@@ -212,5 +212,20 @@
     "full_borrow_checker": false,
     "full_concurrent_rw_locks": false,
     "real_http3_network": false
+  },
+  "llvm_nominal_sealed_hardening": {
+    "receipt": "contracts/native-llvm-nominal-sealed-hardening-v1.json",
+    "git_blob": "17416105b9604afc190668414ef3d10fd908012f",
+    "source_commit": "b80020c46d1a496b663243e1a4a942edcfb208f6",
+    "source_tree": "c5e1f150fa628f3985a535efd83bcfcbffb03cb0",
+    "private_runner": "https://github.com/athlet-o/athleto-e2e/actions/runs/43669072054",
+    "actor_native_executions": 120,
+    "actor_negative_compilations": 19,
+    "nominal_type_index_fail_closed": true,
+    "pub_actor_state_rejected": true,
+    "checked_receiver_abi": true,
+    "full_borrow_checker": false,
+    "concurrent_rw_locks": false,
+    "actual_http3_network": false
   }
 }
