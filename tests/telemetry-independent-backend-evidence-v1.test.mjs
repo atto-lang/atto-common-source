@@ -247,3 +247,11 @@ test('structured telemetry evidence cannot promote host-only tests to compiler/g
       candidate.backend === 'rs' ? 'unsupported' : 'passed_host_only');
   }
 });
+
+test('Rust proposal byte budget includes newline, without claiming Cargo execution', () => {
+  assert.ok(contract.gate_names.includes('rust_proposal_newline_part_of_file_budget'));
+  const rust = contract.candidate_adapters.find(x => x.backend === 'rs');
+  assert.equal(rust.evidence_tiers.cold_literal_validation, 'unsupported');
+  assert.equal(rust.evidence_tiers.backend_compiler_ir, 'unexecuted');
+  assert.ok(rust.not_verified.includes('Rust Cargo build and CLI execution'));
+});
