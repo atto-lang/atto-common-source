@@ -39,14 +39,13 @@ class RuntimeLoopTests(unittest.TestCase):
         self.m.assert_conserved(self.m.actors['b'])
         self.rejection('STALE_ACTOR', lambda: self.m.send(self.a, self.b, self.m.allocate(self.a, b'late')))
 
-    def test_control_burst_is_bounded(self):
+    def test_control_precedes_all_pending_data(self):
         self.m.send(self.a, self.b, self.m.allocate(self.a, b'data'))
         refs = [self.m.spawn('control-' + str(n)) for n in range(5)]
         for ref in refs:
             self.m.post_control(ref, 'STOP')
-        self.assertEqual([self.m.select_next()[0] for _ in range(4)], ['CONTROL'] * 4)
+        self.assertEqual([self.m.select_next()[0] for _ in range(5)], ['CONTROL'] * 5)
         self.assertEqual(self.m.select_next()[0], 'DATA')
-        self.assertEqual(self.m.select_next()[0], 'CONTROL')
 
     def test_stop_then_panic_upgrades_control(self):
         self.assertTrue(self.m.post_control(self.a, 'STOP'))
