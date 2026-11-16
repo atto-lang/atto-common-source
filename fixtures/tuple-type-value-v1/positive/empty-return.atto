@@ -1,2 +1,2 @@
-fnc zero(): Tuple[] { return ~tuple(); }
+fnc zero(): Tuple[] { return Tuple.of(); }
 pub fnc main(): int { val value: Tuple[] = zero(); return 42; }
