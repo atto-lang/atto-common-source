@@ -720,6 +720,16 @@
       ],
       "repeatable": false,
       "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Override",
+      "allowedTargets": [
+        "method"
+      ],
+      "phase": "proof",
+      "arguments": [],
+      "repeatable": false,
+      "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
     }
   ],
   "reportingRule": "Reference contract/model tests are NOT compiler acceptance, executed AOT, or five-backend parity. A backend only moves to EXECUTED upon exact-head native test evidence."
