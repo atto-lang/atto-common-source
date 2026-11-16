@@ -10,6 +10,7 @@ BACKENDS = frozenset("java llvm wasm forge net cranelift js rs hdl".split())
 PHASES = frozenset("parser type ownership runtime guest".split())
 ID = re.compile(r"^[a-z][a-z0-9-]{2,80}$")
 ALLOWED_EXPECTED = frozenset(("ACCEPT", "REJECT"))
+REMOVED_TILDE = re.compile(r"~(?:map|entry|pair|tuple|array|list|vector|set|record)\s*(?:<|\()")
 
 
 def _unique_pairs(pairs):
@@ -67,10 +68,18 @@ def check(path):
             continue
         coverage[family].add(case["expected"])
         if case["expected"] == "ACCEPT":
-            if (f"{family.capitalize()}.of" not in source
-                    and f"~{family}(" not in source
-                    and f"~{family}<" not in source):
-                raise ValueError("positive case does not exercise its named factory or tilde alias")
+            if f"{family.capitalize()}.of" not in source or REMOVED_TILDE.search(source):
+                raise ValueError("positive case does not exercise canonical Type.of factory")
+        if REMOVED_TILDE.search(source) and (case["expected"] != "REJECT"
+                                             or case["phase"] != "parser"):
+            raise ValueError("removed tilde constructor must be a parser rejection")
+    for family in FAMILIES:
+        named = [c for c in cases if c["family"] == family
+                 and c["id"] in (family + "-tilde", "map-explicit-tilde")]
+        if len(named) != 1 or named[0]["expected"] != "REJECT" or named[0]["phase"] != "parser":
+            raise ValueError("missing negative tilde constructor coverage: " + family)
+        if not REMOVED_TILDE.search(named[0]["source"]):
+            raise ValueError("negative tilde fixture no longer exercises removed constructor")
     for family, expected in coverage.items():
         if expected != ALLOWED_EXPECTED:
             raise ValueError(f"missing positive/negative coverage: {family}")
