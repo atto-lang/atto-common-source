@@ -23,7 +23,7 @@
       "expect": "accept",
       "kind": "stdout",
       "stdout": "hello|world",
-      "source": "fnc pair(): Tuple[string, string] { return ~tuple(\"hello\", \"world\"); }\npub routine main(): void {\n  val v: Tuple[string, string] = pair();\n  stdio.stdout.write(v[0]); stdio.stdout.write(\"|\"); stdio.stdout.write(v[1]);\n  return;\n}",
+      "source": "fnc pair(): Tuple[string, string] { return Tuple.of(\"hello\", \"world\"); }\npub routine main(): void {\n  val v: Tuple[string, string] = pair();\n  stdio.stdout.write(v[0]); stdio.stdout.write(\"|\"); stdio.stdout.write(v[1]);\n  return;\n}",
       "source_file": "fixtures/tuple-type-value-v1/positive/string-return.atto"
     },
     {
@@ -31,21 +31,21 @@
       "expect": "accept",
       "kind": "exit_code",
       "exit_code": 42,
-      "source": "fnc make(): Tuple[int, Tuple[int, int]] { return ~tuple(39, ~tuple(1, 2)); }\npub fnc main(): int { val t: Tuple[int, Tuple[int, int]] = make(); return t[0] + t[1][0] + t[1][1]; }"
+      "source": "fnc make(): Tuple[int, Tuple[int, int]] { return Tuple.of(39, Tuple.of(1, 2)); }\npub fnc main(): int { val t: Tuple[int, Tuple[int, int]] = make(); return t[0] + t[1][0] + t[1][1]; }"
     },
     {
       "id": "p03_singleton",
       "expect": "accept",
       "kind": "exit_code",
       "exit_code": 42,
-      "source": "fnc one(): Tuple[int] { return ~tuple(42); }\npub fnc main(): int { return one()[0]; }"
+      "source": "fnc one(): Tuple[int] { return Tuple.of(42); }\npub fnc main(): int { return one()[0]; }"
     },
     {
       "id": "p04_empty",
       "expect": "accept",
       "kind": "exit_code",
       "exit_code": 42,
-      "source": "fnc zero(): Tuple[] { return ~tuple(); }\npub fnc main(): int { val value: Tuple[] = zero(); return 42; }",
+      "source": "fnc zero(): Tuple[] { return Tuple.of(); }\npub fnc main(): int { val value: Tuple[] = zero(); return 42; }",
       "source_file": "fixtures/tuple-type-value-v1/positive/empty-return.atto"
     },
     {
@@ -53,33 +53,33 @@
       "expect": "accept",
       "kind": "exit_code",
       "exit_code": 42,
-      "source": "fnc old(): Tuple<int, int> { return ~tuple(40, 2); }\nfnc canonical(): Tuple[int, int] { return old(); }\npub fnc main(): int { val t: Tuple[int, int] = canonical(); return t[0] + t[1]; }"
+      "source": "fnc old(): Tuple<int, int> { return Tuple.of(40, 2); }\nfnc canonical(): Tuple[int, int] { return old(); }\npub fnc main(): int { val t: Tuple[int, int] = canonical(); return t[0] + t[1]; }"
     },
     {
       "id": "p06_nominal_shadow",
       "expect": "accept",
       "kind": "exit_code",
       "exit_code": 42,
-      "source": "type Tuple<T> = T;\nfnc pair(): Tuple[int, int] { return ~tuple(40, 2); }\npub fnc main(): int { val v: Tuple[int, int] = pair(); return v[0] + v[1]; }"
+      "source": "type Tuple<T> = T;\nfnc pair(): Tuple[int, int] { return Tuple.of(40, 2); }\npub fnc main(): int { val v: Tuple[int, int] = pair(); return v[0] + v[1]; }"
     },
     {
       "id": "n01_array_as_tuple",
       "expect": "reject",
       "category": "type",
-      "source": "fnc bad(): Tuple[int, int] { return ~array(40, 2); }",
+      "source": "fnc bad(): Tuple[int, int] { return Array.of(40, 2); }",
       "source_file": "fixtures/tuple-type-value-v1/negative/array-as-tuple.atto"
     },
     {
       "id": "n02_wrong_arity",
       "expect": "reject",
       "category": "type",
-      "source": "fnc bad(): Tuple[int, int] { return ~tuple(42); }"
+      "source": "fnc bad(): Tuple[int, int] { return Tuple.of(42); }"
     },
     {
       "id": "n03_wrong_element",
       "expect": "reject",
       "category": "type",
-      "source": "fnc bad(): Tuple[int, string] { return ~tuple(\"wrong\", 42); }"
+      "source": "fnc bad(): Tuple[int, string] { return Tuple.of(\"wrong\", 42); }"
     },
     {
       "id": "n04_missing_return",
@@ -116,7 +116,7 @@
       "id": "n09_array_as_union_tuple",
       "expect": "reject",
       "category": "type",
-      "source": "fnc bad(): Tuple[int, int] | Tuple[string, string] { return ~array(40, 2); }"
+      "source": "fnc bad(): Tuple[int, int] | Tuple[string, string] { return Array.of(40, 2); }"
     },
     {
       "id": "n10_legacy_arr_as_tuple",
@@ -128,13 +128,49 @@
       "id": "n11_inferred_empty_tuple_type",
       "expect": "reject",
       "category": "syntax",
-      "source": "fnc bad(): Tuple<>[] { return ~tuple(); }"
+      "source": "fnc bad(): Tuple<>[] { return Tuple.of(); }"
     },
     {
       "id": "n12_tilde_inferred_empty_tuple_type",
       "expect": "reject",
       "category": "syntax",
       "source": "fnc bad(): ~tuple<>[] { return ~tuple(); }"
+    },
+    {
+      "id": "n13_removed_tilde_tuple",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Tuple[int,int] { return ~tuple(1,2); }"
+    },
+    {
+      "id": "n14_removed_tilde_array",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Array[int] { return ~array(1,2); }"
+    },
+    {
+      "id": "n15_removed_spaced_tilde_tuple",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Tuple[int,int] { return ~ tuple(1,2); }"
+    },
+    {
+      "id": "n16_removed_tilde_map",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Map<string,int> { return ~map<string,int>(\"a\" => 1); }"
+    },
+    {
+      "id": "n17_removed_nominal_tilde_type_alias",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(~tuple<int,int> value): void { return; }"
+    },
+    {
+      "id": "n18_removed_tilde_typed_empty",
+      "expect": "reject",
+      "category": "syntax",
+      "source": "fnc bad(): Tuple[] { return ~<Tuple[]>(); }"
     }
   ]
 }
