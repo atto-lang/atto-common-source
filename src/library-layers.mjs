@@ -80,8 +80,8 @@ export function inspectAtto(source,layer){
       FAIL('E_LIBRARY_HOST','foreign/host entrypoint in portable source');
     if(layer!=='std'){
       if(w==='using'&&next==='io')FAIL('E_LIBRARY_HOST','host I/O effect in freestanding layer');
-      if(['stdio','process','filesystem','socket','thread','net','os','std','wasi','libc'].includes(w)
-         && ['.','::'].includes(next))FAIL('E_LIBRARY_HOST','host namespace '+w);
+      if(['stdio','process','filesystem','socket','thread','net','os','std','wasi','libc','java','dotnet'].includes(w)
+         && (next==='.' || (next===':' && at(t,i+2)===':')))FAIL('E_LIBRARY_HOST','host namespace '+w);
       if(w==='std'&&next==='.' )FAIL('E_LIBRARY_HOST','std reference');
       if(w==='System'&&next==='.')FAIL('E_LIBRARY_HOST','host system reference');
     }
