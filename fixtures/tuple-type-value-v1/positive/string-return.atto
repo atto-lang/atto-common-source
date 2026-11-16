@@ -1,4 +1,4 @@
-fnc pair(): Tuple[string, string] { return ~tuple("hello", "world"); }
+fnc pair(): Tuple[string, string] { return Tuple.of("hello", "world"); }
 pub routine main(): void {
   val v: Tuple[string, string] = pair();
   stdio.stdout.write(v[0]); stdio.stdout.write("|"); stdio.stdout.write(v[1]);
