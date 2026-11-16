@@ -63,6 +63,8 @@ test('forbidden hosted APIs, external hooks, implicit allocation, unsupported im
     ['core','new Error("oops")','E_LIBRARY_ALLOCATION'],
     ['core','Array.of(1)','E_LIBRARY_ALLOCATION'],
     ['core','Box<int> x','E_LIBRARY_ALLOCATION'],
+    ['core','String name;','E_LIBRARY_ALLOCATION'],
+    ['core','Array items;','E_LIBRARY_ALLOCATION'],
     ['alloc','std.io.read()','E_LIBRARY_HOST'],
     ['core','std::fs.open()','E_LIBRARY_HOST'],
     ['core','java.lang.System.out','E_LIBRARY_HOST'],
