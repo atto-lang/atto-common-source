@@ -64,6 +64,9 @@ test('forbidden hosted APIs, external hooks, implicit allocation, unsupported im
     ['core','Array.of(1)','E_LIBRARY_ALLOCATION'],
     ['core','Box<int> x','E_LIBRARY_ALLOCATION'],
     ['alloc','std.io.read()','E_LIBRARY_HOST'],
+    ['core','std::fs.open()','E_LIBRARY_HOST'],
+    ['core','java.lang.System.out','E_LIBRARY_HOST'],
+    ['alloc','dotnet.System.IO.File','E_LIBRARY_HOST'],
     ['alloc','syscall(1)','E_LIBRARY_HOST'],
     ['core','import module m from "stdlib/../std/x.atto";','E_LIBRARY_IMPORT'],
     ['core','import some_unknown;','E_LIBRARY_IMPORT']
