@@ -49,6 +49,31 @@ fnc main(): int { return 42; }
 
 `@Repr`, `@Critical`, `@Derive`, thread counts and other compiler-affecting examples are specifically **not available by default**: they must fail closed until verified for each backend. The examples illustrate desired declaration placement only, not a frozen user-defined annotation declaration grammar.
 
+## Canonical @Override and callable target mapping
+
+The canonical override marker is the **case-sensitive, zero-argument** `@Override`, placed before visibility and method modifiers:
+
+```atto
+define class Left extends Root as
+    @Override
+    pub describe(): string { return "left"; }
+end
+```
+
+`pub override describe()` is a legacy spelling, not the preferred source format.
+If migration compatibility accepts it, the formatter should normalize it to the annotation; writing both forms is an error. `@Override` must resolve to the compiler-owned `atto.core.Override` identity and must not be shadowed by user-defined annotations.
+
+**Declaration-to-target mapping:**
+
+- `define class` → `class`; `define actor` → `actor`.
+- An inline instance method or out-of-line `mtd (self: T)` → `method` (owner `T` must resolve).
+- A free `fnc` and a direct-call `routine` → `function`; routine-ness is retained independently and is never erased by an annotation.
+- An actor `receive(...)` handler → `actor_handler`; ordinary actor-owned methods map to `method`. Annotation placement cannot bypass sealed state or mailbox rules.
+
+`@Override` applies only to an instance method with a matching inherited overridable declaration: reject a missing target, incompatible signature, final/sealed parent, ambiguous inherited slot left unresolved, duplicate annotation, static method, field, free `fnc` or `routine`, and actor instance methods without a verified inheritance/override contract. Implementing only an abstract interface requirement is **not** an override of an existing concrete implementation in the current diamond-inheritance subset. Parent-order preference is prohibited.
+
+The reference admission model validates **placement and schema only**. It cannot establish inheritance, dispatch, metadata retention, or backend execution. A compiler must retain a typed override marker through semantic checking and prove the inheritance contract before lowering; otherwise it fails before producing any artifact.
+
 ## Annotation phases
 
 | Phase | Intended behavior | Admission obligation |
