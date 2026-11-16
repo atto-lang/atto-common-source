@@ -30,7 +30,7 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
     def test_contract_is_structurally_consistent(self):
         self.assertTrue(validate_contract(self.spec))
         self.assertEqual(len(self.spec["targets"]), 26)
-        self.assertEqual(len(self.spec["registry"]), 36)
+        self.assertEqual(len(self.spec["registry"]), 37)
 
     def test_each_target_is_explicitly_covered(self):
         for target in self.spec["targets"]:
@@ -49,6 +49,30 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
         ]:
             with self.subTest(annotation=name, target=target):
                 self.assertTrue(admit_declaration(self.spec, [self.use(name, target, args)]))
+
+    def test_override_method_only_and_callables_map_to_distinct_targets(self):
+        valid = self.use("Override", "method")
+        self.assertTrue(admit_declaration(self.spec, [valid]))
+        self.assertEqual(admit_use(self.spec, valid)["phase"], "proof")
+        for target in ("class", "actor", "function", "actor_handler",
+                       "constructor", "field", "local_binding"):
+            with self.subTest(target=target):
+                self.rejects("WRONG_TARGET", lambda t=target:
+                    admit_declaration(self.spec, [self.use("Override", t)]))
+        self.rejects("DUPLICATE_ANNOTATION", lambda:
+            admit_declaration(self.spec, [valid, valid]))
+        self.rejects("EXCESS_POSITIONAL_ARGUMENTS", lambda:
+            admit_declaration(self.spec, [self.use("Override", "method", ["x"])]))
+        self.rejects("UNKNOWN_ARGUMENT", lambda:
+            admit_declaration(self.spec, [self.use(
+                "Override", "method", named=[["value", "x"]])]))
+        # The registry's 'function' target includes direct-call routines.
+        self.assertTrue(admit_declaration(self.spec, [
+            self.use("Deprecated", "function")]))
+        # Registry-only acceptance never asserts actual backend execution.
+        for backend in self.spec["backendStatus"]:
+            self.rejects("ANNOTATION_UNLOWERED", lambda b=backend:
+                require_executable_lowering(self.spec, [valid], b))
 
     def test_repeatable_metadata_and_nonrepeatable_proof(self):
         self.assertTrue(admit_declaration(self.spec, [
