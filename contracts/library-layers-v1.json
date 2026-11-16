@@ -1,0 +1,20 @@
+{
+  "schema": "atto.library.layers.v1",
+  "status": "CANDIDATE_NOT_EXECUTED",
+  "sources": [
+    {
+      "path": "stdlib/core/identity.atto",
+      "layer": "core",
+      "imports": [],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    }
+  ],
+  "proof": {
+    "compiledGuestCases": 0,
+    "freestandingImageLinked": false,
+    "backendParityVerified": false
+  }
+}
