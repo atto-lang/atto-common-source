@@ -88,8 +88,7 @@ export function inspectAtto(source,layer){
     if(layer==='core'){
       if(w==='new')FAIL('E_LIBRARY_ALLOCATION','new in core');
       if(w==='alloc'&&next==='.')FAIL('E_LIBRARY_ALLOCATION','alloc namespace in core');
-      if(['Array','List','Map','Set','Box','Arc','String'].includes(w)
-        && (next==='<'||next==='.'||next==='('))
+      if(['Array','List','Map','Set','Box','Arc','String'].includes(w) && t[i].kind==='word')
         FAIL('E_LIBRARY_ALLOCATION','potential heap-backed '+w+' in core');
     }
   }
