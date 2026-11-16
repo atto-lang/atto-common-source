@@ -27,6 +27,22 @@ class CollectionFactoryManifestTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 MODULE.check(path)
 
+    def test_all_nine_tilde_constructors_are_parser_rejections(self):
+        tilde = [c for c in self.document["cases"] if c["id"].endswith("-tilde")]
+        self.assertEqual(len(tilde), 9)
+        self.assertTrue(all(c["expected"] == "REJECT" and c["phase"] == "parser"
+                            for c in tilde))
+
+    def test_positive_tilde_factory_regression_is_rejected(self):
+        self.check_mutant(
+            lambda d: d["cases"][1].update(expected="ACCEPT", phase="guest"),
+            "removed tilde constructor must be a parser rejection")
+
+    def test_missing_tilde_rejection_is_rejected(self):
+        self.check_mutant(
+            lambda d: d["cases"][1].update(source="const m = Map.of<string,int>(\"a\" => 1);"),
+            "negative tilde fixture no longer exercises removed constructor")
+
     def test_baseline_is_source_only(self):
         self.assertEqual(MODULE.check(MANIFEST), 37)
 
