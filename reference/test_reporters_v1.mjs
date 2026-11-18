@@ -8,7 +8,7 @@ function report_jsonl(run, metadata = {}) {
   const lines = [];
   for (let sequence = 0; sequence < run.events.length; sequence++) {
     const event = run.events[sequence];
-    if (!event || !(event.status in counts) || typeof event.name !== 'string' || !event.name.trim() || typeof event.detail !== 'string') throw new TypeError('invalid event');
+    if (!event || !Object.hasOwn(counts, event.status) || typeof event.name !== 'string' || !event.name.trim() || typeof event.detail !== 'string') throw new TypeError('invalid event');
     if (seen.has(event.name)) throw new Error('duplicate terminal event: ' + event.name);
     seen.add(event.name);
     counts[event.status]++;
