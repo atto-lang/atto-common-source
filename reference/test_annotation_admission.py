@@ -31,7 +31,7 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
     def test_contract_is_structurally_consistent(self):
         self.assertTrue(validate_contract(self.spec))
         self.assertEqual(len(self.spec["targets"]), 26)
-        self.assertEqual(len(self.spec["registry"]), 40)
+        self.assertEqual(len(self.spec["registry"]), 43)
 
     def test_each_target_is_explicitly_covered(self):
         for target in self.spec["targets"]:
@@ -353,6 +353,79 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
         for backend in self.spec["backendStatus"]:
             self.rejects("ANNOTATION_UNLOWERED", lambda b=backend:
                 require_executable_lowering(self.spec, [self.use("throws", target, ["Error"])], b))
+
+
+    def test_canonical_pascalcase_effect_annotations_accept_variadic_types(self):
+        for short in ("Throws", "Raises", "Panics"):
+            with self.subTest(short=short):
+                use = self.use(short, "function", ["IOError", "ParseError"])
+                self.assertEqual(admit_use(self.spec, use)["phase"], "proof")
+                self.assertTrue(admit_scoped_declaration(self.spec, [use], {
+                    "target": "function", "trailing_failure_effects": [],
+                    "resolved_error_types": ["IOError", "ParseError"]}))
+                self.rejects("WRONG_TARGET", lambda n=short:
+                    admit_declaration(self.spec, [self.use(n, "class")]))
+                self.rejects("UNKNOWN_ARGUMENT", lambda n=short:
+                    admit_use(self.spec, self.use(n, "function", named=[["error", "IOError"]])))
+                self.rejects("DUPLICATE_ARGUMENT", lambda n=short:
+                    admit_use(self.spec, self.use(n, "function", ["IOError", "IOError"])))
+                self.rejects("ARGUMENT_LIMIT", lambda n=short:
+                    admit_use(self.spec, self.use(n, "function", ["IOError"] * 9)))
+
+    def test_empty_pascalcase_effect_sets_need_real_proof(self):
+        for short, kind in (("Throws", "throws"), ("Raises", "raises"), ("Panics", "panics")):
+            with self.subTest(kind=kind):
+                marker = [self.use(short, "function")]
+                context = {"target": "function", "resolved_error_types": [],
+                           "trailing_failure_effects": [],
+                           "proved_failure_effects": {kind: []}}
+                self.assertTrue(admit_scoped_declaration(self.spec, marker, context))
+                self.rejects("FAILURE_PROOF_MISSING", lambda c=context, u=marker:
+                    admit_scoped_declaration(self.spec, u,
+                        c | {"proved_failure_effects": {}}))
+                self.rejects("FAILURE_PROOF_MISSING", lambda c=context, u=marker, k=kind:
+                    admit_scoped_declaration(self.spec, u,
+                        c | {"proved_failure_effects": {k: ["Uncaught"]}}))
+                self.rejects("DUPLICATE_FAILURE_EFFECT", lambda c=context,u=marker,k=kind:
+                    admit_scoped_declaration(self.spec,u,
+                        c | {"trailing_failure_effects": [k]}))
+
+    def test_alias_collision_rejected_even_when_spellings_differ(self):
+        for upper, lower in (("Throws", "throws"), ("Raises", "raises"), ("Panics", "panics")):
+            self.rejects("DUPLICATE_ANNOTATION", lambda a=upper,b=lower:
+                admit_declaration(self.spec, [
+                    self.use(a, "function", ["Error"]),
+                    self.use(b, "function", ["Error"])]))
+
+    def test_pure_function_can_assert_empty_effect_sets(self):
+        uses = [self.use("Pure", "function"), self.use("Throws", "function"),
+                self.use("Raises", "function")]
+        facts = {"target": "function", "effect_proof_complete": True,
+                 "proven_effects": [], "resolved_error_types": [],
+                 "trailing_failure_effects": [],
+                 "proved_failure_effects": {"throws": [], "raises": []}}
+        self.assertTrue(admit_scoped_declaration(self.spec, uses, facts))
+        self.rejects("PURE_EFFECT_VIOLATION", lambda:
+            admit_scoped_declaration(self.spec, uses + [
+                self.use("Panics", "function", ["FatalError"])],
+                facts | {"resolved_error_types": ["FatalError"]}))
+
+    def test_variadic_schema_cannot_be_malformed(self):
+        for field, bad in [("variadic", "yes"), ("required", True),
+                           ("type", "positive_int")]:
+            with self.subTest(field=field):
+                altered = copy.deepcopy(self.spec)
+                entry = next(e for e in altered["registry"] if e["qualifiedName"] == "atto.core.Throws")
+                entry["arguments"][0][field] = bad
+                self.rejects("CONTRACT_SCHEMA", lambda c=altered: validate_contract(c))
+
+    def test_lowercase_legacy_effect_annotation_still_requires_one_type(self):
+        self.assertTrue(admit_use(self.spec,
+            self.use("throws", "function", ["Error"])))
+        self.rejects("MISSING_ARGUMENT", lambda:
+            admit_use(self.spec, self.use("throws", "function")))
+        self.rejects("EXCESS_POSITIONAL_ARGUMENTS", lambda:
+            admit_use(self.spec, self.use("throws", "function", ["Error", "OtherError"])))
 
 
 if __name__ == "__main__":
