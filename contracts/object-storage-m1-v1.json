@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "contract": "object-storage-m1-closed-world",
+  "scope": "experimental-standalone-compiler-not-canonical-hir",
+  "types": [
+    {
+      "name": "Point",
+      "kind": "nominal-value-struct",
+      "owner_domain": "main.lexical-frame",
+      "byte_payload": 16,
+      "alignment": 8,
+      "fields": [
+        {
+          "name": "x",
+          "type": "i64",
+          "offset": 0
+        },
+        {
+          "name": "y",
+          "type": "i64",
+          "offset": 8
+        }
+      ],
+      "owning_heap_allocation": false
+    },
+    {
+      "name": "Particle",
+      "kind": "nominal-identity-class",
+      "owner_domain": "main.actor.local",
+      "guest_handle": "Ref32",
+      "guest_handle_bytes": 4,
+      "type_id": 101,
+      "byte_payload": 24,
+      "alignment": 8,
+      "fields": [
+        {
+          "name": "position",
+          "type": "Point",
+          "inline": true,
+          "offset": 0,
+          "byte_payload": 16
+        },
+        {
+          "name": "velocity",
+          "type": "i64",
+          "offset": 16
+        }
+      ],
+      "drop_plan": [
+        "release-checked-ref32",
+        "close-quiescent-actor-heap"
+      ]
+    }
+  ],
+  "admitted_profile": {
+    "actor_count": 1,
+    "particle_instances": 1,
+    "integer": "signed-i64-checked",
+    "expression_terms_max": 8,
+    "process_return_range": [
+      0,
+      255
+    ],
+    "runtime_guest_source": false,
+    "source_sha256_required": true,
+    "output_creation": "exclusive-no-replace"
+  },
+  "denied": [
+    "cross-actor-transfer",
+    "implicit-or-explicit-borrow",
+    "suspend-spanning-loan",
+    "arbitrary-class-or-struct-graph",
+    "inheritance",
+    "ffi",
+    "copy",
+    "share",
+    "malicious-native-code-sandbox"
+  ],
+  "evidence_boundary": {
+    "general_30_storage_cases": "NOT_EXECUTED",
+    "general_12_origin_cases": "NOT_EXECUTED",
+    "compiler_frontend": "STANDALONE_EXPERIMENTAL",
+    "java_host_ref_wrappers": "ALLOCATE_PER_PARTICLE_PROTOTYPE"
+  },
+  "fixture_git_blob": "b8f5e4ed101ef7a21be72f7999578d3dc52c98ef"
+}
