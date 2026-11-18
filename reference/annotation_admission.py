@@ -211,6 +211,22 @@ def admit_scoped_declaration(spec, uses, declaration):
                 raise AdmissionError("EFFECT_PROOF_MISSING")
             if declaration["proven_effects"]:
                 raise AdmissionError("PURE_EFFECT_VIOLATION")
+        elif annotation in {"atto.core.throws", "atto.core.raises", "atto.core.panics"}:
+            kind = annotation.split(".")[-1]
+            clauses = declaration.get("trailing_failure_effects")
+            valid_errors = declaration.get("resolved_error_types")
+            if type(clauses) is not list or type(valid_errors) is not list:
+                raise AdmissionError("FAILURE_PROOF_MISSING")
+            if kind in clauses:
+                raise AdmissionError("DUPLICATE_FAILURE_EFFECT")
+            named = dict(use.get("named", []))
+            error_type = (use.get("positional") or [named.get("error")])[0]
+            if error_type not in valid_errors:
+                raise AdmissionError("FAILURE_ERROR_TYPE")
+    identities = {use["annotation"] for use in uses}
+    if "atto.core.Pure" in identities and identities.intersection(
+            {"atto.core.throws", "atto.core.raises", "atto.core.panics"}):
+        raise AdmissionError("PURE_EFFECT_VIOLATION")
     return True
 
 
