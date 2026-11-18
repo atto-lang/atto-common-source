@@ -5,6 +5,7 @@ import unittest
 from annotation_admission import (
     AdmissionError,
     admit_declaration,
+    admit_scoped_declaration,
     admit_use,
     load_contract,
     require_executable_lowering,
@@ -188,6 +189,128 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
             "phase": "metadata", "arguments": [], "repeatable": False,
         })
         self.rejects("SPOOFED_AUTHORITY", lambda: validate_contract(altered))
+
+
+    def test_scoped_class_method_and_function_annotation_targets(self):
+        self.assertTrue(admit_scoped_declaration(self.spec, [
+            self.use("Deprecated", "class", ["Migrate to V2"]),
+            self.use("NoCopy", "class"),
+        ], {"target": "class"}))
+        self.assertTrue(admit_scoped_declaration(self.spec, [
+            self.use("Deprecated", "function", ["Use replacement"]),
+            self.use("Test", "function"),
+        ], {"target": "function", "is_routine": False}))
+        self.assertTrue(admit_scoped_declaration(self.spec, [
+            self.use("Deprecated", "method", ["Use replacement"]),
+        ], {"target": "method", "owner_kind": "class"}))
+        self.rejects("MIXED_DECLARATION_TARGET", lambda:
+            admit_scoped_declaration(self.spec, [
+                self.use("Doc", "method", ["misplaced"])
+            ], {"target": "class"}))
+        self.rejects("WRONG_TARGET", lambda:
+            admit_scoped_declaration(self.spec, [
+                self.use("NoCopy", "function")
+            ], {"target": "function"}))
+
+    def test_override_requires_resolved_inherited_concrete_instance_method(self):
+        valid = {"target": "method", "owner_kind": "class",
+                 "is_static": False, "is_constructor": False,
+                 "inherited_concrete": True, "inherited_final": False,
+                 "inherited_sealed": False,
+                 "override_signature_matches": True,
+                 "override_visibility_preserved": True}
+        marker = [self.use("Override", "method")]
+        self.assertTrue(admit_scoped_declaration(self.spec, marker, valid))
+        for key, bad, code in [
+            ("owner_kind", "actor", "OVERRIDE_CONTEXT"),
+            ("owner_kind", "trait", "OVERRIDE_CONTEXT"),
+            ("is_static", True, "OVERRIDE_CONTEXT"),
+            ("is_constructor", True, "OVERRIDE_CONTEXT"),
+            ("legacy_override", True, "DUPLICATE_ANNOTATION"),
+            ("inherited_concrete", False, "OVERRIDE_MISSING_BASE"),
+            ("inherited_final", True, "OVERRIDE_FINAL"),
+            ("inherited_sealed", True, "OVERRIDE_FINAL"),
+            ("override_signature_matches", False, "OVERRIDE_SIGNATURE"),
+            ("override_visibility_preserved", False, "OVERRIDE_VISIBILITY"),
+        ]:
+            with self.subTest(key=key, bad=bad):
+                self.rejects(code, lambda k=key, v=bad:
+                    admit_scoped_declaration(self.spec, marker, valid | {k: v}))
+        for key in ("is_static", "inherited_final", "inherited_sealed",
+                    "inherited_concrete", "override_signature_matches",
+                    "override_visibility_preserved"):
+            with self.subTest(missing=key):
+                context = valid.copy()
+                context.pop(key)
+                with self.assertRaises(AdmissionError):
+                    admit_scoped_declaration(self.spec, marker, context)
+
+    def test_scoped_return_annotation_must_match_resolved_return(self):
+        valid = {"target": "function", "resolved_return_type": "int"}
+        self.assertTrue(admit_scoped_declaration(self.spec, [
+            self.use("Ret", "function", ["int"])
+        ], valid))
+        self.assertTrue(admit_scoped_declaration(self.spec, [
+            self.use("Ret", "function", named=[["type", "int"]])
+        ], valid))
+        self.rejects("RETURN_TYPE_MISMATCH", lambda:
+            admit_scoped_declaration(self.spec, [
+                self.use("Ret", "function", ["bool"])
+            ], valid))
+        self.rejects("RETURN_PROOF_MISSING", lambda:
+            admit_scoped_declaration(self.spec, [
+                self.use("Ret", "function", ["int"])
+            ], {"target": "function"}))
+
+    def test_scoped_purity_requires_checked_effects_even_for_methods(self):
+        for target in ("method", "function"):
+            with self.subTest(target=target):
+                pure = [self.use("Pure", target)]
+                context = {"target": target, "effect_proof_complete": True,
+                           "proven_effects": []}
+                self.assertTrue(admit_scoped_declaration(self.spec, pure, context))
+                self.rejects("EFFECT_PROOF_MISSING", lambda:
+                    admit_scoped_declaration(self.spec, pure, {"target": target}))
+                for effect in ("throw", "raise", "panic", "send", "io", "await"):
+                    with self.subTest(effect=effect):
+                        self.rejects("PURE_EFFECT_VIOLATION", lambda e=effect:
+                            admit_scoped_declaration(self.spec, pure,
+                                context | {"proven_effects": [e]}))
+
+    def test_scoped_proof_does_not_activate_backend_lowering(self):
+        marker = [self.use("Pure", "function")]
+        self.assertTrue(admit_scoped_declaration(self.spec, marker,
+            {"target": "function", "effect_proof_complete": True, "proven_effects": []}))
+        for backend in self.spec["backendStatus"]:
+            self.rejects("ANNOTATION_UNLOWERED", lambda b=backend:
+                require_executable_lowering(self.spec, marker, b))
+
+    def test_reference_contract_cannot_increase_compiler_budgets(self):
+        for key in self.spec["constraints"]["limits"]:
+            with self.subTest(key=key):
+                altered = copy.deepcopy(self.spec)
+                altered["constraints"]["limits"][key] *= 10
+                self.rejects("CONTRACT_LIMIT", lambda s=altered: validate_contract(s))
+        altered = copy.deepcopy(self.spec)
+        altered["constraints"]["limits"]["maxArgumentsPerAnnotation"] = True
+        self.rejects("CONTRACT_LIMIT", lambda: validate_contract(altered))
+
+    def test_reference_contract_schema_fields_are_typed(self):
+        altered = copy.deepcopy(self.spec)
+        altered["registry"][0]["repeatable"] = "false"
+        self.rejects("CONTRACT_SCHEMA", lambda: validate_contract(altered))
+        altered = copy.deepcopy(self.spec)
+        altered["registry"][0]["arguments"][0]["required"] = "yes"
+        self.rejects("CONTRACT_SCHEMA", lambda: validate_contract(altered))
+        altered = copy.deepcopy(self.spec)
+        altered["registry"][0]["arguments"][0]["name"] = "not valid"
+        self.rejects("CONTRACT_SCHEMA", lambda: validate_contract(altered))
+        altered = copy.deepcopy(self.spec)
+        repr_entry = next(e for e in altered["registry"]
+                          if e["qualifiedName"] == "atto.core.Repr")
+        repr_entry["arguments"][0]["values"].append("native")
+        self.rejects("ENUM_DOMAIN", lambda: validate_contract(altered))
+        self.rejects("ARGUMENT_SHAPE", lambda: admit_use(self.spec, None))
 
 
 if __name__ == "__main__":
