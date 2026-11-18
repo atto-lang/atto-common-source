@@ -1,0 +1,24 @@
+// Candidate compiled-guest meta test; expected exit 0 if semantic assertions hold.
+import class TestCase, TestSuite, TestOptions, TestOutcome, RunSummary from '../../stdlib/test';
+import fnc test_case, test_suite, skip_case, run_suite, fail, pass from '../../stdlib/test';
+
+fnc fails(): TestOutcome {
+  return fail("expected first failure");
+}
+fnc succeeds(): TestOutcome {
+  return pass();
+}
+
+pub routine main(): int {
+  val TestSuite tests = test_suite("meta", arr[
+    test_case("first", fails),
+    skip_case("skipped", "intentionally skipped"),
+    test_case("last", succeeds)
+  ]);
+  val TestOptions options = new TestOptions("", true);
+  val RunSummary summary = run_suite(rt borrow tests, rt borrow options);
+  if summary.total neq 1 | summary.failed neq 1 | summary.passed neq 0 | summary.skipped neq 0; do
+    return 8;
+  fi
+  return 0;
+}
