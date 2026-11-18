@@ -2,6 +2,10 @@
 
 Shared compiler definitions, language contracts, and source infrastructure across AttoLang backends.
 
+## Naming migration and language authority
+
+This repository is maintained at [atto-lang/atto-common-source](https://github.com/atto-lang/atto-common-source); use `https://github.com/atto-lang/atto-common-source.git` for Git remotes and canonical `.atto` source examples. The normative language contract is [atto-spec](https://github.com/atto-lang/atto-spec), with executable guest evidence tracked by [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance). Follow current ownership, borrowing, effects, actor, and syntax rules there; do not infer implemented features from a README or unexecuted CI.
+
 ## Purpose
 
 Maintain shared IR, contract schemas, and reusable compiler building blocks.
@@ -34,7 +38,7 @@ This README records the intended role of this repository; it is not a claim of f
 
 **Security and portability boundary:** Shared files must be versioned and byte-identical where required across backends; never silently let platform code redefine portable ownership, imports or concurrency.
 
-AttoLang is the public name; preserve existing Oreslang/.ores compatibility and use canonical .atto for new portable library source. This README defines scope, not feature readiness.
+AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
 
 **Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
 
