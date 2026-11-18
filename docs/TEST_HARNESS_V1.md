@@ -122,10 +122,10 @@ A legacy `before_each` adapter, if ever provided, must **not** share a mutable c
 ## Implementation and evidence stages
 
 - **Stage A (this PR):** this v1 contract, a dependency-free executable JS semantic reference and its regression tests. **Host-only**. No claim of compiled Atto code or actor scheduling.
-- **Stage B:** implement/compile `library/atto.std/test.atto` core pure case/summary operations against real Atto compiler guest execution. Preserve Oreslang semantics for old adapters. Record exact guest source/compiler SHA and negative no-artifact compile checks.
+- **Stage B (source candidate added, guest still NOT_EXECUTED):** `stdlib/test.atto` stages core outcome/assertions, immutable case/suite builders and a result-only runner. It has not been compiled as an Atto guest. Next: type-check and execute it against a real compiler, preserve Oreslang compatibility, and pin exact source/compiler SHA with negative no-artifact checks.
 - **Stage C:** typed fixture/HIR ownership/effect admission and runtime-guaranteed LIFO teardown. Negative mutable capture, use-after-test, duplicate full names, failure in acquisition and release.
 - **Stage D:** scheduler/actor supervisor integration with bounded child task scope, deadline/cancel handling, mailbox leak detection, and actual actor panic CONTROL case tests. Execute real guest on supported backends; isolate untrusted tests in OS-backed tenant sandbox.
-- **Stage E:** generators/shrinking/model-based concurrency, fake clock/ports, snapshot/coverage adapters and CLI discovery/JSONL reporter. All nondeterminism must be replayable or explicitly marked non-replayable.
+- **Stage E (host oracle partially added):** `reference/test_property_v1.mjs` and `reference/test_reporters_v1.mjs` now model bounded int/list strategies, property replay/shrinking and safe JSONL receipts. The `.atto` implementation, model-based concurrency, fake clock/ports, snapshots, coverage, CLI discovery and guest reporter remain pending. All nondeterminism must be replayable or explicitly marked non-replayable.
 
 **Evidence status:** Java/Graal, LLVM, .NET NativeAOT, browser/Rust/Wasm, independent Wasm and Forge: **NOT_EXECUTED for this v1 harness**. The JS reference is not a compiler, not an Atto guest and not a scheduler.
 
@@ -134,3 +134,9 @@ A legacy `before_each` adapter, if ever provided, must **not** share a mutable c
 `reference/test_harness_v1.mjs` implements: inert suite discovery, duplicate-name rejection, per-leaf fixture acquisition, nested LIFO release, awaited async acquire/body/release, no double cleanup after acquire failure, exact-name filtering, skip/fail-fast accounting, per-name seeded RNG and a single pass/fail receipt per selected case. These are **only** a semantic oracle for guest implementation.
 
 Run locally with `node --test tests/test_harness_v1.test.mjs`. Do not promote host-only results to guest-backend certification.
+
+## Comparative audit and new host-only checks
+
+See [TEST_FRAMEWORK_COMPARISON.md](TEST_FRAMEWORK_COMPARISON.md) for detailed tradeoffs versus Tasty, Hedgehog, QuickCheck, Rust proptest/rstest/nextest/loom, Scala ZIO/MUnit/Weaver, Elixir ExUnit/StreamData, Erlang EUnit, OCaml Alcotest/QCheck, Pony and Elm/F#. The reference now models a pure property API with bounded strategies/shrinking and **pre-acquisition rejection** of a property nested under a mutable fixture. Do not imply that this JS guard proves Atto compile-time effect checking. The standalone JSONL reporter validates conservation of terminal events and escapes user-supplied text rather than writing directly to stdout.
+
+Execute host-only checks with `node --test tests/test_harness_v1.test.mjs tests/test_property_v1.test.mjs tests/test_reporters_v1.test.mjs tests/test_harness_manifest_v1.test.mjs`. 
