@@ -67,7 +67,7 @@ test("unstable property cannot shrink to a false counterexample",async()=>{
   const r=await run_suite(suite("p",[p]));
   assert.equal(r.summary.failed,1);
   assert.match(r.events[0].detail,/nonreproducible property failure/);
-  assert.match(r.events[0].detail,/original=97/);
+  assert.ok(r.events[0].detail.includes('original={"n":42}'));
 });
 test("mutating a shrinking strategy does not alter saved original witness",async()=>{
   const shrink=value=>{ value.n=0; return [{n:1}]; };
