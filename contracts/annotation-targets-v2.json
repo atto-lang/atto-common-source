@@ -5,7 +5,7 @@
   "purpose": "Registry and fail-closed admission model for all declaration and type-use targets; not a compiler implementation.",
   "supersedesLegacyV1": false,
   "legacyContract": "ores-truffle-oreslang/oreslang-source.java contracts/v1/ANNOTATION_ADMISSION_V1.md (draft PR #2275)",
-  "sourceForm": "@Name or @Name(positional, named: constant) preceding an applicable declaration; type-use/return annotations require explicit grammar approval.",
+  "sourceForm": "@Name or @Name(positional, named: constant) before a declaration; PascalCase @Throws(ErrorA,ErrorB), @Raises(...), @Panics(...) allow zero or more positional Error types. Canonical trailing effects: throws ErrorA, ErrorB; raises ErrorC; panics ErrorD. Legacy lowercase and parenthesized effect declarations may normalize to the same checked rows after backend implementation.",
   "targets": [
     "package",
     "module",
@@ -784,6 +784,63 @@
       ],
       "repeatable": false,
       "implementation": "PROPOSED_COMPILER_DRAFT_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Throws",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "error_types",
+          "type": "type_ref",
+          "required": false,
+          "variadic": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_REFERENCE_ONLY_LEGACY_ALIAS_COMPILER_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Raises",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "error_types",
+          "type": "type_ref",
+          "required": false,
+          "variadic": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_REFERENCE_ONLY_LEGACY_ALIAS_COMPILER_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.Panics",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "error_types",
+          "type": "type_ref",
+          "required": false,
+          "variadic": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_REFERENCE_ONLY_LEGACY_ALIAS_COMPILER_UNVERIFIED"
     }
   ],
   "reportingRule": "Reference contract/model tests are NOT compiler acceptance, executed AOT, or five-backend parity. A backend only moves to EXECUTED upon exact-head native test evidence."
