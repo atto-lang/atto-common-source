@@ -26,8 +26,20 @@ def validate_contract(spec):
     if spec.get("status") != "PROPOSED_REFERENCE_CONTRACT_ONLY_NOT_GUEST_EXECUTED":
         raise AdmissionError("EVIDENCE_STATUS")
     targets, phases = spec["targets"], spec["phases"]
+    if (type(targets) is not list or type(phases) is not list
+            or any(type(v) is not str or not v for v in targets + phases)):
+        raise AdmissionError("CONTRACT_SCHEMA")
     if len(targets) != len(set(targets)) or len(phases) != len(set(phases)):
         raise AdmissionError("DUPLICATE_CONTRACT_ENTRY")
+    # A contract file is input, not permission to increase compiler budgets.
+    ceilings = {"maxAnnotationsPerDeclaration": 64, "maxArgumentsPerAnnotation": 8,
+                "maxArgumentStringBytes": 4096, "maxExpansionDepth": 32,
+                "maxExpansionNodes": 10000, "maxConstEvalSteps": 100000}
+    limits = spec.get("constraints", {}).get("limits", {})
+    for key, ceiling in ceilings.items():
+        value = limits.get(key)
+        if type(value) is not int or value < 1 or value > ceiling:
+            raise AdmissionError("CONTRACT_LIMIT")
     names, covered = set(), set()
     for entry in spec["registry"]:
         name = entry["qualifiedName"]
@@ -41,16 +53,28 @@ def validate_contract(spec):
         if len(entry["allowedTargets"]) != len(set(entry["allowedTargets"])):
             raise AdmissionError("DUPLICATE_TARGET")
         covered.update(entry["allowedTargets"])
+        if type(entry.get("repeatable")) is not bool:
+            raise AdmissionError("CONTRACT_SCHEMA")
         args = entry["arguments"]
-        if len(args) > spec["constraints"]["limits"]["maxArgumentsPerAnnotation"]:
+        if type(args) is not list:
+            raise AdmissionError("CONTRACT_SCHEMA")
+        if len(args) > limits["maxArgumentsPerAnnotation"]:
             raise AdmissionError("ARGUMENT_LIMIT")
+        if any(type(a) is not dict or type(a.get("name")) is not str
+               or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", a["name"])
+               or type(a.get("required")) is not bool for a in args):
+            raise AdmissionError("CONTRACT_SCHEMA")
         if len({a["name"] for a in args}) != len(args):
             raise AdmissionError("DUPLICATE_SCHEMA_ARGUMENT")
         for a in args:
             if a["type"] not in TYPES:
                 raise AdmissionError("ARGUMENT_TYPE")
-            if a["type"] == "enum" and not a.get("values"):
-                raise AdmissionError("ENUM_DOMAIN")
+            if a["type"] == "enum":
+                values = a.get("values")
+                if (type(values) is not list or not values
+                        or any(type(v) is not str or not v for v in values)
+                        or len(values) != len(set(values))):
+                    raise AdmissionError("ENUM_DOMAIN")
     if covered != set(targets):
         raise AdmissionError("UNCOVERED_TARGET")
     if any(v != "NOT_EXECUTED_THIS_CONTRACT" for v in spec["backendStatus"].values()):
@@ -81,6 +105,8 @@ def _check_value(field, value, max_bytes):
 
 def admit_use(spec, use):
     """Check an already-resolved annotation use; does not parse source or lower code."""
+    if type(use) is not dict:
+        raise AdmissionError("ARGUMENT_SHAPE")
     if use.get("target") not in spec["targets"]:
         raise AdmissionError("UNKNOWN_TARGET")
     entries = {e["qualifiedName"]: e for e in spec["registry"]}
@@ -134,6 +160,57 @@ def admit_declaration(spec, uses):
         if name in seen and not entry["repeatable"]:
             raise AdmissionError("DUPLICATE_ANNOTATION")
         seen.add(name)
+    return True
+
+
+def admit_scoped_declaration(spec, uses, declaration):
+    """Reference-only contextual checks for a class, method or free function.
+
+    All facts must come from a real compiler's resolved inheritance/type/effect
+    analysis; boolean declarations supplied by source text are not proof.
+    This helper is neither an AttoLang parser nor executable backend admission.
+    """
+    if type(declaration) is not dict or type(uses) is not list:
+        raise AdmissionError("DECLARATION_SHAPE")
+    target = declaration.get("target")
+    if target not in ("class", "method", "function"):
+        raise AdmissionError("DECLARATION_TARGET")
+    if any(type(use) is not dict for use in uses):
+        raise AdmissionError("ARGUMENT_SHAPE")
+    if any(use.get("target") != target for use in uses):
+        raise AdmissionError("MIXED_DECLARATION_TARGET")
+    admit_declaration(spec, uses)
+    for use in uses:
+        annotation = use["annotation"]
+        if annotation == "atto.core.Override":
+            if (target != "method" or declaration.get("owner_kind") != "class"
+                    or declaration.get("is_static") is not False
+                    or declaration.get("is_constructor") is not False):
+                raise AdmissionError("OVERRIDE_CONTEXT")
+            if declaration.get("legacy_override") is True:
+                raise AdmissionError("DUPLICATE_ANNOTATION")
+            if declaration.get("inherited_concrete") is not True:
+                raise AdmissionError("OVERRIDE_MISSING_BASE")
+            if (declaration.get("inherited_final") is not False
+                    or declaration.get("inherited_sealed") is not False):
+                raise AdmissionError("OVERRIDE_FINAL")
+            if declaration.get("override_signature_matches") is not True:
+                raise AdmissionError("OVERRIDE_SIGNATURE")
+            if declaration.get("override_visibility_preserved") is not True:
+                raise AdmissionError("OVERRIDE_VISIBILITY")
+        elif annotation == "atto.core.Ret":
+            named = dict(use.get("named", []))
+            annotation_type = (use.get("positional") or [named.get("type")])[0]
+            if type(declaration.get("resolved_return_type")) is not str:
+                raise AdmissionError("RETURN_PROOF_MISSING")
+            if annotation_type != declaration["resolved_return_type"]:
+                raise AdmissionError("RETURN_TYPE_MISMATCH")
+        elif annotation == "atto.core.Pure":
+            if (declaration.get("effect_proof_complete") is not True
+                    or type(declaration.get("proven_effects")) is not list):
+                raise AdmissionError("EFFECT_PROOF_MISSING")
+            if declaration["proven_effects"]:
+                raise AdmissionError("PURE_EFFECT_VIOLATION")
     return True
 
 
