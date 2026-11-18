@@ -89,3 +89,18 @@ test("metadata does not permit untrusted keys and reporter receipt mismatch",()=
   assert.throws(()=>report_jsonl(run,{"Bad-Key":"x"}),/unsafe metadata/);
   assert.throws(()=>report_jsonl({events:[{status:"FAIL",name:"a",detail:"bad",issues:[{phase:"body",detail:"other"}]}],summary:{total:1,passed:0,failed:1,skipped:0,filtered:0}}),/structured issues differ/);
 });
+
+test("property shrinking accepts candidate-dependent assertion diagnostics",async()=>{
+  const g={draw:()=>97,shrink:strategy_int(0,100).shrink};
+  const p=property_case("varying_message",g,(ctx,x)=>ctx.expect_equal(x,0),{runs:1,max_shrinks:100});
+  const r=await run_suite(suite("p",[p]));
+  assert.equal(r.summary.failed,1);
+  assert.ok(r.events[0].detail.includes("minimal=1"),r.events[0].detail);
+});
+
+test("host equality does not mistake JS object identity for Atto value equality",async()=>{
+  const obj={value:1};
+  const r=await run_suite(suite("p",[test_case("objects",ctx=>ctx.expect_equal(obj,obj))]));
+  assert.equal(r.summary.failed,1);
+  assert.match(r.events[0].detail,/primitive values only/);
+});
