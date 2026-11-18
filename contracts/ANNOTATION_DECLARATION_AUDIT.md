@@ -18,7 +18,7 @@ end
 pub fnc checked_add(int x, int y): int { return x + y; }
 ```
 
-These are *design-intent* examples. In particular, `@Ret`, `@Pure` and `@Deprecated` remain unverified in actual compiled programs. The declared signature and explicit language effect grammar (`throws`, `raise`, `panic`, suspension) are the authority; an annotation never substitutes for or erases them. The formatter must not silently normalize a previously rejected source program into an accepted one.
+These are *design-intent* examples. In particular, `@Ret`, `@Pure` and `@Deprecated` remain unverified in actual compiled programs. Compiler-owned `@throws(Error)`, `@raises(Error)`, and `@panics(Error)` are proposed equivalent spellings of typed trailing failure-effect clauses, not passive metadata. They normalize into the same checked effect record; an annotation cannot erase other declared or inferred effects. A duplicate same-kind trailing clause plus annotation must be rejected. A `@Pure` callable cannot declare escaping failures under this strict zero-effect reference contract. The formatter must not silently normalize a previously rejected source program into an accepted one.
 
 ## Class annotations
 
