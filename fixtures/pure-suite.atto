@@ -1,0 +1,23 @@
+// Candidate compiled-guest test only; no backend receipt currently available.
+import class TestCase, TestSuite, TestOptions, TestOutcome, RunSummary from '../../stdlib/test';
+import fnc test_case, test_suite, run_suite, expect_equal_int, pass from '../../stdlib/test';
+
+fnc adds(): TestOutcome {
+  return expect_equal_int(21 + 21, 42, "sum");
+}
+fnc always_ok(): TestOutcome {
+  return pass();
+}
+
+pub routine main(): int {
+  val TestSuite tests = test_suite("math", arr[
+    test_case("adds", adds),
+    test_case("ok", always_ok)
+  ]);
+  val TestOptions options = new TestOptions("", false);
+  val RunSummary result = run_suite(rt borrow tests, rt borrow options);
+  if result.total neq 2 | result.passed neq 2 | result.failed neq 0 | result.skipped neq 0; do
+    return 9;
+  fi
+  return 0;
+}
