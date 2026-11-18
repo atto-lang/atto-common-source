@@ -66,7 +66,12 @@ def validate_contract(spec):
             raise AdmissionError("CONTRACT_SCHEMA")
         if len({a["name"] for a in args}) != len(args):
             raise AdmissionError("DUPLICATE_SCHEMA_ARGUMENT")
-        for a in args:
+        for i, a in enumerate(args):
+            if a.get("variadic", False) is not False:
+                if (a["variadic"] is not True or i != len(args) - 1
+                        or a["type"] != "type_ref" or a["required"] is not False
+                        or len(args) != 1):
+                    raise AdmissionError("CONTRACT_SCHEMA")
             if a["type"] not in TYPES:
                 raise AdmissionError("ARGUMENT_TYPE")
             if a["type"] == "enum":
@@ -121,6 +126,15 @@ def admit_use(spec, use):
         raise AdmissionError("ARGUMENT_SHAPE")
     if len(positional) + len(named) > spec["constraints"]["limits"]["maxArgumentsPerAnnotation"]:
         raise AdmissionError("ARGUMENT_LIMIT")
+    variadic = len(schema) == 1 and schema[0].get("variadic") is True
+    if variadic:
+        if named:
+            raise AdmissionError("UNKNOWN_ARGUMENT")
+        for error in positional:
+            _check_value(schema[0], error, spec["constraints"]["limits"]["maxArgumentStringBytes"])
+        if len(set(positional)) != len(positional):
+            raise AdmissionError("DUPLICATE_ARGUMENT")
+        return entry
     if len(positional) > len(schema):
         raise AdmissionError("EXCESS_POSITIONAL_ARGUMENTS")
     provided = {}
@@ -157,9 +171,13 @@ def admit_declaration(spec, uses):
             raise AdmissionError("MIXED_DECLARATION_TARGET")
         entry = admit_use(spec, use)
         name = entry["qualifiedName"]
-        if name in seen and not entry["repeatable"]:
+        # Migration names map to the same compiler-owned effect identity.
+        canonical = {"atto.core.throws": "atto.core.Throws",
+                     "atto.core.raises": "atto.core.Raises",
+                     "atto.core.panics": "atto.core.Panics"}.get(name, name)
+        if canonical in seen and not entry["repeatable"]:
             raise AdmissionError("DUPLICATE_ANNOTATION")
-        seen.add(name)
+        seen.add(canonical)
     return True
 
 
@@ -211,8 +229,9 @@ def admit_scoped_declaration(spec, uses, declaration):
                 raise AdmissionError("EFFECT_PROOF_MISSING")
             if declaration["proven_effects"]:
                 raise AdmissionError("PURE_EFFECT_VIOLATION")
-        elif annotation in {"atto.core.throws", "atto.core.raises", "atto.core.panics"}:
-            kind = annotation.split(".")[-1]
+        elif annotation in {"atto.core.throws", "atto.core.raises", "atto.core.panics",
+                             "atto.core.Throws", "atto.core.Raises", "atto.core.Panics"}:
+            kind = annotation.split(".")[-1].lower()
             clauses = declaration.get("trailing_failure_effects")
             valid_errors = declaration.get("resolved_error_types")
             if type(clauses) is not list or type(valid_errors) is not list:
@@ -220,13 +239,28 @@ def admit_scoped_declaration(spec, uses, declaration):
             if kind in clauses:
                 raise AdmissionError("DUPLICATE_FAILURE_EFFECT")
             named = dict(use.get("named", []))
-            error_type = (use.get("positional") or [named.get("error")])[0]
-            if error_type not in valid_errors:
+            error_types = use.get("positional", [])
+            if not error_types and annotation.split(".")[-1].islower():
+                error_types = [named.get("error")]
+            if not error_types:
+                # Explicit empty effect set: the compiler must have checked all
+                # reachable paths, not merely accepted a user-supplied promise.
+                proved = declaration.get("proved_failure_effects")
+                if (type(proved) is not dict or type(proved.get(kind)) is not list
+                        or proved[kind]):
+                    raise AdmissionError("FAILURE_PROOF_MISSING")
+            elif any(error not in valid_errors for error in error_types):
                 raise AdmissionError("FAILURE_ERROR_TYPE")
     identities = {use["annotation"] for use in uses}
-    if "atto.core.Pure" in identities and identities.intersection(
-            {"atto.core.throws", "atto.core.raises", "atto.core.panics"}):
-        raise AdmissionError("PURE_EFFECT_VIOLATION")
+    if "atto.core.Pure" in identities:
+        for use in uses:
+            if use["annotation"] in {
+                    "atto.core.Throws", "atto.core.Raises", "atto.core.Panics",
+                    "atto.core.throws", "atto.core.raises", "atto.core.panics"}:
+                # Empty PascalCase annotations reinforce purity, nonempty bounds
+                # contradict the strict zero-effect proof contract.
+                if use.get("positional") or use.get("named"):
+                    raise AdmissionError("PURE_EFFECT_VIOLATION")
     return True
 
 
