@@ -1,0 +1,278 @@
+{
+  "schema": "atto.test.harness.v1",
+  "status": "PROPOSED",
+  "claims": {
+    "api_implemented_in_atto": false,
+    "guest_compilation_executed": false,
+    "backend_parity_certified": false,
+    "runner_host_oracle_only": true
+  },
+  "reference": "reference/test_harness_v1.mjs",
+  "host_test_command": "node --test tests/test_harness_v1.test.mjs",
+  "cases": [
+    {
+      "id": "discovery_inert",
+      "kind": "positive",
+      "expectation": "constructing descriptor does not invoke setup, body or release",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate_path_reject",
+      "kind": "negative",
+      "expectation": "duplicate hierarchical names rejected before acquisition",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "per_case_fresh_fixture",
+      "kind": "positive",
+      "expectation": "mutable fixture is newly acquired for each leaf case",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "fixture_release_lifo",
+      "kind": "positive",
+      "expectation": "nested resource cleanup is reverse acquisition order",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "partial_acquire_failure",
+      "kind": "positive",
+      "expectation": "only already-acquired fixtures are released",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "body_failure_cleanup",
+      "kind": "positive",
+      "expectation": "body failure does not skip release",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "release_failure_case_fails",
+      "kind": "positive",
+      "expectation": "cleanup failure cannot be reported as pass",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "body_release_dual_failure",
+      "kind": "positive",
+      "expectation": "both primary and cleanup errors are retained",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "case_filter_exact",
+      "kind": "positive",
+      "expectation": "exact full-name filter counts excluded cases",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "explicit_skip",
+      "kind": "positive",
+      "expectation": "skip never acquires resources or invokes body",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "fail_fast",
+      "kind": "positive",
+      "expectation": "failure stops subsequent selected cases while preserving accounting",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "seed_replay",
+      "kind": "positive",
+      "expectation": "same full-name+seed gives identical RNG trace",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "seed_order_independent",
+      "kind": "positive",
+      "expectation": "reordering cases cannot change per-case RNG",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "async_case_join",
+      "kind": "positive",
+      "expectation": "case completion is awaited before emitting terminal event",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "effect_capability_denied",
+      "kind": "negative",
+      "expectation": "pure tests cannot acquire ambient OS or network authority",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "shared_mutable_capture_reject",
+      "kind": "negative",
+      "expectation": "mutable captured state shared between siblings rejected",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "owned_fixture_escape_reject",
+      "kind": "negative",
+      "expectation": "fixture capability cannot outlive its case",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor_child_join",
+      "kind": "positive",
+      "expectation": "test parent supervisor joins children and drains mailbox",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor_panic_notice",
+      "kind": "positive",
+      "expectation": "supervisor CONTROL panic fails owning case only",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor_untrusted_spawn_reject",
+      "kind": "negative",
+      "expectation": "untrusted actor may not spawn privileged child",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "timeout_cancel_drain",
+      "kind": "positive",
+      "expectation": "deadline cancels work and reports leaked tasks",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "property_seed_shrink",
+      "kind": "positive",
+      "expectation": "shrinking finds minimal replayable failure without changing test isolation",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "jsonl_escaping",
+      "kind": "positive",
+      "expectation": "reporters encode user-controlled text safely",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    },
+    {
+      "id": "compat_ores_receipt",
+      "kind": "positive",
+      "expectation": "legacy ORES_TEST output remains available only via adapter",
+      "host_oracle": "NOT_EXECUTED",
+      "guest_java": "NOT_EXECUTED",
+      "guest_llvm": "NOT_EXECUTED",
+      "guest_net": "NOT_EXECUTED",
+      "guest_rust_wasm": "NOT_EXECUTED",
+      "guest_forge": "NOT_EXECUTED"
+    }
+  ]
+}
