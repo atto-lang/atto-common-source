@@ -123,11 +123,13 @@ function property_case(name, generator, predicate, options = {}) {
           if (visited.has(fingerprint)) continue;
           visited.add(fingerprint);
           const next = await evaluate(candidate);
-          if (next.failed && next.reason === reason) {
+          if (next.failed) {
             const repeat = await evaluate(candidate);
             if (!repeat.failed || repeat.reason !== next.reason) {
               return {passed:false,message:`nonreproducible shrinking: seed=${ctx.seed} iteration=${iteration} original=${JSON.stringify(original)} candidate=${JSON.stringify(candidate)}`};
             }
+            // Assertion messages may include the candidate's actual value; differing
+            // message text does not make this a different property failure.
             minimal = structuredClone(candidate); reason = next.reason; improved = true; break;
           }
         }
