@@ -37,6 +37,7 @@ function plan(root) {
       for (const child of node.children) visit(child, parents, [...fixtures, node.fixture]);
     } else if (node.kind === "case" || node.kind === "skip") {
       const full_name = [...parents, node.name].join("/");
+      if (node.requires_pure && fixtures.length) throw new Error("property fixture requires per-attempt acquisition: " + full_name);
       if (seen.has(full_name)) throw new Error("duplicate test path: " + full_name);
       seen.add(full_name);
       cases.push(Object.freeze({full_name, node, fixtures: Object.freeze([...fixtures])}));
