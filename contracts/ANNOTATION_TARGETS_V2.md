@@ -6,7 +6,7 @@ The legacy v1 annotation-admission draft is in `ores-truffle-oreslang/oreslang-s
 
 ## Coverage
 
-The registry in `contracts/annotation-targets-v2.json` describes 26 potential annotation targets, including checked `@throws`, `@raises`, and `@panics` proposals for callables. These are distinct AST node kinds: package, module, import, class, struct, record, interface, trait, enum, enum variant, actor, actor handler, actor message, free function (`fnc`), method, constructor, field, property, parameter, return type, type alias, type use, generic type parameter, local binding, closure, and macro definition.
+The registry in `contracts/annotation-targets-v2.json` describes 26 potential annotation targets, including canonical `@Throws`, `@Raises`, and `@Panics` (legacy lowercase spellings also registered) for callables. These are distinct AST node kinds: package, module, import, class, struct, record, interface, trait, enum, enum variant, actor, actor handler, actor message, free function (`fnc`), method, constructor, field, property, parameter, return type, type alias, type use, generic type parameter, local binding, closure, and macro definition.
 
 Examples (DESIGN INTENT; **do not assume the current compiler accepts these programs**):
 
@@ -74,6 +74,8 @@ If migration compatibility accepts it, the formatter should normalize it to the 
 
 The reference admission model validates **placement and schema only**. It cannot establish inheritance, dispatch, metadata retention, or backend execution. A compiler must retain a typed override marker through semantic checking and prove the inheritance contract before lowering; otherwise it fails before producing any artifact.
 
+**Canonical spelling update:** `@Throws(IOError, ParseError)`, `@Raises(RecoveryError)`, and `@Panics(FatalError)` are the PascalCase, compiler-owned callable forms. They allow zero or more positional Error type arguments; empty `@Throws()` / `@Raises()` / `@Panics()` are statically checked **empty permitted effect bounds**, not unspecified exceptions. Legacy lowercase `@throws(Error)` / `@raises(Error)` / `@panics(Error)` stay registered as migration aliases with one required Error type. The aliases resolve to a single canonical identity, so mixed spellings on one declaration are duplicate errors. Java-style trailing unparenthesized `throws IOError, ParseError` and `raises RecoveryError` are specified in [atto-spec's checked-failure grammar](https://github.com/atto-lang/atto-spec/blob/feature/pipeline-effect-proof-v1-20261117/language/checked-throws-annotation-v1.md). All are proposed until a backend proves actual parsing/effect lowering.
+
 For class, method and `fnc` proof requirements and negative test cases, see [ANNOTATION_DECLARATION_AUDIT.md](ANNOTATION_DECLARATION_AUDIT.md). The compiler-owned lowercase `@throws(Error)`, `@raises(Error)` and `@panics(Error)` markers are intended to be exact effect-clause equivalents for typed callables (not grants or metadata), subject to verified Error subclasses and duplicate-clause rejection. Their Rust implementation is an independent unmerged draft, [atto-source.rs #301](https://github.com/atto-lang/atto-source.rs/pull/301); this reference does **not** claim compiler execution.
 
 ## Annotation phases
@@ -120,4 +122,4 @@ The proposed target registry makes clear what the language should eventually acc
 python3 -m unittest discover -s reference -p 'test_annotation_admission.py' -v
 ```
 
-Those tests cover 26 target kinds, 40 provisional registered annotations and fail-closed invalid-use vectors, but **only** for the independent reference model. CI must never report them as compiled AttoLang guest or five-backend parity tests.
+Those tests cover 26 target kinds, 43 provisional registered annotations and fail-closed invalid-use vectors, but **only** for the independent reference model. CI must never report them as compiled AttoLang guest or five-backend parity tests.
