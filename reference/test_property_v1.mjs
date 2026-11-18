@@ -88,19 +88,26 @@ function property_case(name, generator, predicate, options = {}) {
       try {
         // Clone so a user predicate cannot mutate the candidate held by the shrinker.
         const result = await predicate(property_context, structuredClone(value));
-        if (result === false || (result && typeof result === 'object' && result.passed === false)) {
-          return { failed: true, reason: result && result.message ? String(result.message) : 'predicate returned failure' };
+        if (result === undefined || result === true) return { failed: false };
+        if (result === false) return { failed:true, reason:'predicate returned failure' };
+        if (result && typeof result === 'object' && typeof result.passed === 'boolean') {
+          return result.passed ? { failed:false } : {failed:true, reason:typeof result.message === 'string' && result.message ? result.message : 'predicate returned failure'};
         }
-        return { failed: false };
+        return {failed:true,reason:'predicate returned unsupported outcome'};
       } catch (error) {
         return { failed: true, reason: String(error?.message ?? error) };
       }
     }
     for (let iteration = 0; iteration < runs; iteration++) {
-      const original = generator.draw(ctx);
+      // Preserve the counterexample before an adversarial strategy can mutate it.
+      const original = structuredClone(generator.draw(ctx));
       const result = await evaluate(original);
       if (!result.failed) continue;
-      let minimal = original;
+      const rechecked = await evaluate(original);
+      if (!rechecked.failed || rechecked.reason !== result.reason) {
+        return { passed:false, message:`nonreproducible property failure: seed=${ctx.seed} iteration=${iteration} original=${JSON.stringify(original)} initial=${result.reason} repeat=${rechecked.reason ?? "passed"}` };
+      }
+      let minimal = structuredClone(original);
       let reason = result.reason;
       let attempts = 0;
       const visited = new Set([JSON.stringify(minimal)]);
@@ -108,15 +115,20 @@ function property_case(name, generator, predicate, options = {}) {
       // candidate. A bounded attempt budget makes adversarial shrinkers terminate.
       while (attempts < max_shrinks) {
         let improved = false;
-        for (const candidate of generator.shrink(minimal)) {
+        // Pass a copy to the shrinker; it may not rewrite the saved witness.
+        for (const candidate of generator.shrink(structuredClone(minimal))) {
           if (attempts >= max_shrinks) break;
           attempts++; // Count attempted candidates including duplicates to prevent unbounded streams.
           const fingerprint = JSON.stringify(candidate);
           if (visited.has(fingerprint)) continue;
           visited.add(fingerprint);
           const next = await evaluate(candidate);
-          if (next.failed) {
-            minimal = candidate; reason = next.reason; improved = true; break;
+          if (next.failed && next.reason === reason) {
+            const repeat = await evaluate(candidate);
+            if (!repeat.failed || repeat.reason !== next.reason) {
+              return {passed:false,message:`nonreproducible shrinking: seed=${ctx.seed} iteration=${iteration} original=${JSON.stringify(original)} candidate=${JSON.stringify(candidate)}`};
+            }
+            minimal = structuredClone(candidate); reason = next.reason; improved = true; break;
           }
         }
         if (!improved) break;
@@ -125,7 +137,7 @@ function property_case(name, generator, predicate, options = {}) {
     }
     return { passed: true, message: '' };
   };
-  return Object.freeze({ ...test_case(name, body), requires_pure: true });
+  return test_case(name, body, { requires_pure: true });
 }
 
 export { strategy_int, strategy_list, property_case };
