@@ -11,6 +11,7 @@ on:
       - 'contracts/test-core-guest-candidates-v1.json'
       - 'docs/TEST_FRAMEWORK_COMPARISON.md'
       - 'tests/test_harness_v1.test.mjs'
+      - 'tests/test_harness_hardening_v1.test.mjs'
       - 'tests/test_property_v1.test.mjs'
       - 'tests/test_reporters_v1.test.mjs'
       - 'tests/test_core_guest_registry_v1.test.mjs'
@@ -28,6 +29,7 @@ on:
       - 'contracts/test-core-guest-candidates-v1.json'
       - 'docs/TEST_FRAMEWORK_COMPARISON.md'
       - 'tests/test_harness_v1.test.mjs'
+      - 'tests/test_harness_hardening_v1.test.mjs'
       - 'tests/test_property_v1.test.mjs'
       - 'tests/test_reporters_v1.test.mjs'
       - 'tests/test_core_guest_registry_v1.test.mjs'
@@ -46,7 +48,7 @@ jobs:
         with:
           node-version: '22'
       - name: Execute host-only reference semantics
-        run: node --test tests/test_harness_v1.test.mjs tests/test_property_v1.test.mjs tests/test_reporters_v1.test.mjs tests/test_harness_manifest_v1.test.mjs tests/test_core_guest_registry_v1.test.mjs
+        run: node --test tests/test_harness_v1.test.mjs tests/test_harness_hardening_v1.test.mjs tests/test_property_v1.test.mjs tests/test_reporters_v1.test.mjs tests/test_harness_manifest_v1.test.mjs tests/test_core_guest_registry_v1.test.mjs
       - name: Distinguish reference model from compiled guest support
         run: |
           echo 'ATTO_TEST_HARNESS_REFERENCE_ONLY=1'
