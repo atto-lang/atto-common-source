@@ -57,7 +57,7 @@ jobs:
         with:
           node-version: '22'
       - name: Execute host-only reference semantics
-run: |
+        run: |
           set -euo pipefail
           node --test tests/test_harness_v1.test.mjs tests/test_harness_hardening_v1.test.mjs tests/test_property_v1.test.mjs tests/test_reporters_v1.test.mjs tests/test_harness_manifest_v1.test.mjs tests/test_core_guest_registry_v1.test.mjs | tee "$RUNNER_TEMP/atto-harness.tap"
           test_count=$(awk '/^# tests / {print $3}' "$RUNNER_TEMP/atto-harness.tap")
