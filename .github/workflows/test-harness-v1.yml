@@ -3,14 +3,26 @@ on:
   push:
     paths:
       - 'reference/test_harness_v1.mjs'
+      - 'reference/test_property_v1.mjs'
+      - 'reference/test_reporters_v1.mjs'
+      - 'stdlib/test.atto'
+      - 'docs/TEST_FRAMEWORK_COMPARISON.md'
       - 'tests/test_harness_v1.test.mjs'
+      - 'tests/test_property_v1.test.mjs'
+      - 'tests/test_reporters_v1.test.mjs'
       - 'tests/test_harness_manifest_v1.test.mjs'
       - 'contracts/test-harness-v1.json'
       - '.github/workflows/test-harness-v1.yml'
   pull_request:
     paths:
       - 'reference/test_harness_v1.mjs'
+      - 'reference/test_property_v1.mjs'
+      - 'reference/test_reporters_v1.mjs'
+      - 'stdlib/test.atto'
+      - 'docs/TEST_FRAMEWORK_COMPARISON.md'
       - 'tests/test_harness_v1.test.mjs'
+      - 'tests/test_property_v1.test.mjs'
+      - 'tests/test_reporters_v1.test.mjs'
       - 'tests/test_harness_manifest_v1.test.mjs'
       - 'contracts/test-harness-v1.json'
       - '.github/workflows/test-harness-v1.yml'
@@ -26,7 +38,7 @@ jobs:
         with:
           node-version: '22'
       - name: Execute host-only reference semantics
-        run: node --test tests/test_harness_v1.test.mjs tests/test_harness_manifest_v1.test.mjs
+        run: node --test tests/test_harness_v1.test.mjs tests/test_property_v1.test.mjs tests/test_reporters_v1.test.mjs tests/test_harness_manifest_v1.test.mjs
       - name: Distinguish reference model from compiled guest support
         run: |
           echo 'ATTO_TEST_HARNESS_REFERENCE_ONLY=1'
