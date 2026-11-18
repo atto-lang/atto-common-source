@@ -76,7 +76,7 @@ function property_case(name, generator, predicate, options = {}) {
   const max_shrinks = options.max_shrinks ?? 256;
   valid_integer(runs, 'runs'); valid_integer(max_shrinks, 'max_shrinks');
   if (runs < 1 || runs > 100000 || max_shrinks < 0 || max_shrinks > 4096) throw new RangeError('invalid property budgets');
-  return test_case(name, async (ctx, ...resources) => {
+  const body = async (ctx, ...resources) => {
     // A property replays its predicate while shrinking. A single mutable fixture
     // shared across these attempts would make the result order-dependent.
     if (resources.length) return { passed: false, message: 'property: fixture replay is unsupported; use a pure property or a per-attempt resource factory' };
@@ -124,7 +124,8 @@ function property_case(name, generator, predicate, options = {}) {
       return { passed: false, message: `property failed: seed=${ctx.seed} iteration=${iteration} shrinks=${attempts} original=${JSON.stringify(original)} minimal=${JSON.stringify(minimal)} reason=${reason}` };
     }
     return { passed: true, message: '' };
-  });
+  };
+  return Object.freeze({ ...test_case(name, body), requires_pure: true });
 }
 
 export { strategy_int, strategy_list, property_case };
