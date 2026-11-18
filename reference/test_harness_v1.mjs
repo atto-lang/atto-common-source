@@ -88,7 +88,9 @@ function case_context(seed, name) {
       return min+(sample%span);
     },
     expect_equal(actual,expected) {
-      // JS oracle uses Object.is, not Atto's typed eq operation.
+      // Host only: primitive Object.is is not Atto's class/record value eq.
+      const scalar=value=>value===null || (typeof value!=="object" && typeof value!=="function");
+      if (!scalar(actual) || !scalar(expected)) throw new TypeError("reference equality accepts primitive values only");
       if (!Object.is(actual,expected)) throw new Error("expected "+String(expected)+", got "+String(actual));
     },
     fail(message) {throw new Error(String(message));}
