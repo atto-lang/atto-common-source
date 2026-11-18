@@ -31,7 +31,7 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
     def test_contract_is_structurally_consistent(self):
         self.assertTrue(validate_contract(self.spec))
         self.assertEqual(len(self.spec["targets"]), 26)
-        self.assertEqual(len(self.spec["registry"]), 37)
+        self.assertEqual(len(self.spec["registry"]), 40)
 
     def test_each_target_is_explicitly_covered(self):
         for target in self.spec["targets"]:
@@ -311,6 +311,48 @@ class AnnotationAdmissionReferenceTests(unittest.TestCase):
         repr_entry["arguments"][0]["values"].append("native")
         self.rejects("ENUM_DOMAIN", lambda: validate_contract(altered))
         self.rejects("ARGUMENT_SHAPE", lambda: admit_use(self.spec, None))
+
+
+    def test_typed_failure_effect_annotations_are_callable_only(self):
+        for target in ("function", "method"):
+            context = {"target": target, "trailing_failure_effects": [],
+                       "resolved_error_types": ["Error", "MyError"]}
+            for name in ("throws", "raises", "panics"):
+                with self.subTest(target=target, annotation=name):
+                    use = self.use(name, target, ["MyError"])
+                    self.assertTrue(admit_scoped_declaration(self.spec, [use], context))
+                    self.rejects("DUPLICATE_FAILURE_EFFECT", lambda u=use, c=context, n=name:
+                        admit_scoped_declaration(self.spec, [u],
+                            c | {"trailing_failure_effects": [n]}))
+                    self.rejects("FAILURE_PROOF_MISSING", lambda u=use:
+                        admit_scoped_declaration(self.spec, [u], {"target": target}))
+                    self.rejects("FAILURE_ERROR_TYPE", lambda u=use, c=context:
+                        admit_scoped_declaration(self.spec, [u],
+                            c | {"resolved_error_types": ["Error"]}))
+                    self.rejects("DUPLICATE_ANNOTATION", lambda u=use:
+                        admit_declaration(self.spec, [u, u]))
+        for name in ("throws", "raises", "panics"):
+            with self.subTest(class_target=name):
+                self.rejects("WRONG_TARGET", lambda n=name:
+                    admit_declaration(self.spec, [self.use(n, "class", ["Error"])]))
+        self.assertTrue(admit_declaration(self.spec, [
+            self.use("throws", "actor_handler", ["Error"])]))
+        self.assertTrue(admit_declaration(self.spec, [
+            self.use("throws", "function", ["Error"]),
+            self.use("raises", "function", ["Error"]),
+            self.use("panics", "function", ["Error"])]))
+
+    def test_pure_and_advertised_escaping_failures_conflict(self):
+        target = "function"
+        uses = [self.use("Pure", target), self.use("throws", target, ["Error"])]
+        facts = {"target": target, "effect_proof_complete": True,
+                 "proven_effects": [], "trailing_failure_effects": [],
+                 "resolved_error_types": ["Error"]}
+        self.rejects("PURE_EFFECT_VIOLATION", lambda:
+            admit_scoped_declaration(self.spec, uses, facts))
+        for backend in self.spec["backendStatus"]:
+            self.rejects("ANNOTATION_UNLOWERED", lambda b=backend:
+                require_executable_lowering(self.spec, [self.use("throws", target, ["Error"])], b))
 
 
 if __name__ == "__main__":
