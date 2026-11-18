@@ -1,0 +1,34 @@
+name: std.test v1 reference (host-only)
+on:
+  push:
+    paths:
+      - 'reference/test_harness_v1.mjs'
+      - 'tests/test_harness_v1.test.mjs'
+      - 'tests/test_harness_manifest_v1.test.mjs'
+      - 'contracts/test-harness-v1.json'
+      - '.github/workflows/test-harness-v1.yml'
+  pull_request:
+    paths:
+      - 'reference/test_harness_v1.mjs'
+      - 'tests/test_harness_v1.test.mjs'
+      - 'tests/test_harness_manifest_v1.test.mjs'
+      - 'contracts/test-harness-v1.json'
+      - '.github/workflows/test-harness-v1.yml'
+permissions:
+  contents: read
+jobs:
+  source_only_reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute host-only reference semantics
+        run: node --test tests/test_harness_v1.test.mjs tests/test_harness_manifest_v1.test.mjs
+      - name: Distinguish reference model from compiled guest support
+        run: |
+          echo 'ATTO_TEST_HARNESS_REFERENCE_ONLY=1'
+          echo 'ATTO_GUEST_EXECUTION=NOT_EXECUTED'
+          echo 'ATTO_BACKEND_PARITY=NOT_CERTIFIED'
