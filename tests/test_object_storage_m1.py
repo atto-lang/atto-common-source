@@ -4,7 +4,6 @@ This deliberately bounded single-actor shape is not general Atto compiler parity
 """
 import argparse
 import hashlib
-import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -65,8 +64,7 @@ class ObjectM1CompilerGuests(unittest.TestCase):
                         "checked LLVM heap bridge and include path required")
         target = self.root / (tag + ".native")
         compiled = run([args.clangxx, "-std=c++17", "-O1", "-pthread",
-                        "-Wno-override-module", "-Isource_llvm/src/main/cpp"
-                        if False else "-I" + args.llvm_include,
+                        "-Wno-override-module", "-I" + args.llvm_include,
                         "-x", "ir", out, "-x", "c++", args.llvm_bridge,
                         "-o", target], timeout=180)
         self.assertEqual(compiled.returncode, 0,
