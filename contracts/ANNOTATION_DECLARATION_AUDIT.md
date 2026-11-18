@@ -20,6 +20,13 @@ pub fnc checked_add(int x, int y): int { return x + y; }
 
 These are *design-intent* examples. In particular, `@Ret`, `@Pure` and `@Deprecated` remain unverified in actual compiled programs. Compiler-owned `@throws(Error)`, `@raises(Error)`, and `@panics(Error)` are proposed equivalent spellings of typed trailing failure-effect clauses, not passive metadata. They normalize into the same checked effect record; an annotation cannot erase other declared or inferred effects. A duplicate same-kind trailing clause plus annotation must be rejected. A `@Pure` callable cannot declare escaping failures under this strict zero-effect reference contract. The formatter must not silently normalize a previously rejected source program into an accepted one.
 
+### Java-style checked annotations and signature placement
+
+- Canonical `@Throws(IOError, ParseError)`, `@Raises(RecoveryError)`, `@Panics(FatalError)` are semantic equivalents of trailing `throws IOError, ParseError`, `raises RecoveryError`, `panics FatalError`. Legacy lowercase `@throws(Error)` etc and parenthesized clauses remain compatibility spellings only where already supported by the backend. Do not silently accept unimplemented forms.
+- Empty `@Throws()` / `@Raises()` / `@Panics()` assert that the respective analyzed escaping effect set is empty. This is a compiler proof obligation, not 'any exception' or suppression. Public signatures must not silently infer unknown effects as empty.
+- Both `fnc name() -> T throws E { ... }` and `fnc name() throws E -> T { ... }` are allowed. A trailing `-> T` can permit a hard-newline-delimited `... end` body without `begin`; return-before-effects or prefix `T•` with inline effects need explicit `{}`, `begin ... end`, or preexisting valid `as ... end` syntax.
+- Exact grammar, ordering and diagnostics are specified in [the Atto spec's checked failures draft](https://github.com/atto-lang/atto-spec/blob/feature/pipeline-effect-proof-v1-20261117/language/checked-throws-annotation-v1.md).
+
 ## Class annotations
 
 * `define class` maps to `class`; `define actor` maps to `actor`, **not** `class`. Structs, interfaces, traits, and enums have their own targets.
