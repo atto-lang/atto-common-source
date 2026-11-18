@@ -77,7 +77,9 @@ async function run_suite(root, options = {}) {
   const only = options.only ?? "";
   const seed = options.seed ?? 1;
   const fail_fast = options.fail_fast ?? false;
-  if (typeof only !== "string" || !Number.isSafeInteger(seed) || typeof fail_fast !== "boolean") throw new TypeError("invalid options");
+  const allow_empty = options.allow_empty ?? false;
+  if (typeof only !== "string" || !Number.isSafeInteger(seed) || typeof fail_fast !== "boolean" || typeof allow_empty !== "boolean") throw new TypeError("invalid options");
+  if (!allow_empty && !list.some(entry => !only || entry.full_name === only)) throw new Error("no tests matched filter");
   const events = [], counts = {total: 0, passed: 0, failed: 0, skipped: 0, filtered: 0};
   for (const entry of list) {
     if (only && entry.full_name !== only) { counts.filtered++; continue; }
