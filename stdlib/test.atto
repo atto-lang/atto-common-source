@@ -72,6 +72,24 @@ define module test as
     return fail(message);
   }
 
+  // The public snake_case builders avoid reliance on global registration.
+  pub fnc test_case(String name, TestBody body): TestCase {
+    return new TestCase(name, body, false, "");
+  }
+
+  pub fnc test_suite(String name, List<TestCase> cases): TestSuite {
+    return new TestSuite(name, cases);
+  }
+
+  fnc skipped_body(): TestOutcome {
+    // Deliberately never invoked by run_suite when the skip flag is set.
+    return pass();
+  }
+
+  pub fnc skip_case(String name, String reason): TestCase {
+    return new TestCase(name, skipped_body, true, reason);
+  }
+
   fnc selected(String full_name, String only): bool {
     if only eq ""; do
       return true;
