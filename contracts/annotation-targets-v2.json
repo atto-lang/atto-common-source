@@ -730,6 +730,60 @@
       "arguments": [],
       "repeatable": false,
       "implementation": "PROPOSED_OR_LEGACY_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.throws",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "error",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_COMPILER_DRAFT_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.raises",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "error",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_COMPILER_DRAFT_UNVERIFIED"
+    },
+    {
+      "qualifiedName": "atto.core.panics",
+      "allowedTargets": [
+        "function",
+        "method",
+        "actor_handler"
+      ],
+      "phase": "proof",
+      "arguments": [
+        {
+          "name": "error",
+          "type": "type_ref",
+          "required": true
+        }
+      ],
+      "repeatable": false,
+      "implementation": "PROPOSED_COMPILER_DRAFT_UNVERIFIED"
     }
   ],
   "reportingRule": "Reference contract/model tests are NOT compiler acceptance, executed AOT, or five-backend parity. A backend only moves to EXECUTED upon exact-head native test evidence."
