@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { suite, run_suite } from '../reference/test_harness_v1.mjs';
+import { suite, run_suite, test_case } from '../reference/test_harness_v1.mjs';
 import { property_case, strategy_int, strategy_list } from '../reference/test_property_v1.mjs';
 
 test('composable int strategy keeps values in bounds and shrink preserves bounds', () => {
@@ -69,4 +69,23 @@ test('predicate gets no random function: generation owns randomness', async () =
   const p = property_case('no ambient random', strategy_int(0, 9), ctx => !('random_int' in ctx), { runs: 3 });
   const r = await run_suite(suite('props', [p]));
   assert.equal(r.summary.passed, 1);
+});
+
+
+test('pure property with fixture rejects during discovery before acquisition', async () => {
+  const { using, fixture } = await import('../reference/test_harness_v1.mjs');
+  let hits = 0;
+  const root = suite('bad', [using(fixture(() => { hits++; return {}; }, () => { hits++; }), [
+    property_case('property', strategy_int(0, 100), () => true)
+  ])]);
+  await assert.rejects(run_suite(root), /property fixture requires per-attempt acquisition/);
+  assert.equal(hits, 0);
+});
+
+test('zero matched tests fails closed unless explicitly allowed', async () => {
+  const root = suite('filter', [test_case('exists', () => true)]);
+  await assert.rejects(run_suite(root, { only: 'filter/missing' }), /no tests matched/);
+  const result = await run_suite(root, { only: 'filter/missing', allow_empty: true });
+  assert.equal(result.summary.total, 0);
+  assert.equal(result.summary.filtered, 1);
 });
