@@ -48,6 +48,27 @@ values. The independent 32-bit guest token is only valid within the single
 admitted actor context; the LLVM bridge's trusted host wrapper cannot be
 constructed by the guest. No untrusted arbitrary native guest code is admitted.
 
+### Ownership-operator expansion gate (M1 does not implement it)
+
+The single-Particle M1 plan has one owned class and no general class calls.
+Future typed IR must make these effects independently visible:
+
+- `read(particle)` and `read(borrow! particle)` issue the same temporary
+  readonly loan when a nonprimitive bare formal is in scope; the source owner
+  remains valid and cannot be implicitly transferred
+- `write(mut particle)` and `write(borrow! mut particle)` require exclusive
+  mutable authority and must reject concurrent readers
+- `take! particle` invalidates the source owner; `copy!! particle`
+  requires fresh independent mutable storage; `copy! particle` is shallow
+  only when every retained child alias is legal
+- `share!` requires frozen or guarded storage; `pin! take!` cannot cross
+  actor allocator domains without a stable-pointee handoff proof; `drop!`
+  must not run while any loan is live
+
+None of those examples is an admitted M1 source feature. Do not create
+success-shaped Java/LLVM output for unsupported forms; add isolated positive
+and no-artifact negative guest tests before promoting a new profile.
+
 ### Native code generation
 
 - **Java:** compiler emits `AttoObjectStorageM1.java`; primitive Point
