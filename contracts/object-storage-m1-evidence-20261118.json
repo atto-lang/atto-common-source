@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "feature": "object-storage-m1-compiled-guest",
+  "evidence_scope": "STANDALONE_CLOSED_WORLD_EXPERIMENTAL",
+  "carrier": {
+    "repository": "cliptown-test/atto-ci",
+    "branch": "ci/atto-object-m1-java-llvm-20261118",
+    "commit": "e4a704b48574b5e9a12094563744a15945537419",
+    "workflow_run_id": 44386317951,
+    "conclusion": "success",
+    "jobs_passed": 5,
+    "jobs_total": 5,
+    "source_java_tree_sha": "5ed19fc7a640754bad6da953c42914bc7eeef555",
+    "source_llvm_tree_sha": "031f771675008c538fc62672ed02d9d7d3917911",
+    "source_java_head_sha": "d79ec9f2ebee3c0edb937d408b239b2f08b837a6",
+    "source_llvm_head_sha": "2b43a0685b7e51c040e346abb27a5e0ac0861cd0",
+    "compiler_source_blob_sha": "d5b815b12e6e65ef54090d09c225e938cf909ad8",
+    "test_blob_sha": "38404de7615aa59bb8abaedf5fffbb76509e4cdd",
+    "fixture_blob_sha": "b8f5e4ed101ef7a21be72f7999578d3dc52c98ef"
+  },
+  "compiled_cases": [
+    {
+      "id": "m1-point-particle-13",
+      "source_sha256": "c237546fb2576789b18dcf05f516ff8ca87e3b41a3e2467f5a92e3eea1d7a2f4",
+      "expected_exit": 13,
+      "java_jvm": "PASS",
+      "llvm_native": "PASS",
+      "graal_native_image": "PASS"
+    },
+    {
+      "id": "m1-point-particle-46",
+      "source_sha256": "137aefe217fc695afbe18f7032129309fd71cb9ad081def65ec60e93e92f46af",
+      "expected_exit": 46,
+      "java_jvm": "PASS",
+      "llvm_native": "PASS",
+      "graal_native_image": "NOT_EXECUTED"
+    }
+  ],
+  "negative_cases": {
+    "invalid_source_cases": 10,
+    "java_jvm_codegen": "PASS_NO_ARTIFACT",
+    "llvm_codegen": "PASS_NO_ARTIFACT",
+    "source_sha_rejection": "PASS",
+    "existing_output_no_overwrite": "PASS"
+  },
+  "graal_native_image": {
+    "gc": "epsilon",
+    "artifact_sha256": "314ef516ec55ab3416759b6e43387aa4d627393b9da85963b4b78c9893a96450",
+    "compiled_atto_guest": "M1_FIXED_SHAPE_ONLY"
+  },
+  "unverified": {
+    "canonical_general_class_struct_hir": "NOT_IMPLEMENTED",
+    "full_30_storage_cases": "NOT_EXECUTED",
+    "full_12_ref32_origin_cases": "NOT_EXECUTED",
+    "cross_actor_identity_and_transfer": "NOT_EXECUTED",
+    "borrow_and_suspension": "NOT_EXECUTED",
+    "multi_actor_isolation": "NOT_EXECUTED",
+    "runtime_gc_pressure_benchmark": "NOT_EXECUTED",
+    "java_per_object_host_wrapper_elimination": "NOT_IMPLEMENTED"
+  }
+}
