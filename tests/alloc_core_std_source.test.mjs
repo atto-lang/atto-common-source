@@ -54,7 +54,8 @@ test('freestanding size helpers reject signed inputs before subtract/divide', ()
 });
 test('alloc ByteRegion is sealed-backed, checks bounds and requires mutable receiver', () => {
   assert.match(alloc, /private let mut OwnedBytes storage = OwnedBytes\.empty\(\);/);
-  assert.match(alloc, /OwnedBytes\.allocate_zeroed\(count\)/);
+  assert.match(alloc, /OwnedBytes\\.allocate_zeroed\\(count\\)/);
+  assert.match(alloc, /pub static fnc empty\\(\\): ByteRegion/);
   assert.match(alloc, /pub mtd \(mut self: ByteRegion\) write_byte/);
   assert.match(alloc, /bounds\.byte_range_valid/);
   assert.match(alloc, /bounds\.byte_u8_valid/);
