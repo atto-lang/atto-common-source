@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "oreslang.canonical-library-source",
+  "id": "ores-core-numeric-v1",
+  "module": "ores.core/numeric",
+  "sourcePath": "library/ores.core/numeric.atto",
+  "sourceSha256": "3d1d7b77068dd02b3d60b30b72f29a4537a933134ca79e1e81df096dc56f5f33",
+  "gitBlobSha1": "5ced991f1d49b3c2a60fdd72b9003c0a4d18cd72",
+  "sourceEncoding": "UTF-8",
+  "canonicalApi": [
+    "min_int(int,int):int",
+    "max_int(int,int):int",
+    "clamp_int(int,int,int):int"
+  ],
+  "semanticsContract": "contracts/library/v1/core-math-i64.json",
+  "provenance": {
+    "originRepo": "ores-truffle-oreslang/oreslang-source.java",
+    "originCommit": "3210aeff07597035a4ed815ebbdf39720a3266c1",
+    "originPath": "src/main/resources/dev/oreslang/core/numeric.ores"
+  },
+  "policy": {
+    "publicNamespace": "ores.core",
+    "noOsImports": true,
+    "noHostInterop": true,
+    "backendSemanticForksForbidden": true,
+    "requireByteIdenticalVendorCopy": true,
+    "compilersMustCompileOreslangSource": true,
+    "backendExecutionEvidenceRequired": true
+  },
+  "status": "source-contract-only; not a claim of executable cross-backend parity"
+}

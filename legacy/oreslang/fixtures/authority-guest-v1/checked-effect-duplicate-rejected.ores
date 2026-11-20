@@ -1,0 +1,1 @@
+fnc f(): int throws string throws int { return 1; }

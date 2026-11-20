@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.dev/contracts/v1/realtime-execution.v1.schema.json",
+  "title": "Oreslang real-time execution contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timing", "compilation", "memory", "scheduler", "effects"],
+  "properties": {
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "deadline_ns", "wcet_ns", "blocking_ns", "interference_ns", "jitter_ns"],
+      "properties": {
+        "class": {"enum": ["best-effort", "soft", "hard"]},
+        "deadline_ns": {"type": "integer", "minimum": 0},
+        "wcet_ns": {"type": "integer", "minimum": 0},
+        "blocking_ns": {"type": "integer", "minimum": 0},
+        "interference_ns": {"type": "integer", "minimum": 0},
+        "jitter_ns": {"type": "integer", "minimum": 0}
+      }
+    },
+    "compilation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_guest_aot", "runtime_codegen_allowed", "dynamic_class_loading_allowed"],
+      "properties": {
+        "full_guest_aot": {"type": "boolean"},
+        "runtime_codegen_allowed": {"type": "boolean"},
+        "dynamic_class_loading_allowed": {"type": "boolean"}
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["managed_heap_on_critical_path", "actor_region_deterministic", "preallocated", "prefaulted", "bounded_cleanup"],
+      "properties": {
+        "managed_heap_on_critical_path": {"type": "boolean"},
+        "actor_region_deterministic": {"type": "boolean"},
+        "preallocated": {"type": "boolean"},
+        "prefaulted": {"type": "boolean"},
+        "bounded_cleanup": {"type": "boolean"}
+      }
+    },
+    "scheduler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workers_prestarted", "bounded_dispatch", "bounded_priority_inversion", "critical_worker_isolation", "os_realtime_policy"],
+      "properties": {
+        "workers_prestarted": {"type": "boolean"},
+        "bounded_dispatch": {"type": "boolean"},
+        "bounded_priority_inversion": {"type": "boolean"},
+        "critical_worker_isolation": {"type": "boolean"},
+        "os_realtime_policy": {"type": "boolean"}
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bounded_calls", "bounded_loops", "bounded_queues", "blocking_io", "unqualified_ffi", "untrusted_jit"],
+      "properties": {
+        "bounded_calls": {"type": "boolean"},
+        "bounded_loops": {"type": "boolean"},
+        "bounded_queues": {"type": "boolean"},
+        "blocking_io": {"type": "boolean"},
+        "unqualified_ffi": {"type": "boolean"},
+        "untrusted_jit": {"type": "boolean"}
+      }
+    }
+  }
+}

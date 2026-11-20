@@ -1,0 +1,3 @@
+pub fnc foo(unknown v): any {
+  return v;
+}

@@ -1,0 +1,6 @@
+// This syntax requires future import-ns compiler support and pinned pkg:foo.
+import ns a from 'pkg:foo';
+
+pub fnc main(): int {
+  return a.aggregate(a.double(a.add(20, 1)));
+}

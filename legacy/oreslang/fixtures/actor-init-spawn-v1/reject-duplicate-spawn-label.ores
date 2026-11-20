@@ -1,0 +1,36 @@
+define isolated actor TenantStore as
+    state { let int revision = 0; }
+end
+
+define isolated actor PaymentGateway as
+    state { let int attempts = 0; }
+end
+
+define isolated actor OrderActor as
+    state {
+        val ActorRef<TenantStore> store;
+        val ActorRef<PaymentGateway> payment;
+        let int phase;
+    }
+
+    init(store: ActorRef<TenantStore>, payment: ActorRef<PaymentGateway>) -> state {
+        return state {
+            store: store,
+            payment: payment,
+            phase: 0
+        };
+    }
+
+    pub begin_order(): void {
+        self.handle_state(critical[write] |s| -> {
+            s.phase = 1;
+        });
+    }
+end
+
+pub async routine main(): void {
+    val store = await spawn TenantStore();
+    val gateway = await spawn PaymentGateway();
+    val orders = await spawn OrderActor(store: store, store: store, payment: gateway);
+    return;
+}

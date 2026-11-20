@@ -1,0 +1,30 @@
+name: Proof IR v1 structural gate (non-certifying)
+on:
+  pull_request:
+    paths:
+      - 'contracts/verification/v1/**'
+      - 'scripts/verify-proof-receipt-v1.mjs'
+      - 'tests/verify-proof-receipt-v1.test.mjs'
+      - 'docs/verification/CORE_STDLIB_PROOF_IR_V1.md'
+      - '.github/workflows/proof-receipts-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  structural:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact checkout
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Run structural and adversarial test suite; no proof claims
+        run: |
+          set -euo pipefail
+          node --version
+          node --test tests/verify-proof-receipt-v1.test.mjs

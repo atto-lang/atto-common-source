@@ -1,0 +1,41 @@
+name: authority guest corpus integrity (not compiler parity)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/authority-guest-corpus-v1.yml'
+      - 'fixtures/authority-guest-v1/**'
+      - 'scripts/authority_guest_gate.py'
+      - 'tests/test_authority_guest_gate.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/authority-guest-corpus-v1.yml'
+      - 'fixtures/authority-guest-v1/**'
+      - 'scripts/authority_guest_gate.py'
+      - 'tests/test_authority_guest_gate.py'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source head and clean checkout
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "Corpus source tree: $(git rev-parse 'HEAD^{tree}')"
+      - name: Verify Oreslang guest fixture Git blobs and fail-closed evidence gate
+        run: python3 -m unittest discover -s tests -p 'test_authority_guest_gate.py' -v

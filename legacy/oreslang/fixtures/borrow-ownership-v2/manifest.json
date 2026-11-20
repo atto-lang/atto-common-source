@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "suite": "borrow-ownership-v2",
+  "evidence_status": "contract-only-not-executed",
+  "cases": [
+    {
+      "id": "borrow-mut-scalar",
+      "path": "fixtures/borrow-ownership-v2/borrow-mut-scalar.ores",
+      "sha256": "37d42b06e761543111a12cfbbd8c4811dd66c5e447fc76b5fabd1512219b8cca",
+      "expectation": {
+        "kind": "return",
+        "exit_code": 42
+      },
+      "readiness": {
+        "llvm-native-aot": "required",
+        "graal-jvm-guest": "pending",
+        "graal-native-guest-aot": "pending"
+      }
+    },
+    {
+      "id": "borrow-overlap-reject",
+      "path": "fixtures/borrow-ownership-v2/borrow-overlap-reject.ores",
+      "sha256": "b36f1f0a49c02364a008f3a383602a1cf25d25e8f1d74105e7d6fbbe619d05be",
+      "expectation": {
+        "kind": "reject",
+        "category": "conflicting-loan",
+        "emitted_ir_bytes": 0
+      },
+      "readiness": {
+        "llvm-native-aot": "required",
+        "graal-jvm-guest": "pending",
+        "graal-native-guest-aot": "pending"
+      }
+    },
+    {
+      "id": "borrow-shared-write-reject",
+      "path": "fixtures/borrow-ownership-v2/borrow-shared-write-reject.ores",
+      "sha256": "9e8a882482c607af20922c93eb00b1e4624b6b3da4ae6352770edd76b89f1109",
+      "expectation": {
+        "kind": "reject",
+        "category": "shared-loan-write",
+        "emitted_ir_bytes": 0
+      },
+      "readiness": {
+        "llvm-native-aot": "required",
+        "graal-jvm-guest": "pending",
+        "graal-native-guest-aot": "pending"
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+# Host-only model admission oracle. No source copying, secrets or guest compiler claims.
+name: General-purpose model contract (host-only)
+on:
+  pull_request:
+    paths:
+      - "docs/GENERAL_PURPOSE_MODELS_V1.md"
+      - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "docs/MODEL_GRAPH_DIGEST_V1.md"
+      - "docs/MODEL_EXECUTION_PROFILE_DIGEST_V1.md"
+      - "docs/MODEL_GRAPH_LOWERING_ABI_V1.md"
+      - "docs/MODEL_GRAPH_HARDENING_AUDIT_20261019.md"
+      - "tests/general-purpose-model-contract.test.mjs"
+      - "tests/model-graph-admission-v2.test.mjs"
+      - "tests/model-run-fence.test.mjs"
+      - "tests/model-run-fence-publication.test.mjs"
+      - "tests/model-graph-digest-v1.test.mjs"
+      - "tests/model-execution-profile-digest-v1.test.mjs"
+      - "tests/model-diagnostic-registry.test.mjs"
+      - "tests/model-autodiff-contract.test.mjs"
+      - "tests/model-compiler-fixtures.test.mjs"
+      - "experiments/model_graph_admission.mjs"
+      - "experiments/model_run_fence.mjs"
+      - "experiments/model_graph_digest_v1.mjs"
+      - "experiments/model_symbol_constant_v1.mjs"
+      - "experiments/model_execution_profile_digest_v1.mjs"
+      - "contracts/v1/model-autodiff/**"
+      - "contracts/v1/model-graph/**"
+      - "contracts/v1/model-graph/diagnostics-v1.json"
+      - ".github/workflows/general-purpose-model-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/GENERAL_PURPOSE_MODELS_V1.md"
+      - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "docs/MODEL_GRAPH_HARDENING_AUDIT_20261019.md"
+      - "docs/MODEL_GRAPH_LOWERING_ABI_V1.md"
+      - "docs/MODEL_GRAPH_DIGEST_V1.md"
+      - "docs/MODEL_EXECUTION_PROFILE_DIGEST_V1.md"
+      - "tests/general-purpose-model-contract.test.mjs"
+      - "tests/model-graph-admission-v2.test.mjs"
+      - "tests/model-run-fence.test.mjs"
+      - "tests/model-run-fence-publication.test.mjs"
+      - "tests/model-graph-digest-v1.test.mjs"
+      - "tests/model-execution-profile-digest-v1.test.mjs"
+      - "tests/model-diagnostic-registry.test.mjs"
+      - "tests/model-autodiff-contract.test.mjs"
+      - "experiments/model_graph_admission.mjs"
+      - "experiments/model_run_fence.mjs"
+      - "experiments/model_graph_digest_v1.mjs"
+      - "experiments/model_symbol_constant_v1.mjs"
+      - "experiments/model_execution_profile_digest_v1.mjs"
+      - "contracts/v1/model-autodiff/**"
+      - "contracts/v1/model-graph/**"
+      - ".github/workflows/general-purpose-model-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact workflow ref
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Require Node host environment and syntax-check oracle
+        run: |
+          node --version
+          node --check experiments/model_graph_admission.mjs
+          node --check experiments/model_graph_digest_v1.mjs
+          node --check experiments/model_symbol_constant_v1.mjs
+          node --check experiments/model_execution_profile_digest_v1.mjs
+          node -e "JSON.parse(require('fs').readFileSync('contracts/v1/model-graph/graph.schema.json','utf8')); console.log('schema-json-parse=PASS')"
+      - name: Execute host reference suites
+        run: |
+          node --test tests/general-purpose-model-contract.test.mjs tests/model-graph-admission-v2.test.mjs tests/model-run-fence.test.mjs tests/model-run-fence-publication.test.mjs tests/model-graph-digest-v1.test.mjs tests/model-execution-profile-digest-v1.test.mjs tests/model-diagnostic-registry.test.mjs tests/model-compiler-fixtures.test.mjs tests/model-autodiff-contract.test.mjs
+      - name: Evidence boundary
+        run: |
+          echo 'HOST_ORACLE_ONLY; model_guest_execution=NOT_EXECUTED'
+          echo 'This is not Java/GraalVM, LLVM, native runtime, or numerical model evidence.'

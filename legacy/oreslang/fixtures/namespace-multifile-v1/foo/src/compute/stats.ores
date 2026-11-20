@@ -1,0 +1,4 @@
+namespace a;
+
+pub fnc double(int arg0): int { return arg0 * 2; }
+fnc hidden(): int { return 1; }

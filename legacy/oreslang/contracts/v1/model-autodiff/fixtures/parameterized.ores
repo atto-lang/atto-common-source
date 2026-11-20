@@ -1,0 +1,10 @@
+// PROPOSED default and named constructor arguments.
+define model Classifier(
+    features: int = 784,
+    hidden: int = 512,
+    classes: int = 10
+) as
+    Dense(features, hidden)
+    ReLU()
+    Dense(hidden, classes)
+end

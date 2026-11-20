@@ -1,0 +1,318 @@
+{
+  "schema": "oreslang.three-guarantees-aot.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "inherits": [
+    "oreslang.aot-language-closure.v1",
+    "oreslang.macro-semantics.v1"
+  ],
+  "required_backends": [
+    "llvm_guest_native_aot",
+    "graal_program_specific_guest_native_image"
+  ],
+  "no_runtime_fallback": true,
+  "native_image_of_truffle_interpreter_is_guest_aot": false,
+  "compilation_requirements": [
+    "finite_reachable_guest_closure",
+    "generated_static_protocol_witnesses",
+    "closed_actor_session_transitions",
+    "complete_effects_and_capabilities",
+    "checked_ownership_and_lifetimes",
+    "compiled_await_and_cancel_paths",
+    "compiled_exception_and_cleanup_paths",
+    "program_specific_guest_lowering",
+    "no_runtime_source_or_jit"
+  ],
+  "hot_swap": {
+    "dev_and_prod_same_safety_checks": true,
+    "in_process_requires_proven_precompiled_loader": true,
+    "graal_native_image_can_assume_dynamic_java_class_loading": false,
+    "process_handoff_is_zero_process_restart": false,
+    "must_pin": [
+      "actor_turn",
+      "async_frame",
+      "generator",
+      "callback",
+      "ffi_or_dma",
+      "http_stream",
+      "session",
+      "child_task"
+    ],
+    "phases": [
+      "prepare",
+      "validate",
+      "stage",
+      "fence",
+      "publish",
+      "drain",
+      "retire"
+    ],
+    "rollback_after_commit": "new_forward_promotion",
+    "physical_quiescence_before_unload": true,
+    "forced_purge": false,
+    "capability_increase": false,
+    "unknown_loader": "unsupported"
+  },
+  "realtime": {
+    "profiles": [
+      "aot_no_timing_claim",
+      "soft_rt_measured",
+      "hard_rt_qualified"
+    ],
+    "graal_native_image_alone_is_hard_rt": false,
+    "target_specific_hard_rt_proof": true,
+    "hard_rt_requires_all": [
+      "specific_hardware_os_runtime",
+      "whole_program_wcet_bound",
+      "scheduling_interference",
+      "release_jitter",
+      "critical_section_lock_bound",
+      "allocation_gc_interference",
+      "ffi_and_io_bounds",
+      "cleanup_and_cancel_bounds",
+      "admission_and_mailbox_bounds",
+      "upgrade_activation_bound"
+    ],
+    "unknown_bound": "reject",
+    "compiler_aot_is_timing_certificate": false,
+    "watchdog_is_deadline_proof": false
+  },
+  "protocol": {
+    "proof_scope": "affine_per_session_not_global_actor",
+    "opaque_actor_generation_and_session_epoch": true,
+    "transitions_closed_at_compile_time": true,
+    "runtime_rejects_stale_or_forged_handles": true,
+    "effect_annotation_grants_permission": false,
+    "inherited_actor_permissions": "intersection",
+    "actor_panic_interceptable": false,
+    "failed_before_admission": "retain_ownership",
+    "ambiguous_after_admission": "indeterminate_with_settlement",
+    "actor_state_fields_outside_single_sealed_state": false,
+    "cross_generation_migration": "explicit_verified_or_drain"
+  },
+  "allowed_status": [
+    "verified",
+    "compile_reject_expected",
+    "unsupported",
+    "failed",
+    "not_executed"
+  ],
+  "backend_evidence": {
+    "contract_tests_count_as_guest_proof": false,
+    "parsed_source_count_as_guest_proof": false,
+    "native_image_of_interpreter_count_as_guest_proof": false,
+    "zero_step_ci_count_as_guest_proof": false,
+    "positive_guest_native_execution_required": true
+  },
+  "cases": [
+    {
+      "id": "llvm-closed-actor-aot",
+      "domain": "aot",
+      "scenario": "LLVM guest code and all actor, continuation, cleanup edges compiled and linked",
+      "expected": "accept"
+    },
+    {
+      "id": "graal-program-specific-guest-native-image",
+      "domain": "aot",
+      "scenario": "GraalVM Native Image with compiled program-specific Oreslang guest methods",
+      "expected": "accept"
+    },
+    {
+      "id": "graal-truffle-evaluator-only",
+      "domain": "aot",
+      "scenario": "Native Image ships Truffle Oreslang evaluator but no compiled guest code",
+      "expected": "reject"
+    },
+    {
+      "id": "llvm-runtime-orc-specialization",
+      "domain": "aot",
+      "scenario": "LLVM executable requires ORC JIT to specialize runtime protocol witness",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-source-macro",
+      "domain": "aot",
+      "scenario": "actor hot path expands a macro or compiles an Oreslang source string",
+      "expected": "reject"
+    },
+    {
+      "id": "static-precompiled-dispatch",
+      "domain": "aot",
+      "scenario": "runtime input selects one member of fully precompiled finite handler table",
+      "expected": "accept"
+    },
+    {
+      "id": "dev-precompiled-in-process-loader",
+      "domain": "hot_swap",
+      "scenario": "proven loader stages independently AOT-linked generation, CAS routes and drains old frames",
+      "expected": "accept"
+    },
+    {
+      "id": "dev-unproven-native-image-class-loading",
+      "domain": "hot_swap",
+      "scenario": "claim that standard Graal Native Image can dynamically add arbitrary Java Oreslang methods",
+      "expected": "reject"
+    },
+    {
+      "id": "process-handoff-as-zero-restart",
+      "domain": "hot_swap",
+      "scenario": "claim that new process handoff means no process restarted",
+      "expected": "reject"
+    },
+    {
+      "id": "process-handoff-zero-downtime-conditional",
+      "domain": "hot_swap",
+      "scenario": "separately verified service continuity across process handoff without claiming in-process swap",
+      "expected": "accept"
+    },
+    {
+      "id": "reclaim-pinned-old-frame",
+      "domain": "hot_swap",
+      "scenario": "native image unloads while async frame still references old image",
+      "expected": "reject"
+    },
+    {
+      "id": "new-session-old-drain",
+      "domain": "hot_swap",
+      "scenario": "new sessions route to V2 while V1 sessions drain pinned to V1",
+      "expected": "accept"
+    },
+    {
+      "id": "third-generation-exhaustion",
+      "domain": "hot_swap",
+      "scenario": "reject promotion when V1 is pinned and generation budget full",
+      "expected": "accept"
+    },
+    {
+      "id": "forced-purge-on-budget",
+      "domain": "hot_swap",
+      "scenario": "delete V1 and kill work automatically to make room for V3",
+      "expected": "reject"
+    },
+    {
+      "id": "capability-escalating-upgrade",
+      "domain": "hot_swap",
+      "scenario": "new code silently grants net.connect to actor without ancestor grant",
+      "expected": "reject"
+    },
+    {
+      "id": "post-commit-rollback-rewind",
+      "domain": "hot_swap",
+      "scenario": "overwrite committed remote effects when rolling back code",
+      "expected": "reject"
+    },
+    {
+      "id": "soft-rt-p99-budget",
+      "domain": "realtime",
+      "scenario": "Graal guest Native Image documents measured p99 with explicit overload policy, not hard guarantee",
+      "expected": "accept"
+    },
+    {
+      "id": "graal-native-image-is-hard-rt",
+      "domain": "realtime",
+      "scenario": "claim hard RT from Graal Native Image compilation alone",
+      "expected": "reject"
+    },
+    {
+      "id": "llvm-qualified-hard-rt",
+      "domain": "realtime",
+      "scenario": "LLVM guest AOT with platform-pinned complete schedulability and WCET evidence",
+      "expected": "accept"
+    },
+    {
+      "id": "rt-unknown-callback-wcet",
+      "domain": "realtime",
+      "scenario": "certified handler invokes callback with unknown time bound",
+      "expected": "reject"
+    },
+    {
+      "id": "rt-unbounded-migration-critical",
+      "domain": "realtime",
+      "scenario": "unbounded schema migration executes on hard-RT carrier during promotion",
+      "expected": "reject"
+    },
+    {
+      "id": "rt-proven-activation-safe-point",
+      "domain": "realtime",
+      "scenario": "pre-staged image activates at certified bounded off-critical safe point with fresh certificate",
+      "expected": "accept"
+    },
+    {
+      "id": "rt-watchdog-as-proof",
+      "domain": "realtime",
+      "scenario": "watchdog alert claimed to prove no missed deadlines",
+      "expected": "reject"
+    },
+    {
+      "id": "session-unique-authorized-transition",
+      "domain": "protocol",
+      "scenario": "single affine session handle transitions on closed typed edge and returns next-phase after settled reply",
+      "expected": "accept"
+    },
+    {
+      "id": "session-global-actor-phase-assumption",
+      "domain": "protocol",
+      "scenario": "copied actor ref's type pretends shared actor global phase cannot change elsewhere",
+      "expected": "reject"
+    },
+    {
+      "id": "session-copy-and-double-send",
+      "domain": "protocol",
+      "scenario": "copy single transition capability, send twice or use-after-move",
+      "expected": "reject"
+    },
+    {
+      "id": "session-forged-epoch",
+      "domain": "protocol",
+      "scenario": "construct session with plain numeric actor id, epoch or deserialized opaque token",
+      "expected": "reject"
+    },
+    {
+      "id": "session-failed-before-admission",
+      "domain": "protocol",
+      "scenario": "bounded channel denies send and returns retained original moved ownership",
+      "expected": "accept"
+    },
+    {
+      "id": "session-timeout-reissue-old-phase",
+      "domain": "protocol",
+      "scenario": "accepted request times out and returns old phase handle as if never executed",
+      "expected": "reject"
+    },
+    {
+      "id": "session-timeout-indeterminate",
+      "domain": "protocol",
+      "scenario": "accepted request times out yielding typed indeterminate settlement capability",
+      "expected": "accept"
+    },
+    {
+      "id": "session-panic-caught-by-actor",
+      "domain": "protocol",
+      "scenario": "actor catches own fatal panic and continues phase",
+      "expected": "reject"
+    },
+    {
+      "id": "effects-as-os-permissions",
+      "domain": "protocol",
+      "scenario": "call annotation net.connect treated as OS/actor delegation grant",
+      "expected": "reject"
+    },
+    {
+      "id": "session-version-incompatible-migration",
+      "domain": "protocol",
+      "scenario": "silently retype old in-flight session from V1 phase to incompatible V2 phase",
+      "expected": "reject"
+    },
+    {
+      "id": "session-compatible-generation-pin",
+      "domain": "protocol",
+      "scenario": "pin V1 sessions and let V2 sessions begin after atomic routing",
+      "expected": "accept"
+    },
+    {
+      "id": "session-carries-private-state-loan",
+      "domain": "protocol",
+      "scenario": "state write loan escapes into session handle across await",
+      "expected": "reject"
+    }
+  ]
+}

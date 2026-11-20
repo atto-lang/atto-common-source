@@ -1,0 +1,8 @@
+fnc double(int n): int { return n * 2; }
+pub fnc main(): int {
+  val Option<int> present = Some(3);
+  val Option<int> absent = None;
+  val int a = present |> Option.map(double) |> Option.unwrap_or(0);
+  val int b = absent |> Option.map(double) |> Option.unwrap_or(1);
+  return a + b;
+}
