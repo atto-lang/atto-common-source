@@ -7,6 +7,11 @@
       "path": "stdlib/core/identity.atto",
       "sha256": "bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688",
       "bytes": 55
+    },
+    {
+      "path": "stdlib/core/u32_endian.atto",
+      "sha256": "18223c1ecfbe1f16b03540670d10ba13c6dc7fdc21be940f82fb621d8c943c67",
+      "bytes": 791
     }
   ],
   "targets": [
