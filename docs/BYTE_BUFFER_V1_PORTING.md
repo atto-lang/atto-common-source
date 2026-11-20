@@ -1,15 +1,15 @@
 # ByteBuffer v1 — canonical Atto library implementation boundary
 
-**Status:** staged foundational `.atto` core endian helpers; **not a compiled or runnable ByteBuffer implementation**.
+**Status:** concrete canonical .atto endian/bounds code and source-first std.buffer.ByteBuffer method bodies staged in Draft. NOT COMPILED, LINKED OR GUEST EXECUTED: sealed OwnedBytes, typed Error subclasses, module resolution and borrow-aware method lowering remain outstanding.
 
 Normative contract: [atto-spec/language/byte-buffer-v1.md](https://github.com/atto-lang/atto-spec/blob/feat/byte-buffer-contract-v1-20261119/language/byte-buffer-v1.md).
 Cross-backend fixture registry: [atto-platform-conformance/contracts/byte-buffer-v1.json](https://github.com/atto-lang/atto-platform-conformance/blob/feat/byte-buffer-contract-v1-20261119/contracts/byte-buffer-v1.json).
 
 ## Where the implementation must live
 
-1. **core:** `stdlib/core/u32_endian.atto` is the first backend-neutral, allocation-free implementation of 32-bit bit-lane extraction and assembly. It uses only integer bitwise expressions. Its `u32_pack_*` helpers mask their byte arguments, intentionally; they are low-level bit operations, **not** validating public `ByteBuffer` writes.
-2. **alloc:** implement a canonical `stdlib/alloc/byte_buffer.atto` type with actor-/tenant-owned byte storage, a validated allocator ABI and exact-bound reads/writes; no implicit OS, libc, GC or ambient host privileges. Do **not** create a type stub that compiles but calls an unchecked host buffer.
-3. **std:** expose the public portable `std.buffer` module and `ByteBuffer.allocate`, with `read_u8`, `read_u16_le/be`, `read_u32_le/be`, `write_u8`, `write_u16_le/be`, and `write_u32_le/be`. The source should delegate through the canonical alloc/core implementation and use explicit capability/allocator effects as necessary.
+1. **core:** `stdlib/core/u32_endian.atto` and `stdlib/core/byte_bounds.atto` implement pure endian assembly and overflow-safe range/unsigned admission. It uses only integer bitwise expressions. Its `u32_pack_*` helpers mask their byte arguments, intentionally; they are low-level bit operations, **not** validating public `ByteBuffer` writes.
+2. **alloc:** implement the sealed compiler/runtime OwnedBytes primitive specified in `contracts/owned-bytes-runtime-abi-v1.json`; it governs per-tenant/actor byte regions, quota, zeroization, generation and lifetime. This primitive does not yet exist and must never expose unrestricted guest host pointers.
+3. **std:** `stdlib/std/buffer.atto` now stages source-level `ByteBuffer.allocate`, `read_u8`, `read_u16_le/be`, `read_u32_le/be`, `write_u8`, `write_u16_le/be`, and `write_u32_le/be`. Bounds and endian operations are implemented in Atto; sealed raw storage calls are the only target runtime primitives. It is not compiled/executable.
 4. **backends:** wire the allocator primitive, owned byte representation, borrow-aware view descriptors, memory-quota enforcement, and lowerings. Do not implement byte semantics solely in JS, Java, C#, C++ or Rust while leaving the canonical .atto library uncompiled.
 5. **conformance:** compile the exact `.atto` fixtures for each compiler, run the resulting guest artifact, capture positive exits and negative typed errors, record code/tree SHA and toolchain; host reference cases cannot be promoted to a pass.
 
@@ -34,4 +34,14 @@ Cross-backend fixture registry: [atto-platform-conformance/contracts/byte-buffer
 
 ## Evidence
 
-The current `canonical-stdlib-v1.json` source manifest SHA-pins `identity.atto` and `u32_endian.atto` and preserves its five-backend `NOT_EXECUTED` verification boundary. The conformance registry separately inventories **all ten** known `atto-source.*` backends, also `NOT_EXECUTED`. Host byte-identity checking does not demonstrate compiler acceptance of bitwise operators or endian guest behavior.
+The current `canonical-stdlib-v1.json` SHA-pins `identity.atto`, `byte_bounds.atto`, `u32_endian.atto` and `std/buffer.atto`, preserving its five-backend `NOT_EXECUTED` verification boundary. The conformance registry separately inventories **all ten** known `atto-source.*` backends, also `NOT_EXECUTED`. Host byte-identity checking does not demonstrate compiler acceptance of bitwise operators or endian guest behavior.
+
+## Current source milestone and remaining gates
+
+- Source staged: checked byte bounds, unsigned width predicates, endian pack/unpack, u8/u16/u32 public read/write algorithms, constructor/factory source and pinned exact-byte manifests.
+- NOT IMPLEMENTED: sealed runtime OwnedBytes for any backend; typed Buffer*Error classes/linkage; compiled module imports; executable guest methods; ownership/loan integration; try_* Result adapters; borrowed zero-copy views and pooled storage.
+- Source validation: node --test tests/canonical-stdlib-bytes.test.mjs tests/byte_buffer_source_contract.test.mjs.
+- Rust host reference: rustc --edition=2021 --test -D warnings tests/byte_buffer_reference.rs -o /tmp/atto-byte-reference && /tmp/atto-byte-reference. Neither is a compiled Atto guest test.
+- Related atto-common-source PR #23 layering inventory currently expects only one .atto source. Reconcile its manifest and tests against the new sources before merging either branch; never weaken its effect or import checks.
+- For secure runtime admission: prove actor/tenant isolation, exclusive loans, stale generation rejection, typed error identity, zeroized reuse, quota accounting, fail-atomic ordinary errors, no host fallback and full AOT where applicable.
+- Checked alternate private CI carrier's explicit allowlist does not currently authorize copying atto-common-source. Do not mirror private source without authenticated security approval. Any zero-step CI is NOT_EXECUTED.
