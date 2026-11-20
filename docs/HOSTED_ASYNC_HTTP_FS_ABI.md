@@ -167,3 +167,49 @@ mapping, exactly-once completion, actor lifetime and cancellation
 semantics, signature/trust-store provisioning, and fail-closed
 admission of unsupported runtime targets. Do not ship empty
 `std.fs` guest stubs to mask these missing boundaries.
+
+
+## Exact sealed-image signed loader to broker handoff (2026-11-20)
+
+The LLVM host loader now has a candidate signed entrypoint:
+`load_guest_library_with_signed_fs_ceiling`. It executes Ed25519
+verification against the **same private library byte vector** that
+`open_verified` subsequently seals and maps; it never verifies a
+second pathname after loading. The existing ABI-v4 loader remains
+backward-compatible but does not provide privileged FS host calls.
+
+A separate trusted-host helper, `admit_signed_loaded_guest_fs_broker`,
+requires a successful signed load and live loaded-module owner, then
+constructs a scoped Linux broker whose artifact layer comes only
+from the verified descriptor. Host, runtime/operator, TenantVM,
+actor and delegation limits remain independent and intersect by
+**all-grants/any-deny**. The lower-level C-only
+`atto_fs_broker_admit_signed` also verifies signatures before
+building the layered broker, but its caller must establish that the
+provided artifact byte array is the actual executable image.
+
+This is not an end-to-end Atto guest release yet. The verified result
+is ordinary mutable **trusted-host** memory, not an unforgeable guest
+capability. The actual TenantVM scheduler must keep the signed
+image/module-owner, broker, worker and actor-incarnation lifetimes
+tied together, and must enforce revocation on shutdown/restart.
+The sealed native module's dependency closure and instruction/
+syscall confinement require independent validation. ABI v5 is still
+not accepted by the loader; no compiled `.atto` `std.fs`
+submission or completion uses this path.
+
+Verification classifications:
+
+- GCC/Clang O1/O2 ASan+UBSan: signed C admission source with
+  real OpenSSL Ed25519 verification and a **mocked broker**
+  constructor: 4/4 local passes on exact Git blob
+- g++/clang++ O1/O2 ASan+UBSan: signed C++ loader-wrapper source
+  with a **mocked image-loader hook and mocked broker**:
+  4/4 local passes on exact Git blobs
+- The checked-in shared-library loader/real-broker CTest and
+  C real-broker admission CTest: **NOT EXECUTED**
+- Source-owned GitHub Actions for the latest LLVM PR head:
+  **zero executed job steps**
+- Compiled `.atto` positive/negative std.fs fixture: **NOT EXECUTED**
+
+These host tests must never be reported as multi-backend parity.
