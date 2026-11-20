@@ -1,0 +1,14 @@
+// Hosted std convenience functions built on the alloc layer, with no I/O.
+// Copying is explicit and checked before any destination mutation.
+import module bounds from "stdlib/core/byte_bounds.atto";
+import module alloc_bytes from "stdlib/alloc/byte_region.atto";
+
+pub fnc bytes_equal(alloc_bytes.ByteRegion left, alloc_bytes.ByteRegion right) -> bool throws Error {
+  if left.length() != right.length() then return false; fi
+  let int index = 0;
+  while index < left.length() do
+    if left.read_byte(index) != right.read_byte(index) then return false; fi
+    index = index + 1;
+  end
+  return true;
+}
