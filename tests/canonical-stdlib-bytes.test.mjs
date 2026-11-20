@@ -11,17 +11,20 @@ const canonical=()=>Object.fromEntries(manifest.sources.map(s=>[s.path,readFileS
 const replicas=()=>Object.fromEntries(targetNames.map(b=>[b,canonical()]));
 const denied=f=>assert.throws(f,/E_STDLIB_/);
 
-test('one canonical .atto module is pinned to exact bytes, not a .ores alias',()=>{
+test('all three canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
  assert.equal(manifest.status,'CANDIDATE_NOT_COMPILED');
  assert.equal(manifest.sourcePolicy,'CANONICAL_ATTO_BYTES_ONLY');
- assert.equal(manifest.sources.length,2);
- assert.equal(manifest.sources[0].path,filename);
- assert.equal(manifest.sources[1].path,'stdlib/core/u32_endian.atto');
+ assert.deepEqual(manifest.sources.map(s=>s.path),[
+   'stdlib/core/byte_bounds.atto','stdlib/core/identity.atto','stdlib/core/u32_endian.atto'
+ ]);
+ const bounds=readFileSync(new URL('../stdlib/core/byte_bounds.atto',import.meta.url));
+ assert.equal(bounds.byteLength,726);
+ assert.equal(createHash('sha256').update(bounds).digest('hex'),'7465eb4b8e3325957d47fd0fc92206e75231c1ad140b5605cec56c5262cb5c7e');
  const endian=readFileSync(new URL('../stdlib/core/u32_endian.atto',import.meta.url));
  assert.equal(endian.byteLength,791);
  assert.equal(createHash('sha256').update(endian).digest('hex'), '18223c1ecfbe1f16b03540670d10ba13c6dc7fdc21be940f82fb621d8c943c67');
  assert.equal(source.byteLength,55);
- assert.equal(manifest.sources[0].sha256,'bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688');
+ assert.equal(manifest.sources.find(s=>s.path===filename).sha256,'bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688');
  assert.equal(readFileSync(new URL('../stdlib/core/identity.atto',import.meta.url),'utf8'),
   'pub fnc identity(int value) -> int {\n  return value;\n}\n');
 });
@@ -74,8 +77,8 @@ test('false evidence labels and unsafe source paths cannot claim five-backend ex
 test('matching BOM bytes and corresponding manifest hash still fail closed',()=>{
  const bom=Buffer.from('\ufeff'+source.toString('utf8'),'utf8');
  const m=structuredClone(manifest);
- m.sources[0].bytes=bom.byteLength;
- m.sources[0].sha256=createHash('sha256').update(bom).digest('hex');
+ m.sources.find(s=>s.path===filename).bytes=bom.byteLength;
+ m.sources.find(s=>s.path===filename).sha256=createHash('sha256').update(bom).digest('hex');
  const c=canonical(); c[filename]=Buffer.from(bom);
  const replicasWithBom=replicas();
  for(const b of targetNames) replicasWithBom[b][filename]=Buffer.from(bom);
