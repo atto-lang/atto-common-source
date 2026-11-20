@@ -30,7 +30,9 @@ test('sealed owned byte ABI is not falsely certified', () => {
 
 test('public ByteBuffer source has all u8/u16/u32 endian reads/writes and explicit ownership', () => {
   assert.match(source, /define class ByteBuffer as/);
-  assert.match(source, /private let mut OwnedBytes storage = OwnedBytes\.empty\(\);/);
+  assert.match(source, /private let mut alloc_bytes\\.ByteRegion storage = alloc_bytes\\.ByteRegion\\.empty\\(\\);/);
+  assert.match(source, /import module alloc_bytes from "stdlib\\/alloc\\/byte_region\\.atto";/);
+  assert.doesNotMatch(source, /\\bOwnedBytes\\s*\\./);
   assert.match(source, /pub static fnc allocate\(int count\): ByteBuffer throws Error/);
   for (const method of [
     'read_u8', 'read_u16_le', 'read_u16_be', 'read_u32_le', 'read_u32_be',
