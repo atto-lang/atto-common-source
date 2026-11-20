@@ -5,8 +5,8 @@
   "sources": [
     {
       "path": "stdlib/alloc/byte_region.atto",
-      "sha256": "fc40d98772aa39aac5b021725606ab32b0de45915cc17db2e95ded47ec2e79ca",
-      "bytes": 1689
+      "sha256": "0f832ff43de76ceaeda33234b96426cf3728e1fb10540aa1b97cd9ed0bfd876f",
+      "bytes": 1859
     },
     {
       "path": "stdlib/core/byte_bounds.atto",
@@ -30,8 +30,8 @@
     },
     {
       "path": "stdlib/std/buffer.atto",
-      "sha256": "ed7295c3c7a5e3278f089794881f59f0f09085412b8cf6faff40ee7a5b3714ba",
-      "bytes": 4921
+      "sha256": "e2f3a749f6ed0bb78b741384a5e0cf8ba0649790be00644c0e660fbf11c8f412",
+      "bytes": 4816
     },
     {
       "path": "stdlib/std/byte_ops.atto",
