@@ -6,6 +6,14 @@ import module bounds from "stdlib/core/byte_bounds.atto";
 define class ByteRegion as
   private let mut OwnedBytes storage = OwnedBytes.empty();
 
+  // An empty region needs neither heap allocation nor quota reservation.
+  constructor() {
+  }
+
+  pub static fnc empty(): ByteRegion {
+    return new ByteRegion();
+  }
+
   constructor(int count) throws Error {
     if count < 0 then
       throw BufferAllocationError("negative region length");
