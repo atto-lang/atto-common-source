@@ -2,7 +2,11 @@ name: Canonical stdlib byte identity (not guest execution)
 on:
   pull_request:
     paths:
-      - 'stdlib/core/identity.atto'
+      - 'stdlib/**/*.atto'
+      - 'tests/byte_buffer_reference.rs'
+      - 'tests/byte_buffer_source_contract.test.mjs'
+      - 'contracts/owned-bytes-runtime-abi-v1.json'
+      - 'docs/BYTE_BUFFER_V1_PORTING.md'
       - 'contracts/canonical-stdlib-v1.json'
       - 'src/canonical-stdlib-bytes.mjs'
       - 'tests/canonical-stdlib-bytes.test.mjs'
@@ -30,5 +34,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - name: Test canonical byte-copy reference (no guest execution)
-        run: node --test tests/canonical-stdlib-bytes.test.mjs
+      - name: Test canonical byte-copy and source ABI contracts (not guest execution)
+        run: node --test tests/canonical-stdlib-bytes.test.mjs tests/byte_buffer_source_contract.test.mjs
+      - name: Rust host-only endian/range reference (NOT Atto guest)
+        run: |
+          rustc --version
+          rustc --edition=2021 --test -D warnings tests/byte_buffer_reference.rs -o /tmp/atto-byte-buffer-reference
+          /tmp/atto-byte-buffer-reference
