@@ -59,7 +59,9 @@
       "HOST_WORKER_NEVER_HOLDS_GUEST_CAGE_POINTER",
       "COMPLETION_PUBLISH_MUST_REVALIDATE_ACTOR_AND_BROKER_REVOKE_GENERATION",
       "TICKETS_ARE_SINGLE_USE_AND_BOUND_TO_ACTOR_INCARNATION",
-      "CANCEL_RUNNING_WRITE_MAY_HAVE_SIDE_EFFECT_AND_IS_NOT_SAFE_TO_RETRY"
+      "CANCEL_RUNNING_WRITE_MAY_HAVE_SIDE_EFFECT_AND_IS_NOT_SAFE_TO_RETRY",
+      "ONE_ASYNC_FS_SERVICE_PER_TRUSTED_ACTOR_INCARNATION_NO_SIBLING_ACTOR_REUSE",
+      "HOST_ACTOR_ID_GENERATION_FROM_PRIVATE_TENANT_VM_SCHEDULER_NOT_GUEST_ARGUMENTS"
     ],
     "async_calls": [
       "fs_submit_read(path_offset32,path_length32,max_bytes)->ticket_or_error",
@@ -95,7 +97,9 @@
     "Bind actor cancellation, destruction, and hot loading to ticket revocation and bounded worker drainage",
     "Treat signed loaded-guest result as private host state, not a guest bearer capability; require guest image/module owner and broker/worker lifetimes to be tied together",
     "Run real C shared-library signed-image loader CTest and real broker permission intersection CTest on exact head before claiming host integration",
-    "Approve dependencies and relocations of loaded native code; signed artifact alone does not prove no direct syscalls or unsafe ELF dependencies"
+    "Approve dependencies and relocations of loaded native code; signed artifact alone does not prove no direct syscalls or unsafe ELF dependencies",
+    "Enforce one trusted actor incarnation per async filesystem service and ensure the actor policy ceiling matches that incarnation",
+    "Require a genuinely executed alternate GH Actions run; an exact mirror with zero job steps is not runtime evidence"
   ],
   "host_reference_observation": {
     "classification": "HOST_ONLY_NOT_GUEST_CONFORMANCE",
@@ -109,7 +113,21 @@
     "guest_compiler_lowering": false,
     "local_signed_verifier_executions": 4,
     "local_async_worker_mock_executions": 4,
-    "production_os_broker_integration": false
+    "production_os_broker_integration": false,
+    "actor_bound_queue_hardening": {
+      "status": "HOST_ONLY_MOCK_TESTED",
+      "source_commit": "2034b3dc3e17f791c9f6ad95529d929428636bb4",
+      "source_blob": "3e8c8345d0253773000c922d02adf7b17dd718e1",
+      "test_blob": "cc0c2bf0f12bb5785e7961c6e7ac595410555b20",
+      "gcc_o1": "PASS",
+      "gcc_o2": "PASS",
+      "clang_o1": "PASS",
+      "clang_o2": "PASS",
+      "guest_status": "NOT_EXECUTED",
+      "carrier_exact_tree": "7c8f69da1a1f6eaa69e2da57aea78ff3947522ba",
+      "carrier_run": "agent-pontifex/atto-ci#44684065317",
+      "carrier_executed_steps": 0
+    }
   },
   "artifact_ceiling_candidate": {
     "schema": "ATTO-FS-CEILING-V1",
