@@ -1,0 +1,253 @@
+{
+  "contract_version": "oreslang.namespace-multifile-package-js.v1",
+  "status": "proposed-source-free-reference-model-only",
+  "syntax": {
+    "declaration": "namespace a;",
+    "import": "import ns a from 'pkg:foo';",
+    "namespace_header_cardinality": "at most one flat header per .ores file"
+  },
+  "namespace_identity": [
+    "package_instance_id",
+    "namespace_name"
+  ],
+  "semantics": {
+    "namespaces_cross_packages": false,
+    "namespace_can_span_files_and_folders_within_package": true,
+    "existing_define_module_is_separate": true,
+    "dependency_alias_exact_version_pin": true
+  },
+  "packages": [
+    {
+      "id": "foo@sha:1111",
+      "dependencies": {
+        "foo": "foo@sha:1111"
+      }
+    },
+    {
+      "id": "app@sha:2222",
+      "dependencies": {
+        "foo": "foo@sha:1111"
+      }
+    },
+    {
+      "id": "foo@sha:3333",
+      "dependencies": {
+        "foo": "foo@sha:3333"
+      }
+    }
+  ],
+  "files": [
+    {
+      "id": "u1",
+      "path": "src/data/models.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "b",
+      "declarations": [
+        {
+          "name": "model",
+          "kind": "fnc",
+          "arity": 0,
+          "scope": "public"
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "path": "src/data/queries.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "b",
+      "declarations": [
+        {
+          "name": "lookup",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "path": "src/data/storage.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "b",
+      "declarations": [
+        {
+          "name": "store",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "pkg"
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "path": "src/data/validation.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "b",
+      "declarations": [
+        {
+          "name": "validate",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        }
+      ]
+    },
+    {
+      "id": "u5",
+      "path": "src/compute/math.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "a",
+      "declarations": [
+        {
+          "name": "add",
+          "kind": "fnc",
+          "arity": 2,
+          "scope": "public"
+        }
+      ]
+    },
+    {
+      "id": "u6",
+      "path": "src/compute/stats.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "a",
+      "declarations": [
+        {
+          "name": "double",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        },
+        {
+          "name": "hidden",
+          "kind": "fnc",
+          "arity": 0,
+          "scope": "private"
+        }
+      ]
+    },
+    {
+      "id": "u7",
+      "path": "src/compute/aggregation.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "a",
+      "declarations": [
+        {
+          "name": "aggregate",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        },
+        {
+          "name": "internal",
+          "kind": "fnc",
+          "arity": 0,
+          "scope": "pkg"
+        },
+        {
+          "name": "file_only",
+          "kind": "fnc",
+          "arity": 0,
+          "scope": "file"
+        }
+      ]
+    },
+    {
+      "id": "u8",
+      "path": "src/api/routes.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "c",
+      "declarations": [
+        {
+          "name": "route",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "path": "src/api/handlers.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "c",
+      "declarations": [
+        {
+          "name": "handle",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        }
+      ]
+    },
+    {
+      "id": "u10",
+      "path": "src/api/responses.ores",
+      "pkg": "foo@sha:1111",
+      "ns": "c",
+      "declarations": [
+        {
+          "name": "response",
+          "kind": "fnc",
+          "arity": 1,
+          "scope": "public"
+        }
+      ]
+    }
+  ],
+  "imports": [
+    {
+      "importer": "app@sha:2222",
+      "alias": "foo",
+      "name": "a",
+      "specifier": "pkg:foo",
+      "expected": [
+        "add",
+        "aggregate",
+        "double"
+      ]
+    },
+    {
+      "importer": "foo@sha:1111",
+      "alias": "foo",
+      "name": "a",
+      "specifier": "pkg:foo",
+      "expected": [
+        "add",
+        "aggregate",
+        "double",
+        "internal"
+      ]
+    }
+  ],
+  "expected_groups": [
+    {
+      "name": "a",
+      "files": 3
+    },
+    {
+      "name": "b",
+      "files": 4
+    },
+    {
+      "name": "c",
+      "files": 3
+    }
+  ],
+  "esm_target": {
+    "per_source_unit": true,
+    "entry": "namespaces/<ns>.mjs",
+    "explicit_public_exports": true,
+    "overload_dispatch_required": true,
+    "source_maps_required": true
+  },
+  "backend_status": {
+    "java": "pending",
+    "llvm": "pending",
+    "net": "pending",
+    "forge": "pending",
+    "wasm": "pending",
+    "js": "pending"
+  }
+}

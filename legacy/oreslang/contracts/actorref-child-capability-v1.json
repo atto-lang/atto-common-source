@@ -1,0 +1,43 @@
+{
+  "schema": "oreslang.actorref-child-capability/1",
+  "fixture": "fixtures/actorref-child-capability-v1.ores",
+  "canonicalField": "val ActorRef<Consumer> child = spawn Consumer();",
+  "semantics": {
+    "acquisition": "actor-private field initializer executes in the owning actor context and spawn creates a structured child",
+    "representation": "ActorRef is a capability and MUST NOT be represented as a forgeable integer or raw guest pointer",
+    "rebinding": "v1 fixture uses immutable val capability state; mutable ActorRef state is outside this v1 promotion fixture",
+    "send": "handler may invoke child.send(payload) through the retained capability",
+    "suspension": "capability remains valid across await while the child remains live and generation-valid",
+    "lifecycle": "parent termination owns descendant cancellation/drain and parent done does not settle until children finalize",
+    "dataBoundary": "ActorRef is not ordinary serialized message data"
+  },
+  "expected": {
+    "stdout": "42",
+    "java": {
+      "syntax": "canonical fixture",
+      "sourceExecutionRequired": true
+    },
+    "llvm": {
+      "syntax": "canonical ActorRef/receive/output/end slice implemented; child-output await continuation and full async main parity pending",
+      "noPtrToInt": true,
+      "generationFencedCapabilityRequired": true,
+      "remainingGate": "suspend receive handler on await child.outputs.next() without parking a carrier, then execute this exact fixture"
+    },
+    "embedded": {
+      "boundedSubset": true,
+      "maxActorCapabilities": 8,
+      "maxGuestActors": 8,
+      "dynamicAllocation": false,
+      "cortexMExecutionRequiredForPromotion": true
+    }
+  },
+  "evidenceRules": [
+    "Host C callbacks do not count as compiler-guest evidence.",
+    "ABI/link proof does not count as unchanged-source parity.",
+    "A workflow with zero executed steps is infrastructure failure, not conformance evidence.",
+    "Java and LLVM parity requires this exact fixture bytes or a recorded fixture digest from this repository.",
+    "Embedded may claim only bounded-subset target execution until this exact source form is compiled and run on the target profile."
+  ],
+  "fixtureSha256": "599d1366b5926e5afc567cb7832d4769ebef6c43cd19b8010aeca22fdf83b585",
+  "fixtureBytes": 680
+}

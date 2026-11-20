@@ -1,0 +1,6 @@
+// Forward-only model using an operation with no registered VJP.
+// Declaration/inference is legal. MODEL_MISSING_VJP is expected only when a
+// requested live gradient path traverses CustomOpWithoutVJP.
+define model ForwardOnlyWithoutGradient as
+    CustomOpWithoutVJP()
+end

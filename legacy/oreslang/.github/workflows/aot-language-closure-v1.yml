@@ -1,0 +1,54 @@
+name: Full AOT language closure v1
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/aot-language-closure-v1.yml'
+      - 'docs/AOT_LANGUAGE_CLOSURE_V1.md'
+      - 'fixtures/aot-language-closure-v1.json'
+      - 'tests/aot-language-closure-v1.test.mjs'
+      - 'docs/CALLABLE_SYNTAX_V1.md'
+      - 'docs/DISPATCH_RETURN_FORMS_V1.md'
+      - 'docs/MACRO_SEMANTICS_V1.md'
+      - 'fixtures/macro-semantics-v1.json'
+      - 'tests/macro-semantics-v1.test.mjs'
+  push:
+    paths:
+      - '.github/workflows/aot-language-closure-v1.yml'
+      - 'docs/AOT_LANGUAGE_CLOSURE_V1.md'
+      - 'fixtures/aot-language-closure-v1.json'
+      - 'tests/aot-language-closure-v1.test.mjs'
+      - 'docs/CALLABLE_SYNTAX_V1.md'
+      - 'docs/DISPATCH_RETURN_FORMS_V1.md'
+      - 'docs/MACRO_SEMANTICS_V1.md'
+      - 'fixtures/macro-semantics-v1.json'
+      - 'tests/macro-semantics-v1.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aot-language-closure-v1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "AOT closure SHA: $EXPECTED_HEAD"
+          echo "AOT closure tree: $(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - run: node --test tests/aot-language-closure-v1.test.mjs tests/macro-semantics-v1.test.mjs

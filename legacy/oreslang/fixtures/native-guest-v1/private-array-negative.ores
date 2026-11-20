@@ -1,0 +1,7 @@
+define class Shelf as
+  let mut Array<int> hidden = new Array<int>();
+end
+pub fnc main(): int {
+  let mut Shelf shelf = new Shelf();
+  return shelf.hidden.size;
+}

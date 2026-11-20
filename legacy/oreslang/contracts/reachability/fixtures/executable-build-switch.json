@@ -1,0 +1,1 @@
+{"format":"ores-reachability/1","buildKind":"executable","roots":["__root__.main"],"retainedSymbols":["A.foo","__root__.main"],"removedSymbols":["B.foo","__root__.choose","__root__.use_a"],"compileTimeConstants":{"__root__.use_a":true}}

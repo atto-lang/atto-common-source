@@ -1,0 +1,55 @@
+{
+  "schema": "oreslang.actor-init-guest-fixtures.v1",
+  "status": "DESIGN_TARGET_NOT_EXECUTED",
+  "notes": "These files propose new source syntax. No compiler currently accepts the positive case; negative cases must eventually reject for the targeted semantic reason, not merely missing syntax. Git blob SHA pins exact contents.",
+  "cases": [
+    {
+      "id": "positive-named-spawn",
+      "path": "positive-named-spawn.ores",
+      "blob_sha": "547f6fefe208d4617494ec775be57a368092266a",
+      "expected": "accept",
+      "reason": "name-bound complete state init",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-missing-dependency",
+      "path": "reject-missing-dependency.ores",
+      "blob_sha": "bdbdf1c0e326a0cb353d5b760c1189188d78d31a",
+      "expected": "reject",
+      "reason": "missing spawn argument",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-duplicate-spawn-label",
+      "path": "reject-duplicate-spawn-label.ores",
+      "blob_sha": "8e6027170ff862cd58d715004e88278ce9272d9a",
+      "expected": "reject",
+      "reason": "duplicate named argument",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-suspending-init",
+      "path": "reject-suspending-init.ores",
+      "blob_sha": "97170e14b69ae9758e01791545e1db35c03484c1",
+      "expected": "reject",
+      "reason": "suspension during init",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-init-on-start",
+      "path": "reject-init-on-start.ores",
+      "blob_sha": "75f6ac425e6b4337d9726afb86468bd42984af86",
+      "expected": "reject",
+      "reason": "dual init on_start lifecycle",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-rebind-dependency",
+      "path": "reject-rebind-dependency.ores",
+      "blob_sha": "5115fe38fdd59edb635843aa99c6a4260eb4b71a",
+      "expected": "reject",
+      "reason": "attempt to mutate val dependency field",
+      "evidence": "NOT_EXECUTED"
+    }
+  ]
+}

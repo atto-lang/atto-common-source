@@ -1,0 +1,32 @@
+name: FSM abstract trace contract (finite no-runtime model)
+on:
+  pull_request:
+    paths:
+      - 'contracts/v1/fsm/**'
+      - 'tests/test_fsm_trace_contract.py'
+      - '.github/workflows/fsm-abstract-trace-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/v1/fsm/**'
+      - 'tests/test_fsm_trace_contract.py'
+      - '.github/workflows/fsm-abstract-trace-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite-oracle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Record evaluated Git tree and run all 5,461 reference paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+          python3 -m json.tool contracts/v1/fsm/trace.v0.schema.json >/dev/null
+          python3 -m unittest discover -s tests -p test_fsm_trace_contract.py -v

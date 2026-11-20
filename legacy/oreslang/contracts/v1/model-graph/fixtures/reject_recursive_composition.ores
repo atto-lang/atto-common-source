@@ -1,0 +1,9 @@
+// Recursive model composition is not a finite static graph.
+// Expected diagnostic MODEL_RECURSIVE_COMPOSITION.
+define model RecursiveA as
+    RecursiveB()
+end
+
+define model RecursiveB as
+    RecursiveA()
+end

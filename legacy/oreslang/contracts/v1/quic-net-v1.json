@@ -1,0 +1,70 @@
+{
+  "contract": "oreslang.quic.net",
+  "version": 1,
+  "status": "design-and-admission-only",
+  "guestSupported": false,
+  "layers": {
+    "core": "core/net/quic",
+    "standardLibrary": "std/net/quic",
+    "http3": "std/http3"
+  },
+  "backends": ["java-graalvm", "llvm-native", "dotnet-nativeaot"],
+  "protocol": {
+    "transport": "quic-over-udp",
+    "tls": "1.3",
+    "requiredRFCs": [8999, 9000, 9001, 9002],
+    "http3RFCs": [9114, 9204],
+    "optionalRFCs": [9221, 9368, 9369],
+    "quicV1Required": true,
+    "http3Alpn": "h3",
+    "http2IsNotQuic": true,
+    "http2OverQuicForbidden": true
+  },
+  "api": {
+    "opaqueTypes": ["QuicListener", "QuicConnection", "QuicStream", "QuicDatagram"],
+    "calls": ["listen", "connect", "accept_connection", "open_bidi", "open_uni", "accept_stream", "read", "write", "finish", "reset", "stop_sending", "close", "send_datagram", "receive_datagram"],
+    "allNetworkOperationsAsynchronous": true,
+    "requiresNegotiatedDatagrams": true,
+    "streamReadsAndWritesPermitPartialProgress": true,
+    "zeroCopyBorrowCannotCrossSuspension": true
+  },
+  "security": {
+    "certChainAndHostnameVerificationRequired": true,
+    "tls13Required": true,
+    "insecureCertificateCallbackForbidden": true,
+    "requirePinnedAuthorizedIpAndCanonicalSni": true,
+    "enforceDnsSetEgressPolicy": true,
+    "redirectsRequireNewAuthorization": true,
+    "zeroRttDefault": "disabled",
+    "zeroRttReplaySafetyEvidenceBeforeEnable": true,
+    "migrationDefault": "disabled",
+    "sourceActorCannotAccessUdpOrTlsKeys": true,
+    "guestCannotForgeNativeHandle": true,
+    "noTransparentHttp2Fallback": true
+  },
+  "ownership": {
+    "generationTaggedHandleRequired": true,
+    "connectionAndStreamCredits": "bounded-and-return-exactly-once",
+    "cancellationIsNotPhysicalRetirement": true,
+    "actorShutdownMustWaitForVerifiedRetirement": true,
+    "noBlockingActorCarrier": true,
+    "nativeBuffersBounded": true
+  },
+  "profile": {
+    "hardRealtime": "reject-unbounded-handshake-and-network-io",
+    "strictAot": "required",
+    "reflectionOrRuntimeJit": "forbidden"
+  },
+  "releaseGates": [
+    "guest-module-parser-and-compiler",
+    "exact-head-guest-stdlib-execution",
+    "native-aot-publish",
+    "bidirectional-and-unidirectional-stream-interoperability",
+    "http3-h3-qpack-interoperability",
+    "negative-certificate-and-sni-tests",
+    "udp-egress-and-address-pinning",
+    "bounded-load-and-datagram-backpressure",
+    "cancel-close-and-actor-generation-retirement",
+    "no-plaintext-or-http2-fallback"
+  ]
+}

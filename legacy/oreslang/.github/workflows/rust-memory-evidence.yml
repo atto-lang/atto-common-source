@@ -1,0 +1,22 @@
+name: Rust memory evidence
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  memory-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Format Rust memory evidence gate
+        run: cargo fmt --manifest-path tools/memory-evidence/Cargo.toml -- --check
+      - name: Lint Rust memory evidence gate
+        run: cargo clippy --offline --manifest-path tools/memory-evidence/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust memory evidence gate
+        run: cargo test --offline --manifest-path tools/memory-evidence/Cargo.toml

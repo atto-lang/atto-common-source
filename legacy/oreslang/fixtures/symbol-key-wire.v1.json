@@ -1,0 +1,95 @@
+{
+  "schema_version": "tagged-symbol-keys-v1-proposal",
+  "status": "model-fixtures-not-compiler-or-network-conformance",
+  "wire_header": "4f4b01",
+  "tags": {
+    "string": 0,
+    "process": 1,
+    "stable": 2
+  },
+  "limits": {
+    "max_text_bytes": 16384,
+    "max_symbol_bytes": 256,
+    "max_keys": 4096,
+    "max_key_set_wire_bytes": 1048576
+  },
+  "golden": [
+    {
+      "label": "plain text",
+      "kind": "string",
+      "key": "foo",
+      "hex": "4f4b01000003666f6f"
+    },
+    {
+      "label": "text resembling Symbol",
+      "kind": "string",
+      "key": "#foo",
+      "hex": "4f4b0100000423666f6f"
+    },
+    {
+      "label": "process symbol",
+      "kind": "process",
+      "key": "foo",
+      "hex": "4f4b01010003666f6f"
+    },
+    {
+      "label": "unicode process symbol",
+      "kind": "process",
+      "key": "café",
+      "hex": "4f4b01010005636166c3a9"
+    },
+    {
+      "label": "stable symbol",
+      "kind": "stable",
+      "key": "550e8400-e29b-41d4-a716-446655440000",
+      "hex": "4f4b0102002435353065383430302d653239622d343164342d613731362d343436363535343430303030"
+    }
+  ],
+  "invalid": [
+    {
+      "label": "unexpected tag",
+      "hex": "4f4b01030003666f6f"
+    },
+    {
+      "label": "zero-length symbol",
+      "hex": "4f4b01010000"
+    },
+    {
+      "label": "noncanonical NFC",
+      "hex": "4f4b0101000663616665cc81"
+    },
+    {
+      "label": "malformed UTF-8",
+      "hex": "4f4b01010002c080"
+    },
+    {
+      "label": "bad length",
+      "hex": "4f4b01010002666f6f"
+    },
+    {
+      "label": "trailing bytes",
+      "hex": "4f4b01010003666f6f00"
+    },
+    {
+      "label": "wrong version",
+      "hex": "4f4b02010003666f6f"
+    }
+  ],
+  "distinct_key_pairs": [
+    {
+      "left": 0,
+      "right": 2,
+      "equal": false
+    },
+    {
+      "left": 1,
+      "right": 2,
+      "equal": false
+    },
+    {
+      "left": 2,
+      "right": 2,
+      "equal": true
+    }
+  ]
+}

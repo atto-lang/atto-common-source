@@ -1,0 +1,46 @@
+name: Actor on-handler syntax v1 source contract
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/actor-on-handler-syntax-v1.yml'
+      - 'docs/ACTOR_ON_HANDLER_SYNTAX_V1.md'
+      - 'fixtures/actor-on-handler-syntax-v1.json'
+      - 'tests/actor-on-handler-syntax-v1.test.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/actor-on-handler-syntax-v1.yml'
+      - 'docs/ACTOR_ON_HANDLER_SYNTAX_V1.md'
+      - 'fixtures/actor-on-handler-syntax-v1.json'
+      - 'tests/actor-on-handler-syntax-v1.test.mjs'
+permissions:
+  contents: read
+
+concurrency:
+  group: actor-on-handler-v1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact checked-out head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "Actor handler contract SHA: $EXPECTED_HEAD"
+          echo "Actor handler contract tree: $(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Verify actor on-handler contract
+        run: node --test tests/actor-on-handler-syntax-v1.test.mjs
