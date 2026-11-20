@@ -105,6 +105,6 @@ fn stress_u32_roundtrip_is_deterministic_without_signed_promotion() {
         write_uint(&mut big, 1, 4, value, Endian::Big).unwrap();
         assert_eq!(read_uint(&little, 1, 4, Endian::Little), Ok(value as u64));
         assert_eq!(read_uint(&big, 1, 4, Endian::Big), Ok(value as u64));
-        assert_eq!(&little[1..5], &big[1..5].iter().copied().rev().collect::<Vec<_>>());
+        for lane in 0..4 { assert_eq!(little[1 + lane], big[4 - lane]); }
     }
 }
