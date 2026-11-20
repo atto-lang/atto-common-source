@@ -11,3 +11,16 @@ IMPORTANT EVIDENCE BOUNDARY: Current tests use five local simulated byte copies.
 To finish #85: have each compiler take the reviewed canonical .atto source from a pinned, authorized dependency/artifact, verify content identity before build, link it with only minimal host primitives, execute actual source guest test cases and negatives on exact committed compiler trees with nonzero CI steps, demonstrate actor-owned heap/async-only I/O boundaries, and obtain independent source/export authorization and review. A module present on disk is not proof it compiles.
 
 Source-free local test: node --test tests/canonical-stdlib-bytes.test.mjs
+
+## Core / alloc / std expansion candidate (2026-11-20)
+
+The canonical manifest now SHA-256-pins seven `.atto` sources. New pieces are:
+- `stdlib/core/size_math.atto`: allocation-free checked bounded add/multiply and integer clamping.
+- `stdlib/alloc/byte_region.atto`: actual Atto-language class and method bodies wrapping a **missing** sealed `OwnedBytes` runtime primitive; bounds/byte validation and mutable-receiver API.
+- `stdlib/std/byte_ops.atto`: actual Atto-language byte-region equality loop that imports the alloc module, without I/O.
+
+Existing `stdlib/std/buffer.atto` still talks directly to `OwnedBytes`. Migrating its storage onto `alloc.ByteRegion` requires type-checker/constructor/import support and is **not** claimed here. These algorithms are source candidates, not compiled guest behavior. The `core -> alloc -> std` import DAG is source-audited only, not enforced by a compiler on this branch.
+
+`native/include/atto/tenant_bytes_v1.hpp` is the single proposed C++20 native source for LLVM/Forge consumption, with independently testable bounds, zeroing, budget accounting, revocation and per-arena authority checks. The host test is under `native/tests/` and can run with CMake plus ASan/UBSan. This C++ reference **does not** implement the production sealed `OwnedBytes` ABI, complete allocator accounting, arbitrary untrusted machine-code isolation or cross-actor transfers. Current LLVM and Forge backend branches do **not** yet import this native file.
+
+Before any parity claim, verify each backend consumes the exact canonical source at a pinned commit, links a sealed allocator with nonforgeable actor/tenant authority, performs real guest positive/negative executions, and supplies exact-head CI receipts. Unsupported backends must report unsupported or not executed, not pass.
