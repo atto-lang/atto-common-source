@@ -14,6 +14,8 @@ const endian = read('stdlib/core/u32_endian.atto');
 test('sealed owned byte ABI is not falsely certified', () => {
   assert.equal(abi.schema, 'atto.owned-bytes.runtime-abi.v1');
   assert.equal(abi.status, 'CANDIDATE_NOT_COMPILED');
+  assert.equal(abi.canonical_source, 'stdlib/alloc/byte_region.atto');
+  assert.equal(abi.layer, 'alloc');
   assert.equal(abi.visibility, 'COMPILER_SEALED_LIBRARY_ONLY');
   assert.equal(abi.authority.cross_tenant_transfer, 'DENIED_BY_DEFAULT');
   assert.equal(abi.authority.write_borrow, 'EXCLUSIVE');
