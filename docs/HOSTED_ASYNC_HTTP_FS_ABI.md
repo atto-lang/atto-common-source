@@ -213,3 +213,28 @@ Verification classifications:
 - Compiled `.atto` positive/negative std.fs fixture: **NOT EXECUTED**
 
 These host tests must never be reported as multi-backend parity.
+
+
+## Host submit nonparking requirement and temporary private CI mirrors
+
+The LLVM host-side `atto_fs_async_submit_read/write` contract now requires
+`-EAGAIN` on contention **before** a potentially large guest-request
+snapshot is allocated. The implementation checks ticket availability
+under a try-lock and rechecks atomically after copying host-owned
+payload bytes. A deterministic test locks the private service mutex
+to prove submit/poll/cancel cannot park the caller, then exercises a
+full one-slot worker queue. Linux GCC/Clang O1/O2 ASan/UBSan:
+4/4 rebuilt existing async mock tests and 4/4 new contention mock
+tests passed, with 120 additional invocations of the new test.
+These are HOST-ONLY, not compiled guest conformance.
+
+**GitHub Actions fallback admission:** The source org and recent
+runs across eight historically usable alternate private orgs are
+failing with zero recorded steps. Two temporary, token-free
+private Git blob probes were actually executed: agent-pontifex
+`atto-ci` run 44681945053 and athlet-o `atto-ci` run 44682513534.
+Both had exact mirrored source blob SHA verification but zero job
+steps. No cross-org token/secret checkout was attempted; a full
+private snapshot was intentionally not sent to an unverified carrier.
+Stepful real-broker, signed loader and compiled `.atto` acceptance
+remain release gates. See conformance #106 for exact receipts.
