@@ -78,3 +78,38 @@ then run denied-read/write, stale-ticket and path-swap cases against the
 compiled guest. Record exact code SHAs, signed launch policy evidence, actual
 side effects and stepful CI receipts. Until then all guest backend states
 remain `NOT_EXECUTED`.
+
+
+## Actor-region confinement and six-layer authorization (LLVM host-only proof)
+
+The initial Linux bridge bound guest offsets only against the TenantVM cage,
+which is insufficient when multiple actors share that cage. LLVM draft #62
+now also bounds every guest path, input and output offset against the
+**current actor's host-authenticated region**. It does not accept guest
+pointers or a guest-supplied actor-region selection.
+
+A host read originally copied staging bytes into guest memory **after**
+releasing the broker's generation mutex. The tightened path commits the
+staged read directly to an already validated actor memory span **inside**
+that mutex, serialized with broker revocation. A concurrent host-side
+regression verifies that no late read completion changes guest memory
+after revoke returns.
+
+The candidate guest bridge now refuses the old one-layer policy
+constructor. The host prototype accepts **six separately snapshotted
+ceilings**: host/OS, verified artifact, explicit runtime request, TenantVM,
+actor and delegation. Every layer must explicitly grant the operation,
+and a matching deny in any layer rejects it. A 24-case matrix tests
+each layer's missing read/write grant and explicit read/write deny.
+The C constructor cannot authenticate an artifact signature; the
+trusted compiler/loader must independently verify artifact identity and
+the permission descriptor before constructing this snapshot.
+Unverified, absent or forged descriptor bytes are **NOT** authorization.
+
+Linux GCC and Clang, each at O1/O2 with AddressSanitizer and
+UndefinedBehaviorSanitizer, passed the two host regression executables
+(eight successful local host runs) against the exact committed source
+Git blobs. **There is still no compiled .atto guest, scheduler-linked
+async host call, sealed native instruction/syscall boundary or accepted
+source-owned GitHub Actions run.** Keep all guest execution evidence
+NOT_EXECUTED; do not promote host observations to compiler parity.
