@@ -11,11 +11,11 @@ const canonical=()=>Object.fromEntries(manifest.sources.map(s=>[s.path,readFileS
 const replicas=()=>Object.fromEntries(targetNames.map(b=>[b,canonical()]));
 const denied=f=>assert.throws(f,/E_STDLIB_/);
 
-test('all three canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
+test('four canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
  assert.equal(manifest.status,'CANDIDATE_NOT_COMPILED');
  assert.equal(manifest.sourcePolicy,'CANONICAL_ATTO_BYTES_ONLY');
  assert.deepEqual(manifest.sources.map(s=>s.path),[
-   'stdlib/core/byte_bounds.atto','stdlib/core/identity.atto','stdlib/core/u32_endian.atto'
+   'stdlib/core/byte_bounds.atto','stdlib/core/identity.atto','stdlib/core/u32_endian.atto','stdlib/std/buffer.atto'
  ]);
  const bounds=readFileSync(new URL('../stdlib/core/byte_bounds.atto',import.meta.url));
  assert.equal(bounds.byteLength,726);
@@ -23,6 +23,9 @@ test('all three canonical .atto modules are SHA-pinned, never a .ores alias',()=
  const endian=readFileSync(new URL('../stdlib/core/u32_endian.atto',import.meta.url));
  assert.equal(endian.byteLength,791);
  assert.equal(createHash('sha256').update(endian).digest('hex'), '18223c1ecfbe1f16b03540670d10ba13c6dc7fdc21be940f82fb621d8c943c67');
+ const bufferSource=readFileSync(new URL('../stdlib/std/buffer.atto',import.meta.url));
+ assert.equal(bufferSource.byteLength,4921);
+ assert.equal(createHash('sha256').update(bufferSource).digest('hex'),'ed7295c3c7a5e3278f089794881f59f0f09085412b8cf6faff40ee7a5b3714ba');
  assert.equal(source.byteLength,55);
  assert.equal(manifest.sources.find(s=>s.path===filename).sha256,'bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688');
  assert.equal(readFileSync(new URL('../stdlib/core/identity.atto',import.meta.url),'utf8'),
