@@ -1,16 +1,14 @@
 // Canonical target implementation of the public std.buffer API.
-// Not yet compiled or linked on any backend. The following minimal sealed
-// runtime types are REQUIRED before this module can be admitted:
-//   OwnedBytes.empty(), OwnedBytes.allocate_zeroed(int),
-//   OwnedBytes.length, OwnedBytes.read_byte(int), OwnedBytes.write_byte(int,int)
-// All methods must be actor/tenant-owned, checked, quota-governed,
-// nonsuspending, and inaccessible to untrusted code except through this API.
-// Buffer*Error are distinct Error subclasses supplied by the alloc ABI.
+// Candidate source, not yet compiled or linked on any backend.
+// The alloc.ByteRegion wrapper holds the sealed OwnedBytes capability.
+// std.buffer must not hold or import raw OwnedBytes; all access goes through alloc.
+// Buffer*Error are typed Error subclasses provided by the alloc ABI.
 import module bounds from "stdlib/core/byte_bounds.atto";
 import module endian from "stdlib/core/u32_endian.atto";
+import module alloc_bytes from "stdlib/alloc/byte_region.atto";
 
 define class ByteBuffer as
-  private let mut OwnedBytes storage = OwnedBytes.empty();
+  private let mut alloc_bytes.ByteRegion storage = alloc_bytes.ByteRegion.empty();
 
   constructor(int count) throws Error {
     if count < 0 then
@@ -18,7 +16,7 @@ define class ByteBuffer as
     fi
     // The primitive must reserve quota, zero all exposed bytes, and publish
     // the owned region only on success; no system-malloc fallback.
-    self.storage = OwnedBytes.allocate_zeroed(count);
+    self.storage = alloc_bytes.ByteRegion.allocate_zeroed(count);
   }
 
   pub static fnc allocate(int count): ByteBuffer throws Error {
@@ -26,11 +24,11 @@ define class ByteBuffer as
   }
 
   pub length(): int {
-    return self.storage.length;
+    return self.storage.length();
   }
 
   private require_range(int offset, int width): void throws Error {
-    if bounds.byte_range_valid(self.storage.length, offset, width) == false then
+    if bounds.byte_range_valid(self.storage.length(), offset, width) == false then
       throw BufferBoundsError("byte range out of bounds");
     fi
   }
