@@ -35,8 +35,8 @@
     },
     {
       "path": "stdlib/std/byte_ops.atto",
-      "sha256": "d0833449d7bb04d30a5321d2fa8a95d6618836aee581f1bcab2002d5f364b63b",
-      "bytes": 604
+      "sha256": "555ef1b8151cf35d5f41d5ec48bf6d0d23d181cd8a7f45c798792e89802b6939",
+      "bytes": 606
     }
   ],
   "targets": [
