@@ -42,3 +42,39 @@ This is **not** a promise that all five primitives have landed in any backend. P
 ## Release requirement
 
 Only add actual `stdlib/std/http.atto` / `stdlib/std/fs.atto` modules once they contain working Atto guest code and the typed host ABI is available. Never add fake `await` functions that return a dummy body or unconditionally succeed. Record `NOT_EXECUTED` until a backend compiles and runs the conformance fixture in a real guest with nonzero executed cases.
+
+## Linux Offset32 host bridge prototype (Atto LLVM draft #62)
+
+The experimental `atto-source.llvm#62` Linux C implementation adds a
+descriptor-relative, scoped filesystem **host** broker. Its next layer,
+`atto_fs_guest_read/write`, accepts a trusted host-owned frame and only
+`uint32` guest offsets/lengths for path and payload data. It checks
+`offset <= cage_size` and `length <= cage_size - offset` before accessing
+memory, snapshots guest input, returns no host file descriptor, and leaves
+guest output bytes unchanged on denial. The broker serializes admission,
+read/write completion and host-controlled generation revocation.
+
+This is a **C host-only test using an artificial cage**, not a compiled Atto
+`.atto` guest, complete runtime capability seal, or finalized ABI.
+`contracts/std-fs-offset32-host-bridge-candidate-v1.json` is the
+machine-readable review/acceptance companion. The C prototype currently
+rejects non-ASCII paths, performs synchronous I/O on the calling host thread,
+and accepts a host-provided actor identity which the compiler/runtime does
+not yet authenticate. Do not call it from a scheduler carrier or expose
+`atto_fs_trusted_guest_frame` to guest code.
+
+Before wiring `std.fs`, decide a **new, versioned guest host-call ABI**;
+do not mutate existing LLVM TenantVmGuestAbi v4 in place. In each real guest
+turn, the scheduler must derive tenant/actor incarnation and capability from
+private host state. It must never accept a forged ID or host pointer from
+guest-provided offsets. All privileged I/O must intersect the independently
+verified artifact ceiling, explicit launch request, host/OS and TenantVM
+ceilings, actor/delegated capabilities and explicit denies. A hostile native
+actor with arbitrary syscalls is not sandboxed by this cooperative library.
+
+**Integration acceptance:** compile a canonical `.atto` source importing
+`std.fs`, execute authorized read/write through the broker, verify bytes,
+then run denied-read/write, stale-ticket and path-swap cases against the
+compiled guest. Record exact code SHAs, signed launch policy evidence, actual
+side effects and stepful CI receipts. Until then all guest backend states
+remain `NOT_EXECUTED`.
