@@ -10,7 +10,7 @@
   ],
   "wire_candidate": {
     "transport": "TRUSTED_ACTOR_TURN_HOST_CALL",
-    "api_version": "UNASSIGNED_DO_NOT_CHANGE_GUEST_ABI_V4",
+    "api_version": "ORES_VM_GUEST_IO_ABI_VERSION_5_CANDIDATE_NOT_LOADER_ADMITTED",
     "identity_source": "HOST_SCHEDULER_AUTHENTICATED_ACTOR_TURN_NEVER_GUEST_FIELDS",
     "trusted_context": [
       "tenant_id",
@@ -53,7 +53,19 @@
       "ANY_DENY_IN_ANY_LAYER_PRECEDES_ALL_ALLOWS",
       "MISSING_LAYER_ALLOW_IS_DENIAL",
       "GUEST_BRIDGE_REFUSES_SINGLE_LAYER_HOST_ONLY_POLICY",
-      "PERMISSION_LAYERS_ARE_TRUSTED_SNAPSHOTS_NOT_VERIFIED_SIGNATURES"
+      "PERMISSION_LAYERS_ARE_TRUSTED_SNAPSHOTS_NOT_VERIFIED_SIGNATURES",
+      "ABI_V4_UNCHANGED_AND_V5_LOADER_MUST_REJECT_UNTIL_TRUSTED_DISPATCH",
+      "NEVER_PARK_GUEST_CARRIER_ON_FILESYSTEM_IO",
+      "HOST_WORKER_NEVER_HOLDS_GUEST_CAGE_POINTER",
+      "COMPLETION_PUBLISH_MUST_REVALIDATE_ACTOR_AND_BROKER_REVOKE_GENERATION",
+      "TICKETS_ARE_SINGLE_USE_AND_BOUND_TO_ACTOR_INCARNATION",
+      "CANCEL_RUNNING_WRITE_MAY_HAVE_SIDE_EFFECT_AND_IS_NOT_SAFE_TO_RETRY"
+    ],
+    "async_calls": [
+      "fs_submit_read(path_offset32,path_length32,max_bytes)->ticket_or_error",
+      "fs_submit_write(path_offset32,path_length32,payload_offset32,payload_length32)->ticket_or_error",
+      "fs_poll(ticket,output_offset32,capacity32)->nonnegative_bytes_or_negative_status",
+      "fs_cancel(ticket)->request_cancellation"
     ]
   },
   "prototype_limitations": {
@@ -76,7 +88,11 @@
     "Record exact compiler/toolchain SHA, native host source blobs and nonzero executed CI steps",
     "Signed artifact ceiling must be verified against immutable loaded artifact bytes before any layered broker is constructed",
     "Guest bridge must reject a missing/single-layer policy and reject sibling-actor memory offsets",
-    "A revocation must not allow an in-flight host read to commit bytes to guest memory after revoke returns"
+    "A revocation must not allow an in-flight host read to commit bytes to guest memory after revoke returns",
+    "Prove ABI v5 runtime loader admission only with authenticated host callback table; v4 must remain unchanged and v5 must fail closed until connected",
+    "Pass exact-source real-broker asynchronous I/O tests; mock-based worker tests are insufficient",
+    "Bind signed artifact verifier to mandatory six-layer broker constructor; reject unverified descriptors before privileges are admitted",
+    "Bind actor cancellation, destruction, and hot loading to ticket revocation and bounded worker drainage"
   ],
   "host_reference_observation": {
     "classification": "HOST_ONLY_NOT_GUEST_CONFORMANCE",
@@ -87,6 +103,34 @@
     "actor_region_isolation": true,
     "read_revoke_commit_serialization": true,
     "artifact_signature_verified": false,
-    "guest_compiler_lowering": false
+    "guest_compiler_lowering": false,
+    "local_signed_verifier_executions": 4,
+    "local_async_worker_mock_executions": 4,
+    "production_os_broker_integration": false
+  },
+  "artifact_ceiling_candidate": {
+    "schema": "ATTO-FS-CEILING-V1",
+    "max_artifact_bytes": 67108864,
+    "signature": "Ed25519 of canonical wire descriptor with trust anchor supplied by host, never artifact",
+    "artifact_identity": "SHA-256 of exact loaded artifact bytes",
+    "descriptor_fields": [
+      "fixed ASCII domain magic",
+      "sha256 bytes",
+      "literal 0xD1 explicit-denies-present",
+      "u16le allow_read ASCII bytes",
+      "u16le allow_write ASCII bytes",
+      "u16le deny_read ASCII bytes",
+      "u16le deny_write ASCII bytes"
+    ],
+    "fail_closed": [
+      "invalid signature",
+      "wrong trusted public key",
+      "artifact digest mismatch",
+      "unsigned or malformed scope",
+      "trailing signed bytes",
+      "NUL or traversal scope",
+      "missing explicit deny marker"
+    ],
+    "status": "VERIFIER_EXECUTED_IN_HOST_TEST_ONLY_NO_LOADER_WIRING"
   }
 }
