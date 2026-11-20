@@ -92,7 +92,10 @@
     "Prove ABI v5 runtime loader admission only with authenticated host callback table; v4 must remain unchanged and v5 must fail closed until connected",
     "Pass exact-source real-broker asynchronous I/O tests; mock-based worker tests are insufficient",
     "Bind signed artifact verifier to mandatory six-layer broker constructor; reject unverified descriptors before privileges are admitted",
-    "Bind actor cancellation, destruction, and hot loading to ticket revocation and bounded worker drainage"
+    "Bind actor cancellation, destruction, and hot loading to ticket revocation and bounded worker drainage",
+    "Treat signed loaded-guest result as private host state, not a guest bearer capability; require guest image/module owner and broker/worker lifetimes to be tied together",
+    "Run real C shared-library signed-image loader CTest and real broker permission intersection CTest on exact head before claiming host integration",
+    "Approve dependencies and relocations of loaded native code; signed artifact alone does not prove no direct syscalls or unsafe ELF dependencies"
   ],
   "host_reference_observation": {
     "classification": "HOST_ONLY_NOT_GUEST_CONFORMANCE",
@@ -132,5 +135,45 @@
       "missing explicit deny marker"
     ],
     "status": "VERIFIER_EXECUTED_IN_HOST_TEST_ONLY_NO_LOADER_WIRING"
+  },
+  "host_signed_admission_candidate": {
+    "source_repo": "atto-lang/atto-source.llvm",
+    "source_pr": 62,
+    "classification": "HOST_ONLY_CANDIDATE_NOT_ATTO_GUEST_PARITY",
+    "same_image_loader": {
+      "component": "oreslang/runtime/TenantVmGuestLoader.cpp with signed pre-dlopen gate",
+      "signed_wrapper": "oreslang/runtime/TenantVmSignedFsLoader.cpp",
+      "invariant": "Ed25519 verification receives exactly the same library image bytes that open_verified copies to a sealed executable before dlopen",
+      "unprivileged_v4_compatibility": true,
+      "abi_v5_loader_enabled": false,
+      "dynamic_library_dependency_closure_verified": false
+    },
+    "policy_binding": {
+      "native": "atto_fs_broker_admit_signed",
+      "cplusplus": "admit_signed_loaded_guest_fs_broker",
+      "artifact_layer": "ONLY_INDEPENDENTLY_VERIFIED_SIGNED_CEILING",
+      "other_layers": [
+        "HOST",
+        "RUNTIME_OPERATOR",
+        "TENANT_VM",
+        "ACTOR",
+        "DELEGATION"
+      ],
+      "caller": "TRUSTED_HOST_ONLY",
+      "token_kind": "MUTABLE_HOST_OBJECT_NOT_UNFORGEABLE_GUEST_CAPABILITY",
+      "module_owner_lifetime_bound_to_broker_and_worker": false
+    },
+    "evidence": {
+      "gcc_o1_signed_admission_mock": "PASS",
+      "gcc_o2_signed_admission_mock": "PASS",
+      "clang_o1_signed_admission_mock": "PASS",
+      "clang_o2_signed_admission_mock": "PASS",
+      "gxx_o1_signed_loader_and_broker_mock": "PASS",
+      "gxx_o2_signed_loader_and_broker_mock": "PASS",
+      "clangxx_o1_signed_loader_and_broker_mock": "PASS",
+      "clangxx_o2_signed_loader_and_broker_mock": "PASS",
+      "actual_sealed_library_and_real_broker_ctest": "NOT_EXECUTED",
+      "compiled_atto_std_fs_guest": "NOT_EXECUTED"
+    }
   }
 }
