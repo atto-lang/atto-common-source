@@ -1,5 +1,5 @@
 // Hosted std convenience functions built on the alloc layer, with no I/O.
-// Copying is explicit and checked before any destination mutation.
+// Equality short-circuits: NOT constant-time, never use for secrets.
 import module bounds from "stdlib/core/byte_bounds.atto";
 import module alloc_bytes from "stdlib/alloc/byte_region.atto";
 
