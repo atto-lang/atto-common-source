@@ -18,6 +18,8 @@
       "generation",
       "cage_base",
       "cage_size",
+      "actor_region_start_host_only",
+      "actor_region_bytes_host_only",
       "broker_capability"
     ],
     "guest_arguments": [
@@ -44,7 +46,14 @@
       "NEVER_RUN_BLOCKING_FILE_IO_ON_ACTOR_CARRIER",
       "LIMIT_HOST_IO_QUEUES_AND_MEMORY",
       "CANCELLATION_AND_COMPLETION_EXACTLY_ONCE",
-      "SECURE_OS_OR_INSTRUCTION_LEVEL_SYSCALL_BOUNDARY_REQUIRED_FOR_HOSTILE_NATIVE_GUESTS"
+      "SECURE_OS_OR_INSTRUCTION_LEVEL_SYSCALL_BOUNDARY_REQUIRED_FOR_HOSTILE_NATIVE_GUESTS",
+      "ALL_OFFSETS_AND_LENGTHS_WITHIN_CURRENT_ACTOR_REGION_NOT_JUST_TENANT_CAGE",
+      "HOST_READ_TO_GUEST_COPY_COMMITTED_INSIDE_SAME_MUTEX_AS_GENERATION_REVOKE",
+      "ALL_SIX_PERMISSION_LAYERS_MUST_ALLOW_HOST_ARTIFACT_RUNTIME_TENANT_ACTOR_DELEGATION",
+      "ANY_DENY_IN_ANY_LAYER_PRECEDES_ALL_ALLOWS",
+      "MISSING_LAYER_ALLOW_IS_DENIAL",
+      "GUEST_BRIDGE_REFUSES_SINGLE_LAYER_HOST_ONLY_POLICY",
+      "PERMISSION_LAYERS_ARE_TRUSTED_SNAPSHOTS_NOT_VERIFIED_SIGNATURES"
     ]
   },
   "prototype_limitations": {
@@ -64,6 +73,20 @@
     "Host maps denied accesses to typed PermissionDenied and returns no side effects",
     "Artifact build ceiling AND runtime/TenantVM/actor grant intersection verified independently",
     "Run real compiled .atto copy guest and denied/adversarial fixtures with byte-level observations",
-    "Record exact compiler/toolchain SHA, native host source blobs and nonzero executed CI steps"
-  ]
+    "Record exact compiler/toolchain SHA, native host source blobs and nonzero executed CI steps",
+    "Signed artifact ceiling must be verified against immutable loaded artifact bytes before any layered broker is constructed",
+    "Guest bridge must reject a missing/single-layer policy and reject sibling-actor memory offsets",
+    "A revocation must not allow an in-flight host read to commit bytes to guest memory after revoke returns"
+  ],
+  "host_reference_observation": {
+    "classification": "HOST_ONLY_NOT_GUEST_CONFORMANCE",
+    "source_pr": "atto-source.llvm#62",
+    "test_matrix": "GCC_CLANG_X_O1_O2_ASAN_UBSAN",
+    "executed_test_binaries": 8,
+    "adversarial_layer_cases": 24,
+    "actor_region_isolation": true,
+    "read_revoke_commit_serialization": true,
+    "artifact_signature_verified": false,
+    "guest_compiler_lowering": false
+  }
 }
