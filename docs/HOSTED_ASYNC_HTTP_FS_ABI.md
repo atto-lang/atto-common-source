@@ -113,3 +113,57 @@ Git blobs. **There is still no compiled .atto guest, scheduler-linked
 async host call, sealed native instruction/syscall boundary or accepted
 source-owned GitHub Actions run.** Keep all guest execution evidence
 NOT_EXECUTED; do not promote host observations to compiler parity.
+
+
+## Versioned host I/O ABI v5 and signed artifact ceiling candidate
+
+LLVM draft [#62](https://github.com/atto-lang/atto-source.llvm/pull/62)
+now contains a **separate ABI-v5 header**, without changing the accepted
+TenantVmGuestAbi v4 layout. The proposed callbacks are:
+
+- `fs_submit_read(path_offset32,path_length32,max_bytes32)`
+- `fs_submit_write(path_offset32,path_length32,data_offset32,data_bytes32)`
+- `fs_poll(ticket,output_offset32,output_capacity32)`
+- `fs_cancel(ticket)`
+
+These are not installed in the TenantVM host callback table. The v4
+loader still rejects ABI v5, and no Atto compiler generates these calls.
+A stable ABI requires type/ownership, status/error and cancellation review.
+
+The host-side `atto_fs_async` prototype implements a bounded 1–16
+ticket, single-worker queue. Submitted data is snapshotted into host
+memory before returning. The worker never holds a guest cage pointer,
+and polls do not block on filesystem work. Ticket identity includes
+the host-supplied actor incarnation and a non-repeating slot generation.
+Completed reads must be *published under the broker's revocation
+mutex*, after rechecking authority and the actor-private destination
+span. A running write may commit despite cancellation; it must not be
+blindly retried. Actor stop/restart must revoke and discard/drain
+outstanding tickets. The scheduler must derive actor identity from
+its private current turn, never from guest arguments.
+
+A proposed `ATTO-FS-CEILING-V1` Ed25519 descriptor binds a canonical
+read/write maximum (including explicit denies) to SHA-256 of exact
+compiled artifact bytes. The trusted public key comes from host policy,
+not the artifact. A standalone Linux/OpenSSL **host verifier** now
+passes local GCC+Clang O1/O2 ASan/UBSan tests for valid signatures,
+tampered artifacts/signatures, unknown keys, and malformed descriptors.
+No production signing private key is checked in. **The verifier is NOT
+yet called by the artifact loader or connected to broker admission.**
+The signed artifact maximum still must be intersected with host,
+runtime, TenantVM, actor and delegation ceilings.
+
+Two distinct queue test classes prevent false claims:
+`native/tests/host_fs_async_test.c` uses a **mock** filesystem and
+has four locally executed sanitizer passes (GCC/Clang O1/O2).
+`native/tests/host_fs_async_broker_test.c` uses the **real Linux
+broker**, but has been committed **without an observed current-head
+execution**. Full source CI also has zero executed steps. Neither
+constitutes a compiled `.atto` guest, and all backend guest statuses
+remain `NOT_EXECUTED`.
+
+The next normative decisions are the stable v5 wire status/error
+mapping, exactly-once completion, actor lifetime and cancellation
+semantics, signature/trust-store provisioning, and fail-closed
+admission of unsupported runtime targets. Do not ship empty
+`std.fs` guest stubs to mask these missing boundaries.
