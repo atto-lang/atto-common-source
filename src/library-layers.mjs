@@ -27,6 +27,8 @@ const uniqueArray=(v,where)=>{
 // Unknown/unclosed source forms are rejected rather than guessed safe.
 export function lexAtto(source){
   if(typeof source!=='string') FAIL('E_LIBRARY_SOURCE','source must be UTF-8 string');
+  if(source.includes(String.fromCharCode(0)) || source.includes(String.fromCharCode(0xfeff)))
+    FAIL('E_LIBRARY_SOURCE','NUL/BOM is not legal canonical Atto source');
   const out=[];let i=0;
   while(i<source.length){
     const ch=source[i],nx=source[i+1];
@@ -139,7 +141,18 @@ export function validateLibraryLayers(manifest,sources){
         FAIL('E_LIBRARY_LAYER',e.layer+' cannot depend on '+target.layer);
     }
   }
-  // graph edges are checked individually, hence transitive paths cannot cross an upward edge
+  // Upward edges are rejected above. Cycles within a layer are forbidden too,
+  // including self-imports, to keep module initialization and linking acyclic.
+  const state=new Map();
+  const visit=(p,trail)=>{
+    if(state.get(p)===1)
+      FAIL('E_LIBRARY_CYCLE','import cycle: '+[...trail,p].join(' -> '));
+    if(state.get(p)===2)return;
+    state.set(p,1);
+    for(const dep of byPath.get(p).imports) visit(dep,[...trail,p]);
+    state.set(p,2);
+  };
+  for(const p of byPath.keys())visit(p,[]);
   return {structuralAdmission:true,freestandingGuestProved:false,backendParityCertified:false,
     libraryCount:byPath.size,profiles:PROFILES};
 }
@@ -152,6 +165,8 @@ function exactSourceFiles(files){
 }
 export function readLibraryTree(root){
   const files={};const stdlib=path.join(root,'stdlib');
+  if(fs.existsSync(stdlib) && !fs.lstatSync(stdlib).isDirectory())
+    FAIL('E_LIBRARY_INVENTORY','stdlib root must be a real directory, never a symlink');
   const visit=(dir)=>{
     if(!fs.existsSync(dir))return;
     for(const e of fs.readdirSync(dir,{withFileTypes:true})){
@@ -162,6 +177,8 @@ export function readLibraryTree(root){
         const rel=path.relative(root,p).split(path.sep).join('/');
         if(!canonical(rel))FAIL('E_LIBRARY_INVENTORY','unclassified .atto path: '+rel);
         const b=fs.readFileSync(p);
+        if(b.length>=3 && b[0]===0xef && b[1]===0xbb && b[2]===0xbf)
+          FAIL('E_LIBRARY_SOURCE','UTF-8 BOM forbidden in '+rel);
         const src=new TextDecoder('utf-8',{fatal:true}).decode(b);
         files[rel]=src;
       }else if(!e.isFile())FAIL('E_LIBRARY_INVENTORY','non-regular library entry');
