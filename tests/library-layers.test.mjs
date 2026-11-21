@@ -165,3 +165,31 @@ test('allocator effects cannot be misdeclared pure in hosted std',()=>{
   m.sources.find(e=>e.path===st).capabilities=['allocator'];
   assert.equal(check(m,s).libraryCount,2);
 });
+
+test('nested comments and string literals never trigger phantom host/allocator effects',()=>{
+  assert.deepEqual(inspectAtto(
+    'pub fnc x() { val string a = "new"; val string b = "ffi"; val string c = "extern"; return 1; }',
+    'core'),[]);
+  assert.deepEqual(inspectAtto(
+    '/* outer /* inner */ stdio.out; new Widget(); */ pub fnc x() { return 1; }',
+    'core'),[]);
+  assert.deepEqual(inspectAtto('/*'.repeat(64)+'*/'.repeat(64),'core'),[]);
+  denied('E_LIBRARY_SOURCE',()=>inspectAtto('/* outer /* nested */','core'));
+  denied('E_LIBRARY_SOURCE',()=>inspectAtto('/*'.repeat(65)+'*/'.repeat(65),'core'));
+  denied('E_LIBRARY_HOST',()=>inspectAtto('/* outer /* inner */ */ stdio.out;','core'));
+  denied('E_LIBRARY_RUNTIME',()=>inspectAtto('/* outer /* inner */ */ spawn Worker();','alloc'));
+});
+test('non-declared prototype layer names and hidden/accessor manifest metadata reject',()=>{
+  for(const layer of ['constructor','toString','__proto__'])
+    denied('E_LIBRARY_MANIFEST',()=>inspectAtto('pub fnc f() { return 1; }',layer));
+  for(const mutate of [
+    m=>Object.defineProperty(m,'hidden',{value:'opaque'}),
+    m=>Object.defineProperty(m.sources[0],'extra',{value:1}),
+    m=>Object.defineProperty(m.sources[0].capabilities,'hidden',{value:1}),
+    m=>Object.defineProperty(m.sources[0],'status',{get(){return 'PASS'},enumerable:true}),
+    m=>Object.defineProperty(m.sources[0].imports,'0',{get(){return id},enumerable:true,configurable:true})
+  ]){
+    const m=manifest(),s=sources();mutate(m);
+    denied('E_LIBRARY_MANIFEST',()=>check(m,s));
+  }
+});

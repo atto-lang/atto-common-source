@@ -14,14 +14,23 @@ const FAIL = (code, detail) => { throw new TypeError(code + ': ' + detail); };
 const exact=(o,keys,where)=>{
   if (!o || typeof o!=='object' || Array.isArray(o) || Object.getPrototypeOf(o)!==Object.prototype)
     FAIL('E_LIBRARY_MANIFEST',where+' must be plain object');
-  if (Object.keys(o).sort().join('|')!==keys.slice().sort().join('|'))
-    FAIL('E_LIBRARY_MANIFEST',where+' has missing/extra fields');
+  const ownKeys=Reflect.ownKeys(o);
+  if(ownKeys.length!==keys.length || ownKeys.some(k=>{
+    const d=Object.getOwnPropertyDescriptor(o,k);
+    return typeof k!=='string' || !keys.includes(k) ||
+      !d?.enumerable || !Object.hasOwn(d,'value');
+  }))
+    FAIL('E_LIBRARY_MANIFEST',where+' has missing/extra/accessor fields');
 };
 const canonical=p=>typeof p==='string' && /^stdlib\/(core|alloc|std)\/[A-Za-z0-9_/-]+\.atto$/.test(p)
  && !p.split('/').includes('..') && !p.includes('//');
 const uniqueArray=(v,where)=>{
-  if (!Array.isArray(v)|| Object.keys(v).length!==v.length || new Set(v).size!==v.length)
-    FAIL('E_LIBRARY_MANIFEST',where+' is not dense and unique');
+  if (!Array.isArray(v)||Reflect.ownKeys(v).length!==v.length+1 ||
+      Array.from({length:v.length},(_,i)=>{
+        const d=Object.getOwnPropertyDescriptor(v,String(i));
+        return d&&Object.hasOwn(d,'value');
+      }).some(valid=>!valid) || new Set(v).size!==v.length)
+    FAIL('E_LIBRARY_MANIFEST',where+' is not dense, ordinary and unique');
 };
 // Simple lexical scanner, protecting comments/strings from host-name false positives.
 // Unknown/unclosed source forms are rejected rather than guessed safe.
@@ -35,9 +44,16 @@ export function lexAtto(source){
     if(/\s/.test(ch)){i++;continue;}
     if(ch==='/' && nx==='/'){i=source.indexOf('\n',i+2);if(i<0)break;continue;}
     if(ch==='/' && nx==='*'){
-      const end=source.indexOf('*/',i+2);
-      if(end<0) FAIL('E_LIBRARY_SOURCE','unclosed block comment');
-      i=end+2;continue;
+      i+=2;let depth=1;
+      while(i<source.length && depth){
+        if(source.startsWith('/*',i)){
+          if(++depth>64) FAIL('E_LIBRARY_SOURCE','comment nesting exceeded');
+          i+=2;
+        }else if(source.startsWith('*/',i)){depth--;i+=2;}
+        else i++;
+      }
+      if(depth) FAIL('E_LIBRARY_SOURCE','unclosed block comment');
+      continue;
     }
     if(ch==='"'||ch==="'"){
       const quote=ch;let value='',closed=false;i++;
@@ -63,11 +79,11 @@ export function lexAtto(source){
 }
 const at=(t,i)=>t[i]?.value;
 export function inspectAtto(source,layer){
-  if(!(layer in ORDER))FAIL('E_LIBRARY_MANIFEST','unknown layer');
+  if(!Object.hasOwn(ORDER,layer))FAIL('E_LIBRARY_MANIFEST','unknown layer');
   const t=lexAtto(source), imports=[];
   for(let i=0;i<t.length;i++){
-    const w=at(t,i),next=at(t,i+1);
-    if(w==='import'&&t[i].kind==='word'){
+    const w=at(t,i),next=at(t,i+1),isWord=t[i].kind==='word';
+    if(w==='import'&&isWord){
       let p;
       if(next==='module' && t[i+2]?.kind==='word'&&at(t,i+3)==='from'
           &&t[i+4]?.kind==='string'){
@@ -78,9 +94,9 @@ export function inspectAtto(source,layer){
       if(at(t,i+1)!==';')FAIL('E_LIBRARY_IMPORT','import must end with semicolon');
       imports.push(p);i++;continue;
     }
-    if(w==='extern'||w==='foreign'||w==='syscall'||w==='dlopen'||w==='ffi')
+    if(isWord && ['extern','foreign','syscall','dlopen','ffi'].includes(w))
       FAIL('E_LIBRARY_HOST','foreign/host entrypoint in portable source');
-    if(layer!=='std'){
+    if(layer!=='std' && isWord){
       if(w==='using'&&next==='io')FAIL('E_LIBRARY_HOST','host I/O effect in freestanding layer');
       if(['stdio','process','filesystem','socket','thread','net','os','std','wasi','libc','java','dotnet'].includes(w)
          && (next==='.' || (next===':' && at(t,i+2)===':')))FAIL('E_LIBRARY_HOST','host namespace '+w);
@@ -89,11 +105,11 @@ export function inspectAtto(source,layer){
     }
     // Portable core/alloc may not depend on the actor scheduler or suspend.
     // Hosted std can use async adapters, but the actor platform is separate.
-    if(t[i].kind==='word' &&
+    if(isWord &&
        ((layer!=='std' && ['spawn','await','select','suspend','actor','supervisor','mailbox','Channel','ActorGroup'].includes(w)) ||
         (layer==='std' && ['actor','supervisor','ActorGroup'].includes(w))))
       FAIL('E_LIBRARY_RUNTIME','actor/scheduler construct in '+layer+': '+w);
-    if(layer==='core'){
+    if(layer==='core' && isWord){
       if(w==='new')FAIL('E_LIBRARY_ALLOCATION','new in core');
       if(w==='alloc'&&next==='.')FAIL('E_LIBRARY_ALLOCATION','alloc namespace in core');
       if(['Array','List','Map','Set','Box','Arc','String'].includes(w) && t[i].kind==='word')
