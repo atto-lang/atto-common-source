@@ -1,12 +1,6 @@
-> **AI agent instructions (organization-wide):** Before working on code, issues, or pull requests, read and follow the [organization `AGENTS.md`](https://github.com/atto-lang/.github/blob/main/AGENTS.md), including its **merge-first stealth-development policy**. Honor any repository-local `AGENTS.md`, explicit holds, and GitHub-enforced rules.
-
 # atto-common-source
 
 Shared compiler definitions, language contracts, and source infrastructure across AttoLang backends.
-
-## Naming migration and language authority
-
-This repository is maintained at [atto-lang/atto-common-source](https://github.com/atto-lang/atto-common-source); use `https://github.com/atto-lang/atto-common-source.git` for Git remotes and canonical `.atto` source examples. The normative language contract is [atto-spec](https://github.com/atto-lang/atto-spec), with executable guest evidence tracked by [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance). Follow current ownership, borrowing, effects, actor, and syntax rules there; do not infer implemented features from a README or unexecuted CI.
 
 ## Purpose
 
@@ -32,16 +26,6 @@ This README records the intended role of this repository; it is not a claim of f
 - [Language specification](https://github.com/atto-lang/atto-spec)
 - [Cross-platform conformance](https://github.com/atto-lang/atto-platform-conformance)
 
-## Repository ownership and contribution routing
+## Freestanding library layer guard (stacked proposal)
 
-**Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and canonical portable core/std written in .atto.
-
-**Belongs elsewhere:** Backend-specific codegen and host runtime shims belong in the respective atto-source.* repositories; changing language rules requires atto-spec.
-
-**Security and portability boundary:** Shared files must be versioned and byte-identical where required across backends; never silently let platform code redefine portable ownership, imports or concurrency.
-
-AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
-
-**Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
-
-For the audited 68-repository routing index and distinctions between compiler backends, platform adapters and demos, see [Repository ownership map](docs/REPOSITORY_MAP.md). Keep this private catalog out of public organization metadata.
+The [core / alloc / std audit](docs/FREESTANDING_LIBRARY_LAYERS.md) and [versioned source manifest](contracts/library-layers-v1.json) enforce a conservative, **host-only structural** dependency boundary for canonical `.atto` library source. It builds on the first `.atto` identity source in PR #6; it does **not** claim executable bare-metal compilation, allocator integration or backend parity. Run `node --test tests/library-layers.test.mjs && node src/library-layers.mjs .` after the stacked source is present.
