@@ -156,3 +156,12 @@ test('freestanding core/alloc exclude actor scheduler, std excludes actor platfo
   assert.deepEqual(inspectAtto('// spawn Worker()\nlet string s = "await job";','core'),[]);
   assert.deepEqual(inspectAtto('pub fnc hosted() { await io_ready; }','std'),[]);
 });
+
+test('allocator effects cannot be misdeclared pure in hosted std',()=>{
+  const m=manifest(),s=sources();
+  add(m,s,st,'std',[],
+    'pub fnc create() { return new Widget(); }');
+  denied('E_LIBRARY_CAPABILITY',()=>check(m,s));
+  m.sources.find(e=>e.path===st).capabilities=['allocator'];
+  assert.equal(check(m,s).libraryCount,2);
+});

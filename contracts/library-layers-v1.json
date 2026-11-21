@@ -58,7 +58,7 @@
         "stdlib/alloc/byte_region.atto"
       ],
       "capabilities": [
-        "pure"
+        "allocator"
       ],
       "execution": "NOT_EXECUTED"
     },

@@ -138,6 +138,11 @@ export function validateLibraryLayers(manifest,sources){
     FAIL('E_LIBRARY_INVENTORY','all checked-in .atto files must be registered');
   for(const [p,e] of byPath){
     const imports=inspectAtto(sources.files[p],e.layer);
+    // new-class construction is an allocator effect even inside hosted std;
+    // a module with this effect cannot declare itself as pure-only.
+    if(lexAtto(sources.files[p]).some(token=>token.kind==='word'&&token.value==='new')
+       && !e.capabilities.includes('allocator'))
+      FAIL('E_LIBRARY_CAPABILITY','allocation effect missing in '+p);
     if(JSON.stringify(imports.slice().sort())!==JSON.stringify(e.imports.slice().sort()))
       FAIL('E_LIBRARY_IMPORT','declared/actual imports differ for '+p);
     for(const dep of imports){
