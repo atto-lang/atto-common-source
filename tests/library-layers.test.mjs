@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateLibraryLayers, inspectAtto, lexAtto, readLibraryTree } from '../src/library-layers.mjs';
+import { readFileSync, mkdtempSync, mkdirSync, symlinkSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const id='stdlib/core/identity.atto', al='stdlib/alloc/pool.atto', st='stdlib/std/file.atto';
 const entry=(path,layer,imports=[],capabilities=['pure'])=>({
@@ -18,13 +21,15 @@ const check=(m,s)=>validateLibraryLayers(m,s);
 const denied=(code,fn)=>assert.throws(fn,new RegExp('^TypeError: '+code+':'));
 
 test('actual checked-in canonical source is covered; structural validation never certifies guest',()=>{
-  const m=manifest();
+  // Use the checked-in manifest, not a single-file expectation: new alloc/std
+  // sources must be registered in this manifest before integration.
+  const m=JSON.parse(readFileSync(new URL('../contracts/library-layers-v1.json',import.meta.url),'utf8'));
   const src=readLibraryTree(new URL('..',import.meta.url).pathname);
-  // This test runs on the source branch containing canonical-stdlib PR #6.
-  assert.deepEqual(Object.keys(src.files),[id]);
+  assert.ok(m.sources.some(e=>e.path===id&&e.layer==='core'));
+  assert.deepEqual(Object.keys(src.files).sort(),m.sources.map(e=>e.path).sort());
   assert.deepEqual(check(m,src),{
     structuralAdmission:true,freestandingGuestProved:false,backendParityCertified:false,
-    libraryCount:1,profiles:{core:['core'],alloc:['core','alloc'],std:['core','alloc','std']}
+    libraryCount:m.sources.length,profiles:{core:['core'],alloc:['core','alloc'],std:['core','alloc','std']}
   });
 });
 test('all layers support downward imports without implicit OS and without false positives in strings/comments',()=>{
@@ -98,4 +103,40 @@ test('unicode valid strings and comment-like tokens cannot bypass an actual host
   denied('E_LIBRARY_SOURCE',()=>inspectAtto('/* no closing comment','core'));
   denied('E_LIBRARY_SOURCE',()=>inspectAtto('val string x = "unterminated','core'));
   denied('E_LIBRARY_IMPORT',()=>inspectAtto('import module x from "stdlib/core/identity.atto"','core'));
+});
+
+test('intra-layer imports are allowed when acyclic, but direct and indirect cycles reject',()=>{
+  const m=manifest(),s=sources();
+  m.sources[0].imports=[id];
+  s.files[id]='import "stdlib/core/identity.atto";\n'+s.files[id];
+  denied('E_LIBRARY_CYCLE',()=>check(m,s));
+
+  const helper='stdlib/core/helper.atto';
+  const two=manifest(),src=sources();
+  two.sources[0].imports=[helper];
+  src.files[id]='import "stdlib/core/helper.atto";\n'+src.files[id];
+  add(two,src,helper,'core',[id],
+    'import "stdlib/core/identity.atto";\npub fnc helper() -> int { return 1; }');
+  denied('E_LIBRARY_CYCLE',()=>check(two,src));
+
+  // Downward plus acyclic same-layer imports must stay valid.
+  two.sources[0].imports=[];
+  src.files[id]=sources().files[id];
+  assert.equal(check(two,src).libraryCount,2);
+});
+
+test('canonical source rejects UTF-8 BOM/NUL, including lexical evasion',()=>{
+  denied('E_LIBRARY_SOURCE',()=>inspectAtto('\ufeffpub fnc test() -> int { return 1; }','core'));
+  denied('E_LIBRARY_SOURCE',()=>inspectAtto('pub fnc test() {\u0000 }','core'));
+});
+
+test('stdlib root cannot be swapped for a symlink',()=>{
+  const root=mkdtempSync(join(tmpdir(),'atto-stdlib-layer-'));
+  try {
+    mkdirSync(join(root,'outside'));
+    symlinkSync(join(root,'outside'),join(root,'stdlib'),'dir');
+    denied('E_LIBRARY_INVENTORY',()=>readLibraryTree(root));
+  } finally {
+    rmSync(root,{recursive:true,force:true});
+  }
 });
