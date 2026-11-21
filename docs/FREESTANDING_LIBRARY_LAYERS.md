@@ -21,7 +21,7 @@ node --test tests/library-layers.test.mjs
 node src/library-layers.mjs .
 ```
 
-The test corpus contains successful core / alloc / std import graphs and mutation-driven rejection of upward dependencies, host calls, missing inventory, malformed import syntax, implicit dynamic allocation, unclosed source, and forged execution claims. These tests run on **host Node**, not on a real compiled Atto guest.
+The test corpus contains successful core / alloc / std import graphs and mutation-driven rejection of upward dependencies, cyclic same-layer/self imports, host calls, missing inventory, malformed import syntax, implicit dynamic allocation, NUL/BOM source, symlinked library roots, unclosed source, and forged execution claims. These tests run on **host Node**, not on a real compiled Atto guest.
 
 ## Outstanding implementation gates
 
@@ -31,3 +31,9 @@ The test corpus contains successful core / alloc / std import graphs and mutatio
 4. Record per-backend source/tree SHA, toolchain, target, emitted binary, executable guest results and explicit NOT_EXECUTED/UNSUPPORTED status. Do not relabel structural tests as five-backend parity.
 
 Current status: **structural candidate**. `freestandingGuestProved=false`, `backendParityCertified=false`, and only the single initial canonical identity module is present on the stacked branch.
+
+## Integration with the existing ByteBuffer candidate
+
+[atto-common-source #30](https://github.com/atto-lang/atto-common-source/pull/30) proposes additional canonical `.atto` source files under `core`, `alloc`, and `std`. These remain draft source candidates; no actual guest/runtime parity is inferred. This guard's repository test now loads the checked-in layer manifest instead of assuming that `identity.atto` is forever the sole module. **Before #30 and #23 are merged together**, all added source paths, capabilities and actual direct imports must appear in `contracts/library-layers-v1.json`, and both the exact-byte canonical manifest and structural guard must pass on the integrated tree. An unlisted file is a hard failure; merely changing the test expectation is not acceptable.
+
+Current cycle detection is structural; macros, generated imports, and final linker edges still require compiler-side admission. Root symlinks, UTF-8 BOM, NUL source and same-layer cycles are rejected conservatively before any freestanding proof can be claimed.
