@@ -6,7 +6,7 @@ import {compareCanonicalStdlibBytes as compare} from '../src/canonical-stdlib-by
 const manifest=JSON.parse(readFileSync(new URL('../contracts/canonical-stdlib-v1.json',import.meta.url)));
 const filename='stdlib/core/identity.atto';
 const source=readFileSync(new URL('../stdlib/core/identity.atto',import.meta.url));
-const targetNames=['java','llvm','net','wasm','forge'];
+const targetNames=["atto","cranelift","forge","hdl","java","js","llvm","net","realtime","rs","wasm"];
 const canonical=()=>Object.fromEntries(manifest.sources.map(s=>[s.path,readFileSync(new URL('../'+s.path,import.meta.url))]));
 const replicas=()=>Object.fromEntries(targetNames.map(b=>[b,canonical()]));
 const denied=f=>assert.throws(f,/E_STDLIB_/);
@@ -26,15 +26,15 @@ test('seven canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
  assert.equal(endian.byteLength,791);
  assert.equal(createHash('sha256').update(endian).digest('hex'), '18223c1ecfbe1f16b03540670d10ba13c6dc7fdc21be940f82fb621d8c943c67');
  const bufferSource=readFileSync(new URL('../stdlib/std/buffer.atto',import.meta.url));
- assert.equal(bufferSource.byteLength,4921);
- assert.equal(createHash('sha256').update(bufferSource).digest('hex'),'ed7295c3c7a5e3278f089794881f59f0f09085412b8cf6faff40ee7a5b3714ba');
+ assert.equal(bufferSource.byteLength,4816);
+ assert.equal(createHash('sha256').update(bufferSource).digest('hex'),'e2f3a749f6ed0bb78b741384a5e0cf8ba0649790be00644c0e660fbf11c8f412');
  assert.equal(source.byteLength,55);
  assert.equal(manifest.sources.find(s=>s.path===filename).sha256,'bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688');
  assert.equal(readFileSync(new URL('../stdlib/core/identity.atto',import.meta.url),'utf8'),
   'pub fnc identity(int value) -> int {\n  return value;\n}\n');
 });
 
-test('all five supplied backend copies are byte-identical without any compiler claim',()=>{
+test('all eleven supplied backend copies are byte-identical without any compiler claim',()=>{
  const res=compare(manifest,canonical(),replicas());
  assert.equal(res.sourceByteIdentical,true);
  assert.equal(res.evidence,'SUPPLIED_BYTES_ONLY');
@@ -68,7 +68,7 @@ test('bad UTF-8, source BOM and missing trailing newline cannot masquerade as ca
    denied(()=>compare(manifest,c,replicas()));
  }
 });
-test('false evidence labels and unsafe source paths cannot claim five-backend execution',()=>{
+test('false evidence labels and unsafe source paths cannot claim eleven-backend execution',()=>{
  for(const mutate of [
    m=>m.targets[0].execution='PASS',
    m=>m.targets.pop(),

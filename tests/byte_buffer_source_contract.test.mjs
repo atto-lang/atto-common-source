@@ -21,7 +21,9 @@ test('sealed owned byte ABI is not falsely certified', () => {
   assert.equal(abi.authority.write_borrow, 'EXCLUSIVE');
   assert.equal(abi.evidence.actual_guest_runs, 0);
   assert.equal(abi.evidence.release_authorized, false);
-  assert.equal(abi.evidence.backend_results.length, 10);
+  const allBackends=["atto","cranelift","forge","hdl","java","js","llvm","net","realtime","rs","wasm"];
+  assert.deepEqual(abi.evidence.backend_results.map(x=>x.backend),allBackends);
+  assert.deepEqual(manifest.targets.map(x=>x.backend),allBackends);
   for (const backend of abi.evidence.backend_results) assert.equal(backend.status,'NOT_EXECUTED');
   const methods = abi.surface.map(x=>x.name);
   assert.deepEqual(methods, [

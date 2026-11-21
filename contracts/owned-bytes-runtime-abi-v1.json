@@ -110,11 +110,39 @@
     "actual_guest_runs": 0,
     "backend_results": [
       {
+        "backend": "atto",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "cranelift",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "forge",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "hdl",
+        "status": "NOT_EXECUTED"
+      },
+      {
         "backend": "java",
         "status": "NOT_EXECUTED"
       },
       {
+        "backend": "js",
+        "status": "NOT_EXECUTED"
+      },
+      {
         "backend": "llvm",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "net",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "realtime",
         "status": "NOT_EXECUTED"
       },
       {
@@ -123,30 +151,6 @@
       },
       {
         "backend": "wasm",
-        "status": "NOT_EXECUTED"
-      },
-      {
-        "backend": "net",
-        "status": "NOT_EXECUTED"
-      },
-      {
-        "backend": "forge",
-        "status": "NOT_EXECUTED"
-      },
-      {
-        "backend": "cranelift",
-        "status": "NOT_EXECUTED"
-      },
-      {
-        "backend": "js",
-        "status": "NOT_EXECUTED"
-      },
-      {
-        "backend": "atto",
-        "status": "NOT_EXECUTED"
-      },
-      {
-        "backend": "hdl",
         "status": "NOT_EXECUTED"
       }
     ],

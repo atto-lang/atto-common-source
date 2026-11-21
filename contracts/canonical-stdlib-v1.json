@@ -41,7 +41,27 @@
   ],
   "targets": [
     {
+      "backend": "atto",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "cranelift",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "forge",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "hdl",
+      "execution": "NOT_EXECUTED"
+    },
+    {
       "backend": "java",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "js",
       "execution": "NOT_EXECUTED"
     },
     {
@@ -53,11 +73,15 @@
       "execution": "NOT_EXECUTED"
     },
     {
-      "backend": "wasm",
+      "backend": "realtime",
       "execution": "NOT_EXECUTED"
     },
     {
-      "backend": "forge",
+      "backend": "rs",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "wasm",
       "execution": "NOT_EXECUTED"
     }
   ]
