@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const KINDS = new Set(['span','counter','gauge','instant']);
-const NAME = /^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$/;
+const NAME = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/;
 const MAX_PROBES = 4096;
 const MAX_ID = 2147483647;
 
