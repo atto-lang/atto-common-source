@@ -1,0 +1,43 @@
+name: Atto allocation ownership parity contract (source-free)
+on:
+  pull_request:
+    paths:
+      - 'contracts/alloc/ownership-parity-v1.json'
+      - 'scripts/verify-alloc-parity-v1.mjs'
+      - 'tests/alloc-ownership-parity-v1.test.mjs'
+      - 'docs/alloc-ownership-parity-v1.md'
+      - '.github/workflows/alloc-ownership-parity-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  alloc-contract-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          submodules: false
+      - name: Verify exact source head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git diff --quiet
+          git diff --cached --quiet
+      - name: Run offline contract validator negative and positive selftests
+        run: |
+          set -euo pipefail
+          node --version
+          node scripts/verify-alloc-parity-v1.mjs --validate-contract
+          node --test tests/alloc-ownership-parity-v1.test.mjs
+          echo 'ATTO_ALLOC_PARITY_CONTRACT_SELFTEST=EXECUTED'
+      - name: Evidence boundary
+        if: always()
+        run: |
+          echo 'Source-free validator selftest only, NOT executed compiler guest parity.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No backend can be certified by queued/failed/zero-step CI.' >> "$GITHUB_STEP_SUMMARY"
