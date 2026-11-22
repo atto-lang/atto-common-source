@@ -1,0 +1,998 @@
+{
+  "schema": "attolang.tilde-aggregate-and-structural-match.extensions.v2",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "spec": "contracts/v2/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V2.md",
+  "backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "net"
+  ],
+  "evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  },
+  "certification": "NOT_CERTIFIED",
+  "reference_scope": "host-side lexical and restricted literal/match syntax only; not a real AttoLang compiler, typechecker, ownership checker or guest",
+  "syntax_counts": {
+    "accept": 52,
+    "reject": 60,
+    "total": 112
+  },
+  "syntax_cases": [
+    {
+      "id": "p01_record_short",
+      "entrypoint": "literal",
+      "input": "~(foo: true, count: 42)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "inferred readonly record"
+    },
+    {
+      "id": "p02_record_explicit",
+      "entrypoint": "literal",
+      "input": "~record(foo: true)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "explicit named record"
+    },
+    {
+      "id": "p03_map_short",
+      "entrypoint": "literal",
+      "input": "~(\"hi\" => true, \"bye\" => false)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "short map"
+    },
+    {
+      "id": "p04_map_explicit",
+      "entrypoint": "literal",
+      "input": "~map(\"hi\" => true)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "explicit map"
+    },
+    {
+      "id": "p05_map_typed",
+      "entrypoint": "literal",
+      "input": "~map<String,int>(\"hi\" => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "explicit key/value types"
+    },
+    {
+      "id": "p06_map_typed_empty",
+      "entrypoint": "literal",
+      "input": "~map<String,int>()",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "typed empty map"
+    },
+    {
+      "id": "p07_record_empty",
+      "entrypoint": "literal",
+      "input": "~record()",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "empty closed record"
+    },
+    {
+      "id": "p08_map_empty_with_expected_type",
+      "entrypoint": "literal",
+      "input": "~map()",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "requires expected type checked by semantic layer"
+    },
+    {
+      "id": "p09_record_quoted_field",
+      "entrypoint": "literal",
+      "input": "~(\"first name\": \"Ada\")",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "quoted static field"
+    },
+    {
+      "id": "p10_map_symbol_key",
+      "entrypoint": "literal",
+      "input": "~map(#ready => true, #done => false)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "symbols remain key domain"
+    },
+    {
+      "id": "p11_map_runtime_key_expression",
+      "entrypoint": "literal",
+      "input": "~map(key => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "variable key evaluated in runtime compiler"
+    },
+    {
+      "id": "p12_record_spread",
+      "entrypoint": "literal",
+      "input": "~record(...source, extra: 2)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "existing immutable record spread"
+    },
+    {
+      "id": "p13_record_inferred_spread",
+      "entrypoint": "literal",
+      "input": "~(...source, extra: 2)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "unambiguous inferred record spread"
+    },
+    {
+      "id": "p14_map_spread",
+      "entrypoint": "literal",
+      "input": "~map(...source, \"new\" => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "v2 explicit Map spread"
+    },
+    {
+      "id": "p15_map_typed_spread",
+      "entrypoint": "literal",
+      "input": "~map<String,int>(...source, \"new\" => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "v2 typed Map spread"
+    },
+    {
+      "id": "p16_map_multiple_spreads",
+      "entrypoint": "literal",
+      "input": "~map(...left, ...right, \"extra\" => 1)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "transactional multi-spread"
+    },
+    {
+      "id": "p17_record_nested",
+      "entrypoint": "literal",
+      "input": "~record(inner: ~(id: 42))",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "nested anonymous record"
+    },
+    {
+      "id": "p18_map_nested",
+      "entrypoint": "literal",
+      "input": "~map(\"inner\" => ~map(\"id\" => 42))",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "nested maps"
+    },
+    {
+      "id": "p19_map_with_record_value",
+      "entrypoint": "literal",
+      "input": "~map(\"user\" => ~(id: 42, active: true))",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "record value of map"
+    },
+    {
+      "id": "p20_record_with_map_value",
+      "entrypoint": "literal",
+      "input": "~record(options: ~map<String,bool>(\"fast\" => true))",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "map value inside record"
+    },
+    {
+      "id": "p21_tuple_field",
+      "entrypoint": "literal",
+      "input": "~record(pair: (42, \"life\"))",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "tuple preserved inside record"
+    },
+    {
+      "id": "p22_nested_generic_types",
+      "entrypoint": "literal",
+      "input": "~map<String,Map<String,int>>(\"inner\" => ~map<String,int>(\"x\" => 42))",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "nested generic lexical type args"
+    },
+    {
+      "id": "p23_trailing_comma",
+      "entrypoint": "literal",
+      "input": "~record(foo: 42,)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "optional trailing comma"
+    },
+    {
+      "id": "p24_comment_and_quotes",
+      "entrypoint": "literal",
+      "input": "~map(/* comment */ \"a\" => \"literal ~() inside string\")",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "comments and string token separation"
+    },
+    {
+      "id": "p25_numeric_map_keys",
+      "entrypoint": "literal",
+      "input": "~map(42 => true, 43 => false)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "integer key domain"
+    },
+    {
+      "id": "p26_map_nested_function_arg",
+      "entrypoint": "literal",
+      "input": "~map(\"a\" => transform(1, 2), \"b\" => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "nested expression comma not entry split"
+    },
+    {
+      "id": "p27_spread_nested_value",
+      "entrypoint": "literal",
+      "input": "~record(...source, nested: ~record(foo: 42))",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "nested literals and spread"
+    },
+    {
+      "id": "p28_map_boolean_value",
+      "entrypoint": "literal",
+      "input": "~map(\"active\" => true)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "bool value"
+    },
+    {
+      "id": "p29_record_const_field",
+      "entrypoint": "literal",
+      "input": "~record(status: #ready)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "symbol as field value not name"
+    },
+    {
+      "id": "p30_map_key_call",
+      "entrypoint": "literal",
+      "input": "~map(resolve_key(1) => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "dynamic map key expression allowed in constructor"
+    },
+    {
+      "id": "p31_map_type_with_option",
+      "entrypoint": "literal",
+      "input": "~map<String,Option<int>>(\"a\" => Some(42))",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "generic Option value"
+    },
+    {
+      "id": "p32_map_with_parenthesized_key",
+      "entrypoint": "literal",
+      "input": "~map((1 + 2) => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "arbitrary expression key in constructor"
+    },
+    {
+      "id": "p33_short_nested_record",
+      "entrypoint": "literal",
+      "input": "~(payload: ~(value: 42))",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "nested shorthand"
+    },
+    {
+      "id": "p34_single_quote_map_key",
+      "entrypoint": "literal",
+      "input": "~map('alpha' => 42)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "quoted literal"
+    },
+    {
+      "id": "p35_map_spread_only",
+      "entrypoint": "literal",
+      "input": "~map(...existing)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "explicit kind even when only spreading"
+    },
+    {
+      "id": "p36_record_spread_only",
+      "entrypoint": "literal",
+      "input": "~record(...existing)",
+      "expected": "accept",
+      "expected_kind": "record",
+      "note": "explicit record kind"
+    },
+    {
+      "id": "p37_map_spread_with_trailing_comma",
+      "entrypoint": "literal",
+      "input": "~map(...existing, \"x\" => 42,)",
+      "expected": "accept",
+      "expected_kind": "map",
+      "note": "spread and trailing comma"
+    },
+    {
+      "id": "p38_match_record",
+      "entrypoint": "match",
+      "input": "match row over on ~(foo: x) -> x default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "record pattern and fallback"
+    },
+    {
+      "id": "p39_match_structural",
+      "entrypoint": "match",
+      "input": "match first user over on structural ~(id: 42) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "explicit structural field shape"
+    },
+    {
+      "id": "p40_match_map_literal",
+      "entrypoint": "match",
+      "input": "match first flags over on ~map(\"ready\" => true) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "map constant-key presence pattern"
+    },
+    {
+      "id": "p41_match_map_symbol",
+      "entrypoint": "match",
+      "input": "match flags over on ~map(#ready => true) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "symbol constant-key pattern"
+    },
+    {
+      "id": "p42_match_typed_guard",
+      "entrypoint": "match",
+      "input": "match<int> row over on ~(value: x) when x > 40 -> x default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "typed match and guard"
+    },
+    {
+      "id": "p43_match_nested",
+      "entrypoint": "match",
+      "input": "match result over on structural ~(meta: ~(ready: true)) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "nested structural projection"
+    },
+    {
+      "id": "p44_match_map_two_fields",
+      "entrypoint": "match",
+      "input": "match first data over on ~map(\"a\" => 1, \"b\" => n) -> n default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "multi-key map match"
+    },
+    {
+      "id": "p45_match_embedded_scrutinee",
+      "entrypoint": "match",
+      "input": "match ~record(value: 42) over on ~(value: x) -> x default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "literal scrutinee recognized"
+    },
+    {
+      "id": "p46_match_without_default",
+      "entrypoint": "match",
+      "input": "match x over on ~(value: x) -> x end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "parser acceptance not exhaustiveness proof"
+    },
+    {
+      "id": "p47_match_default_only",
+      "entrypoint": "match",
+      "input": "match x over default -> 42 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "fallback only"
+    },
+    {
+      "id": "p48_match_guard_map",
+      "entrypoint": "match",
+      "input": "match first m over on ~map(\"count\" => n) when n > 1 -> n default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "pure guard in first-matching branch"
+    },
+    {
+      "id": "p49_match_body_nested_expression",
+      "entrypoint": "match",
+      "input": "match x over on ~(value: n) -> transform(n, 42) default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "nested calls in body"
+    },
+    {
+      "id": "p50_match_structural_explicit_record",
+      "entrypoint": "match",
+      "input": "match x over on structural ~record(status: 200) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "explicit shape pattern"
+    },
+    {
+      "id": "p51_match_symbol_record_value",
+      "entrypoint": "match",
+      "input": "match x over on ~(status: #ready) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "symbol field value"
+    },
+    {
+      "id": "p52_match_quoted_map_key",
+      "entrypoint": "match",
+      "input": "match x over on ~map('state' => true) -> 42 default -> 0 end",
+      "expected": "accept",
+      "expected_kind": "match",
+      "note": "single quoted literal key"
+    },
+    {
+      "id": "n01_bare_empty",
+      "entrypoint": "literal",
+      "input": "~()",
+      "expected": "reject",
+      "reason": "ambiguous empty aggregate"
+    },
+    {
+      "id": "n02_map_one_type",
+      "entrypoint": "literal",
+      "input": "~map<String>()",
+      "expected": "reject",
+      "reason": "must provide key and value generic types"
+    },
+    {
+      "id": "n03_map_three_types",
+      "entrypoint": "literal",
+      "input": "~map<String,int,bool>()",
+      "expected": "reject",
+      "reason": "too many generics"
+    },
+    {
+      "id": "n04_map_bad_first_type",
+      "entrypoint": "literal",
+      "input": "~map<,int>()",
+      "expected": "reject",
+      "reason": "missing key type"
+    },
+    {
+      "id": "n05_map_bad_second_type",
+      "entrypoint": "literal",
+      "input": "~map<String,>()",
+      "expected": "reject",
+      "reason": "missing value type"
+    },
+    {
+      "id": "n06_map_no_type",
+      "entrypoint": "literal",
+      "input": "~map<>()",
+      "expected": "reject",
+      "reason": "empty type arg list"
+    },
+    {
+      "id": "n07_record_generic",
+      "entrypoint": "literal",
+      "input": "~record<String>(foo: 1)",
+      "expected": "reject",
+      "reason": "record generic syntax not proposed"
+    },
+    {
+      "id": "n08_mixed_short",
+      "entrypoint": "literal",
+      "input": "~(foo: 1, \"bar\" => 2)",
+      "expected": "reject",
+      "reason": "cannot mix record/map entries"
+    },
+    {
+      "id": "n09_map_record_separator",
+      "entrypoint": "literal",
+      "input": "~map(foo: 1)",
+      "expected": "reject",
+      "reason": "map requires =>"
+    },
+    {
+      "id": "n10_record_map_separator",
+      "entrypoint": "literal",
+      "input": "~record(\"foo\" => 1)",
+      "expected": "reject",
+      "reason": "record requires :"
+    },
+    {
+      "id": "n11_missing_value",
+      "entrypoint": "literal",
+      "input": "~(foo:)",
+      "expected": "reject",
+      "reason": "missing record value"
+    },
+    {
+      "id": "n12_missing_key",
+      "entrypoint": "literal",
+      "input": "~map(=> 42)",
+      "expected": "reject",
+      "reason": "missing map key"
+    },
+    {
+      "id": "n13_missing_map_value",
+      "entrypoint": "literal",
+      "input": "~map(\"foo\" =>)",
+      "expected": "reject",
+      "reason": "missing map value"
+    },
+    {
+      "id": "n14_record_duplicate",
+      "entrypoint": "literal",
+      "input": "~record(foo: 1, foo: 2)",
+      "expected": "reject",
+      "reason": "duplicate static field"
+    },
+    {
+      "id": "n15_map_constant_duplicate",
+      "entrypoint": "literal",
+      "input": "~map(\"foo\" => 1, \"foo\" => 2)",
+      "expected": "reject",
+      "reason": "duplicate compile-time equal key"
+    },
+    {
+      "id": "n16_map_int_duplicate",
+      "entrypoint": "literal",
+      "input": "~map(42 => true, 42 => false)",
+      "expected": "reject",
+      "reason": "duplicate numeric literal key"
+    },
+    {
+      "id": "n17_bare_spread_only",
+      "entrypoint": "literal",
+      "input": "~(...source)",
+      "expected": "reject",
+      "reason": "inferred literal cannot determine kind"
+    },
+    {
+      "id": "n18_bare_map_spread",
+      "entrypoint": "literal",
+      "input": "~(...source, \"x\" => 42)",
+      "expected": "reject",
+      "reason": "must use explicit ~map for spread"
+    },
+    {
+      "id": "n19_map_empty_spread",
+      "entrypoint": "literal",
+      "input": "~map(...)",
+      "expected": "reject",
+      "reason": "spread operand missing"
+    },
+    {
+      "id": "n20_record_empty_spread",
+      "entrypoint": "literal",
+      "input": "~record(...)",
+      "expected": "reject",
+      "reason": "spread operand missing"
+    },
+    {
+      "id": "n21_unbalanced_literal",
+      "entrypoint": "literal",
+      "input": "~record(foo: (1, 2)",
+      "expected": "reject",
+      "reason": "unclosed aggregate"
+    },
+    {
+      "id": "n22_double_comma",
+      "entrypoint": "literal",
+      "input": "~map(\"x\" => 1,, \"y\" => 2)",
+      "expected": "reject",
+      "reason": "empty entry"
+    },
+    {
+      "id": "n23_leading_comma",
+      "entrypoint": "literal",
+      "input": "~map(, \"x\" => 1)",
+      "expected": "reject",
+      "reason": "leading empty entry"
+    },
+    {
+      "id": "n24_missing_kind",
+      "entrypoint": "literal",
+      "input": "~unknown(foo: 1)",
+      "expected": "reject",
+      "reason": "unknown sigil kind"
+    },
+    {
+      "id": "n25_computed_record_field",
+      "entrypoint": "literal",
+      "input": "~record(resolve_key(): 42)",
+      "expected": "reject",
+      "reason": "field name must be static"
+    },
+    {
+      "id": "n26_nested_mixed",
+      "entrypoint": "literal",
+      "input": "~record(inner: ~(foo: 1, \"bar\" => 2))",
+      "expected": "reject",
+      "reason": "nested malformed literal"
+    },
+    {
+      "id": "n27_unterminated_string",
+      "entrypoint": "literal",
+      "input": "~map(\"foo => 1)",
+      "expected": "reject",
+      "reason": "unterminated string"
+    },
+    {
+      "id": "n28_unterminated_comment",
+      "entrypoint": "literal",
+      "input": "~map(/* foo => 42)",
+      "expected": "reject",
+      "reason": "unterminated comment"
+    },
+    {
+      "id": "n29_invalid_symbol",
+      "entrypoint": "literal",
+      "input": "~map(# => 42)",
+      "expected": "reject",
+      "reason": "bad Symbol spelling"
+    },
+    {
+      "id": "n30_duplicate_quoted_record",
+      "entrypoint": "literal",
+      "input": "~record(\"foo\": 1, \"foo\": 2)",
+      "expected": "reject",
+      "reason": "duplicate quoted static field"
+    },
+    {
+      "id": "n31_trailing_tokens",
+      "entrypoint": "literal",
+      "input": "~record(foo: 1) other",
+      "expected": "reject",
+      "reason": "unexpected trailing expression"
+    },
+    {
+      "id": "n32_map_pattern_wrong_entry",
+      "entrypoint": "literal",
+      "input": "~map(\"x\": 1)",
+      "expected": "reject",
+      "reason": "wrong separator in explicitly named map"
+    },
+    {
+      "id": "n33_record_missing_close",
+      "entrypoint": "literal",
+      "input": "~record(foo: ~(inner: 1)",
+      "expected": "reject",
+      "reason": "nested record unbalanced"
+    },
+    {
+      "id": "n34_empty_map_value",
+      "entrypoint": "literal",
+      "input": "~map(x =>,)",
+      "expected": "reject",
+      "reason": "trailing value missing"
+    },
+    {
+      "id": "n35_multiple_separators",
+      "entrypoint": "literal",
+      "input": "~map(a => 1 => 2)",
+      "expected": "reject",
+      "reason": "multiple map separators"
+    },
+    {
+      "id": "n36_bad_literal_prefix",
+      "entrypoint": "literal",
+      "input": "~map<>()",
+      "expected": "reject",
+      "reason": "bad generic list"
+    },
+    {
+      "id": "n37_missing_parenthesis",
+      "entrypoint": "literal",
+      "input": "~map<String,int>",
+      "expected": "reject",
+      "reason": "missing literal opening"
+    },
+    {
+      "id": "n38_bad_unicode_surrogate",
+      "entrypoint": "literal",
+      "input": "~record(foo: \"\\ud800\")",
+      "expected": "reject",
+      "reason": "invalid Unicode literal surrogate"
+    },
+    {
+      "id": "n39_match_missing_over",
+      "entrypoint": "match",
+      "input": "match x on ~(value: 42) -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "missing over"
+    },
+    {
+      "id": "n40_match_missing_on",
+      "entrypoint": "match",
+      "input": "match x over ~(value: 42) -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "each explicit pattern arm needs on"
+    },
+    {
+      "id": "n41_match_on_default",
+      "entrypoint": "match",
+      "input": "match x over on default -> 42 end",
+      "expected": "reject",
+      "reason": "fallback must not have on"
+    },
+    {
+      "id": "n42_match_default_first",
+      "entrypoint": "match",
+      "input": "match x over default -> 0 on ~(value: 42) -> 42 end",
+      "expected": "reject",
+      "reason": "default must be last"
+    },
+    {
+      "id": "n43_match_duplicate_default",
+      "entrypoint": "match",
+      "input": "match x over default -> 1 default -> 2 end",
+      "expected": "reject",
+      "reason": "only one fallback"
+    },
+    {
+      "id": "n44_match_empty_map_pattern",
+      "entrypoint": "match",
+      "input": "match m over on ~map() -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "empty map pattern is catchall"
+    },
+    {
+      "id": "n45_match_structural_map",
+      "entrypoint": "match",
+      "input": "match m over on structural ~map(\"x\" => 42) -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "structural on map invalid"
+    },
+    {
+      "id": "n46_match_inferred_map_pattern",
+      "entrypoint": "match",
+      "input": "match m over on ~(\"x\" => 42) -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "map patterns require explicit ~map"
+    },
+    {
+      "id": "n47_match_dynamic_key_pattern",
+      "entrypoint": "match",
+      "input": "match m over on ~map(key => 42) -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "map pattern key must be constant"
+    },
+    {
+      "id": "n48_match_map_duplicate_pattern",
+      "entrypoint": "match",
+      "input": "match m over on ~map(\"x\" => 1, \"x\" => 2) -> 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "duplicate keys in map pattern"
+    },
+    {
+      "id": "n49_match_empty_guard",
+      "entrypoint": "match",
+      "input": "match x over on ~(foo: n) when -> n default -> 0 end",
+      "expected": "reject",
+      "reason": "empty guard"
+    },
+    {
+      "id": "n50_match_missing_arrow",
+      "entrypoint": "match",
+      "input": "match x over on ~(foo: 42) 42 default -> 0 end",
+      "expected": "reject",
+      "reason": "missing ->"
+    },
+    {
+      "id": "n51_match_empty_arm_body",
+      "entrypoint": "match",
+      "input": "match x over on ~(foo: 42) -> default -> 0 end",
+      "expected": "reject",
+      "reason": "empty body"
+    },
+    {
+      "id": "n52_match_trailing_tokens",
+      "entrypoint": "match",
+      "input": "match x over default -> 42 end garbage",
+      "expected": "reject",
+      "reason": "trailing tokens"
+    },
+    {
+      "id": "n53_match_unclosed",
+      "entrypoint": "match",
+      "input": "match x over on ~(foo: 42) -> 42",
+      "expected": "reject",
+      "reason": "missing end"
+    },
+    {
+      "id": "n54_match_missing_scrutinee",
+      "entrypoint": "match",
+      "input": "match over on ~(foo: 42) -> 42 end",
+      "expected": "reject",
+      "reason": "missing value"
+    },
+    {
+      "id": "n55_match_empty_structural_pattern",
+      "entrypoint": "match",
+      "input": "match x over on structural -> 42 end",
+      "expected": "reject",
+      "reason": "missing pattern"
+    },
+    {
+      "id": "n56_match_map_pattern_generic",
+      "entrypoint": "match",
+      "input": "match x over on ~map<String,int>(\"x\" => 42) -> 42 end",
+      "expected": "reject",
+      "reason": "typed map pattern not permitted"
+    },
+    {
+      "id": "n57_match_map_pattern_spread",
+      "entrypoint": "match",
+      "input": "match x over on ~map(...m, \"x\" => 42) -> 42 end",
+      "expected": "reject",
+      "reason": "map spread in pattern prohibited"
+    },
+    {
+      "id": "n58_match_record_pattern_spread",
+      "entrypoint": "match",
+      "input": "match x over on ~(foo: 42, ...other) -> 42 end",
+      "expected": "reject",
+      "reason": "record pattern spread not permitted"
+    },
+    {
+      "id": "n59_match_empty_record_pattern",
+      "entrypoint": "match",
+      "input": "match x over on ~record() -> 42 end",
+      "expected": "reject",
+      "reason": "empty record pattern ambiguous with default"
+    },
+    {
+      "id": "n60_match_no_arms",
+      "entrypoint": "match",
+      "input": "match x over end",
+      "expected": "reject",
+      "reason": "match needs arm"
+    }
+  ],
+  "semantic_targets": [
+    {
+      "id": "s01_map_spread_collision",
+      "requirement": "Map spread collisions must fail transactionally, preserving all still-owned inputs",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s02_map_spread_quota_failure",
+      "requirement": "Allocation/quota failure must not publish partial candidate",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s03_dynamic_duplicate_key",
+      "requirement": "Two runtime-computed equal keys reject before publication",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s04_wrong_key_domain",
+      "requirement": "Map key inference/type arguments cannot silently coerce Symbol to String",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s05_hash_unstable_key",
+      "requirement": "Mutable keys changing equality/hash are rejected",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s06_hash_side_effect_lock",
+      "requirement": "No user-defined hash/equality invoked while Map locks held",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s07_concurrent_match_consistency",
+      "requirement": "A map pattern observes a coherent snapshot/version-fenced read",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s08_pattern_loan_escape",
+      "requirement": "Map pattern readonly projected borrow may not escape its arm",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s09_pattern_await_loan",
+      "requirement": "Readonly structural borrow may not cross suspension without full pin proof",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s10_actor_state_seal",
+      "requirement": "No structural pattern can access sealed actor state",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s11_private_field_projection",
+      "requirement": "Structural patterns expose only authorized public fields",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s12_map_symbol_json",
+      "requirement": "Symbol Map keys cannot implicitly encode as JSON object keys",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s13_map_order",
+      "requirement": "Map spreads preserve source insertion order then append new entries",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s14_map_no_gc_ownership",
+      "requirement": "Map spreading move-only values requires explicit legal copy/share/take",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s15_map_pattern_overlap",
+      "requirement": "Ordinary match disjointness proof still applies to overlapping map patterns",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s16_map_pattern_first",
+      "requirement": "match first permits ordered overlap under guard rules",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s17_nested_copy_borrow",
+      "requirement": "Nested struct/record/map values preserve independent ownership and field borrow safety",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s18_formatter_roundtrip",
+      "requirement": "Formatter round-trips explicit generic Map literal and structural pattern AST",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s19_actor_cross_domain",
+      "requirement": "Map/record transport cannot smuggle actor heap/capability into foreign domain",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s20_fail_closed_backend",
+      "requirement": "Unsupported backend must reject before publishing guest artifact",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s21_json_duplicate_semantics",
+      "requirement": "JSON typed Map follows existing string-key and graph-stability rules",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    },
+    {
+      "id": "s22_cancellation_cleanup",
+      "requirement": "Throw, raise, panic, cancel and OOM paths release temporary owned values once",
+      "status": "NOT_EXECUTED",
+      "expected": "semantic_verification_required"
+    }
+  ]
+}

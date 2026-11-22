@@ -45,3 +45,6 @@ AttoLang is the canonical project name; new source, examples and documentation u
 **Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
 
 For the audited 68-repository routing index and distinctions between compiler backends, platform adapters and demos, see [Repository ownership map](docs/REPOSITORY_MAP.md). Keep this private catalog out of public organization metadata.
+
+- [Tilde Map/Record literals and explicit structural matching v1](contracts/v1/ATTO_TILDE_AGGREGATE_LITERALS_AND_STRUCTURAL_MATCH_V1.md) — draft syntax proposal, 47 accept/reject fixture targets and source-only manifest checker; no compiler or guest evidence.
+- [Typed empty tilde aggregates v3](contracts/v3/ATTO_TILDE_TYPED_EMPTY_AGGREGATES_V3.md) — explicit `~map()`, `~record()`, `~tuple()` and type-directed `~<T>()` draft admission contract, without guest parity claims.
