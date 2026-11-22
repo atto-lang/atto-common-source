@@ -42,6 +42,22 @@ def _identity(package: str, namespace: str) -> str:
     return package + "::" + namespace
 
 
+def _file_identity(package: str, path: str) -> str:
+    # '@file:' cannot be an explicit flat namespace. A missing header is NOT
+    # membership in a global/default namespace, even within the same package.
+    return package + "::@file:" + path
+
+
+def _valid_edges(entry: dict[str, Any]) -> bool:
+    for edge in ("imports", "inlines"):
+        value = entry[edge]
+        if (not isinstance(value, list) or len(value) > 4096
+                or not all(isinstance(v, str) for v in value)
+                or len(value) != len(set(value))):
+            return False
+    return True
+
+
 def _snapshot(raw: dict[str, Any]) -> dict[str, Any]:
     """Validate graph shape; reject missing imports and ambiguous identities."""
     if not isinstance(raw, dict) or set(raw) != {"semantic_profile", "codegen_profile", "packages", "files", "namespaces"}:
@@ -71,22 +87,40 @@ def _snapshot(raw: dict[str, Any]) -> dict[str, Any]:
         key = _identity(pkg, name)
         if key in namespaces:
             raise InvalidSnapshot("duplicate namespace " + key)
-        for edge in ("imports", "inlines"):
-            if (not isinstance(ns[edge], list) or len(ns[edge]) > 4096
-                    or not all(isinstance(v, str) for v in ns[edge])
-                    or len(ns[edge]) != len(set(ns[edge]))):
-                raise InvalidSnapshot("invalid or duplicate namespace dependency")
+        if not _valid_edges(ns):
+            raise InvalidSnapshot("invalid or duplicate namespace dependency")
         namespaces[key] = ns
     files = defaultdict(list)
     paths = set()
     for unit in raw["files"]:
-        if not isinstance(unit, dict) or set(unit) != {"package", "namespace", "path", "source_sha"}:
+        if not isinstance(unit, dict):
             raise InvalidSnapshot("invalid source unit")
-        pkg, ns, path = unit["package"], unit["namespace"], unit["path"]
-        if not _path(path) or (pkg, path) in paths or _identity(pkg, ns) not in namespaces or not _sha(unit["source_sha"]):
+        pkg, ns, path = unit.get("package"), unit.get("namespace"), unit.get("path")
+        bare_fields = {"package", "namespace", "path", "source_sha"}
+        file_fields = bare_fields | {"interface_sha", "imports", "inlines"}
+        if (not _path(path) or pkg not in packages or (pkg, path) in paths
+                or not _sha(unit.get("source_sha"))):
             raise InvalidSnapshot("invalid source ownership, path or digest")
+        if ns is None:
+            # Each unnamespaced physical file is its OWN compilation unit.
+            # Its verified file ABI and import/inline dependencies are required.
+            if (set(unit) != file_fields or not _sha(unit.get("interface_sha"))
+                    or not _valid_edges(unit)):
+                raise InvalidSnapshot("unnamespaced file requires verified file ABI and edges")
+            key = _file_identity(pkg, path)
+            namespaces[key] = {
+                "package": pkg, "name": "@file:" + path,
+                "interface_sha": unit["interface_sha"],
+                "imports": list(unit["imports"]), "inlines": list(unit["inlines"]),
+            }
+        else:
+            if set(unit) != bare_fields or not isinstance(ns, str) or not _NS.fullmatch(ns):
+                raise InvalidSnapshot("invalid namespace source descriptor")
+            key = _identity(pkg, ns)
+            if key not in namespaces:
+                raise InvalidSnapshot("invalid namespace ownership")
         paths.add((pkg, path))
-        files[_identity(pkg, ns)].append((path, unit["source_sha"]))
+        files[key].append((path, unit["source_sha"]))
     for key, ns in namespaces.items():
         if not files[key]:
             raise InvalidSnapshot("empty namespace " + key)
