@@ -1,0 +1,35 @@
+# Canonical guest reference values, NOT executable backend proof.
+name: AttoLang signed-i64 core reference vectors (HOST ONLY)
+on:
+  pull_request:
+    paths:
+      - 'contracts/atto-core-math-v1/**'
+      - 'tests/check_atto_core_math_vectors.py'
+      - 'tests/test_atto_core_math_vectors.py'
+      - '.github/workflows/atto-core-reference-vectors.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-reference-only:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Check actual head before source-only tests
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet --exit-code
+          git diff --cached --quiet --exit-code
+      - name: Verify canonical i64 vectors and adversarial mutations
+        run: |
+          set -euo pipefail
+          python3 -I tests/check_atto_core_math_vectors.py
+          python3 -I -m unittest discover -s tests -p 'test_atto_core_math_vectors.py' -v
+          echo 'ATTO_CORE_REFERENCE_COMPILER_EXECUTION=NOT_EXECUTED'

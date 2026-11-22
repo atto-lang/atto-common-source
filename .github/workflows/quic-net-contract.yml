@@ -1,0 +1,21 @@
+name: QUIC transport and HTTP3 shared contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/v1/quic-net-v1.json'
+      - 'docs/QUIC_NET_V1.md'
+      - 'tests/test_quic_net_v1.py'
+      - '.github/workflows/quic-net-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify QUIC layers, TLS, admission and release gates
+        run: python3 -m unittest discover -s tests -p test_quic_net_v1.py -v

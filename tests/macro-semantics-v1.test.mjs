@@ -485,7 +485,10 @@ test('typed expression quote/unquote remains identifier-safe', () => {
   assert.equal(q.max_nodes, 2048);
   assert.equal(q.all_parameters_must_be_used, true);
   assert.equal(q.duplicate_nontrivial_unquote, false);
-  assert.equal(q.duplicate_trivial_name_or_literal, true);
+  assert.equal(q.duplicate_trivial_name_or_literal, false);
+  assert.equal(q.duplicate_closed_literal_only, true);
+  assert.equal(q.duplicate_unproven_name_binding, false);
+  assert.equal(q.repeated_nonliteral_requires_proven_copy_and_ownership, true);
   assert.equal(q.non_finite_float, false);
   assert.equal(q.deterministic_parameter_order, true);
   assert.equal(q.duplicated_trivial_splice_unique_ast_identity, true);

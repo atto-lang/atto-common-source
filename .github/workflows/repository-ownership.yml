@@ -1,0 +1,46 @@
+name: AttoLang repository ownership contract
+
+on:
+  pull_request:
+    paths:
+      - README.md
+      - docs/REPOSITORY_MAP.md
+      - governance/**
+      - tests/test_repository_ownership.py
+      - .github/workflows/repository-ownership.yml
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ownership-manifest:
+    name: exact-head offline ownership and negative tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout immutable triggering head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact head, clean tree, and no tracked symlinks
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain)"
+          test -z "$(git ls-files -s | awk '$1 == "120000" { print $4 }')"
+          git rev-parse 'HEAD^{tree}'
+      - name: Validate private repository ownership manifest
+        run: python3 governance/validate_ownership.py --offline
+      - name: Execute mandatory negative mutation tests
+        run: python3 -m unittest discover -s tests -p 'test_repository_ownership.py' -v

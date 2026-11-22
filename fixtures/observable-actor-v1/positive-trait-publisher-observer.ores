@@ -1,0 +1,30 @@
+// SOURCE_CONTRACT_ONLY: not yet accepted by any Oreslang compiler.
+// The compiler/runtime must reserve these hooks and validate actor-only typing.
+define pub trait ObservableActor<E: Sendable> as
+    on_observer_subscribed(ActorId observer_id): void { return; }
+    on_observer_unsubscribed(ActorId observer_id): void { return; }
+    on_event_published(ObservedActorEvent<E> event): void { return; }
+end
+
+define pub record CountChanged as
+    int count;
+end
+
+define actor Counter implements ObservableActor<CountChanged> as
+    state {
+        int count = 0;
+    }
+    on #increment -> void {
+        state.count += 1;
+        // Admission != observer processing. No synchronous guest callbacks.
+        val receipt = self.publish_event(CountChanged(state.count));
+        return;
+    }
+end
+
+define actor Dashboard as
+    on_observed_event(ObservedActorEvent<CountChanged> event): void {
+        // Runs on the Dashboard actor's own turn, never on Counter's turn.
+        return;
+    }
+end

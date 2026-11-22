@@ -930,11 +930,14 @@
     "max_nodes": 2048,
     "all_parameters_must_be_used": true,
     "duplicate_nontrivial_unquote": false,
-    "duplicate_trivial_name_or_literal": true,
+    "duplicate_trivial_name_or_literal": false,
     "non_finite_float": false,
     "deterministic_parameter_order": true,
     "duplicated_trivial_splice_unique_ast_identity": true,
-    "shared_expr_identity_across_output_occurrences": false
+    "shared_expr_identity_across_output_occurrences": false,
+    "duplicate_closed_literal_only": true,
+    "duplicate_unproven_name_binding": false,
+    "repeated_nonliteral_requires_proven_copy_and_ownership": true
   },
   "identifier_hygiene": {
     "compiler_only": true,
