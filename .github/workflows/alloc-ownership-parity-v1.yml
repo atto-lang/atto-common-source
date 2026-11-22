@@ -4,6 +4,9 @@ on:
     paths:
       - 'contracts/alloc/ownership-parity-v1.json'
       - 'scripts/verify-alloc-parity-v1.mjs'
+      - 'scripts/verify-alloc-candidates-v1.mjs'
+      - 'contracts/alloc/candidates-v1.json'
+      - 'tests/alloc-parity-candidate-matrix-v1.test.mjs'
       - 'scripts/verify-alloc-provenance-v1.mjs'
       - 'tests/verify-alloc-provenance-v1.test.mjs'
       - 'tests/alloc-ownership-parity-v1.test.mjs'
@@ -36,7 +39,8 @@ jobs:
           set -euo pipefail
           node --version
           node scripts/verify-alloc-parity-v1.mjs --validate-contract
-          node --test tests/alloc-ownership-parity-v1.test.mjs tests/verify-alloc-provenance-v1.test.mjs
+          node scripts/verify-alloc-candidates-v1.mjs
+          node --test tests/alloc-ownership-parity-v1.test.mjs tests/verify-alloc-provenance-v1.test.mjs tests/alloc-parity-candidate-matrix-v1.test.mjs
           echo 'ATTO_ALLOC_PARITY_CONTRACT_SELFTEST=EXECUTED'
       - name: Evidence boundary
         if: always()

@@ -142,3 +142,32 @@ manifest or fabricated log. Invalid paths, omitted/extra cases, source
 blobs not in the tree, and non-`.atto` fixtures fail closed. The local
 Node 22 suite now executes **5/5 groups passing**; these are deliberately
 synthetic negative tests of the validator, not compiler guest runs.
+
+## 2026-11-22: pinned multi-compiler allocation fixture candidates
+
+`contracts/alloc/candidates-v1.json` now lists every contract obligation
+for all 11 backends, including the 187 cases not even authored in this
+first batch. Exact 40-character source commit identities and fixture Git
+blob SHAs were independently read from the current Java, LLVM and Rust
+draft PR branches and pinned to 11 concrete `.atto` files.
+
+- Java PR #1775: **7/20** logical allocator-policy linked-guest test
+  candidates; remaining 13 not executed/implemented under this contract.
+- LLVM PR #874: **2/20** actual native `Box<int>` AOT cleanup fixture
+  candidates; remaining 18 unverified. Emitted executable region drops are
+  not general class destruction, async cleanup or AOT parity.
+- Rust PR #538: **2/20** compile-rejection fixture candidates; remaining
+  18 unverified, including the unimplemented class-drop and Arc paths.
+- Cranelift, Forge, WASM, .NET, JS, self-hosted Atto: **0/20** currently
+  mapped to exact-source guest proof under this allocation contract.
+- HDL and realtime: **0/9** restricted-profile proof candidates.
+
+The candidate matrix is intentionally **NOT_VERIFIED** for all eleven
+backends. A source fixture and its exact SHA only prove authorship, not
+execution or parity. `scripts/verify-alloc-candidates-v1.mjs` rejects
+omitted backend obligations, duplicates, unsafe/missing fixture metadata,
+wrong profile or source identity, and any fabricated `PASS` claim.
+The verifier was exercised in a V8 isolate with seven negative mutations;
+the checked-in Node workflow still requires a stepful runner to count as
+executed. Only an independently retrieved exact-tree and compiled guest
+or diagnostic log can authorize evidence after the candidate stage.
