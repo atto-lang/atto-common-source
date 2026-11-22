@@ -24,6 +24,14 @@ pub fnc charge(int cents): int { return cents; }
 
 Updating `login.atto` with the same exported interface must not force `payments` to re-typecheck or regenerate. The package may need to relink; only affected namespace objects should be regenerated. A changed public contract for `users` invalidates verified importers of `users`, including cross-package importers, but not otherwise unrelated namespaces. An effect/ownership/actor-protocol/typestate/public-const change counts as an interface change even if its function name and parameter types are unchanged.
 
+## Files without a namespace (required default)
+
+A source file with **no** \`namespace\` header is a **separate compilation unit**, never a member of a synthetic global namespace shared with other files. Two such files in one package must not be merged. Its internal key is the pinned \`PackageInstanceId\` plus normalized physical \`SourceUnitId\` (the reference planner uses \`pkg::@file:path\`, deliberately not a legal flat namespace name). The source snapshot sets \`files[].namespace = null\` and supplies its independently checked \`interface_sha\`, explicit \`imports\` and \`inlines\` edges. No namespace entry is added to \`namespaces[]\` for this file.
+
+Editing one unnamespaced file with an unchanged public interface should rebuild **only its own compiled codegen unit** (and any known inlining/specialization dependents), not its unnamespaced siblings. An exported ABI change invalidates only verified importers and links; deleting/moving a file must invalidate its source identity and any bound imports. The implementation may later cache individual functions even more narrowly, but may not silently treat all top-level files as one shared global namespace.
+
+For a source moved from no namespace to \`namespace users;\`, remove its old file-unit key, add its content to \`users\`, and re-evaluate affected imports, export collisions and ABI. Similarly, removing a namespace header turns that source into a fresh file unit. Any missing verified interface or untracked import causes a conservative rebuild/denial, never unsafe cache reuse.
+
 ## Reference model and artifact identity
 
 - [`contracts/namespace-incremental-v1.schema.json`](../contracts/namespace-incremental-v1.schema.json) describes a **validated, trusted compiler snapshot**: package instance ID and manifest digest; source-relative unit path, owner namespace and SHA-256; namespace interface SHA-256, resolved interface-import edges and inline-body edges; semantic and target codegen profile digests.
@@ -36,7 +44,7 @@ Updating `login.atto` with the same exported interface must not force `payments`
 | Change | Required action |
 | --- | --- |
 | No effective change, including source-map order | Reuse approved namespace artifacts |
-| Private/body-only source edit | Recheck and regenerate the owning namespace (or finer verified unit); reuse caller typing and other namespaces |
+| Private/body-only source edit | Recheck and regenerate only the owning unit (explicit namespace or isolated unnamespaced file); reuse caller typing and unrelated units |
 | Inline/specialization/body embedding | Regenerate consumers that embed the changed implementation, including transitive inline consumers |
 | Public ABI, effects, ownership, contracts, symbol resolution or namespace registration | Re-typecheck affected importers, including negative lookup and SCC closure; regenerate any changed codegen |
 | File addition/removal, namespace reassignment, package lock rebinding | Re-enumerate all members; invalidate affected namespace(s) and dependent resolution and link artifacts |
