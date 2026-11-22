@@ -1,0 +1,5 @@
+import module future_family from "stdlib/std/future_family.atto";
+pub susp fnc main(): int {
+  val Future<int> receipt = task<int> { return 42; };
+  return await future_family.await_future(receipt);
+}

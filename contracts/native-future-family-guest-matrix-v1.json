@@ -1,0 +1,77 @@
+{
+  "schema": "atto.native-future-family.guest-matrix.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "dependency": "stdlib/std/future_family.atto",
+  "cases": [
+    {
+      "path": "tests/fixtures/native-future-family-v1/await_future_owned.atto",
+      "sha256": "06114bb03e525f5d13d0e788f0c3cd6526dfa382b8e53a1ab702fc742b21d4f8",
+      "bytes": 207,
+      "expected": "ACCEPT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/await_task_owned.atto",
+      "sha256": "ce43d6525827862d765cef3daaa2173b27d50d6b717e0e2e8a5b8fe4c722985b",
+      "bytes": 205,
+      "expected": "ACCEPT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/await_actor_owned.atto",
+      "sha256": "f9fb17f8a86fca4367dd92c04fb57580366128722a7bfc72a788fc8bfcc88efd",
+      "bytes": 206,
+      "expected": "ACCEPT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/await_actor_result_preserved.atto",
+      "sha256": "c7e2f6545012bb1a55bbe5a31b58a9d36767bfb2e80eb081881e1a9d1f96d43e",
+      "bytes": 245,
+      "expected": "ACCEPT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/reject_implicit_borrow.atto",
+      "sha256": "5d3177f90efe4fb6351112c31868766b76b81eae36959cef37413697f518a782",
+      "bytes": 201,
+      "expected": "REJECT_NO_ARTIFACT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/reject_double_await.atto",
+      "sha256": "502a0d3c4753f22062d17073e4cadbfde351f11a870383dc506155ffe6a4662b",
+      "bytes": 236,
+      "expected": "REJECT_NO_ARTIFACT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/reject_control_after_task_move.atto",
+      "sha256": "bb9285e1de37dc4056d500ec0cf96d3d37daed3f2dbde921bac395cb73a0359c",
+      "bytes": 245,
+      "expected": "REJECT_NO_ARTIFACT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/reject_stream_as_actor_future.atto",
+      "sha256": "7c6328733efc714a845d5dfb409a41384fc7007922a8a54bde57b093e3c9a280",
+      "bytes": 208,
+      "expected": "REJECT_NO_ARTIFACT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/reject_result_unwrap.atto",
+      "sha256": "69a9516d7c9a592338e006ef2b9d4d4ae31a3e25e5898ec0a216ebe4c44b9117",
+      "bytes": 231,
+      "expected": "REJECT_NO_ARTIFACT",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "tests/fixtures/native-future-family-v1/reject_forged_actor_future.atto",
+      "sha256": "8b9b7a757979e75efb7877cf83e71b64838787ea48a02319bf0788dbe25b34e9",
+      "bytes": 206,
+      "expected": "REJECT_NO_ARTIFACT",
+      "execution": "NOT_EXECUTED"
+    }
+  ]
+}

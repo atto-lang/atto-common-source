@@ -40,8 +40,8 @@
     },
     {
       "path": "stdlib/std/future_family.atto",
-      "sha256": "49c89c2cee3bfadf0bfb6d862634519a25093ff1143412cefeb84ab15905de52",
-      "bytes": 1453
+      "sha256": "f5891fb0062749ae53db253e06632aa0d6e1c756b1f4041ed0689d2917b7f37f",
+      "bytes": 1404
     }
   ],
   "targets": [

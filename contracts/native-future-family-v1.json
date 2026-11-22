@@ -2,13 +2,22 @@
   "schema": "atto.stdlib.native-future-family.v1",
   "status": "TARGET_NOT_EXECUTED",
   "canonicalSource": "stdlib/std/future_family.atto",
-  "canonicalSha256": "49c89c2cee3bfadf0bfb6d862634519a25093ff1143412cefeb84ab15905de52",
-  "sourceBytes": 1453,
+  "canonicalSha256": "f5891fb0062749ae53db253e06632aa0d6e1c756b1f4041ed0689d2917b7f37f",
+  "sourceBytes": 1404,
   "owner": "atto-common-source",
   "level": "std",
   "sourceIsNativeAtto": true,
-  "compilerSealedTypes": ["Future<T>", "TaskFuture<T>", "ActorFuture<T>"],
-  "exports": ["await_future<T>", "await_task<T>", "await_actor<T>", "await_actor_result<T,E>"],
+  "compilerSealedTypes": [
+    "Future<T>",
+    "TaskFuture<T>",
+    "ActorFuture<T>"
+  ],
+  "exports": [
+    "await_future<T>",
+    "await_task<T>",
+    "await_actor<T>",
+    "await_actor_result<T,E>"
+  ],
   "semanticBoundaries": {
     "awaitIsCompilerOperation": true,
     "singleResultReceipt": true,
@@ -17,7 +26,11 @@
     "noControlRightsOnPlainFuture": true,
     "actorIncarnationMustBeAuthenticated": true,
     "actorStreamIsSeparate": true,
-    "newGuestCodeRequiresAotProof": true
+    "newGuestCodeRequiresAotProof": true,
+    "explicitOwnedFormalRequired": true,
+    "borrowedAwaitForbidden": true,
+    "taskControlRetainedOnlyOnReceiptSplit": true,
+    "actorControlFailuresStayDistinctFromResult": true
   },
   "targets": {
     "atto": "NOT_EXECUTED",
@@ -31,5 +44,7 @@
     "realtime": "NOT_EXECUTED",
     "rs": "NOT_EXECUTED",
     "wasm": "NOT_EXECUTED"
-  }
+  },
+  "ownershipMode": "take!",
+  "taskControlAfterAwaitTask": "MOVED"
 }
