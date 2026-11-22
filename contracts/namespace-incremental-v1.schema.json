@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/atto-lang/atto-common-source/blob/main/contracts/namespace-incremental-v1.schema.json",
   "title": "AttoLang namespace-incremental snapshot v1 (reference input)",
-  "description": "Authoritative snapshots must be built by a trusted compiler/resolver. This schema validates shape, not type safety, provenance, path containment or code correctness.",
+  "description": "Trusted snapshots: explicit namespaces span verified files; null namespace indicates a distinct file-owned compilation unit with its own ABI and dependency edges. Validation of compiler provenance remains external.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -59,7 +59,14 @@
             "minLength": 1
           },
           "namespace": {
-            "$ref": "#/$defs/namespace"
+            "oneOf": [
+              {
+                "$ref": "#/$defs/namespace"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "path": {
             "type": "string",
@@ -69,8 +76,59 @@
           },
           "source_sha": {
             "$ref": "#/$defs/digest"
+          },
+          "interface_sha": {
+            "$ref": "#/$defs/digest"
+          },
+          "imports": {
+            "$ref": "#/$defs/edges"
+          },
+          "inlines": {
+            "$ref": "#/$defs/edges"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "namespace": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "namespace"
+              ]
+            },
+            "then": {
+              "required": [
+                "interface_sha",
+                "imports",
+                "inlines"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "interface_sha"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "imports"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "inlines"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
       }
     },
     "namespaces": {
