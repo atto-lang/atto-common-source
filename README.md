@@ -45,3 +45,6 @@ AttoLang is the canonical project name; new source, examples and documentation u
 **Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
 
 For the audited 68-repository routing index and distinctions between compiler backends, platform adapters and demos, see [Repository ownership map](docs/REPOSITORY_MAP.md). Keep this private catalog out of public organization metadata.
+- [AttoLang instrumentation API v1](docs/INSTRUMENTATION_API_V1.md) — native core/std span timing, function/HTTP/TCP/I-O/actor phase IDs, W3C propagation design, and strict execution gates (partial Java proposal; no distributed-tracing parity claim).
+- [Zero-code AOT automatic tracing v1](docs/AUTO_INSTRUMENTATION_AND_DISTRIBUTED_TRACING_V1.md) — compiler-emitted typed probes, runtime and std-lib hooks, runtime opt-in, actors/await propagation, bounded collection and OpenTelemetry interoperability; **proposed, not yet implemented**.
+

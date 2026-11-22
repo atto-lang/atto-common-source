@@ -1,0 +1,539 @@
+{
+  "schema": "attolang.instrumentation.v1",
+  "status": "PARTIAL_JAVA_BOUNDED_POST_AND_NATIVE_ATTO_OTLP_ENCODER_ACTOR_FIXTURE_UNVERIFIED_NO_E2E",
+  "version": 1,
+  "layers": {
+    "ores.core/diagnostics": {
+      "ownership": "runtime",
+      "visibility": "internal",
+      "payload": "bounded fixed numeric IDs only",
+      "export": "cold path only",
+      "depends_on_user_otel": false
+    },
+    "ores.std/trace": {
+      "ownership": "actor/supervisor",
+      "visibility": "public",
+      "implementation": "native Atto guest code",
+      "legacy_import": "std/trace",
+      "disabled_hot_path": "zero clock reads and zero event allocations",
+      "sinks": "bounded local buffer; asynchronous export separately"
+    },
+    "oreslang-otel": {
+      "ownership": "application",
+      "visibility": "opt-in",
+      "transport": "existing library JSONL only; OTLP not implemented",
+      "runtime_dependency": false
+    }
+  },
+  "implemented_guest_api": {
+    "module": "Trace",
+    "functions": [
+      "start_ns(enabled)",
+      "duration_ns(started_ns)",
+      "event(correlation_id, phase_id, elapsed_ns)",
+      "buffer(capacity)",
+      "begin_span(enabled)",
+      "finish_span(buffer, correlation_id, phase_id, started_ns)"
+    ],
+    "finish_span": {
+      "disabled_token": 0,
+      "result_disabled": false,
+      "invalid_ids": false,
+      "buffer_full": false,
+      "duration_clock": "process monotonic",
+      "not_idempotent": true,
+      "requires_single_owner": true
+    },
+    "bounds": {
+      "buffer_capacity_min": 1,
+      "buffer_capacity_max": 65536,
+      "dropped_count_saturates_at": 2147483647
+    }
+  },
+  "phase_ids": {
+    "phase_function_call": 100,
+    "phase_http_client": 200,
+    "phase_http_server": 201,
+    "phase_tcp_connect": 300,
+    "phase_tcp_read": 301,
+    "phase_tcp_write": 302,
+    "phase_file_read": 400,
+    "phase_file_write": 401,
+    "phase_actor_send": 500,
+    "phase_actor_receive": 501,
+    "phase_actor_await": 502
+  },
+  "future_contract": {
+    "span_kind": [
+      "INTERNAL",
+      "SERVER",
+      "CLIENT",
+      "PRODUCER",
+      "CONSUMER"
+    ],
+    "span_status": [
+      "UNSET",
+      "OK",
+      "ERROR"
+    ],
+    "context": {
+      "trace_id_bytes": 16,
+      "span_id_bytes": 8,
+      "ids_must_be_nonzero": true,
+      "entropy": "cryptographically secure",
+      "wire": [
+        "traceparent",
+        "tracestate"
+      ],
+      "baggage": "explicit allowlist; never automatic",
+      "attached_to": "logical actor/task/continuation, not OS thread"
+    },
+    "scope": "span created by Tracer; separate active-context scope; finish once on normal/error/cancel",
+    "propagation": "inject/extract W3C headers at trust boundary; preserve context across await, actor send/receive, restart generation fencing",
+    "export": "bounded async collector; OTLP exporter optional and capability-gated; no hot-path I/O",
+    "automatic_hooks": [
+      "compiler-selected function and method entry/exit without annotations",
+      "HTTP server receive and response lifecycle",
+      "HTTP client request/response",
+      "TCP connect/read/write",
+      "file read/write",
+      "database driver query boundary",
+      "actor message send/admit/receive and supervisor lifecycle",
+      "await suspend/resume and task spawn",
+      "channel send/receive and critical-section wait/hold"
+    ],
+    "attribute_policy": "static low cardinality keys; route templates not raw URLs; no credentials, headers, bodies, query strings or raw payloads",
+    "default": "off, opt in and sample; existing core log/debug/perf flags are independent"
+  },
+  "evidence": {
+    "java_guest_test": "NOT_EXECUTED",
+    "java_full_suite": "NOT_EXECUTED",
+    "java_aot": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "distributed_propagation": "NOT_IMPLEMENTED",
+    "otel_export": "NOT_IMPLEMENTED",
+    "auto_compiler_probes": "NOT_IMPLEMENTED",
+    "auto_runtime_probes": "NOT_IMPLEMENTED",
+    "auto_stdlib_hooks": "NOT_IMPLEMENTED",
+    "zero_code_guest_end_to_end": "NOT_EXECUTED",
+    "scoped_using_java_guest": "NOT_EXECUTED",
+    "java_runtime_probe_gate_test": "NOT_EXECUTED",
+    "auto_otel_e2e": "NOT_IMPLEMENTED",
+    "native_std_telemetry_guest": "NOT_EXECUTED",
+    "llvm_trace_policy_ctest": "NOT_EXECUTED",
+    "java_auto_calls_guest": "NOT_EXECUTED",
+    "java_actor_mail_context": "NOT_EXECUTED",
+    "java_outbound_w3c_headers": "NOT_EXECUTED",
+    "java_traceparent_test": "NOT_EXECUTED",
+    "llvm_traceparent_ctest": "NOT_EXECUTED",
+    "java_inbound_w3c_context_test": "NOT_EXECUTED",
+    "java_host_trace_composition_test": "NOT_EXECUTED",
+    "llvm_native_semantic_staging_ctest": "NOT_EXECUTED",
+    "llvm_guest_semantic_spans": "NOT_IMPLEMENTED",
+    "java_post_transport_host_test": "NOT_EXECUTED",
+    "java_post_guest_loopback_test": "NOT_EXECUTED",
+    "java_native_otlp_json_codec_guest": "NOT_EXECUTED",
+    "java_native_actor_otlp_post_guest": "NOT_EXECUTED"
+  },
+  "vectors": [
+    {
+      "id": "off",
+      "expect": "no_event",
+      "enabled": false,
+      "correlation_id": 1,
+      "phase_id": 100,
+      "started_ns": 0
+    },
+    {
+      "id": "manual-call",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 100,
+      "started_ns": 1
+    },
+    {
+      "id": "manual-http",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 2,
+      "phase_id": 201,
+      "started_ns": 1
+    },
+    {
+      "id": "manual-net",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 3,
+      "phase_id": 302,
+      "started_ns": 1
+    },
+    {
+      "id": "manual-actor",
+      "expect": "record",
+      "enabled": true,
+      "correlation_id": 4,
+      "phase_id": 500,
+      "started_ns": 1
+    },
+    {
+      "id": "invalid-correlation",
+      "expect": "no_event",
+      "enabled": true,
+      "correlation_id": -1,
+      "phase_id": 100,
+      "started_ns": 1
+    },
+    {
+      "id": "invalid-phase",
+      "expect": "no_event",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 0,
+      "started_ns": 1
+    },
+    {
+      "id": "invalid-token",
+      "expect": "no_event",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 100,
+      "started_ns": -1
+    },
+    {
+      "id": "saturated",
+      "expect": "dropped",
+      "enabled": true,
+      "correlation_id": 1,
+      "phase_id": 201,
+      "started_ns": 1,
+      "buffer_full": true
+    }
+  ],
+  "auto_instrumentation": {
+    "status": "PROPOSED_NOT_IMPLEMENTED",
+    "goal": "zero-code tracing; no application-level imports, annotations or wrappers needed",
+    "forbidden": [
+      "monkey patching",
+      "Java agents",
+      "reflection-based interception",
+      "dynamic bytecode rewriting",
+      "linker injection",
+      "uncontrolled host callbacks"
+    ],
+    "mechanisms": {
+      "compiler": "typed HIR/MIR instrumentation of selected callable bodies and async state machine exits",
+      "runtime": "fixed scheduling, actor, mailbox, continuation, channel and critical admission lifecycle probes",
+      "stdlib": "semantic spans at Atto-native HTTP, network, filesystem, database and messaging boundaries",
+      "foreign_ffi": "only native adapter hooks at explicit capability boundaries; never promise arbitrary third-party internals"
+    },
+    "build": {
+      "default": "trace_capable",
+      "variants": [
+        "trace_capable",
+        "trace_stripped"
+      ],
+      "trace_capable": "compile fixed low-cardinality boundaries; emit optional callable probes only if selected by build profile; all tracing disabled at runtime until explicit opt-in",
+      "trace_stripped": "elide optional probes entirely; cannot turn on missing call-site coverage without rebuilding",
+      "options": {
+        "emit": "--instrument=none|boundaries|calls|full",
+        "scopes": "compile-time include/exclude stable fully qualified symbols; use snake_case and avoid dynamic user strings",
+        "precedence": "build-time coverage is an upper bound; runtime can enable a subset but cannot add missing probes"
+      }
+    },
+    "runtime": {
+      "enabled_default": false,
+      "modes": [
+        "off",
+        "boundaries",
+        "calls",
+        "full"
+      ],
+      "default_enabled_mode": "boundaries",
+      "sampling_default_when_enabled": 0.05,
+      "sampling": "parent-based deterministic root sampling, bounded for traces and spans; sampled=false context remains propagate-able when explicitly authorized",
+      "config": "operator CLI or package config; no application source edits",
+      "effective_mode": "min(compiled_coverage, runtime_selected_mode); off overrides all",
+      "backpressure": "drop eligible telemetry, increment bounded drop counters, never block actor execution"
+    },
+    "configuration": {
+      "package_table": "telemetry",
+      "environment": [
+        "OTEL_SERVICE_NAME",
+        "OTEL_SDK_DISABLED",
+        "OTEL_TRACES_SAMPLER",
+        "OTEL_TRACES_SAMPLER_ARG",
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "OTEL_PROPAGATORS"
+      ],
+      "operator_control": "--telemetry=off|boundaries|calls|full; --telemetry-sampling-rate=0..1 (proposed)",
+      "environment_cannot_grant": "network/filesystem/trace-export capabilities and cross-tenant context propagation",
+      "otel_disabled_semantics": "OTEL_SDK_DISABLED disables recording and export; any explicit propagation policy remains independent as specified by OTEL_PROPAGATORS",
+      "attributes": "allowlisted semantic attributes; bounded key/value sizes and cardinality"
+    },
+    "probe_abi": {
+      "purpose": "compiler intrinsic/runtime internal only, not a callable userland hook interface",
+      "recording": "disabled guard and sampler must run before timestamp or expensive argument construction",
+      "shape": [
+        "should_record(site_id, context) -> decision",
+        "enter(site_id, kind, context, decision) -> token",
+        "exit(token, outcome, duration_ns)",
+        "suspend(token, continuation_id, actor_generation)",
+        "resume(continuation_id, actor_generation)"
+      ],
+      "storage": "preallocated bounded actor/scheduler shards or nonblocking collector try_send; no guest object references",
+      "site_id": "stable compiler-defined numeric canonical symbol/operation identity; disambiguated independently of source line offsets",
+      "outcome": [
+        "return",
+        "throw",
+        "raise",
+        "panic",
+        "cancel"
+      ],
+      "error_handling": "telemetry failure never replaces guest error, modifies authorization, or suppresses supervisor CONTROL notice",
+      "lifecycle": "exactly once completed spans where execution unwinds normally, including cancel/recover; fatal process abort may only preserve bounded crash-safe data opportunistically",
+      "async": "trace context attached to owned continuation and message envelope; not OS/JVM thread local",
+      "deduplication": "one semantic HTTP/DB operation span; optional lower-level TCP events are children/metrics and must not duplicate operation spans",
+      "host_boundary": "separate runtime-internal diagnostic events from optional exported application-safe spans"
+    },
+    "propagation": {
+      "default_off": "do not capture, export or automatically forward untrusted context unless propagation explicitly permitted",
+      "enabled_unsampled": "preserve immutable valid W3C parent context even for nonrecording spans, without allocating local span events",
+      "carrier": "logical task, continuation, channel envelope or actor-mail metadata; no pointers or mutable guest span transfer",
+      "messaging": "producer and consumer spans plus links when topology is fan-out/batch; single-parent rules otherwise",
+      "security": "strict W3C parsing, baggage allowlist, quotas, actor incarnation/generation and tenant trust checks",
+      "restart": "revoked generation cannot revive context on late callback"
+    },
+    "behavior_gates": [
+      "disabled record/clock/allocation/format/IO counters remain zero",
+      "compiled stripped profiles contain no optional probe references",
+      "trace-capable binary toggles emission via operator config without rebuild",
+      "real user guest has no instrumentation calls and still emits HTTP/actor spans when enabled",
+      "real guest return/error/cancel/panic/mailbox/critical behavior equals uninstrumented run",
+      "sampling and nonrecording propagation align with OpenTelemetry",
+      "runtime cross-backend verifiers execute actual guest and I/O rather than source-only simulations"
+    ],
+    "namespaces": {
+      "ores.core/trace": "proposed freestanding immutable TraceId, SpanId, SpanContext, TraceFlags and local propagation descriptors; no OS clocks, I/O or exporters",
+      "ores.std/trace": "existing hosted Atto timing Event and bounded Buffer, manual span utilities; preserve std/trace alias",
+      "ores.std/telemetry": "proposed hosted Tracer/Span/metrics API and bounded asynchronous collector/export; optional in user applications",
+      "internal/probe_abi": "not importable from guest code; compiler and trusted runtime-only entry/exit/suspend/resume hooks"
+    }
+  },
+  "scoped_using": {
+    "status": "JAVA_PARSER_AND_NATIVE_NOOP_MODULE_AUTHORED_GUEST_TESTS_NOT_EXECUTED",
+    "spelling": "using telemetry.span(name) as span { body }",
+    "compatibility": "retains existing contextual using resource.borrow() as view and does not repurpose using effect declarations",
+    "compiler_ast": "lexical BlockStmt with single-evaluation binding and checked TryStmt finally closing span.end()",
+    "protocols": "future normative using Scope with typed no-throw, non-suspending end; module alias must resolve to trusted ores.std/telemetry",
+    "behavior": [
+      "evaluate span expression exactly once before entering body",
+      "activate scope on entry and restore previous logical TraceContext on exit",
+      "close exactly once on fallthrough, return, guest failure, throw, raise and cancellation",
+      "async suspension stores immutable parent context in owned continuation, not host thread",
+      "actor loan/generation/tenant enforcement; no mutable Span across actor mail",
+      "cleanup cannot mask original guest failure, panic CONTROL or cancellation",
+      "return type and guest-visible effects unchanged"
+    ],
+    "current_limitations": [
+      "Java parser currently lowers exact telemetry.span(...) as a binding plus try/finally; trusted SpanScope type/provenance is not yet checked",
+      "native ores.std/telemetry.atto no-op Span provider added with span() and span(name) and idempotent end(); real guest tests authored but NOT_EXECUTED",
+      "automatic runtime context activation/restoration and asynchronous collector/OTLP export NOT_IMPLEMENTED",
+      "LLVM frontend and source guest lowering NOT_IMPLEMENTED"
+    ]
+  },
+  "dynamic_activation": {
+    "status": "JAVA_GRAAL_HOST_GATE_AND_LLVM_ATOMIC_GATE_AUTHORED_NOT_INTEGRATED_OR_GUEST_VERIFIED",
+    "no_redeploy_if": "all desired sites pre-emitted, or JIT enabled with retained validated HIR/MIR and ability to compile new instrumented bodies",
+    "no_monkey_patching": true,
+    "allowed_mechanisms": [
+      "trace-capable AOT pre-emitted dormant probe slots toggled atomically by trusted operator",
+      "Java/Graal Truffle Assumption invalidation and deoptimization then recompilation of existing probe-capable nodes",
+      "future governed LLVM ORC JIT of retained typed MIR with versioned function-dispatch cells and quiescent epoch swap"
+    ],
+    "rejected_mechanisms": [
+      "runtime bytecode rewriting",
+      "Java agents",
+      "untrusted dynamic imports",
+      "patching arbitrary executable pages",
+      "reinterpreting sealed AOT as JIT",
+      "replacing live function bodies without generation fencing"
+    ],
+    "backend_constraints": {
+      "java_graal_jvm": "runtime mode toggles precompiled probe sites; assumption invalidates optimized call targets; JIT must be enabled",
+      "java_graal_native_image": "only precompiled optional probes and runtime gate unless separately verified hybrid JIT; Native Image alone cannot inject absent call sites",
+      "llvm_aot": "no new probes if stripped; pre-emitted sites can toggle; governed ORC JIT only in explicit hybrid profile with retained verified MIR and W^X policy",
+      "wasm": "only retained precompiled hooks; host worker code may be separately redeployed under approved policy, not patched by userland",
+      "forge": "JIT can replace versioned compiled code from validated IR with quiescence; AOT only has precompiled hooks",
+      "net_native_aot": "precompiled probes only, no arbitrary runtime IL emission or JIT"
+    },
+    "control": {
+      "per_isolate": true,
+      "authorization": "trusted operator control plane only",
+      "max_coverage": "compiled coverage ceiling is never exceeded",
+      "generation": "atomically publish new policy, invalidate old assumptions, fence stale callbacks and collector context",
+      "change_semantics": "eventually visible to future call entries; in-flight spans close under captured policy; no hard real-time recompile on critical path",
+      "off_semantics": "no new event allocation, clock read, formatting, I/O or user callback after policy disabled and quiesced",
+      "restore": "old functions/binaries retained until last active frame finishes; reject unsupported profile"
+    }
+  },
+  "e2e_http_actor_client_otlp": {
+    "status": "NOT_IMPLEMENTED_NOT_EXECUTED",
+    "goal": "first actual unmodified .atto handler receiving inbound request, sending immutable trace context through actor mail, making outbound HTTP, and delivering parented spans to OTLP receiver",
+    "steps": [
+      "compile same .atto fixture in Java/Graal JIT trace-capable mode and run guest server",
+      "issue inbound HTTP request with valid W3C traceparent; verify SERVER span created automatically",
+      "send actor message and verify immutable Context metadata attached outside payload and reconstructed on receive",
+      "perform outbound loopback HTTP request and verify injected traceparent parent/span and CLIENT span without manually supplied headers",
+      "capture async native collector batch with bounded queue and dropped counter through OTLP receiver",
+      "assert correct trace IDs, parent/child or link semantics, no secrets/raw URLs/credentials, nonblocking producer",
+      "rerun exact same compiled .atto source under LLVM; require real native code compilation/execution and equivalent context/span topology"
+    ],
+    "required_evidence": [
+      "exact source Git SHA",
+      "actual backend compiler command and exit",
+      "nonempty runner steps",
+      "raw application stdout/stderr hash",
+      "actual incoming/outgoing wire capture",
+      "OTLP receiver payload and validation",
+      "monotonic timing and saturation evidence"
+    ],
+    "forbidden_shortcut": "synthetic trace fixtures, source-free checkers, Java-only fake userland spans and zero-step Actions never count as E2E PASS",
+    "blockers": [
+      "Source org Java/Graal, LLVM and shared CI runs still fail at 0 steps; exact-head JDK25/Graal, Native Image and LLVM source guest tests remain NOT_EXECUTED",
+      "Trusted no-throw using telemetry.span typed scope, logical activation and propagation across await not implemented",
+      "SemanticTraceBuffer still has fixed append-only staging, no bounded reusable source->native Atto collector handoff, delivery acknowledgements or shutdown drain",
+      "Native OTLP encoder + POST helper and one-shot real actor test fixture are authored, not verified guest-executed; no production collector actor, retry/backoff, export recursion suppression or partialSuccess response parser",
+      "LLVM host C++ semantic buffers/parsers exist, but source-level Atto parser/HTTP POST actor export and conformance are not implemented",
+      "No independently captured automatic HTTP SERVER->actor INTERNAL->HTTP CLIENT->OTLP exported trace exists"
+    ]
+  },
+  "implementation_progress": {
+    "java_graal": {
+      "source_revision": "See draft PR #2989 for exact head",
+      "scoped_using": "Parser lowers telemetry.span() scope into local + try/finally; native std no-op Span ended field made explicitly mutable; trusted SpanScope type/effect and logical active-context binding NOT_IMPLEMENTED; Atto guest tests authored NOT_EXECUTED",
+      "call_probe": "automatic checked callable-dispatch numeric admission timing without source annotation; async Future task completion and compiler MIR instrumentation NOT_IMPLEMENTED",
+      "recording": "trusted --ores-telemetry=calls starts bounded automatic numeric dispatcher + bounded semantic W3C SERVER/INTERNAL ACTOR TURN/CLIENT span staging; sampled only; no OTLP export, no native collector drain, no full HIR/MIR span pass",
+      "actor_context": "immutable W3C TraceParent on private mailbox metadata at sync/async admission; Java actor delivery creates a new sampled INTERNAL dispatch-turn child span, installs logical context, restores on exit; source async task span completion remains missing; NOT_EXECUTED",
+      "task_context": "immutable TraceParent on heap-retained TaskContext across logical source task suspend/resume; not a host threadlocal authority; NOT_EXECUTED",
+      "outbound_http": "permission-checked http.request injects W3C v00 child/root, creates sampled async CLIENT span, and now also accepts bounded POST with copied UTF-8 String or list-octet body over pinned SelectorTransportConnection; real guest, body write cancellation and CTest-like exact-head receipts NOT_EXECUTED; no tracestate",
+      "inbound_http": "NativeHttp receive admits strict W3C remote parent or root, SERVER span starts at admission and finishes exactly once at physical exchange retirement; Handler.dispatch carries context in actor mailbox; real JDK25/Graal guest test NOT_EXECUTED",
+      "exporter": "PARTIAL_NATIVE_ATTO_TRANSPORT_ONLY: native CompletedSpan, SpanBatch and bounded OTLP JSON encoder plus async HTTP POST helper authored. No built-in actor collector, runtime-to-actor delivery, bounded reusable draining, partialSuccess confirmation, retries, export suppression, hard shutdown flush or real exact-head guest network receipt: NOT_IMPLEMENTED/NOT_EXECUTED.",
+      "runtime_jit": "Truffle assumption policy gate present; integrated into callable dispatcher recording entry; no physical JIT deopt/reoptimization receipt and no new probe site compilation",
+      "host_composition_test": "HostOnlyTracePathCompositionTest authored: inbound context helper → real JVM actor mailbox → outbound header construction. No socket, Atto guest compiler or OTLP receiver was executed.",
+      "semantic_span_lifecycle": "HOST STAGING IMPLEMENTED: SemanticTraceBuffer has sampled immutable parent/child OTLP span kind, numeric operation, start/end Unix nanos, status, error, nonblocking bounded CAS slots and idempotent Scope.finish; host-only exact-blob smoke passed; not production collector; hardened nonzero lower-hex parent (or empty root), rejection of self-parent and impossible HTTP status; locally JDK21 exact GitHub blob unit smoke PASS, full compiler NOT_EXECUTED",
+      "post_transport": "SOURCE_IMPLEMENTED_NOT_EXECUTED: 4-arg http.request(method,url,headers,body) supports POST (max 1 MiB), UTF-8 String or List<int> octets copied before physical worker; transport-owned Content-Length, header budgets, canonical loopback egress and NET checks, selector-based writes and phase/overall deadlines. PinnedHttpPostTest, OutboundHttpPostGuestTest and byte admission negatives authored, not executed.",
+      "otlp_json_encoder": "SOURCE_IMPLEMENTED_NOT_EXECUTED: native stdlib/telemetry.atto has low-cardinality ExportTraceServiceRequest OTLP/JSON encoder for batches 1..64, hex W3C IDs, integer kind, quoted decimal int64 timestamps, safe ID character gate; no full verified exact-length native ID admission, no response partialSuccess parser, and no autonomous async exporter actor.",
+      "actor_export_fixture": "SOURCE_AUTHORED_NOT_EXECUTED: NativeTelemetryActorOtlpGuestTest uses a real Atto actor to post one native-encoded batch to a loopback receiver using post_otlp_json_async. This is a one-shot application fixture, NOT a built-in supervised collector or automated runtime->actor delivery."
+    },
+    "llvm": {
+      "source_revision": "See draft PR #1713 for exact head",
+      "probe_gate": "per-runtime-domain atomic AOT mode controller, host-only test authored",
+      "w3c_v00": "no-allocation std::array parser/formatter/child ID validation, C++17 host test authored",
+      "isolated_w3c_smoke": "PASS exact GitHub blob SHA-matched native W3C header/test under local GCC 14 and Clang C++17 with ASan+UBSan; NOT LLVM-compiled Atto guest or exact full repo CMake job",
+      "source_guest": "NOT_IMPLEMENTED: no .atto using parser, real compiler call probes, actor trace envelopes or HTTP exporter",
+      "native_telemetry_actor": "HOST-ONLY SEMANTIC STAGING IMPLEMENTED: NativeSemanticSpanBuffer caller-owned fixed capacity, no allocation, concurrency-safe publication, sampled W3C parent and bounded drops; actual compiler probe insertion, native .atto actor collector, HTTP POST and OTLP exporter NOT_IMPLEMENTED",
+      "semantic_span_staging": "NativeCompletedSpan carries W3C v00 trace/span ID bytes, parent, numeric operation ID, kind, Unix timestamps, status, error; fixed-size MPSC CAS with release/acquire per-slot publishing; host-only exact-GitHub-blob GCC/Clang sanitizer tests PASSED, no guest or full CMake.; hardened self-parent/status/capacity gates, exact blob GCC+Clang ASan/UBSan tests PASS"
+    },
+    "shared_test_harness": {
+      "w3c_otlp_validator": "source-free trace-topology and privacy checker; synthetic tests do not certify runtime",
+      "otlp_receiver": "loopback bounded Node OTLP/HTTP JSON receiver only, not native Atto SDK/exporter",
+      "full_guest_trace": "NOT_EXECUTED — no real Atto OTLP/HTTP POST to external receiver"
+    }
+  },
+  "host_smoke_evidence": {
+    "java_w3c": {
+      "status": "PASS_ISOLATED_EXACT_GITHUB_BLOB",
+      "blob_sha": "38315cf30146d587fff795aeb5538793f8a765a1",
+      "compiler": "OpenJDK 21 javac --release 21",
+      "result": "compiles; 2000 independently minted root/child contexts validate ID uniqueness, roundtrip and invalid cases",
+      "scope_limit": "Not JDK25/Graal optimizing guest"
+    },
+    "java_semantic_staging": {
+      "status": "PASS_ISOLATED_EXACT_GITHUB_BLOBS_WITH_TEST_STUBS",
+      "blobs": [
+        "6f5a391bc6a4060a6421648274add60d8f6e4673",
+        "b9b5c25bd169614fb4b4d84d5ab4a148b456aac1",
+        "410c17cc51b140a6835b344460d191617b0f4c86"
+      ],
+      "compiler": "OpenJDK 21",
+      "result": "SERVER→ACTOR→CLIENT span parent linkage; 800 concurrent span events, 64 bounded accepted, 736 dropped",
+      "scope_limit": "Truffle API stubbed; not JIT deoptimization or full backend guest"
+    },
+    "llvm_w3c_host": {
+      "status": "PASS_ISOLATED_EXACT_GITHUB_BLOBS",
+      "header_sha": "643e7e3a5ac826a516ae8cbbee0f7f19274163dd",
+      "test_sha": "f6c1e612e9493ceb1b99b50681e9e05783da5c85",
+      "compilers": [
+        "GCC 14.2 C++17",
+        "Clang C++17"
+      ],
+      "sanitizers": [
+        "ASan",
+        "UBSan"
+      ],
+      "result": "two zero-exit test runs",
+      "scope_limit": "Not exact-head CMake/CTest or LLVM-compiled Atto guest"
+    },
+    "runner_admission": "source-org Actions re-run requested for common and LLVM, previously zero-step failures; never substitute as guest evidence",
+    "llvm_semantic_staging": {
+      "status": "PASS_ISOLATED_EXACT_GITHUB_BLOBS",
+      "header_sha": "e9e00d7efa5c60b0d5dcb4792dec74b8afe8e008",
+      "test_sha": "cb5f92dd152cb80c5ddb617148279c2ce4b9eddc",
+      "compilers": [
+        "GCC 14.2 C++17",
+        "Clang 17 C++17"
+      ],
+      "sanitizer_flags": "-fsanitize=address,undefined",
+      "compilation_flags": "-std=c++17 -pthread -Wall -Wextra -Wpedantic -Werror -UNDEBUG",
+      "result": "both executable tests exit 0: SERVER→ACTOR→CLIENT parent links; 8 producers×100 attempts, capacity64, 736 drops; invalid/unsampled disabled",
+      "scope_limit": "Does not execute full CMake/CTest or any LLVM-compiled Atto guest, real actor dispatch, HTTP wire or OTLP export."
+    }
+  },
+  "otlp_schema_reference": "https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding",
+  "audit_hardening_2026_11_12": {
+    "security_policy": {
+      "java": "private-ci-approved-repositories.txt + private-ci-carrier-contracts.json require independently reviewed exact carrier/PR plan; benefactor-cc/benefactor-e2e NOT authorized for Java PR2989",
+      "llvm": "separate source LLVM allowlist and per-PR carrier contracts do not authorize benefactor-cc/benefactor-e2e for LLVM PR1713",
+      "source_transfer": "NOT_PERFORMED — no cross-organization private source blobs/trees were published"
+    },
+    "source_free_private_runner": {
+      "destination": "benefactor-cc/benefactor-e2e",
+      "destination_visibility": "private",
+      "branch": "ci/atto-tracing-sourcefree-capacity-20261112",
+      "commit": "60b0b9d36feaa15a2658b20dfd2ad93b77cc1788",
+      "run_id": 43330250212,
+      "conclusion": "SUCCESS",
+      "executed_steps": 3,
+      "source_transferred": false,
+      "scope": "runner admission only, not source or test authorization"
+    },
+    "java_local": {
+      "w3c_blob": "38315cf30146d587fff795aeb5538793f8a765a1",
+      "semantic_buffer_blob": "9a065aa1ccddf65002fbe4db783320374f3001d1",
+      "runtime": "OpenJDK 21, test-only AutoTraceRecorder gate stub",
+      "assertions": 8026,
+      "result": "PASS: valid W3C ID roundtrips, parent negatives, exactly-once completion, 800 concurrent submissions capacity 64 and 739 drops including 3 accepted events before stress",
+      "post_snapshot_blob": "40c43f6b96686502960fd80c9faefec7c0495fe7",
+      "post_validation": "PASS: isolated method copy, 18 assertions, UTF-8 roundtrip including emoji, malformed UTF-16 fail closed, 1 MiB, overflow, no alias after guest mutation",
+      "limitations": "not full Java compiler, not real GraalVM, no actual HTTP guest/OTLP network evidence"
+    },
+    "llvm_local": {
+      "w3c_blob": "643e7e3a5ac826a516ae8cbbee0f7f19274163dd",
+      "semantic_buffer_blob": "bb39188be23afe5b5adcecba3c87f5ef4eb9006d",
+      "native_test_blob": "6ac537ca7ef9c9d9995616e739da81ec11b98fc0",
+      "compilers": [
+        "GCC 14.2",
+        "Clang 17"
+      ],
+      "flags": "-std=c++17 -pthread -Wall -Wextra -Wpedantic -Werror -UNDEBUG -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer",
+      "result": "PASS exact C++ GitHub source blobs compiled and executed with ASan/UBSan, including native parent/status/capacity regression and 8×100 concurrency",
+      "limitations": "not LLVM source compiler or .atto guest, no real native HTTP/OTLP exporter"
+    },
+    "full_atto_guest_and_otel": "NOT_EXECUTED"
+  }
+}
