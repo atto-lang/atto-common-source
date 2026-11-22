@@ -123,6 +123,27 @@ class TypedEffectV1Test(unittest.TestCase):
         with self.assertRaises(effects.InvalidEffectReport):
             self.assessment(d, "pure")
 
+    def test_unhashable_backend_claim_fails_with_structured_invalid_error(self):
+        for adversarial in ([], {}, ["java"], 22, None, True):
+            d = report(fn("main"))
+            d["producer"]["backend"] = adversarial
+            with self.subTest(backend=adversarial):
+                with self.assertRaises(effects.InvalidEffectReport):
+                    effects.parse(json.dumps(d).encode("utf-8"))
+
+    def test_unhashable_backend_cli_exits_three_not_traceback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "effects.json"
+            doc = report(fn("main"))
+            doc["producer"]["backend"] = {"forged": "java"}
+            path.write_text(json.dumps(doc))
+            p = subprocess.run([
+                sys.executable, str(ROOT / "unified_typed_effects_v1.py"),
+                str(path), "--profile", "pure"
+            ], capture_output=True, text=True)
+            self.assertEqual(p.returncode, 3, p.stderr)
+            self.assertNotIn("Traceback", p.stderr)
+
     def test_case_with_extra_dormant_impure_function(self):
         d = report(fn("main"), fn("unreachable", direct=["nondet"]))
         self.assertTrue(self.assessment(d, "deterministic")["compatible_with_claimed_facts"])
