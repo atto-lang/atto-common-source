@@ -132,3 +132,13 @@ Executed locally against the exact source bytes before this commit:
 `node --test tests/verify-alloc-provenance-v1.test.mjs` returned **4/4
 passing** on Node 22. This tests the checker only, not any backend compiler,
 guest program or native image.
+
+### Source-tree-bound per-case fixtures
+
+The provenance verifier also requires an explicit case-to-`.atto` source
+path map. Every applicable case's exact fixture Git blob must appear in
+the **independently obtained full source tree**, not just in a claimed
+manifest or fabricated log. Invalid paths, omitted/extra cases, source
+blobs not in the tree, and non-`.atto` fixtures fail closed. The local
+Node 22 suite now executes **5/5 groups passing**; these are deliberately
+synthetic negative tests of the validator, not compiler guest runs.

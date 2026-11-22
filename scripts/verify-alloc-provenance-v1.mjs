@@ -86,8 +86,21 @@ export function verifyCaseLog(log, cases, fixtureBlobs) {
   return seen.size;
 }
 export function verifyAllocationProvenance({sourceTree, mirrorTree, mirrorPrefix,
-  mirrorHead, run, job, requiredStep, jobLog, cases, fixtureBlobs}) {
+  mirrorHead, run, job, requiredStep, jobLog, cases, fixtureBlobs, fixturePaths}) {
   const objects = verifyExactMirrorTree(sourceTree, mirrorTree, mirrorPrefix);
+  requireFact(fixturePaths && typeof fixturePaths === 'object' &&
+    !Array.isArray(fixturePaths), 'missing case-to-source-fixture paths');
+  requireFact(Object.keys(fixturePaths).length === cases.length,
+    'case-to-fixture path coverage mismatch');
+  const sourceFiles = treeFiles(sourceTree);
+  for (const c of cases) {
+    const path = fixturePaths[c.id];
+    requireFact(typeof path === 'string' && path.endsWith('.atto') &&
+      !path.startsWith('/') && !path.split('/').some(s => !s || s === '.' || s === '..'),
+      `unsafe or missing .atto guest fixture path for ${c.id}`);
+    requireFact(sourceFiles.get(path) === `100644:blob:${fixtureBlobs[c.id]}`,
+      `fixture Git blob was not present in source tree for ${c.id}`);
+  }
   verifyGitHubJob(run, job, mirrorHead, requiredStep);
   const count = verifyCaseLog(jobLog, cases, fixtureBlobs);
   return {status: 'OFFLINE_CROSSCHECK_ONLY', exactGitObjects: objects, caseReceipts: count};

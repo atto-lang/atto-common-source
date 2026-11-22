@@ -4,11 +4,11 @@ import {verifyExactMirrorTree,verifyGitHubJob,verifyCaseLog,verifyAllocationProv
   from '../scripts/verify-alloc-provenance-v1.mjs';
 const A='a'.repeat(40),B='b'.repeat(40),C='c'.repeat(40);
 const source={truncated:false,tree:[
-  {path:'x.atto',type:'blob',mode:'100644',sha:A},
-  {path:'lib/y.atto',type:'blob',mode:'100644',sha:B}]};
+  {path:'tests/fixtures/alloc/move.atto',type:'blob',mode:'100644',sha:A},
+  {path:'tests/fixtures/alloc/drop.atto',type:'blob',mode:'100644',sha:B}]};
 const mirror={truncated:false,tree:[
-  {path:'atto-source/x.atto',type:'blob',mode:'100644',sha:A},
-  {path:'atto-source/lib/y.atto',type:'blob',mode:'100644',sha:B}]};
+  {path:'atto-source/tests/fixtures/alloc/move.atto',type:'blob',mode:'100644',sha:A},
+  {path:'atto-source/tests/fixtures/alloc/drop.atto',type:'blob',mode:'100644',sha:B}]};
 const run={id:1001,run_attempt:1,head_sha:C,status:'completed',conclusion:'success'};
 const job={id:2001,runner_id:3001,run_id:1001,run_attempt:1,head_sha:C,
   status:'completed',conclusion:'success',
@@ -16,6 +16,8 @@ const job={id:2001,runner_id:3001,run_id:1001,run_attempt:1,head_sha:C,
 const cases=[{id:'move.after',phase:'compile',expected:'REJECT'},
   {id:'drop.once',phase:'guest',expected:'PASS'}];
 const fixtures={'move.after':A,'drop.once':B};
+const fixturePaths={'move.after':'tests/fixtures/alloc/move.atto',
+  'drop.once':'tests/fixtures/alloc/drop.atto'};
 const log=`other output\nATTO_ALLOC_CASE move.after compile REJECT ${A}\n`+
   `ATTO_ALLOC_CASE drop.once guest PASS ${B}\nATTO_ALLOC_GUEST_EXECUTED\n`;
 const clone=x=>structuredClone(x);
@@ -55,9 +57,19 @@ test('guest case receipts must match case, phase, expected outcome and fixture S
   reject(()=>verifyCaseLog(log+'ATTO_ALLOC_GUEST_EXECUTED\n',cases,fixtures),/duplicated/);
   reject(()=>verifyCaseLog('PENDING',cases,fixtures),/marker/);
 });
+test('source tree must actually contain SHA-bound .atto fixtures',()=>{
+  const args={sourceTree:source,mirrorTree:mirror,mirrorPrefix:'atto-source/',mirrorHead:C,
+    run,job,requiredStep:'Execute allocation conformance guest',jobLog:log,cases,fixtureBlobs:fixtures,fixturePaths};
+  const changed={...args,fixturePaths:{...fixturePaths,'drop.once':'tests/fixtures/alloc/nonexistent.atto'}};
+  reject(()=>verifyAllocationProvenance(changed),/not present/);
+  const wrong={...args,fixtureBlobs:{...fixtures,'drop.once':C}};
+  reject(()=>verifyAllocationProvenance(wrong),/not present/);
+  const missing={...args,fixturePaths:{'drop.once':fixturePaths['drop.once']}};
+  reject(()=>verifyAllocationProvenance(missing),/coverage mismatch/);
+});
 test('synthetic record only proves offline crosscheck, never authentication',()=>{
   assert.deepEqual(verifyAllocationProvenance({sourceTree:source,mirrorTree:mirror,
     mirrorPrefix:'atto-source/',mirrorHead:C,run,job,
-    requiredStep:'Execute allocation conformance guest',jobLog:log,cases,fixtureBlobs:fixtures}),
+    requiredStep:'Execute allocation conformance guest',jobLog:log,cases,fixtureBlobs:fixtures,fixturePaths}),
   {status:'OFFLINE_CROSSCHECK_ONLY',exactGitObjects:2,caseReceipts:2});
 });
