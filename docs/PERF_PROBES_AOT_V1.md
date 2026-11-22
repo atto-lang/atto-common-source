@@ -50,3 +50,46 @@ compilation, normal return/throw/cancel guest execution, disabled-path behavior,
 bounded overflow, fixed plan identity, JIT on/off differential when supported,
 and a *program-specific* strict AOT executable or closed Wasm module. Zero-step
 CI is `NOT_EXECUTED`, not a pass.
+
+
+## Deterministic typed-site planning (additional stage)
+
+The offline `tools/plan-perf-sites.mjs` validates concrete instrumentable
+sites **after** the compiler has produced typed, effect/ownership-checked IR.
+This utility never runs guest code and never claims the supplied IR SHA-256
+has been authenticated. An external trusted compiler is still responsible for
+passing the correct IR and lowering all declared edges.
+
+```sh
+node tools/plan-perf-sites.mjs \
+  contracts/perf-sites-v1.example.json \
+  contracts/perf-probes-aot-v1.json \
+  /tmp/perf-sites-plan.json
+node --test tests/perf-site-plan.test.mjs
+```
+
+Each site has an explicit bounded `site_id`, `module_id`, `function_id`,
+known `probe_id`, fixed sample divisor and named exit edges. A site may
+instrument normal return, throw, raise, panic, cancellation and paired
+suspension/resumption. `span_time=active` stops timing while suspended,
+whereas `wall` includes queue/suspension time. These two semantics must
+never be reported as interchangeable.
+
+- `off` only permits an empty site plan, so disabled builds produce no
+  instrumentation sites.
+- `aot` emits a deterministic sorted plan with a SHA-256 fingerprint.
+- `jit` requires a pinned AOT baseline plan digest and identical typed IR
+  digest; adding/removing sites or changing exit edges/timing/sampling fails.
+- Unexpected fields, duplicate IDs/edges, unsupported probe IDs,
+  unpaired suspension, missing terminal paths, excessive site counts and
+  nonliteral names fail closed.
+- The planner returns **metadata only**; it cannot itself insert typed IR
+  hooks or emit any executable code. AOT instrumentation/codegen and true
+  JIT specialization are **not yet proven** by this contract.
+
+Backend-specific `.atto` modules include `core/perf_policy.atto` with
+pure numeric sampling, monotonic elapsed arithmetic, admission and overflow
+rules. Each compiler owns its implementation independently. The JavaScript
+backend has a proposed compiled guest-execution test and Rust has a proposed
+compiled Wasm guest test using exact `.atto` policy functions; neither
+receives guest execution credit without stepful exact-source evidence.
