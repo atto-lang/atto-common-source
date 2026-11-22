@@ -2,6 +2,17 @@
 
 This is a backend-neutral implementation contract for the **native Atto** `std.http` and `std.fs` modules, not a host-language public replacement. Language-level types and security semantics are defined in [atto-spec](https://github.com/atto-lang/atto-spec/blob/main/language/hosted-async-http-fs-v1.md) (the proposed change lives in a draft PR until merged).
 
+## Built-in import identity
+
+Applications import native Atto modules as `import * as fs from "std.fs";`
+and `import * as http from "std.http";`, without `pkg`.
+These are reserved compiler-builtin names, not relative file paths or
+third-party packages. A backend can own an independent `.atto` implementation
+while preserving its advertised public API. A compiler without a securely
+registered built-in resolver must reject the import with no guest artifact;
+`pkg` remains for external packages. Import resolution does not itself
+convey READ/WRITE permissions or host syscall authority.
+
 ## Guest-to-host split
 
 ```text
