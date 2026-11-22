@@ -11,7 +11,10 @@ const contract=JSON.parse(readFileSync(new URL('../contracts/perf-probes-aot-v1.
 const input=()=>structuredClone(contract);
 const run=x=>generate_perf_probes(x);
 test('build-time only, AOT-first, backend-independent contract',()=>{
-  assert.equal(contract.status,'CONTRACT_ONLY_NO_GUEST_EXECUTION_CREDIT');
+  assert.equal(contract.status,'CONTRACT_AND_SOURCE_CANDIDATES_ONLY_NO_GUEST_EXECUTION_CREDIT');
+  assert.equal(Object.keys(contract.backends).length,11);
+  assert.equal(contract.rules.requires_per_backend_guest_evidence_for_parity,true);
+  assert.equal(contract.rules.hard_realtime_event_storage_requires_preallocation_proof,true);
   assert.equal(contract.rules.aot_compiled_without_runtime_jit,true);
   assert.equal(contract.rules.optional_jit_only_specializes_existing_sites,true);
   assert.equal(contract.rules.dynamic_disabled_probe_does_not_read_clock,true);
