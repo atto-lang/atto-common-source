@@ -137,6 +137,28 @@ class NamespaceIncrementalTests(unittest.TestCase):
         new["namespaces"].append(copy.deepcopy(new["namespaces"][0]))
         with self.assertRaises(InvalidSnapshot): plan_incremental(old, new)
 
+    def test_two_files_in_one_namespace_recompile_only_that_namespace(self):
+        old, new = self.change()
+        extra = {"package":"shop@sha:111", "namespace":"payments",
+                 "path":"src/payments_helpers.atto", "source_sha":h("e")}
+        old["files"].append(copy.deepcopy(extra))
+        new["files"].append(copy.deepcopy(extra))
+        new["files"][-1]["source_sha"] = h("f")
+        p = plan_incremental(old, new)
+        self.assertEqual(p.recheck, ("shop@sha:111::payments",))
+        self.assertEqual(p.codegen, p.recheck)
+
+    def test_move_existing_file_across_namespaces_rebuilds_both(self):
+        old, new = self.change()
+        extra = {"package":"shop@sha:111", "namespace":"metrics",
+                 "path":"src/more_metrics.atto", "source_sha":h("e")}
+        old["files"].append(copy.deepcopy(extra))
+        new["files"].append(copy.deepcopy(extra))
+        new["files"][2]["namespace"] = "payments"
+        p = plan_incremental(old, new)
+        self.assertEqual(p.recheck, ("shop@sha:111::metrics", "shop@sha:111::payments"))
+        self.assertEqual(p.codegen, p.recheck)
+
     def test_mutual_namespace_import_cycle_bounded(self):
         old, new = self.change()
         for src in (old, new):
