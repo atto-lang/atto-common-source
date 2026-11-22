@@ -75,7 +75,8 @@ def validate(doc):
     need(doc["kind"] == KIND and doc["assurance"] == ASSURANCE, "status/identity")
     p = doc["producer"]
     exact(p, ("backend", "revision", "source_sha256", "typed_ir_digest"), "producer")
-    need(p["backend"] in BACKENDS and type(p["revision"]) is str and SHA1.fullmatch(p["revision"])
+    need(type(p["backend"]) is str and p["backend"] in BACKENDS
+         and type(p["revision"]) is str and SHA1.fullmatch(p["revision"])
          and type(p["source_sha256"]) is str and SHA256.fullmatch(p["source_sha256"])
          and type(p["typed_ir_digest"]) is str and SHA256.fullmatch(p["typed_ir_digest"]),
          "producer identity claims malformed")
