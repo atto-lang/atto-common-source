@@ -1,0 +1,5 @@
+namespace a;
+
+pub fnc aggregate(int arg0): int { return arg0 + 1; }
+pub[pkg] fnc internal(): int { return 1; }
+pub[file] fnc file_only(): int { return 1; }

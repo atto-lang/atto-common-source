@@ -38,16 +38,19 @@ Backends may temporarily accept the historical element annotation spelling for m
 
 `Iterator<?>` / `AsyncIterator<?>`, if the wildcard type is available, means an existentially unknown element type. It is **not** the syntax for yield-type inference. V1 canonical declarations use an explicit iterator element type; a future omitted-return inference rule must be specified separately and must not silently widen to `?`.
 
-The v1 pull protocol is:
+The v1 iterator protocol is:
 
 ```oreslang
 Iterator<T>.next(): IteratorResult<T>
 Iterator<T>.close(): void
+
 AsyncIterator<T>.next(): Future<IteratorResult<T>>
 AsyncIterator<T>.close(): Future<void>
 ```
 
 `IteratorResult<T>` distinguishes `yielded(T)` from `done`; null or an Option sentinel must not be used to encode completion because T may itself contain those values.
+
+Synchronous close is immediate from the caller's perspective. Asynchronous close is a nonblocking request: its Future completes only after required cleanup and physical producer/frame exit are complete. Repeated async close calls share one logical close operation and must not amplify scheduler work. Source that depends on retirement before continuing uses `await iterator.close()`; structured `for await` cleanup performs the equivalent suspension automatically. An async close implementation must not park an actor or reusable runtime carrier while waiting for retirement.
 
 A generator may use `return;` for completion. `return value;` is rejected in v1. A future completion-result type would require a separately versioned contract.
 
@@ -100,7 +103,7 @@ Normal exhaustion, explicit close, early consumer break, cancellation, failure, 
 
 Terminal cancellation is control flow, not a catchable ordinary guest exception. User catch blocks must not swallow it, but cleanup still runs.
 
-A failure remains sticky across later pulls unless explicit close changes the public state to DONE according to the runtime close contract. Backends must not launder an admission failure into successful completion.
+A failure remains sticky across later pulls until explicit close. Explicit close may acknowledge that already-observed pull failure, run required cleanup, and retire the activation to DONE; a new cleanup/retirement failure produced by close itself is reported by `close()` / the async close Future and must not be laundered into successful completion.
 
 ## Ownership and receivers
 

@@ -1,0 +1,354 @@
+{
+  "schema": "oreslang-cross-backend-namespace-guest-gates-v1",
+  "status": "PROPOSED_SOURCE_CORPUS_NOT_EXECUTION_EVIDENCE",
+  "authority": {
+    "namespace_identity": [
+      "package_instance_id",
+      "namespace_name"
+    ],
+    "alias_pins": {
+      "app@1": {
+        "foo": "foo@1"
+      }
+    },
+    "source_listing": "closed_host_inventory",
+    "no_ambient_filesystem_discovery": true,
+    "note": "This 10-provider-source LLVM pinned-inventory profile cannot be equated to Java's manifest-derived import namespace profile until a reviewed grammar/locator decision. Cross-package fallback negative now imports only namespace a to isolate missing a.aggregate in other@1 rather than relying on absence of namespace c."
+  },
+  "grammar_profiles": {
+    "pinned_ns": {
+      "syntax": "import ns a from \"pkg:foo\";",
+      "source_prs": [
+        "oreslang-common-source#189",
+        "oreslang-source.llvm#1224",
+        "oreslang-source.java#2255"
+      ],
+      "capability_scope": "CLOSED_PINNED_SCALAR_ABI: positional int/bool call lowering and no guest initialization/recursion."
+    },
+    "manifest_namespace": {
+      "syntax": "import namespace billing as payments from \"checkout\";",
+      "source_prs": [
+        "oreslang-common-source#188",
+        "oreslang-source.java#2258",
+        "oreslang-source.java#2263"
+      ],
+      "status": "ALTERNATE_DRAFT_NOT_EQUIVALENT"
+    }
+  },
+  "sources": [
+    {
+      "path": "foo/src/compute/math.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace a;\npub fnc add(int a, int b): int { return a + b; }\n"
+    },
+    {
+      "path": "foo/src/compute/stats.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace a;\npub fnc double(int value): int { return add(value, value); }\n"
+    },
+    {
+      "path": "foo/src/compute/aggregation.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace a;\npub fnc aggregate(int value): int { return double(value) + 1; }\n"
+    },
+    {
+      "path": "foo/src/data/models.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace b;\npub fnc model_code(): int { return 1; }\n"
+    },
+    {
+      "path": "foo/src/data/queries.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace b;\npub fnc query_code(): int { return 2; }\n"
+    },
+    {
+      "path": "foo/src/data/storage.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace b;\npub fnc storage_code(): int { return 3; }\n"
+    },
+    {
+      "path": "foo/src/data/validation.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace b;\npub fnc validation_code(): int { return 4; }\n"
+    },
+    {
+      "path": "foo/src/api/routes.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace c;\npub fnc route_ok(int code): bool { return code eq 43; }\n"
+    },
+    {
+      "path": "foo/src/api/handlers.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace c;\npub fnc handler_ok(int code): bool { return route_ok(code); }\n"
+    },
+    {
+      "path": "foo/src/api/responses.ores",
+      "package_instance_id": "foo@1",
+      "content": "namespace c;\npub fnc response_delta(): int { return handler_ok(43) ? 0 : 1; }\n"
+    },
+    {
+      "path": "other/src/collision.ores",
+      "package_instance_id": "other@1",
+      "content": "namespace a;\npub fnc add(int a, int b): int { return 99; }\n"
+    },
+    {
+      "path": "app/src/main.ores",
+      "package_instance_id": "app@1",
+      "content": "import ns a from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta(); }\n"
+    }
+  ],
+  "cases": [
+    {
+      "id": "ns-exit-43",
+      "expected": "pass",
+      "code": "EXECUTE",
+      "gate_scope": "execution"
+    },
+    {
+      "id": "missing-pin",
+      "expected": "reject",
+      "code": "UNDECLARED_ALIAS",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "import ns a from \"pkg:foo\";",
+          "import ns a from \"pkg:missing\";"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "colliding-package-pin",
+      "expected": "reject",
+      "code": "NO_CROSS_PACKAGE_FALLBACK",
+      "alias_override": {
+        "app@1": {
+          "foo": "other@1"
+        }
+      },
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "import ns a from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta(); }\n",
+          "import ns a from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21); }\n"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "unknown-export",
+      "expected": "reject",
+      "code": "UNKNOWN_EXPORT",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "a.aggregate(21)",
+          "a.absent(21)"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "wrong-arity",
+      "expected": "reject",
+      "code": "WRONG_ARITY",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "a.aggregate(21)",
+          "a.aggregate()"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "wrong-arg-type",
+      "expected": "reject",
+      "code": "TYPE_MISMATCH",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "a.aggregate(21)",
+          "a.aggregate(true)"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "duplicate-export",
+      "expected": "reject",
+      "code": "DUPLICATE_PUBLIC_ARITY",
+      "mutation": {
+        "file": "foo/src/compute/math.ores",
+        "replace": [
+          "pub fnc add(int a, int b)",
+          "pub fnc aggregate(int value): int { return 0; }\npub fnc add(int a, int b)"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "private-export",
+      "expected": "reject",
+      "code": "VISIBILITY_DENIED",
+      "mutation": {
+        "file": "foo/src/compute/aggregation.ores",
+        "replace": [
+          "pub fnc aggregate",
+          "fnc aggregate"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "shadow-import",
+      "expected": "reject",
+      "code": "SHADOWED_BINDING",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "pub fnc main(): int {",
+          "pub fnc a(): int { return 0; }\npub fnc main(): int {"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "duplicate-import",
+      "expected": "reject",
+      "code": "DUPLICATE_IMPORT",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "import ns a from \"pkg:foo\";",
+          "import ns a from \"pkg:foo\";\nimport ns a from \"pkg:foo\";"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "ambient-path-selector",
+      "expected": "reject",
+      "code": "INVALID_SELECTOR",
+      "mutation": {
+        "file": "app/src/main.ores",
+        "replace": [
+          "import ns a from \"pkg:foo\";",
+          "import ns a from \"../foo\";"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "provider-cycle",
+      "expected": "reject",
+      "code": "CYCLIC_PROVIDER_CALL",
+      "mutation": {
+        "file": "foo/src/compute/math.ores",
+        "replace": [
+          "return a + b;",
+          "return aggregate(a);"
+        ]
+      },
+      "gate_scope": "profile_capability"
+    },
+    {
+      "id": "cross-namespace-implicit",
+      "expected": "reject",
+      "code": "NO_IMPLICIT_NAMESPACE",
+      "mutation": {
+        "file": "foo/src/compute/aggregation.ores",
+        "replace": [
+          "double(value) + 1",
+          "model_code() + 1"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    },
+    {
+      "id": "provider-init",
+      "expected": "reject",
+      "code": "UNSUPPORTED_INITIALIZATION",
+      "mutation": {
+        "file": "foo/src/compute/math.ores",
+        "replace": [
+          "pub fnc add",
+          "fnc init(): int { return 0; }\npub fnc add"
+        ]
+      },
+      "gate_scope": "profile_capability"
+    },
+    {
+      "id": "named-arg-call",
+      "expected": "reject",
+      "code": "UNSUPPORTED_ABI",
+      "mutation": {
+        "file": "foo/src/compute/stats.ores",
+        "replace": [
+          "add(value, value)",
+          "add(a: value, b: value)"
+        ]
+      },
+      "gate_scope": "profile_capability"
+    },
+    {
+      "id": "wrong-bool-type",
+      "expected": "reject",
+      "code": "TYPE_MISMATCH",
+      "mutation": {
+        "file": "foo/src/api/handlers.ores",
+        "replace": [
+          "route_ok(code)",
+          "route_ok(true)"
+        ]
+      },
+      "gate_scope": "portable_semantics"
+    }
+  ],
+  "backend_evidence": {
+    "java": {
+      "compiler_executed": false,
+      "guest_executed": false,
+      "exact_head_verified": false,
+      "namespace_syntax_resolved": false
+    },
+    "llvm": {
+      "compiler_executed": false,
+      "guest_executed": false,
+      "exact_head_verified": false,
+      "namespace_syntax_resolved": false
+    },
+    "net": {
+      "compiler_executed": false,
+      "guest_executed": false,
+      "exact_head_verified": false,
+      "namespace_syntax_resolved": false
+    },
+    "wasm": {
+      "compiler_executed": false,
+      "guest_executed": false,
+      "exact_head_verified": false,
+      "namespace_syntax_resolved": false
+    },
+    "forge": {
+      "compiler_executed": false,
+      "guest_executed": false,
+      "exact_head_verified": false,
+      "namespace_syntax_resolved": false
+    }
+  },
+  "promotion": "A backend pass requires exact-source compiler and emitted executable / actual guest execution, valid actor/package provenance and nonzero steps. This JSON, model tests, parser admission, simulated output, and host-only checks are insufficient. Compiler-negative profile_capability results prove only a backend's declared restricted lowering, not universal Oreslang rejection or complete language parity. Named arguments, reachable package initialization and recursive provider calls may be valid beyond the pinned scalar profile.",
+  "extended_positive": {
+    "id": "all-provider-exit-53",
+    "profile": "pinned_ns",
+    "entry_source": "import ns a from \"pkg:foo\";\nimport ns b from \"pkg:foo\";\nimport ns c from \"pkg:foo\";\npub fnc main(): int { return a.aggregate(21) + c.response_delta() + b.model_code() + b.query_code() + b.storage_code() + b.validation_code(); }\n",
+    "expected_exit": 53,
+    "backend_targets": [
+      "java",
+      "llvm"
+    ],
+    "compiler_executed": false,
+    "guest_executed": false,
+    "evidence": "NOT_EXECUTED"
+  }
+}

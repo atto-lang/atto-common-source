@@ -4,21 +4,34 @@
 
 ## Decision
 
-`core` is freestanding: compiling or linking it must not need Linux, POSIX, libc, JVM, an OS allocator, a scheduler, a filesystem, a clock, threads, sockets or runtime initialization. Scalar values, fixed layouts, `Option`/`Result`, ownership/effects and panic/abort contracts belong here. No heap is required.
+## Public library profiles
 
-`alloc` is optional, explicit allocation: callers furnish the provider/arena; no implicit ambient allocator. Pure dynamic codecs that require owned growable storage—including JSON—belong here rather than in `core`. `core` may still expose allocation-free JSON-adjacent contracts—token kinds, borrowed-input cursors, caller-provided encode sinks, and static codec markers—provided those contracts neither allocate nor require an ambient allocator. An owned `JsonValue` tree, owned JSON `String`, growable array/object, parser DOM, or generated codec scratch storage is never pulled into the allocator-free `core` closure. The canonical JSON namespace is `alloc/json`: `JsonValue`, owned strings/arrays/objects, parsing, encoding, and generated typed codecs may depend on `alloc` but require no OS capability. Hosted `std/*` I/O/network adapters may feed bytes to or consume bytes from `alloc/json`, but neither `alloc/json` nor its transitive dependencies may import those adapters. A `freestanding-alloc` target can therefore use JSON when it supplies an allocator and explicit resource quotas.
+Oreslang has **exactly two public library profiles**:
 
-`actor` is optional and OS-independent: it needs a **provided** scheduler/executor and bounded mailbox storage. Actor-only deployments MAY use fixed slots/arenas and never import `alloc`. Dynamic actor and OTP variants may import `alloc` only through a declared optional dependency and an explicit allocator provider; that opt-in does not weaken the freestanding `core` closure. The CONTROL lane is runtime-owned, distinct from USER/DATA; library code does not create privileged CONTROL messages.
+| Profile | Contract |
+| --- | --- |
+| `core` | Freestanding/no-OS library surface. It must remain linkable without an OS, libc, ambient allocator, scheduler, filesystem, sockets, process APIs, or runtime initialization. |
+| `std` | Hosted/platform library surface. It builds on `core` and may expose explicitly admitted OS/platform services. |
 
-`stdlib/otp` is an **optional library behaviour tier above `actor`**, not a built-in part of `core` and not an OS dependency.
+Allocation, actor execution, OTP behaviours, clocks, and related services are explicit **provider/capability families**, not additional library layers or public profiles. Canonical compiler-owned library imports live under `ores.core/*` or `ores.std/*`. A `core` build may opt into caller-provided allocation, a bounded actor executor, or OTP behaviours without becoming `std`, provided the complete transitive closure remains OS-independent.
 
-The physical layout is `stdlib/otp/<module>.ores`, but the **proposed canonical import** is `otp/<module>` (for example `otp/gen_server`), *not* `std/otp/<module>`. The existing Java packaged resolver currently only accepts `std/*`, so this requires a new closed, compiler-owned `otp/*` resolver plus AOT resource registration. An optional hosted `std/otp/*` facade must not become a dependency of freestanding OTP. These canonical paths are a **proposal**, not currently accepted import syntax or an implementation claim. Consumers can choose a static fixed-capacity variant or pass an explicit allocator as necessary. A hosted OS adapter can provide clock/threads/IO, but OTP behaviour code itself must never call the host directly. Even a target that does not support actors must still compile `core`.
+Backends must reject profile/target combinations they cannot actually certify rather than silently weakening the requested profile. The public profile vocabulary is therefore just `core` and `std`; older contract-only names such as `freestanding-core`, `freestanding-actor`, `freestanding-otp`, and `hosted` are superseded as public profile names.
 
-`stdlib/io`, `stdlib/fs`, `stdlib/net` and `stdlib/process` are separately gated host-capability adapters, never dependencies of the eight OTP modules. These names are conceptual namespace layout; existing backend packaging/import spellings remain separately gated. The canonical eight distribution paths are `stdlib/otp/*.ores`; the proposed logical import namespace is `otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to host/classpath resolution.
+The `core` **layer** is freestanding: compiling or linking the base layer itself must not need Linux, POSIX, libc, JVM, an OS allocator, a scheduler, a filesystem, a clock, threads, sockets or runtime initialization. Scalar values, fixed layouts, `Option`/`Result`, ownership/effects and panic/abort contracts belong here. No heap is required.
+
+Explicit allocation is a provider requirement, not a library layer: callers furnish the allocator/arena and no ambient allocator is implied. Host-independent owned strings, vectors, maps, JSON trees, codecs, or similar dynamic facilities may remain in `ores.core/*` when their compiler-inferred closure requires only an explicit allocator provider. Hosted I/O/network adapters belong in `ores.std/*` and may feed bytes to or consume bytes from those core facilities, but `ores.core/*` may never import `ores.std/*`. There is no canonical top-level `alloc/*` library namespace.
+
+Actor execution is optional and may remain in `ores.core/*` when it needs only explicitly provided executor/scheduler authority, bounded mailbox storage, trusted CONTROL capability, and optional allocator/monotonic-clock providers. Hosted thread, process, filesystem, network, or wall-clock adapters belong in `ores.std/*`. The CONTROL lane is runtime-owned, distinct from USER/DATA; ordinary library code does not manufacture privileged CONTROL messages.
+
+`stdlib/otp` is the physical source location for optional OTP behaviour modules. Logically those modules are part of the `core` library layer when their provider/effect closure is host-independent; OTP is not a third library layer.
+
+The physical layout is `stdlib/otp/<module>.ores`, while the canonical logical import is `ores.core/otp/<module>` (for example `ores.core/otp/gen_server`). The older `std/otp/*` Java draft spelling is transitional only and must never create a second module identity. A closed compiler-owned resolver plus AOT resource registration is required before these imports are advertised as implemented. Consumers may use fixed-capacity storage or explicit allocator/clock providers as necessary. Hosted OS adapters can supply threads, I/O, networking, or wall-clock services only through `ores.std/*`; OTP behaviour code in `ores.core/*` must never acquire them implicitly.
+
+`ores.std/io`, `ores.std/fs`, `ores.std/net`, and `ores.std/process` are separately gated hosted capabilities and are never dependencies of the eight core OTP modules. The canonical eight physical distribution paths remain `stdlib/otp/*.ores`; the logical import namespace is `ores.core/otp/*`. Compiler resolvers must explicitly map those paths, reject missing modules, and never fall back to project, ambient filesystem, or classpath resolution.
 
 ## Import namespace staging audit (2026-10-17)
 
-The future portable canonical import is **`otp/<module>`**. Java/Graal draft
+The future portable canonical import is **`ores.core/otp/<module>`**. Java/Graal draft
 PR [#1216](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1216)
 currently admits **`std/otp/<module>`** for the original six pure source protocol/policy
 slices. This is a transitional Java resolver spelling, **not** proof that
@@ -26,7 +39,7 @@ slices. This is a transitional Java resolver spelling, **not** proof that
 LLVM draft [#560](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/560)
 rejects OTP imports fail-closed until source module linking is implemented.
 
-Migration gate: implement a closed compiler-owned `otp/*` resolver with exact
+Migration gate: implement a closed compiler-owned `ores.core/otp/*` resolver with exact
 eight-module resource mapping and stable unit identities, then run import,
 typecheck and actual guest-source execution tests. Alias compatibility with
 `std/otp/*` is a separate explicit decision; never allow duplicate module
@@ -50,12 +63,12 @@ module identities for two spellings.
 
 ## Freestanding build and capability discipline
 
-1. **Source/import closure:** compiler resolves every direct/transitive import, effect and target requirement before emitting code. Import-layer edges must be legal **regardless of host target**: `core` cannot import `alloc`, `actor`, `stdlib`, Java interop or an OS/host intrinsic, including through generated code. `actor` and `otp` may import `alloc` only via an explicitly declared optional edge and provided allocator. A hosted compilation flag does not retroactively make `core -> host-adapter` legal.
-2. **Explicit providers:** `actor` requires a scheduler/executor, mailbox storage and trusted lifecycle CONTROL capability supplied by the embedding runtime. Calls requiring time (restart intensity windows, deadlines, state timers) require a monotonic clock provider; without one they must reject or disable the particular timed feature, never silently consult a wall clock.
-3. **Bounded execution:** fixed slots, bounded mailboxes, bounded event-handler sets, finite restart budgets and eventual cancellation/teardown; no unbounded busy restart loops, hidden threads or invisible retries. Backend may require `alloc` for a chosen dynamic policy, but not by default for `core`.
+1. **Source/import closure:** the compiler resolves every direct/transitive import, effect, provider requirement, and generated-code edge before emitting code. `ores.core/*` may import only `ores.core/*`; `ores.std/*` may import `ores.core/*` or `ores.std/*`. No hosted target selection can retroactively make `ores.core -> ores.std`, Java interop, project/ambient source, or an OS/host intrinsic legal.
+2. **Explicit providers:** allocator, actor executor, bounded mailbox, trusted lifecycle CONTROL, and monotonic-clock requirements are compiler-inferred provider demands rather than library layers. Missing providers fail closed. Timed features must never silently consult an ambient wall clock.
+3. **Bounded execution:** fixed slots, bounded mailboxes, bounded event-handler sets, finite restart budgets and eventual cancellation/teardown; no unbounded busy restart loops, hidden threads or invisible retries. A chosen dynamic policy may require `allocator.explicit`, but no allocator is implied by the `core` layer itself.
 4. **Ownership and trust:** actor-owned state is sealed; refs and response capabilities are generation-fenced; no raw pointer/object/OS handle, live reply token or forged CONTROL passes via ordinary sendable payload. A `cast` receipt means *admission*, not processing or delivery.
 5. **No keyword proliferation:** behaviours are Oreslang-authored library modules over existing actor, channel/future and CONTROL intrinsics. No `gen_server`/ `supervisor` special compiler keyword is required.
-6. **Profile intent:** `freestanding-core` uses only `core`; `freestanding-actor` adds explicit actor runtime providers; `freestanding-otp` adds the eight behaviours when their individual requirements exist; `hosted` may additionally grant OS adapters. These are contract profiles, **not** claims that the compiler supports these profile names or syntax today.
+6. **Profile intent:** the public profile vocabulary and library-layer vocabulary are exactly `core` and `std`. `core` is the freestanding/no-OS surface and may use explicitly granted allocator, actor, OTP, or clock providers without gaining hosted authority. `std` additionally admits hosted/platform adapters. Provider families are not library layers or public profiles.
 7. **Build opt-out syntax:** Rust's `#![no_std]` is an analogy, not accepted Oreslang grammar. Until explicit attributes/effects are implemented, use a versioned target/import manifest for test/admission intent. A future source attribute requires its own syntax RFC and parser tests.
 
 ## Milestones / evidence
