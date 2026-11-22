@@ -1,6 +1,6 @@
 {
   "schema": "atto.perf-probes.v1",
-  "status": "CONTRACT_ONLY_NO_GUEST_EXECUTION_CREDIT",
+  "status": "CONTRACT_AND_SOURCE_CANDIDATES_ONLY_NO_GUEST_EXECUTION_CREDIT",
   "purpose": "Stable numeric performance probe ids and AOT-compatible build-time generated AttoLang API",
   "profile": {
     "max_probes": 4096,
@@ -15,15 +15,17 @@
     "instant"
   ],
   "backends": {
-    "java": "BACKEND_OWNED_CANDIDATE",
-    "llvm": "BACKEND_OWNED_CANDIDATE",
-    "net": "NOT_IMPLEMENTED",
-    "wasm": "NOT_IMPLEMENTED",
-    "rs": "NOT_IMPLEMENTED",
-    "js": "NOT_IMPLEMENTED",
-    "forge": "NOT_IMPLEMENTED",
-    "cranelift": "NOT_IMPLEMENTED",
-    "hdl": "NOT_IMPLEMENTED"
+    "java": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "llvm": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "net": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "wasm": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "rs": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "js": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "forge": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "cranelift": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "hdl": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "atto": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT",
+    "realtime": "SOURCE_CANDIDATE_ONLY_NO_GUEST_CREDIT"
   },
   "rules": {
     "id_explicit_not_derived_from_order": true,
@@ -44,7 +46,11 @@
     "per_backend_implementation_independent": true,
     "tracing_failure_must_not_change_guest_semantics": true,
     "runtime_export_outside_hot_path": true,
-    "untrusted_manifest_is_not_provenance": true
+    "untrusted_manifest_is_not_provenance": true,
+    "requires_per_backend_guest_evidence_for_parity": true,
+    "hard_realtime_event_storage_requires_preallocation_proof": true,
+    "hdl_cycle_measurements_not_interchangeable_with_nanoseconds": true,
+    "strict_aot_fails_closed_on_unsupported_clock_or_import": true
   },
   "registry": [
     {
@@ -89,5 +95,18 @@
       "kind": "span",
       "sampling_divisor": 1
     }
-  ]
+  ],
+  "backend_time_units": {
+    "java": "monotonic_nanoseconds_adaptor_pending",
+    "llvm": "monotonic_nanoseconds_adaptor_pending",
+    "net": "monotonic_nanoseconds_adaptor_pending",
+    "wasm": "monotonic_nanoseconds_import_capability_pending",
+    "rs": "monotonic_nanoseconds_adaptor_pending",
+    "js": "monotonic_nanoseconds_host_capability_pending",
+    "forge": "monotonic_nanoseconds_adaptor_pending",
+    "cranelift": "monotonic_nanoseconds_adaptor_pending",
+    "atto": "monotonic_nanoseconds_stage0_bootstrap_pending",
+    "hdl": "explicit_cycle_count_only_no_nanoseconds",
+    "realtime": "explicit_monotonic_nanoseconds_input_no_implicit_clock"
+  }
 }
