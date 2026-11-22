@@ -103,3 +103,32 @@ LLVM and other compilers have separate draft allocator/library PRs.
 The latest Java private mirror had 13/13 Git *blob* identity matches,
 but its Actions job failed with **zero executed steps**. This is not
 guest compilation, AOT or cross-backend parity evidence.
+
+## 2026-11-22: independently correlated GitHub provenance (offline)
+
+The original `verify-alloc-parity-v1.mjs` only validates *submitted JSON
+shapes*. A user could supply fabricated positive job IDs, output records,
+and a matching marker. Do not call its output a certificate.
+
+`scripts/verify-alloc-provenance-v1.mjs` separately checks facts fetched
+from the GitHub API: full untruncated source and private mirror Git trees
+(path, file mode and blob identity), exact mirror commit SHA, run ID and
+attempt, job ID, assigned runner, a successfully executed guest test step,
+and an actual decoded job log. The log must contain **exactly one**
+`ATTO_ALLOC_GUEST_EXECUTED` marker and one correctly named, phased,
+expected-result and Git-blob-pinned case receipt for **every** applicable
+conformance case. Missing, extra, repeated and stale evidence is rejected.
+The shared-contract workflow executes adversarial tests for this gate.
+
+This is still an **offline cross-check**, not cryptographic proof that a
+submitted JSON response or log was fetched from GitHub. The verifier returns
+`OFFLINE_CROSSCHECK_ONLY`; release approval additionally requires a trusted
+caller to independently retrieve the raw GitHub API objects and job log,
+verify the backend's actual guest runner and per-case fixtures, and complete
+human security review. A GitHub job whose steps array is empty can never
+satisfy this contract.
+
+Executed locally against the exact source bytes before this commit:
+`node --test tests/verify-alloc-provenance-v1.test.mjs` returned **4/4
+passing** on Node 22. This tests the checker only, not any backend compiler,
+guest program or native image.
