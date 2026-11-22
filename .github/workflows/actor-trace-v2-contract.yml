@@ -1,0 +1,34 @@
+name: Actor trace v2 contract validation (reference only)
+on:
+  pull_request:
+    paths:
+      - 'contracts/actor-trace-v2.json'
+      - 'tests/test_actor_trace_v2_contract.py'
+      - '.github/workflows/actor-trace-v2-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/actor-trace-v2.json'
+      - 'tests/test_actor_trace_v2_contract.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Exact-head contract guard
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          python3 -m unittest discover -s tests -p test_actor_trace_v2_contract.py -v
+          git hash-object contracts/actor-trace-v2.json
+          echo 'ACTOR_TRACE_V2_CONTRACT_PASS host_only=1'
