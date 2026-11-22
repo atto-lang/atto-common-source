@@ -1,0 +1,31 @@
+// Native AttoLang Future-family adapters (hosted std layer).
+// These functions use the compiler's sealed await/receipt operations: they
+// DO NOT construct task, actor, operation or reply authority.
+// Each input is an affine one-shot receipt, consumed by precisely one await.
+// No implicit flattening, cancellation, retries, streaming, FFI, or host I/O.
+// Full generic guest execution remains NOT_EXECUTED across compiler backends.
+define module future_family as
+  // Basic one-shot receipt; awaiting Future<Future<T>> returns Future<T>.
+  pub susp fnc await_future<T>(Future<T> receipt) -> T {
+    return await receipt;
+  }
+
+  // TaskFuture retains its own separate cancellation/control authority only
+  // while held by the caller. This helper consumes the passed result right;
+  // it must not fabricate a new TaskFuture or duplicate a completion receipt.
+  pub susp fnc await_task<T>(TaskFuture<T> child) -> T {
+    return await child;
+  }
+
+  // A producer actor's incarnation and response ticket are checked by the
+  // runtime. This helper cannot change the producer or manufacture a reply.
+  pub susp fnc await_actor<T>(ActorFuture<T> reply) -> T {
+    return await reply;
+  }
+
+  // Typed Result stays intact: neither a returned Err nor an actor CONTROL
+  // failure is silently unwrapped or converted to a successful T.
+  pub susp fnc await_actor_result<T,E>(ActorFuture<Result<T,E>> reply) -> Result<T,E> {
+    return await reply;
+  }
+end

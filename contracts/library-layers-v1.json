@@ -72,6 +72,15 @@
         "pure"
       ],
       "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/std/future_family.atto",
+      "layer": "std",
+      "imports": [],
+      "capabilities": [
+        "host.scheduler"
+      ],
+      "execution": "NOT_EXECUTED"
     }
   ],
   "proof": {

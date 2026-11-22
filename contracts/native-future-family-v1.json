@@ -1,0 +1,35 @@
+{
+  "schema": "atto.stdlib.native-future-family.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "canonicalSource": "stdlib/std/future_family.atto",
+  "canonicalSha256": "49c89c2cee3bfadf0bfb6d862634519a25093ff1143412cefeb84ab15905de52",
+  "sourceBytes": 1453,
+  "owner": "atto-common-source",
+  "level": "std",
+  "sourceIsNativeAtto": true,
+  "compilerSealedTypes": ["Future<T>", "TaskFuture<T>", "ActorFuture<T>"],
+  "exports": ["await_future<T>", "await_task<T>", "await_actor<T>", "await_actor_result<T,E>"],
+  "semanticBoundaries": {
+    "awaitIsCompilerOperation": true,
+    "singleResultReceipt": true,
+    "noImplicitFutureFlattening": true,
+    "noImplicitResultUnwrap": true,
+    "noControlRightsOnPlainFuture": true,
+    "actorIncarnationMustBeAuthenticated": true,
+    "actorStreamIsSeparate": true,
+    "newGuestCodeRequiresAotProof": true
+  },
+  "targets": {
+    "atto": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "hdl": "NOT_EXECUTED",
+    "java": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "realtime": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED"
+  }
+}
