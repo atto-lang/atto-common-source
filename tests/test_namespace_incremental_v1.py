@@ -159,6 +159,62 @@ class NamespaceIncrementalTests(unittest.TestCase):
         self.assertEqual(p.recheck, ("shop@sha:111::metrics", "shop@sha:111::payments"))
         self.assertEqual(p.codegen, p.recheck)
 
+    def test_two_unnamespaced_files_rebuild_independently(self):
+        old, new = self.change()
+        for snapshot in (old, new):
+            snapshot["files"].extend([
+                {"package":"shop@sha:111", "namespace":None, "path":"src/one.atto",
+                 "source_sha":h("1"), "interface_sha":h("a"), "imports":[], "inlines":[]},
+                {"package":"shop@sha:111", "namespace":None, "path":"src/two.atto",
+                 "source_sha":h("2"), "interface_sha":h("b"), "imports":[], "inlines":[]},
+            ])
+        new["files"][-2]["source_sha"] = h("3")
+        p = plan_incremental(old, new)
+        self.assertEqual(p.recheck, ("shop@sha:111::@file:src/one.atto",))
+        self.assertNotIn("shop@sha:111::@file:src/two.atto", p.codegen)
+
+    def test_unnamespaced_file_public_api_invalidates_importer(self):
+        old, new = self.change()
+        for snapshot in (old, new):
+            snapshot["files"].append({
+                "package":"shop@sha:111", "namespace":None, "path":"src/helpers.atto",
+                "source_sha":h("1"), "interface_sha":h("a"), "imports":[], "inlines":[]})
+            snapshot["namespaces"][0]["imports"].append("shop@sha:111::@file:src/helpers.atto")
+        new["files"][-1]["source_sha"] = h("2")
+        new["files"][-1]["interface_sha"] = h("f")
+        p = plan_incremental(old, new)
+        self.assertEqual(set(p.recheck), {"shop@sha:111::@file:src/helpers.atto",
+                                          "shop@sha:111::users", "app@sha:222::ui"})
+
+    def test_unnamespaced_file_requires_proven_interface_and_edges(self):
+        old, new = self.change()
+        new["files"].append({"package":"shop@sha:111", "namespace":None,
+                             "path":"src/unsafe.atto", "source_sha":h("1")})
+        with self.assertRaisesRegex(InvalidSnapshot, "unnamespaced file requires"):
+            plan_incremental(old, new)
+
+    def test_unnamespaced_import_missing_after_file_delete_fails_closed(self):
+        old, new = self.change()
+        for snapshot in (old, new):
+            snapshot["files"].append({"package":"shop@sha:111", "namespace":None,
+                                      "path":"src/helpers.atto", "source_sha":h("1"),
+                                      "interface_sha":h("a"), "imports":[], "inlines":[]})
+            snapshot["namespaces"][0]["imports"].append("shop@sha:111::@file:src/helpers.atto")
+        new["files"].pop()
+        with self.assertRaisesRegex(InvalidSnapshot, "missing/unauthorized"):
+            plan_incremental(old, new)
+
+    def test_unnamespaced_to_namespaced_changes_ownership_and_consumer_key(self):
+        old, new = self.change()
+        old["files"].append({"package":"shop@sha:111", "namespace":None,
+                             "path":"src/more.atto", "source_sha":h("a"),
+                             "interface_sha":h("b"), "imports":[], "inlines":[]})
+        new["files"].append({"package":"shop@sha:111", "namespace":"users",
+                             "path":"src/more.atto", "source_sha":h("a")})
+        p = plan_incremental(old, new)
+        self.assertIn("shop@sha:111::@file:src/more.atto", p.removed)
+        self.assertIn("shop@sha:111::users", p.codegen)
+
     def test_mutual_namespace_import_cycle_bounded(self):
         old, new = self.change()
         for src in (old, new):
