@@ -3,6 +3,8 @@
 **Status:** normative candidate language/runtime contract, NOT compiler support or training parity. October 18, 2026.
 **Authority:** common-source language semantics; numerical algorithms remain pure Oreslang in `oreslang-tensor`, `oreslang-autograd`, `oreslang-ml`. The existing compiler backends remain independent pending shared-HIR adoption.
 
+**Cross-domain refinement:** [GENERAL_PURPOSE_MODELS_V1.md](GENERAL_PURPOSE_MODELS_V1.md) specifies the general-purpose typed pure graph concept of which these differentiable tensor/actor contracts are one specialization. It preserves this ML spelling, but removes any requirement that a forward-only model provide VJPs, trainable parameters, tensors or an actor runtime. The gradients-only diagnostic correction below supersedes the old missing-VJP-at-declaration interpretation.
+
 ## Canonical source spelling
 
 ```oreslang
@@ -41,21 +43,21 @@ The explicit `ml.pipeline(...)` option is a *placement/scheduling plan*, not the
 ```ebnf
 model_decl    = "define" "model" IDENT [ "(" [ formals ] ")" ] "as"
                 model_item { model_item } "end" ;
-model_item    = nominal_layer_call [ ";" ] ;
-nominal_layer_call = IDENT "(" [ compile_time_arguments ] ")" ;
+model_item    = nominal_model_op_call [ ";" ] ;
+nominal_model_op_call = IDENT "(" [ compile_time_arguments ] ")" ;
 ```
 
 1. `model` is a contextual declaration keyword immediately after `define`; do not globally reserve it in unrelated identifier positions without a separate migration.
 2. Formal parameters use ordinary Oreslang named/default-argument typing and compile-time constant defaults. `model` declarations do not execute arbitrary module-import code.
-3. V1 body is a non-empty **ordered sequence of statically resolvable layer constructors**. Reject arbitrary expressions, I/O, suspending calls, nested actor spawns, mutation, uncontrolled recursion and dynamic topology. The lowered graph is immutable after instantiation, barring an explicit new generation.
-4. Layer signatures carry tensor dtype/shape/stride/layout, gradient rule and parameter schemas. Adjacent ports must unify without implicit reshape, dtype conversion, copies, broadcasting or device transfer. Batch dimension may be symbolic but consistently constrained.
+3. V1 body is a non-empty **ordered sequence of statically resolvable typed model-operation constructors**; NN layers are one category. Reject arbitrary expressions, I/O, suspending calls, nested actor spawns, mutation, uncontrolled recursion and dynamic topology. The lowered graph is immutable after instantiation, barring an explicit new generation.
+4. Operation signatures carry typed input/output ports; tensor operations additionally carry dtype/shape/stride/layout. Differentiation rules and trainable parameters are optional capabilities, required only if a requested training/gradient path uses them. Adjacent ports must unify without implicit reshape, dtype conversion, copies, broadcasting or device transfer. Batch dimension may be symbolic but consistently constrained.
 5. Each declaration denotes a nominal **model type** and graph blueprint. `Classifier()` creates an instance with independently owned trainable parameter storage, stable parameter IDs and a graph generation. Calling/using a model for inference is not itself training.
 6. Internally lower to a `ModelGraph` of typed operations, then independently to `ExecutionGraph` partitions of actor stages. Stage count need not equal layer count. Operator fusion must preserve the observable mathematical and ownership semantics.
 7. Do not hijack `|>` (eager left-to-right function value pipeline) or `pipe` (typed actor pipeline). Model declaration order is its own graph notation.
 
 ## Automatic differentiation
 
-- Backprop is built into `ml.trainer` for graph operations with registered VJPs (vector-Jacobian products). No user-written `self.backward` is necessary for built-in layers. A custom layer must declare an admissible VJP; absent gradients produce a **compile/admission diagnostic**, not zeros.
+- Backprop is built into `ml.trainer` for graph operations with registered VJPs (vector-Jacobian products). No user-written `self.backward` is necessary for built-in layers. A custom operation on a **requested live derivative path** must provide an admissible VJP; an absent VJP produces a **gradient compile/admission diagnostic**, not zeros. A nondifferentiable forward-only model is valid and unrelated graph branches do not need VJPs.
 - Forward records only the necessary immutable activation/checkpoint information in generation-scoped leases. Backward traverses the **reverse dependency DAG**, not merely a reversed linked list. If a tensor/parameter has multiple downstream uses, sum contributions exactly once per distinct incoming edge (including repeated operands); enforce fan-in completion.
 - Reduction order can be deterministic under a requested policy. Floating-point arithmetic is not mathematically associative: reproducibility guarantees must name dtype, reduction order, kernel backend, seeds and optimizer policy.
 - Support explicit `detach`/no-grad boundaries when added; `detach` is never implicit on message delivery, a device hop, or an actor boundary. Unsupported dynamic control flow and higher derivatives fail closed in v1.

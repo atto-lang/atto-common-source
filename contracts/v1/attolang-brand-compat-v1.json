@@ -1,0 +1,55 @@
+{
+  "contract": "org.attolang.brand-compat",
+  "version": 1,
+  "language": {
+    "public_name": "AttoLang",
+    "former_name": "Oreslang",
+    "display_case": "AttoLang"
+  },
+  "cli": {
+    "preferred_executable": "atto",
+    "compatibility_executable": "oreslang",
+    "shared_implementation_required": true,
+    "behavior_must_match": [
+      "command parsing",
+      "compiler discovery",
+      "permission admission",
+      "diagnostic protocol",
+      "exit status"
+    ]
+  },
+  "source": {
+    "preferred_extension": ".atto",
+    "compatibility_extension": ".ores",
+    "migration_policy": "Keep .ores supported until a backend-specific versioned migration removes support.",
+    "extension_support_requires": [
+      "source-path admission test",
+      "actual parser/compiler invocation",
+      "positive native execution or target execution",
+      "negative unsupported-syntax control"
+    ]
+  },
+  "compatibility_invariants": [
+    "Do not rename existing GitHub organizations or repositories as part of the branding migration.",
+    "Do not rename package coordinates, Cargo crate names, NuGet package IDs, Java packages, Wasm module names, or linker symbols in a branding-only change.",
+    "Do not change binary serialization, diagnostic JSON, protocol versions, ABI layouts, guest wire formats, or persistent storage keys.",
+    "Preserve old compiler executable names and environment variables until independently versioned migration tooling exists.",
+    "OresForge, OresVM, oresforge, orescranelift, and other engine/backend identifiers remain distinct technical identities unless explicitly versioned.",
+    "Do not infer language feature parity from branding, README wording, filename forwarding, or parser admission alone."
+  ],
+  "reporting": {
+    "required_per_backend_fields": [
+      "backend",
+      "source_commit",
+      "extension",
+      "fixture_digest",
+      "compile_result",
+      "execution_result",
+      "diagnostic_result",
+      "legacy_extension_result",
+      "ci_run_url"
+    ],
+    "unsupported_features_must_fail_closed": true,
+    "mock_compilers_do_not_count_as_language_execution": true
+  }
+}

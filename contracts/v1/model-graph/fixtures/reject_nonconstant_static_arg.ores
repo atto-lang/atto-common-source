@@ -1,0 +1,11 @@
+// Static model topology/configuration cannot execute arbitrary code.
+// Expected diagnostic MODEL_NONCONSTANT_CONFIG.
+fnc runtime_tax_rate(): float {
+    return 0.15;
+}
+
+define model BadStaticConfig as
+    ValidatePrice()
+    ApplyTax(runtime_tax_rate())
+    RoundCurrency()
+end

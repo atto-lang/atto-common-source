@@ -1,0 +1,6 @@
+// Non-ML general-purpose model: bounded signal transform.
+define model AudioGain(gain: int = 2) as
+    SampleInput()
+    ScaleSamples(gain)
+    ClampSamples()
+end

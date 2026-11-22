@@ -1,0 +1,8 @@
+// Syntax-valid; typed lowering must refuse to erase the unregistered
+// static argument label. Diagnostic: MODEL_NAMED_ARGUMENT_UNRESOLVED.
+// Signature constKinds alone does not attest named parameter bindings.
+define model PriceEstimate as
+  PriceInput()
+  ApplyTaxBps(tax_bps: 1500)
+  RoundCents()
+end

@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "feature": "attolang-structural-infer-aggregate-interop",
+  "status": "proposed-not-executable",
+  "spec": "contracts/v1/STRUCTURAL_INFER_AGGREGATE_INTEROP_V1.md",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "wasm"
+  ],
+  "evidence": {
+    "java": "unverified",
+    "llvm": "unverified",
+    "net": "unverified",
+    "wasm": "unverified"
+  },
+  "note": "accept/reject targets only; no backend has proved the complete matrix",
+  "cases": [
+    {
+      "id": "p01_infer_struct_spread",
+      "expect": "accept",
+      "source": "pub fnc main():int { const a=infer struct{x:20}; const b=infer struct{...a,y:22}; return b.x+b.y; }",
+      "exit_code": 42,
+      "source_file": "fixtures/structural-infer-aggregate-v1/positive/struct-spread42.atto"
+    },
+    {
+      "id": "p02_infer_record_spread",
+      "expect": "accept",
+      "source": "pub fnc main():int { const a=infer record{value:20}; const b=infer record{...a,extra:22}; return b.value+b.extra; }",
+      "exit_code": 42,
+      "source_file": "fixtures/structural-infer-aggregate-v1/positive/record-spread42.atto"
+    },
+    {
+      "id": "p03_record_compat",
+      "expect": "accept",
+      "source": "pub fnc main():int { const a=record{x:20}; const b=record{...a,x:42}; return b.x; }",
+      "exit_code": 42
+    },
+    {
+      "id": "p04_structural_readonly_projection",
+      "expect": "accept",
+      "source": "define interface HasValue\n value:int;\nend\nfnc view(structural HasValue row):int{return row.value;}\npub fnc main():int{const a=infer record{value:42,hidden:true}; return view(a);}",
+      "exit_code": 42
+    },
+    {
+      "id": "p05_retype_field",
+      "expect": "accept",
+      "source": "pub fnc main():int { const a=infer record{value:\"old\"}; const b=infer record{...a,value:42}; return b.value; }",
+      "exit_code": 42
+    },
+    {
+      "id": "n01_duplicate_named",
+      "expect": "reject",
+      "source": "fnc bad():void{const x=infer record{value:1,...record{value:2},value:3};return;}"
+    },
+    {
+      "id": "n02_nonaggregate_spread",
+      "expect": "reject",
+      "source": "fnc bad():void{const x=infer struct{...42,y:2};return;}"
+    },
+    {
+      "id": "n03_unbound_spread",
+      "expect": "reject",
+      "source": "fnc bad():void{const x=infer record{...unknown,y:2};return;}",
+      "source_file": "fixtures/structural-infer-aggregate-v1/negative/unbound-spread.atto"
+    },
+    {
+      "id": "n04_struct_nominal_width",
+      "expect": "reject",
+      "source": "fnc bad():void{const Point a=infer<Point> struct{x:1};const Point b=infer struct{x:1,y:2};return;}"
+    },
+    {
+      "id": "n05_implicit_struct_record_erasure",
+      "expect": "reject",
+      "source": "fnc bad():void{const Row a=infer<Row> record{x:1};const Shape b=infer<Shape> struct{x:1};const Row c=b;return;}"
+    },
+    {
+      "id": "n06_structural_escape",
+      "expect": "reject",
+      "source": "define interface HasValue\n value:int;\nend\nfnc bad(structural HasValue row):HasValue{return row;}"
+    },
+    {
+      "id": "n07_actor_structural_erasure",
+      "expect": "reject",
+      "source": "actor Worker{pub run():int{return 1;}}\nfnc bad(structural Worker worker):int{return worker.run();}"
+    },
+    {
+      "id": "n08_dynamic_spread",
+      "expect": "reject",
+      "source": "fnc bad(dyn value):void{const x=infer record{...value};return;}"
+    },
+    {
+      "id": "n09_noncopy_nested_spread",
+      "expect": "reject",
+      "source": "fnc bad():void{const x=record{nested:record{value:1}};const y=infer record{...x};return;}"
+    }
+  ]
+}

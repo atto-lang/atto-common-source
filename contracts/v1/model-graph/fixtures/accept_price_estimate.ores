@@ -1,0 +1,9 @@
+// PROPOSED general-purpose define model fixture. Not executable on current backends.
+// Non-ML nominal value chain with bounded static configuration.
+define model PriceEstimate(
+    tax_rate: float = 0.15
+) as
+    ValidatePrice()
+    ApplyTax(tax_rate)
+    RoundCurrency()
+end

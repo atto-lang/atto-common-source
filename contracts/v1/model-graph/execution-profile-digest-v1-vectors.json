@@ -1,0 +1,30 @@
+{
+  "contract": "oreslang.model.execution-profile.digest.v1",
+  "status": "PROPOSED",
+  "algorithm": "SHA-256",
+  "domain_separator": "ORESLANG-MODEL-PROFILE-V1\\u0000",
+  "base": {
+    "profile": {
+      "version": 1,
+      "backendId": "reference",
+      "backendSemanticVersion": "model-ref-1",
+      "compilerSemanticVersion": "ores-semantic-1",
+      "targetTriple": "portable",
+      "dataLayout": "portable",
+      "runtimeAbi": "core-model-v1",
+      "numericMode": "strict",
+      "deterministic": true,
+      "allocation": "preallocated",
+      "freestanding": true,
+      "deviceAbi": null,
+      "numericFeatures": []
+    },
+    "expectedBytes": 127,
+    "expected": "8440c7b53174d2d0dc6a6ff6e1fda662e409f4e21f6ce647eea38b87b3ff9695"
+  },
+  "mutations": [
+    {"id":"numeric-mode","field":"numericMode","value":"ieee","expected":"f157ad0ec51a93c6f89e12512af934acea2d179f07c577aa0399a51dffc4275e"},
+    {"id":"numeric-feature","field":"numericFeatures","value":["fma"],"expected":"dad02ababd944847f5fac379b1c9e8f924233df789a46f436b70e48f3881d55b"},
+    {"id":"target","field":"targetTriple","value":"x86_64-unknown-linux-gnu","expected":"50d472c73b925bb180cada7a0def1f4d386f58a09bbdcd547221ed67bbc5a7e1"}
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "oreslang.numeric-errors.v1",
+  "status": "normative-effect-contract-not-backend-proof",
+  "base_type": "Error",
+  "rules": {
+    "default_checked_fixed_width_failure": "throw",
+    "catchability": "throw participates in ordinary try/catch; uncaught throw becomes raise, then panic if unrecovered under the language effect rules",
+    "trap": "trap on a throwing numeric operation converts the language effect to Result/Option according to the callable contract",
+    "checked_result_apis": "APIs named *_checked or explicitly declared Result-returning numeric conversions report expected numeric-domain failures as Err and do not additionally throw those same expected failures",
+    "host_failures": "ArithmeticException, OverflowException, C++ runtime_error, process signals and Wasm traps are backend implementation evidence only and are never guest Error identity"
+  },
+  "errors": {
+    "ArithmeticOverflowError": {
+      "applies_to": [
+        "checked fixed-width add/sub/mul/neg",
+        "Math.abs signed MIN",
+        "Math.neg signed MIN",
+        "checked narrowing overflow"
+      ],
+      "default_effect": "throw",
+      "abi_code": 65537
+    },
+    "DivisionByZeroError": {
+      "applies_to": [
+        "integer remainder/division domains that define zero-divisor failure",
+        "BigInt.quot/rem/div_rem",
+        "Decimal divide"
+      ],
+      "default_effect": "throw"
+    },
+    "InexactConversionError": {
+      "applies_to": [
+        "exact numeric conversions that would lose information"
+      ],
+      "default_effect": "Result.Err for *_exact APIs"
+    },
+    "NumericRangeError": {
+      "applies_to": [
+        "explicit rounded conversion outside finite target range"
+      ],
+      "default_effect": "Result.Err"
+    },
+    "NumericParseError": {
+      "applies_to": [
+        "BigInt.parse",
+        "Decimal.parse"
+      ],
+      "default_effect": "Result.Err"
+    },
+    "NumericContextError": {
+      "applies_to": [
+        "invalid precision/rounding/scale context"
+      ],
+      "default_effect": "Result.Err"
+    },
+    "NumericResourceError": {
+      "applies_to": [
+        "preflight bit/digit/scale/allocation/work budget exhaustion"
+      ],
+      "default_effect": "Result.Err or throw only when the invoked API is not Result-returning"
+    },
+    "NonterminatingDecimalError": {
+      "applies_to": [
+        "Decimal.divide_exact when the exact quotient has no terminating base-10 expansion"
+      ],
+      "default_effect": "Result.Err"
+    }
+  },
+  "actor_semantics": {
+    "throw_inside_actor": "catchable by the actor's current try/catch; if uncaught follows throw->raise->panic escalation",
+    "panic_interception": "numeric code does not create a special panic path; an actor cannot intercept its own eventual panic",
+    "supervisor_notice": "only the final panic escalation reaches the supervisor CONTROL path; a host exception/trap is not itself a valid supervisor notice"
+  },
+  "error_abi_v1": {
+    "code_width_bits": 32,
+    "namespace": "numeric",
+    "rules": "Codes identify Oreslang guest Error kinds across backend effect carriers. A host exception class, signal, trap opcode or diagnostic string is never sufficient identity.",
+    "codes": {
+      "ArithmeticOverflowError": 65537,
+      "DivisionByZeroError": 65538,
+      "InexactConversionError": 65539,
+      "NumericRangeError": 65540,
+      "NumericParseError": 65541,
+      "NumericContextError": 65542,
+      "NumericResourceError": 65543,
+      "NonterminatingDecimalError": 65544
+    }
+  }
+}
