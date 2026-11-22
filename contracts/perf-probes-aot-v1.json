@@ -1,0 +1,93 @@
+{
+  "schema": "atto.perf-probes.v1",
+  "status": "CONTRACT_ONLY_NO_GUEST_EXECUTION_CREDIT",
+  "purpose": "Stable numeric performance probe ids and AOT-compatible build-time generated AttoLang API",
+  "profile": {
+    "max_probes": 4096,
+    "max_id": 2147483647,
+    "min_sampling_divisor": 1,
+    "max_sampling_divisor": 65536
+  },
+  "event_kinds": [
+    "span",
+    "counter",
+    "gauge",
+    "instant"
+  ],
+  "backends": {
+    "java": "BACKEND_OWNED_CANDIDATE",
+    "llvm": "BACKEND_OWNED_CANDIDATE",
+    "net": "NOT_IMPLEMENTED",
+    "wasm": "NOT_IMPLEMENTED",
+    "rs": "NOT_IMPLEMENTED",
+    "js": "NOT_IMPLEMENTED",
+    "forge": "NOT_IMPLEMENTED",
+    "cranelift": "NOT_IMPLEMENTED",
+    "hdl": "NOT_IMPLEMENTED"
+  },
+  "rules": {
+    "id_explicit_not_derived_from_order": true,
+    "deterministic_generation": true,
+    "aot_compiled_without_runtime_jit": true,
+    "optional_jit_only_specializes_existing_sites": true,
+    "no_runtime_source_compilation": true,
+    "generated_source_rechecked_by_compiler": true,
+    "static_disabled_probe_erased_when_proven": true,
+    "dynamic_disabled_probe_does_not_read_clock": true,
+    "clock_monotonic_not_wallclock": true,
+    "hot_path_no_io_no_allocations_when_disabled": true,
+    "per_actor_buffer_bounded": true,
+    "drop_on_full_never_block": true,
+    "event_fields_numeric_only": true,
+    "no_payload_secrets_or_user_names": true,
+    "same_probe_ids_across_aot_and_jit": true,
+    "per_backend_implementation_independent": true,
+    "tracing_failure_must_not_change_guest_semantics": true,
+    "runtime_export_outside_hot_path": true,
+    "untrusted_manifest_is_not_provenance": true
+  },
+  "registry": [
+    {
+      "id": 23,
+      "name": "actor.user_mail.queue",
+      "kind": "span",
+      "sampling_divisor": 1
+    },
+    {
+      "id": 24,
+      "name": "actor.user_mail.dispatch",
+      "kind": "span",
+      "sampling_divisor": 1
+    },
+    {
+      "id": 25,
+      "name": "scheduler.turn.queue",
+      "kind": "span",
+      "sampling_divisor": 1
+    },
+    {
+      "id": 26,
+      "name": "future.waiter.notify",
+      "kind": "span",
+      "sampling_divisor": 1
+    },
+    {
+      "id": 27,
+      "name": "map.set",
+      "kind": "span",
+      "sampling_divisor": 1
+    },
+    {
+      "id": 28,
+      "name": "map.get_optional",
+      "kind": "span",
+      "sampling_divisor": 1
+    },
+    {
+      "id": 29,
+      "name": "map.delete",
+      "kind": "span",
+      "sampling_divisor": 1
+    }
+  ]
+}
