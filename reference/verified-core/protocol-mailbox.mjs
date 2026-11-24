@@ -74,7 +74,7 @@ export function encodeProtocolMailboxMessage(layout, name, fields) {
 
 export function decodeProtocolTurnReceipt(frame) {
   if (frame.length !== 34 || !frame.subarray(0, 5).equals(Buffer.from("ATPR\x01", "ascii")) ||
-      frame[29] < 1 || frame[29] > 5) throw new RangeError("invalid protocol turn receipt");
+      frame[29] < 1 || frame[29] > 6) throw new RangeError("invalid protocol turn receipt");
   return Object.freeze({
     actorId: frame.readBigUInt64LE(5),
     generation: frame.readBigUInt64LE(13),
