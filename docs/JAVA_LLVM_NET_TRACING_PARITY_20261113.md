@@ -16,7 +16,7 @@ This is an audit receipt, not an executable three-backend conformance result. Al
 | **LLVM** | [LLVM PR #1716](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1716): exact subset LLVM compiler→native `.atto` scope cases, five positive/five negative, Clang O0/O2, true same-process dormant probe toggles [#43325381462](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43325381462). [LLVM PR #1767](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1767): host-only versioned code dispatch at source head `e4ad140e29380b4540065161e2ad6e7650d53edb`, [GCC/Clang ASan/UBSan #43550432893](https://github.com/benefactor-cc/benefactor-e2e/actions/runs/43550432893). | No ORC-generated Atto function version, async continuation-lifetime code retirement or OTLP end-to-end proof. |
 | **.NET Native AOT** | [.NET draft PR #512](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/512): policy + version-pinned host dispatch, W3C logical scope, same-process dormant boundary probe toggle, thread migration/retirement and cross-tenant denial. A four-blob private test carrier verified SHA-identical source head `493eccb8e31570f293ea526445f2e8f29e51246b`; [CI #43550856941](https://github.com/benefactor-cc/benefactor-e2e/actions/runs/43550856941) **passed** actual managed .NET 10 and Native AOT x64 ELF execution, each with 48 new tracing checks + 169 existing W3C continuation checks, including OFF/ON/OFF/ON and dynamic policy revocation. | The .NET compiler still deliberately **rejects** `using telemetry.span`; no guest-CIL lowering, independently compiled native JIT provider, real signed hot-load, or guest OTLP proof. Runtime policy revocation has host-only executed evidence; guest codegen parity remains unimplemented. |
 
-## Local execution on 2026-11-23
+## Initial local execution on 2026-11-23
 
 | Backend | Git commit and tree | Executed result |
 |---|---|---|
@@ -32,6 +32,26 @@ call span, the existing lexical span, and code retirement after detach.
 The hierarchy proven here is the synchronous carrier-local span stack.
 Production manifest authentication, W3C parent IDs, suspension and actor
 migration remain required for release evidence.
+
+## Four-backend scoped guest execution on 2026-11-23
+
+The same `scoped-nested.atto` source (SHA-256
+`a05d36a3d1c9606df7fb06815a9ac3f01570d2b3bb01636fd7dda5cefeb308dd`)
+returned `42` on all four backends with recording off and on. With recording
+on, the fallthrough scope closed first and the nested scopes closed inside
+out, in the order `finished`, `payment`, `checkout`. No scopes remained live.
+The three native programs linked the LLVM C telemetry runtime.
+
+| Backend | Git commit and tree | Executed result |
+|---|---|---|
+| LLVM | `6a427a7306953525444144910e0ee977e4c07bde`, tree `6a321ac18edf893e8a8f35fe4d7f01c4657900ff` | The Clang-linked guest passed the shared scope oracle. All three LLVM scope CTests passed again, including the ORC test. |
+| Rust | `b054db3bfe26550a2aee04c81cf24e3824cc756b`, tree `a57f56eabd39d70bab9886d4e292de07a6b67e3d` | Native and browser-hosted compilers emitted identical Wasm for the shared fixture. Node executed it in both recording modes, checking close order and the payment span's parent. Separate guest regressions passed for `?`, caught exceptions, fatal trap retirement, and alias denial. |
+| Cranelift | `fbb9c17a78bf3299f69ea848f8bf9e7a86629d80`, tree `e94e0235e6f2640f6a0c5109e8ae7f85de0cacf3` | The statically linked object passed the shared oracle. Trusted native JIT execution produced the same close order and parent relationship. The linked-object and JIT regressions both checked cleanup before a checked arithmetic failure. |
+| Forge | `c631e934f1d45ec18197602efb21ec9dc1f3d68f`, tree `34228d4528c954e250d862f3f5f54f09e2750130` | C++ emitted by `forge_scalar` linked and passed the shared oracle. The generated guest pipeline verified normal return, disabled recording, and scope cleanup on checked overflow. |
+
+This execution covers synchronous lexical scopes. Macro-expanded names
+have LLVM guest evidence. Rust, Cranelift and Forge still need macro
+admission, live JIT probe insertion, and continuation-owned spans.
 
 ## Required promotion gates
 

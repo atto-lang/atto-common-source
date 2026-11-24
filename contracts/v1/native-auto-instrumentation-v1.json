@@ -895,7 +895,7 @@
     "generate_source_parse_typecheck_guest_tests": true
   },
   "scoped_span_parity_v1": {
-    "status": "PARTIAL_EXECUTED_LLVM_NO_FULL_PARITY",
+    "status": "PARTIAL_EXECUTED_SCALAR_SCOPED_SPANS",
     "syntax": "using telemetry.span(operation) as scoped_name { statements }",
     "execution_composition": {
       "aot_baseline_required": true,
@@ -908,6 +908,13 @@
       "hybrid_max_spans_per_lexical_site_entry": 1,
       "in_flight_scope_cleanup_after_toggle_or_detach": "exactly_once",
       "portable_scope_fixtures": {
+        "scoped-nested.atto": {
+          "guest_result": 42,
+          "recorded_spans_when_enabled": 3,
+          "recorded_spans_when_disabled": 0,
+          "active_scopes_on_return": 0,
+          "close_order": ["finished", "payment", "checkout"]
+        },
         "scoped-return.atto": {
           "guest_result": 42,
           "recorded_spans_when_enabled": 1,
@@ -978,13 +985,19 @@
         "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
       },
       "rust": {
-        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+        "status": "EXECUTED_SYNCHRONOUS_WASM_SCOPE_SUBSET",
+        "implementation": "wasm_finally_with_compiler_owned_host_tokens",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
       },
       "cranelift": {
-        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+        "status": "EXECUTED_SCALAR_AOT_AND_JIT_SCOPE_SUBSET",
+        "implementation": "shared_clif_with_host_scope_hooks_and_checked_status_epilogue",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
       },
       "forge": {
-        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+        "status": "EXECUTED_SCALAR_AOT_SCOPE_SUBSET",
+        "implementation": "generated_cpp_lexical_cleanup_with_host_scope_hooks",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
       },
       "net": {
         "status": "NOT_IMPLEMENTED_NOT_EXECUTED"

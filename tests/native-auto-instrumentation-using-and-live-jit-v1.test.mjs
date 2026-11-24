@@ -116,7 +116,7 @@ test("portable .atto lexical span fixtures have pinned source-only oracles", () 
 
 test("scoped SpanScope compiler target distinguishes executable subset from full parity", () => {
   const parity = c.scoped_span_parity_v1;
-  assert.equal(parity.status, "PARTIAL_EXECUTED_LLVM_NO_FULL_PARITY");
+  assert.equal(parity.status, "PARTIAL_EXECUTED_SCALAR_SCOPED_SPANS");
   assert.equal(parity.portable_target.factory, "trusted_stdlib_telemetry_span");
   assert.equal(parity.portable_target.resource_type, "opaque_linear_SpanScope");
   assert.equal(parity.portable_target.factory_evaluated_once, true);
@@ -129,7 +129,10 @@ test("scoped SpanScope compiler target distinguishes executable subset from full
   assert.equal(parity.portable_target.guest_cannot_enable_host_probes, true);
   assert.equal(parity.backend_slices.java.status, "SOURCE_IMPLEMENTED_NOT_EXECUTED");
   assert.equal(parity.backend_slices.llvm.status, "EXECUTED_NONSUSPENDING_SUBSET_ONLY");
-  for (const name of ["forge", "net", "rust", "cranelift", "wasm"])
+  assert.equal(parity.backend_slices.rust.status, "EXECUTED_SYNCHRONOUS_WASM_SCOPE_SUBSET");
+  assert.equal(parity.backend_slices.cranelift.status, "EXECUTED_SCALAR_AOT_AND_JIT_SCOPE_SUBSET");
+  assert.equal(parity.backend_slices.forge.status, "EXECUTED_SCALAR_AOT_SCOPE_SUBSET");
+  for (const name of ["net", "wasm"])
     assert.equal(parity.backend_slices[name].status, "NOT_IMPLEMENTED_NOT_EXECUTED");
 });
 
@@ -146,9 +149,19 @@ test("AOT macros and optional JIT instrumentation share lexical span identity", 
   assert.equal(composition.in_flight_scope_cleanup_after_toggle_or_detach, "exactly_once");
   const fixtures = new URL("../fixtures/native-auto-instrumentation-v1/", import.meta.url);
   const positive = readFileSync(new URL("scoped-return.atto", fixtures), "utf8");
+  const nested = readFileSync(new URL("scoped-nested.atto", fixtures), "utf8");
   const escape = readFileSync(new URL("scoped-escape.atto", fixtures), "utf8");
   assert.equal(positive.replace("return 42;", "return scope;"), escape);
+  assert.ok(nested.includes('using telemetry.span("finished") as finished {}'));
+  assert.ok(nested.includes('using telemetry.span("payment") as inner'));
   assert.deepEqual(composition.portable_scope_fixtures, {
+    "scoped-nested.atto": {
+      guest_result: 42,
+      recorded_spans_when_enabled: 3,
+      recorded_spans_when_disabled: 0,
+      active_scopes_on_return: 0,
+      close_order: ["finished", "payment", "checkout"],
+    },
     "scoped-return.atto": {
       guest_result: 42,
       recorded_spans_when_enabled: 1,
