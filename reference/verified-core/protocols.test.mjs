@@ -26,6 +26,11 @@ const connection = {
   ],
 };
 const graph = (declaration = connection) => elaborateProtocol(declaration, aliases, quantityDeclarations);
+const handlers = [
+  { message: "connect", parameters: [{ name: "admitted", type: "EquivalentTimeout" }], destination: "Connecting" },
+  { message: "ready", destination: "Connected" },
+  { message: "fail", destination: "Failed" },
+];
 
 test("a tag can recur across states with the same resolved message type", () => {
   const protocol = graph();
@@ -44,6 +49,34 @@ test("invalid initial states, terminals, duplicate edges and changed payloads fa
   assert.throws(() => graph(extra(connection.edges[0])), { code: "E_PROTOCOL_DUPLICATE" });
   assert.throws(() => graph(extra({ source: "Connecting", target: "Connected", message: "connect",
     payload: [{ name: "timeout", type: "int" }] })), { code: "E_PROTOCOL_PAYLOAD" });
+});
+
+test("an actor binding proves coverage, matching parameters and a common destination for each tag", () => {
+  const protocol = graph();
+  const bound = protocol.bindActor("Worker", handlers);
+  assert.throws(() => protocol.bindActor("Worker", handlers.slice(1)), { code: "E_PROTOCOL_HANDLER" });
+  assert.throws(() => protocol.bindActor("Worker", [...handlers, handlers[0]]), { code: "E_PROTOCOL_HANDLER" });
+  assert.throws(() => protocol.bindActor("Worker", [{ ...handlers[0], parameters: [] }, ...handlers.slice(1)]),
+    { code: "E_PROTOCOL_PAYLOAD" });
+  assert.throws(() => protocol.bindActor("Worker", [{ ...handlers[0], destination: "Connected" }, ...handlers.slice(1)]),
+    { code: "E_PROTOCOL_TRANSITION" });
+  const fork = graph({
+    ...connection,
+    edges: connection.edges.map(edge => edge.source === "Connected" ? { ...edge, target: "Disconnected" } : edge),
+  });
+  assert.throws(() => fork.bindActor("Worker", handlers), { code: "E_PROTOCOL_TRANSITION" });
+
+  const runtime = new SerialProtocolReference(protocol, 0n, value => value >= 0n);
+  const ready = { incarnation: 1n, message: "ready", payload: [] };
+  assert.equal(runtime.dispatchBound({ ...bound }, ready), "unbound-actor");
+  assert.equal(runtime.dispatchBound(graph().bindActor("Worker", handlers), ready), "unbound-actor");
+  assert.equal(runtime.dispatchBound(bound, ready), "illegal-edge");
+  assert.equal(runtime.dispatchBound(bound, { ...ready, message: "connect", payload: [
+    { value: 42n, unit: protocol.unit("Millis") },
+  ] }), "committed");
+  assert.equal(runtime.snapshot.state, "Connecting");
+  assert.equal(runtime.dispatchBound(bound, ready), "committed");
+  assert.equal(runtime.snapshot.state, "Connected");
 });
 
 test("only a legal edge with the checked payload and invariant publishes state", () => {

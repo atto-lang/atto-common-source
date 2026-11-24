@@ -1,8 +1,18 @@
 import { full, includes, signedI32 } from "./intervals.mjs";
 import { elaborateQuantityDeclarations, resolveQuantityUnit, sameUnit } from "./quantities.mjs";
 
+const actorBindings = new WeakMap();
+
 function reject(code, message) {
   throw Object.assign(new Error(message), { code });
+}
+
+function samePayload(left, right) {
+  return left.length === right.length && left.every((type, index) => {
+    const other = right[index];
+    return type.carrier === other.carrier && type.range[0] === other.range[0] &&
+      type.range[1] === other.range[1] && sameUnit(type.unit, other.unit);
+  });
 }
 
 /** Resolve a file-local declaration into an immutable scalar message table. */
@@ -29,26 +39,31 @@ export function elaborateProtocol(declaration, aliases = new Map(), quantities =
     return Object.freeze({ carrier, range: Object.freeze([low, high]), unit: resolveQuantityUnit(units, unit) });
   }
 
-  for (const { source, target, message, payload = [] } of edges) {
-    states.add(source).add(target);
-    if (states.size > 128 || payload.length > 16)
-      reject("E_PROTOCOL_LIMIT", "too many states or payload fields");
-    if (!outgoing.has(source)) outgoing.set(source, new Map());
-    const fromState = outgoing.get(source);
-    if (fromState.has(message)) reject("E_PROTOCOL_DUPLICATE", "duplicate source state and message edge");
+  function payloadTypes(payload) {
+    if (payload.length > 16) reject("E_PROTOCOL_LIMIT", "too many payload fields");
     const fields = new Set();
-    const signature = Object.freeze(payload.map(({ name: field, type }) => {
+    return Object.freeze(payload.map(({ name: field, type }) => {
       if (fields.has(field)) reject("E_PROTOCOL_PAYLOAD", "duplicate payload field name");
       fields.add(field);
       return resolve(type);
     }));
+  }
+
+  for (const { source, target, message, payload = [] } of edges) {
+    states.add(source).add(target);
+    if (states.size > 128) reject("E_PROTOCOL_LIMIT", "too many states");
+    if (!outgoing.has(source)) outgoing.set(source, new Map());
+    const fromState = outgoing.get(source);
+    if (fromState.has(message)) reject("E_PROTOCOL_DUPLICATE", "duplicate source state and message edge");
+    const signature = payloadTypes(payload);
     const prior = signatures.get(message);
-    if (prior && (prior.length !== signature.length || prior.some((type, i) => {
-      const current = signature[i];
-      return type.carrier !== current.carrier || type.range[0] !== current.range[0] ||
-        type.range[1] !== current.range[1] || !sameUnit(type.unit, current.unit);
-    }))) reject("E_PROTOCOL_PAYLOAD", "inconsistent message payload type");
-    signatures.set(message, signature);
+    if (prior) {
+      if (!samePayload(prior.types, signature))
+        reject("E_PROTOCOL_PAYLOAD", "inconsistent message payload type");
+      prior.destinations.add(target);
+    } else {
+      signatures.set(message, { types: signature, destinations: new Set([target]) });
+    }
     fromState.set(message, Object.freeze({ source, target, message, signature }));
   }
   for (const terminal of terminals) {
@@ -56,8 +71,29 @@ export function elaborateProtocol(declaration, aliases = new Map(), quantities =
       reject("E_PROTOCOL_TERMINAL", "duplicate, unknown or outgoing terminal state");
     terminalStates.add(terminal);
   }
-  return Object.freeze({ name, initial, edge: (state, message) => outgoing.get(state)?.get(message),
-    unit: (name) => resolveQuantityUnit(units, name) });
+  const protocol = Object.freeze({
+    name, initial,
+    edge: (state, message) => outgoing.get(state)?.get(message),
+    unit: (name) => resolveQuantityUnit(units, name),
+    bindActor(actorName, handlers) {
+      const destinations = new Map();
+      for (const { message, parameters = [], destination } of handlers) {
+        const signature = signatures.get(message);
+        if (!signature || destinations.has(message))
+          reject("E_PROTOCOL_HANDLER", "undeclared or duplicate handler");
+        if (!samePayload(signature.types, payloadTypes(parameters)))
+          reject("E_PROTOCOL_PAYLOAD", "handler parameter types differ from the message");
+        if (signature.destinations.size !== 1 || !signature.destinations.has(destination))
+          reject("E_PROTOCOL_TRANSITION", "handler destination must match every edge for its message");
+        destinations.set(message, destination);
+      }
+      if (destinations.size !== signatures.size) reject("E_PROTOCOL_HANDLER", "missing protocol handler");
+      const actor = Object.freeze({ name: actorName });
+      actorBindings.set(actor, { protocol, destinations });
+      return actor;
+    },
+  });
+  return protocol;
 }
 
 /** Sequential oracle for an actor's serial, copy-scalar protocol lane. */
@@ -88,6 +124,14 @@ export class SerialProtocolReference {
   restart(value) {
     if (this.#state.live) reject("E_PROTOCOL_LIFECYCLE", "stop the prior incarnation before restart");
     this.#state = this.#initial(value, this.#state.incarnation + 1n);
+  }
+
+  dispatchBound(actor, envelope) {
+    const binding = actorBindings.get(actor);
+    if (binding?.protocol !== this.#protocol) return "unbound-actor";
+    return this.dispatch(envelope, value => ({
+      target: binding.destinations.get(envelope.message), value,
+    }));
   }
 
   dispatch({ incarnation, message, payload }, stage) {
