@@ -1,0 +1,6 @@
+pub fnc main(): int {
+  using telemetry.span("checkout") as scope {
+    return scope;
+  }
+  return 1;
+}
