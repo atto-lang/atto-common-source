@@ -1,8 +1,9 @@
-// The proof domain is the normal outcomes of checked signed-i64 arithmetic.
+// The proof domain is the normal outcomes of checked signed arithmetic.
 // This is an independent oracle for the compiler proof rules.
 export const i64Min = -(1n << 63n);
 export const i64Max = (1n << 63n) - 1n;
 export const full = Object.freeze([i64Min, i64Max]);
+export const signedI32 = Object.freeze([-(1n << 31n), (1n << 31n) - 1n]);
 
 const lower = (a, b) => a < b ? a : b;
 const upper = (a, b) => a > b ? a : b;
@@ -24,28 +25,33 @@ export function constrain([low, high], op, bound) {
   return [low, high];
 }
 
-function clip(low, high) {
-  low = upper(low, i64Min);
-  high = lower(high, i64Max);
-  return low <= high ? [low, high] : full;
+function clip(low, high, carrier) {
+  low = upper(low, carrier[0]);
+  high = lower(high, carrier[1]);
+  return low <= high ? [low, high] : carrier;
 }
 
-export function normalResult(op, [low, high], [rightLow, rightHigh]) {
-  if (op === "add") return clip(low + rightLow, high + rightHigh);
-  if (op === "subtract") return clip(low - rightHigh, high - rightLow);
+export function normalResult(op, left, right, carrier = full) {
+  if (!includes(carrier, left) || !includes(carrier, right)) {
+    throw new RangeError("operand interval exceeds the arithmetic carrier");
+  }
+  const [low, high] = left;
+  const [rightLow, rightHigh] = right;
+  if (op === "add") return clip(low + rightLow, high + rightHigh, carrier);
+  if (op === "subtract") return clip(low - rightHigh, high - rightLow, carrier);
   let apply;
   if (op === "multiply") {
     apply = (a, b) => a * b;
   } else if (op === "divide") {
     if ((rightLow <= 0n && rightHigh >= 0n)
-        || (low === i64Min && rightLow <= -1n && rightHigh >= -1n)) return full;
+        || (low === i64Min && rightLow <= -1n && rightHigh >= -1n)) return carrier;
     apply = (a, b) => a / b;
   } else {
     throw new TypeError("unsupported interval operation");
   }
   const corners = [apply(low, rightLow), apply(low, rightHigh),
     apply(high, rightLow), apply(high, rightHigh)];
-  return clip(corners.reduce(lower), corners.reduce(upper));
+  return clip(corners.reduce(lower), corners.reduce(upper), carrier);
 }
 
 export function atMost(left, right) {

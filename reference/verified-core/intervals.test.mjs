@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { atMost, constrain, full, i64Max, i64Min, includes, normalResult, preservesUpperBounds } from "./intervals.mjs";
+import { atMost, constrain, full, i64Max, i64Min, includes, normalResult, preservesUpperBounds, signedI32 } from "./intervals.mjs";
 
 const operations = {
   add: (a, b) => a + b,
@@ -28,6 +28,20 @@ test("boundary proofs keep arithmetic failure distinct from normal results", () 
   assert.throws(() => constrain(full, ">", i64Max), RangeError);
   assert.throws(() => constrain(full, "<", i64Min), RangeError);
   assert.throws(() => constrain([1n, 2n], "eq", 0n), RangeError);
+});
+
+test("signed-i32 proofs clip normal results at the declared width", () => {
+  const [min, max] = signedI32;
+  const positive = constrain(signedI32, ">", 0n);
+  const admissibleDuration = constrain(positive, ">=", 2n);
+  assert.deepEqual(normalResult("divide", admissibleDuration, [2n, 2n], signedI32), [1n, max / 2n]);
+  assert.deepEqual(normalResult("add", [max - 1n, max], [1n, 1n], signedI32), [max, max]);
+  assert.deepEqual(normalResult("divide", [min, min], [-1n, -1n], signedI32), signedI32);
+  assert.deepEqual(normalResult("subtract", [0n, 0n], [min, min], signedI32), signedI32);
+  assert.deepEqual(normalResult("multiply", [max, max], [max, max], signedI32), signedI32);
+  assert.deepEqual(normalResult("multiply", [max, max], [max, max]), [max * max, max * max]);
+  assert.throws(() => normalResult("add", [1n, 1n], [max + 1n, max + 1n], signedI32), RangeError);
+  assert.throws(() => constrain(signedI32, ">=", max + 1n), RangeError);
 });
 
 test("interval and relational rules cover every normal result on small signed inputs", () => {
