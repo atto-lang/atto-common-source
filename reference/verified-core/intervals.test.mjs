@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { atMost, constrain, full, i64Max, i64Min, includes, normalResult, preservesUpperBounds, signedI32 } from "./intervals.mjs";
+import {
+  atMost, checkedRefinement, constrain, full, i64Max, i64Min, includes,
+  normalResult, onNormalResultWithin, preservesUpperBounds, signedI32,
+} from "./intervals.mjs";
 
 const operations = {
   add: (a, b) => a + b,
@@ -42,6 +45,19 @@ test("signed-i32 proofs clip normal results at the declared width", () => {
   assert.deepEqual(normalResult("multiply", [max, max], [max, max]), [max * max, max * max]);
   assert.throws(() => normalResult("add", [1n, 1n], [max + 1n, max + 1n], signedI32), RangeError);
   assert.throws(() => constrain(signedI32, ">=", max + 1n), RangeError);
+});
+
+test("checked refinement keeps the original value exactly at both inclusive bounds", () => {
+  const positive = constrain(signedI32, ">", 0n);
+  const max = positive[1];
+  for (const value of [1n, 42n, max]) assert.equal(checkedRefinement(positive, value), value);
+  for (const value of [i64Min, -1n, 0n, max + 1n, i64Max]) {
+    assert.throws(() => checkedRefinement(positive, value), /^RangeError: E_REFINEMENT_CHECK_FAILED:/);
+  }
+  assert.equal(checkedRefinement(full, i64Min), i64Min);
+  assert.equal(checkedRefinement(full, i64Max), i64Max);
+  assert.deepEqual(onNormalResultWithin([0n, 42n], positive), [1n, 42n]);
+  assert.deepEqual(onNormalResultWithin([max + 1n, i64Max], positive), positive);
 });
 
 test("interval and relational rules cover every normal result on small signed inputs", () => {

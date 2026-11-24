@@ -25,10 +25,17 @@ export function constrain([low, high], op, bound) {
   return [low, high];
 }
 
-function clip(low, high, carrier) {
+export function onNormalResultWithin([low, high], carrier) {
   low = upper(low, carrier[0]);
   high = lower(high, carrier[1]);
   return low <= high ? [low, high] : carrier;
+}
+
+export function checkedRefinement(bounds, value) {
+  if (!includes(bounds, [value, value])) {
+    throw new RangeError("E_REFINEMENT_CHECK_FAILED: value outside the refinement");
+  }
+  return value;
 }
 
 export function normalResult(op, left, right, carrier = full) {
@@ -37,8 +44,8 @@ export function normalResult(op, left, right, carrier = full) {
   }
   const [low, high] = left;
   const [rightLow, rightHigh] = right;
-  if (op === "add") return clip(low + rightLow, high + rightHigh, carrier);
-  if (op === "subtract") return clip(low - rightHigh, high - rightLow, carrier);
+  if (op === "add") return onNormalResultWithin([low + rightLow, high + rightHigh], carrier);
+  if (op === "subtract") return onNormalResultWithin([low - rightHigh, high - rightLow], carrier);
   let apply;
   if (op === "multiply") {
     apply = (a, b) => a * b;
@@ -51,7 +58,7 @@ export function normalResult(op, left, right, carrier = full) {
   }
   const corners = [apply(low, rightLow), apply(low, rightHigh),
     apply(high, rightLow), apply(high, rightHigh)];
-  return clip(corners.reduce(lower), corners.reduce(upper), carrier);
+  return onNormalResultWithin([corners.reduce(lower), corners.reduce(upper)], carrier);
 }
 
 export function atMost(left, right) {
