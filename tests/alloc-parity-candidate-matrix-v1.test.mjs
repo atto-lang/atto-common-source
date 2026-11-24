@@ -22,8 +22,8 @@ test('11 backend candidate inventories retain every unverified semantic case',()
 });
 test('cannot mark authored source or backend itself as executed',()=>{
   reject(m=>{m.backend_candidates[0].evidence_state='PASS'},/cannot certify/);
-  reject(m=>{m.backend_candidates[0].authored_cases[0].execution_state='PASS'},/not an executed test/);
-  reject(m=>{m.backend_candidates[0].authored_cases[0].execution_state='EXECUTED'},/not an executed test/);
+  reject(m=>{m.backend_candidates[0].authored_cases[0].execution_state='PASS'},/cannot be an executed test/);
+  reject(m=>{m.backend_candidates[0].authored_cases[0].execution_state='EXECUTED'},/cannot be an executed test/);
 });
 test('exact source identity, fixtures and backend identity mandatory',()=>{
   reject(m=>{m.contract_blob='f'.repeat(40)},/contract Git blob/);
@@ -38,7 +38,12 @@ test('missing, duplicate, extra or profile-inapplicable cases must reject',()=>{
   reject(m=>{m.backend_candidates[0].remaining_unverified_cases.pop()},/remaining unverified/);
   reject(m=>{m.backend_candidates[0].authored_cases.push(
     {...m.backend_candidates[0].authored_cases[0]})},/duplicate or inapplicable/);
-  reject(m=>{m.backend_candidates[8].source_head='a'.repeat(40);
-    m.backend_candidates[8].authored_cases.push({
-    ...m.backend_candidates[0].authored_cases[0]})},/inapplicable/);
+  reject(m=>{
+    const row=m.backend_candidates[8];
+    const otherCase=contract.cases.find(item=>
+      item.applicability!=='all'&&item.applicability!==row.profile);
+    assert.ok(otherCase,'fixture must supply a case for a different profile');
+    row.source_head='a'.repeat(40);
+    row.authored_cases.push({...m.backend_candidates[0].authored_cases[0],case_id:otherCase.id});
+  },/inapplicable/);
 });
