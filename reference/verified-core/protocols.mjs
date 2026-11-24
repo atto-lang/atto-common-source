@@ -71,8 +71,19 @@ export function elaborateProtocol(declaration, aliases = new Map(), quantities =
       reject("E_PROTOCOL_TERMINAL", "duplicate, unknown or outgoing terminal state");
     terminalStates.add(terminal);
   }
-  const protocol = Object.freeze({
+  const mailbox = Object.freeze({
     name, initial,
+    states: Object.freeze([...states].sort().map(state => Object.freeze({
+      name: state, terminal: terminalStates.has(state),
+    }))),
+    messages: Object.freeze([...signatures.keys()].sort().map(message => Object.freeze({
+      name: message, fields: signatures.get(message).types,
+    }))),
+    edges: Object.freeze([...outgoing.keys()].sort().flatMap(source =>
+      [...outgoing.get(source).keys()].sort().map(message => outgoing.get(source).get(message)))),
+  });
+  const protocol = Object.freeze({
+    name, initial, mailbox,
     edge: (state, message) => outgoing.get(state)?.get(message),
     unit: (name) => resolveQuantityUnit(units, name),
     bindActor(actorName, handlers) {
