@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "status": "PROPOSED_NOT_EXECUTED",
+  "description": "Cross-domain source fixtures for the proposed general-purpose define model contract. These are compiler/backend acceptance targets, not evidence of current Java/LLVM support.",
+  "fixtures": [
+    {
+      "file": "accept_price_estimate.ores",
+      "expect": "ACCEPT",
+      "domain": "finance/business",
+      "requires": [
+        "nominal-values",
+        "canonical-static-config",
+        "pure-graph"
+      ]
+    },
+    {
+      "file": "accept_signal_filter.ores",
+      "expect": "ACCEPT",
+      "domain": "signal-processing",
+      "requires": [
+        "fixed-buffer-ops",
+        "canonical-static-config",
+        "pure-graph"
+      ]
+    },
+    {
+      "file": "accept_forward_without_vjp.ores",
+      "expect": "ACCEPT",
+      "domain": "inference",
+      "requires": [
+        "forward-only",
+        "optional-vjp"
+      ]
+    },
+    {
+      "file": "reject_nonconstant_static_arg.ores",
+      "expect": "MODEL_NONCONSTANT_CONFIG",
+      "domain": "generic",
+      "requires": [
+        "no-compile-time-code-execution"
+      ]
+    },
+    {
+      "file": "reject_effectful_op.ores",
+      "expect": "MODEL_EFFECTFUL_BODY",
+      "domain": "generic",
+      "requires": [
+        "effect-gating"
+      ]
+    },
+    {
+      "file": "reject_recursive_composition.ores",
+      "expect": "MODEL_RECURSIVE_COMPOSITION",
+      "domain": "generic",
+      "requires": [
+        "finite-acyclic-composition"
+      ]
+    }
+  ],
+  "guest_execution": "NOT_EXECUTED"
+}

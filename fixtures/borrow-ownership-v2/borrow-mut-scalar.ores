@@ -1,0 +1,12 @@
+define class Cell as
+  pub let int value = 0;
+end
+fnc set_value(borrow mut Cell cell): void {
+  cell.value = 42;
+  return;
+}
+pub fnc main(): int {
+  let mut Cell cell = new Cell();
+  set_value(rt mut borrow cell);
+  return cell.value;
+}

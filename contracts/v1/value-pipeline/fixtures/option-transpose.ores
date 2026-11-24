@@ -1,0 +1,3 @@
+fnc main(): Result<Option<int>, String> {
+  return Some(Ok(42)) |> Option.transpose();
+}

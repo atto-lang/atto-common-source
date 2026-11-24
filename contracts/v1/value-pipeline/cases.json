@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "targets": [
+    ".java",
+    ".llvm",
+    ".net",
+    ".forge",
+    ".wasm"
+  ],
+  "cases": [
+    {
+      "id": "scalar-left-associative",
+      "fixture": "scalar-left-associative.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java",
+        ".llvm",
+        ".wasm"
+      ],
+      "pending": [
+        ".net",
+        ".forge"
+      ]
+    },
+    {
+      "id": "result-map-error",
+      "fixture": "result-map-error.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "result": "Err(\"bad!\")"
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "option-transpose",
+      "fixture": "option-transpose.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "result": "Ok(Some(42))"
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "reject-noncallable-stage",
+      "fixture": "reject-noncallable-stage.ores",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "noncallable-pipeline-stage",
+        "diagnostic_contains": {
+          ".java": "pipeline stage must be a named callable",
+          ".llvm": "native pipeline stage requires a named scalar callable"
+        }
+      },
+      "candidate_implementations": [
+        ".java",
+        ".llvm",
+        ".wasm"
+      ],
+      "pending": [
+        ".net",
+        ".forge"
+      ]
+    },
+    {
+      "id": "reject-maperr-on-option",
+      "fixture": "reject-maperr-on-option.ores",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "invalid-sum-member",
+        "diagnostic_contains": {
+          ".java": "unknown Option member 'map_err'"
+        }
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "option-map-aot",
+      "fixture": "option-map-aot.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "result-chain-aot",
+      "fixture": "result-chain-aot.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "result-recovery-aot",
+      "fixture": "result-recovery-aot.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 7
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "aot-option-result-composition",
+      "fixture": "aot-option-result-composition.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 11
+      },
+      "candidate_implementations": [
+        ".java"
+      ],
+      "pending": [
+        ".llvm",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "scalar-named-first-argument",
+      "fixture": "scalar-named-first-argument.ores",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 40
+      },
+      "candidate_implementations": [
+        ".llvm"
+      ],
+      "pending": [
+        ".java",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    },
+    {
+      "id": "reject-duplicate-forwarded-binding",
+      "fixture": "reject-duplicate-forwarded-binding.ores",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "duplicate-forwarded-binding",
+        "diagnostic_contains": {
+          ".llvm": "duplicate binding of parameter 'n'"
+        }
+      },
+      "candidate_implementations": [
+        ".llvm"
+      ],
+      "pending": [
+        ".java",
+        ".net",
+        ".forge",
+        ".wasm"
+      ]
+    }
+  ]
+}

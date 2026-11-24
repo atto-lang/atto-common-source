@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "suite": "native-guest-parity-v1",
+  "evidence_status": "contract-only-not-executed",
+  "profiles": [
+    "llvm-native-aot",
+    "graal-jvm-guest",
+    "graal-native-guest-aot"
+  ],
+  "cases": [
+    {
+      "id": "scalar-main",
+      "path": "fixtures/native-guest-v1/scalar-main.ores",
+      "sha256": "ab1ac790ba3928b8876b428230ae4215984380a221c02c604f85cd3fca1d790f",
+      "expectation": {
+        "kind": "return",
+        "exit_code": 42
+      },
+      "readiness": {
+        "llvm-native-aot": "required",
+        "graal-jvm-guest": "required",
+        "graal-native-guest-aot": "pending"
+      }
+    },
+    {
+      "id": "owned-array-main",
+      "path": "fixtures/native-guest-v1/owned-array-main.ores",
+      "sha256": "1c907b5f62497f984e775fc928284de16238aa32a719c161090b50b4cd030370",
+      "expectation": {
+        "kind": "return",
+        "exit_code": 42
+      },
+      "readiness": {
+        "llvm-native-aot": "required",
+        "graal-jvm-guest": "pending",
+        "graal-native-guest-aot": "pending"
+      }
+    },
+    {
+      "id": "private-array-negative",
+      "path": "fixtures/native-guest-v1/private-array-negative.ores",
+      "sha256": "c08759e2a948b32dedb488ca15653460f7b1844f8bb02cb6a71297e00a6519f5",
+      "expectation": {
+        "kind": "reject",
+        "diagnostic": "private class field"
+      },
+      "readiness": {
+        "llvm-native-aot": "required",
+        "graal-jvm-guest": "pending",
+        "graal-native-guest-aot": "pending"
+      }
+    }
+  ]
+}

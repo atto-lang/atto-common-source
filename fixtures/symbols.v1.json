@@ -1,0 +1,559 @@
+{
+  "schema_version": "symbols-v1-proposal",
+  "status": "contract-vectors-not-backend-execution",
+  "equality": [
+    {
+      "label": "same literal across actors",
+      "left": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "right": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "equal": true
+    },
+    {
+      "label": "same name across OS processes",
+      "left": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "right": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "equal": true
+    },
+    {
+      "label": "different symbolic names",
+      "left": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "right": {
+        "kind": "process",
+        "name": "failed"
+      },
+      "equal": false
+    },
+    {
+      "label": "domain separates process and stable",
+      "left": {
+        "kind": "process",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "right": {
+        "kind": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "equal": false
+    },
+    {
+      "label": "stable roundtrip",
+      "left": {
+        "kind": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "right": {
+        "kind": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "equal": true
+    },
+    {
+      "label": "canonical NFC constructors",
+      "left": {
+        "kind": "process",
+        "name": "café"
+      },
+      "right": {
+        "kind": "process",
+        "name": "café"
+      },
+      "equal": true,
+      "constructor_normalizes_nfc": true
+    }
+  ],
+  "distinct_types": [
+    {
+      "symbol": {
+        "kind": "process",
+        "name": "ready"
+      },
+      "string": "ready",
+      "equal": false
+    }
+  ],
+  "valid_keys": [
+    {
+      "label": "simple identifier",
+      "value": "ready"
+    },
+    {
+      "label": "punctuation allowed via constructor",
+      "value": "http.ok"
+    },
+    {
+      "label": "multibyte UTF-8 within limit",
+      "value": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+    }
+  ],
+  "invalid_keys": [
+    {
+      "label": "empty",
+      "value": ""
+    },
+    {
+      "label": "NUL",
+      "value": "abc\u0000def"
+    },
+    {
+      "label": "C1 control",
+      "value": "hi"
+    },
+    {
+      "label": "bidi override",
+      "value": "abc‮def"
+    },
+    {
+      "label": "257 UTF-8 bytes",
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "label": "overlong UTF-8",
+      "utf8_hex": "c080"
+    },
+    {
+      "label": "unpaired surrogate",
+      "value": "\ud800"
+    },
+    {
+      "label": "invisible format U+FEFF",
+      "value": "foo﻿bar"
+    }
+  ],
+  "wire_decoding": [
+    {
+      "label": "known name creates noninterning value",
+      "input": {
+        "$symbol": "process",
+        "name": "ready"
+      },
+      "accept": true,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    },
+    {
+      "label": "unknown name does not intern",
+      "input": {
+        "$symbol": "process",
+        "name": "client_defined_tag"
+      },
+      "accept": true,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    },
+    {
+      "label": "stable UUID canonical",
+      "input": {
+        "$symbol": "stable",
+        "name": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "accept": true,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    },
+    {
+      "label": "unknown kind",
+      "input": {
+        "$symbol": "local",
+        "name": "ready"
+      },
+      "accept": false,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    },
+    {
+      "label": "unknown field",
+      "input": {
+        "$symbol": "process",
+        "name": "ready",
+        "id": 77
+      },
+      "accept": false,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    },
+    {
+      "label": "invalid stable UUID",
+      "input": {
+        "$symbol": "stable",
+        "name": "hello"
+      },
+      "accept": false,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    },
+    {
+      "label": "wire requires canonical NFC",
+      "input": {
+        "$symbol": "process",
+        "name": "café"
+      },
+      "accept": false,
+      "permanent_table_delta": 0,
+      "boundary": "trusted"
+    }
+  ],
+  "visibility_policy": {
+    "std_core_manifest": {
+      "version": "core-symbols-v1-fixture",
+      "allowed_process_keys": [
+        "ready",
+        "error",
+        "Symbol.iterator"
+      ]
+    },
+    "private_userland_process_keys": [
+      "userland/secret",
+      "userland/ready"
+    ],
+    "scoped_userland_exports": [
+      {
+        "tenant": "tenant-a",
+        "endpoint": "actor-notification",
+        "protocol": "v1",
+        "allowed_process_keys": [
+          "userland/alert"
+        ]
+      }
+    ]
+  },
+  "syntax": [
+    {
+      "source": "final Symbol foo: #abc",
+      "expected": "accept",
+      "notes": "colon separator followed by atomic hash-Symbol literal"
+    },
+    {
+      "source": "final int foo: #ready",
+      "expected": "type_error",
+      "notes": "Symbol is nominally distinct from int"
+    },
+    {
+      "source": "final Symbol foo = #ready",
+      "expected": "accept",
+      "notes": "compatibility initializer spelling"
+    },
+    {
+      "source": "let a: Symbol = #ready",
+      "expected": "accept",
+      "notes": "typed Symbol value"
+    },
+    {
+      "source": "let m = (#user_joined, 42)",
+      "expected": "accept",
+      "notes": "Symbol in tuple"
+    },
+    {
+      "source": "let x = infer struct{foo: #ready}",
+      "expected": "accept",
+      "notes": "struct colon is separator, hash belongs to value"
+    },
+    {
+      "source": "let x = struct{foo: Symbol}{foo: #ready}",
+      "expected": "accept",
+      "notes": "explicit typed struct initializer"
+    },
+    {
+      "source": "let y = #'ready foo'",
+      "expected": "accept",
+      "notes": "single-quoted Symbol with spaces"
+    },
+    {
+      "source": "let y = #\"ready foo\"",
+      "expected": "accept",
+      "notes": "double-quoted Symbol with spaces"
+    },
+    {
+      "source": "let y = #\"http.ok\"",
+      "expected": "accept",
+      "notes": "Symbol containing punctuation"
+    },
+    {
+      "source": "let y = #true",
+      "expected": "accept",
+      "notes": "hash lexer consumes keyword-like name"
+    },
+    {
+      "source": "let y = #class",
+      "expected": "accept",
+      "notes": "reserved keyword works as Symbol name"
+    },
+    {
+      "source": "let y = #",
+      "expected": "parse_error",
+      "notes": "hash lacks a name"
+    },
+    {
+      "source": "let y = # ready",
+      "expected": "parse_error",
+      "notes": "whitespace between hash and literal forbidden"
+    },
+    {
+      "source": "let y = #123",
+      "expected": "parse_error",
+      "notes": "numeric name not an identifier"
+    },
+    {
+      "source": "let y = :ready",
+      "expected": "parse_error",
+      "notes": "Ruby-style colon literals explicitly rejected"
+    },
+    {
+      "source": "let x = infer struct{foo: :ready}",
+      "expected": "parse_error",
+      "notes": "prior ambiguous double-colon form not supported"
+    },
+    {
+      "source": "let x = infer struct{foo:}",
+      "expected": "parse_error",
+      "notes": "field value missing"
+    },
+    {
+      "source": "let y = new Symbol('ready')",
+      "expected": "type_error",
+      "notes": "v1 no constructor; use Symbol.process('ready')"
+    },
+    {
+      "source": "let y = Symbol.process('ready')",
+      "expected": "accept",
+      "notes": "trusted runtime path; logically equal to #ready"
+    }
+  ],
+  "admission": [
+    {
+      "label": "untrusted core literal",
+      "operation": "source_literal",
+      "kind": "process",
+      "name": "ready",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true
+    },
+    {
+      "label": "untrusted userland literal blocked",
+      "operation": "source_literal",
+      "kind": "process",
+      "name": "userland/secret",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": false
+    },
+    {
+      "label": "untrusted core wire",
+      "operation": "wire",
+      "kind": "process",
+      "name": "error",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "untrusted userland wire blocked",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/secret",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland visible to correct tenant endpoint",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland hidden from other tenant",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-b",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland hidden from other endpoint",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-metrics",
+      "protocol": "v1",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "explicit exported userland hidden from other protocol version",
+      "operation": "wire",
+      "kind": "process",
+      "name": "userland/alert",
+      "policy": "untrusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v2",
+      "accept": false,
+      "permanent_table_delta": 0
+    },
+    {
+      "label": "trusted userland allowed",
+      "operation": "source_literal",
+      "kind": "process",
+      "name": "userland/secret",
+      "policy": "trusted",
+      "tenant": "tenant-a",
+      "endpoint": "actor-notification",
+      "protocol": "v1",
+      "accept": true
+    }
+  ],
+  "literal_equivalence": [
+    {
+      "label": "unquoted symbol equals trusted factory by kind and key",
+      "left_source": "#ready",
+      "right_source": "Symbol.process('ready')",
+      "kind": "process",
+      "name": "ready",
+      "same": true
+    },
+    {
+      "label": "single and double quotes same canonical name",
+      "left_source": "#'ready foo'",
+      "right_source": "#\"ready foo\"",
+      "kind": "process",
+      "name": "ready foo",
+      "same": true
+    },
+    {
+      "label": "keyword symbol doesn't equal bool",
+      "left_source": "#true",
+      "right_source": "true",
+      "same": false
+    },
+    {
+      "label": "Symbol distinct from string",
+      "left_source": "#ready",
+      "right_source": "'ready'",
+      "same": false
+    },
+    {
+      "label": "Symbol literal not UUID stable kind",
+      "left_source": "#ready",
+      "right_source": "Symbol.stable('550e8400-e29b-41d4-a716-446655440000')",
+      "same": false
+    }
+  ],
+  "keyed_containers": [
+    {
+      "kind": "map",
+      "source": "val m: Map<Symbol, int> = Map<Symbol, int>.new(); m[#foo] = 2",
+      "expect": "future_accept",
+      "note": "typed Symbol map keys; not implemented on current main"
+    },
+    {
+      "kind": "map",
+      "source": "val m: Map<String, int> = Map<String, int>.new(); m[#foo] = 2",
+      "expect": "type_error",
+      "note": "Map<String> does not implicitly accept Symbol"
+    },
+    {
+      "kind": "map",
+      "source": "val m: Map<Symbol | String, int> = Map<Symbol | String, int>.new()",
+      "expect": "future_accept",
+      "note": "heterogeneous explicit union; no key coercion"
+    },
+    {
+      "kind": "record",
+      "source": "let r = infer struct{foo: 1, [#foo]: 2}",
+      "expect": "future_accept",
+      "note": "string and Symbol slots distinct"
+    },
+    {
+      "kind": "record",
+      "source": "let n = r.foo; let s = r[#foo]",
+      "expect": "future_accept",
+      "note": "dot resolves textual slot and index resolves typed symbolic slot"
+    },
+    {
+      "kind": "struct",
+      "source": "let s = struct{foo: int, [#foo]: int}{foo: 1, [#foo]: 2}",
+      "expect": "future_accept",
+      "note": "closed statically known symbol property"
+    },
+    {
+      "kind": "struct",
+      "source": "let s = infer struct{[#foo]: 1, [#foo]: 2}",
+      "expect": "duplicate_key_error",
+      "note": "canonical duplicate Symbol key forbidden"
+    },
+    {
+      "kind": "struct",
+      "source": "let s = infer struct{[#'cafe\\u0301']: 1, [#\"café\"]: 2}",
+      "expect": "duplicate_key_error",
+      "note": "canonical NFC collisions forbidden"
+    },
+    {
+      "kind": "record",
+      "source": "let r = infer struct{foo: 1}; r[#foo]",
+      "expect": "type_error",
+      "note": "no implicit string/symbol member alias"
+    },
+    {
+      "kind": "record",
+      "source": "let r = infer struct{foo: 1}; r[key]",
+      "expect": "type_error",
+      "note": "closed record requires proven literal key"
+    },
+    {
+      "kind": "class",
+      "source": "define class C as final int foo: 1; final int [#foo]: 2; end",
+      "expect": "future_accept",
+      "note": "separate Symbol field layout and textual member"
+    },
+    {
+      "kind": "class",
+      "source": "let x = c.foo; let y = c[#foo]",
+      "expect": "future_accept",
+      "note": "dot dispatch unchanged"
+    },
+    {
+      "kind": "class",
+      "source": "define class C as final int [#foo]: 1; final int [#foo]: 2; end",
+      "expect": "duplicate_key_error",
+      "note": "reject canonical repeated keys"
+    }
+  ]
+}

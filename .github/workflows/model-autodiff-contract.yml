@@ -1,0 +1,30 @@
+name: Proposed model/autodiff contract (host-only)
+on:
+  pull_request:
+    paths:
+      - "docs/MODEL_ACTOR_AUTODIFF_V1.md"
+      - "contracts/v1/model-autodiff/**"
+      - "tests/model-autodiff-contract.test.mjs"
+      - "tests/model-actor-state-versioning-contract.test.mjs"
+      - "tests/model-actor-rw-state-contract.test.mjs"
+      - "docs/MODEL_ACTOR_SEALED_STATE_V1.md"
+      - "docs/ACTOR_GRAPH_RUNTIME_AND_USERLAND_OPTIMIZATION_V1.md"
+      - "tests/actor-graph-admission-contract.test.mjs"
+      - "tests/userland-mip-worklist-contract.test.mjs"
+      - ".github/workflows/model-autodiff-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Execute source-free model transport contract
+        run: node --test tests/model-autodiff-contract.test.mjs tests/model-actor-state-versioning-contract.test.mjs tests/model-actor-rw-state-contract.test.mjs tests/actor-graph-admission-contract.test.mjs tests/userland-mip-worklist-contract.test.mjs
+      - name: State evidence boundary
+        run: echo "HOST_ONLY; guest_execution=NOT_EXECUTED"

@@ -1,0 +1,7 @@
+// PROPOSED forward-only model fixture.
+// Quantize has no VJP. Declaration/inference is valid because no gradient is requested.
+define model QuantizedInference as
+    DecodeFeatures()
+    Quantize()
+    Score()
+end

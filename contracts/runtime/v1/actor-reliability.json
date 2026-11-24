@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "oreslang.actor-reliability",
+  "bounded": {
+    "dataMailbox": true,
+    "controlLane": true,
+    "pendingCalls": true,
+    "telemetryHistory": true
+  },
+  "semantics": {
+    "silentDropAllowed": false,
+    "implicitRetryAllowed": false,
+    "unboundedRestartAllowed": false,
+    "sendReceiptMeansProcessing": false,
+    "acceptedWorkRetractedByCallerCancel": false,
+    "staleIncarnationCanReply": false,
+    "duplicateReplyCanWin": false
+  },
+  "supervision": {
+    "authenticatedControl": true,
+    "restartWindowRequired": true,
+    "crashLoopEscalationRequired": true,
+    "deterministicBackoffRequired": true
+  },
+  "observability": {
+    "payloadCaptureAllowed": false,
+    "arbitraryLabelsAllowed": false,
+    "overwrittenEventCountRequired": true,
+    "monotonicSequenceRequired": true,
+    "monotonicTimeRequired": true
+  },
+  "requiredGates": [
+    "mailbox-saturation",
+    "reply-timeout-cancel-race",
+    "stale-incarnation",
+    "crash-loop",
+    "control-under-data-overload",
+    "scheduler-fairness",
+    "watchdog",
+    "shutdown-race",
+    "bounded-observability",
+    "deterministic-fault-injection"
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ores-truffle-oreslang.github.io/contracts/dispatch-return-forms.v1.schema.json",
+  "title": "Oreslang dispatch return destination v1 test oracle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "cases"
+  ],
+  "properties": {
+    "version": {
+      "const": "dispatch-return-v1"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "form",
+          "source",
+          "expected_result",
+          "return_destination",
+          "support"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]+$"
+          },
+          "form": {
+            "enum": [
+              "match",
+              "do match",
+              "switch",
+              "do switch"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "minLength": 25
+          },
+          "expected_result": {
+            "type": "integer",
+            "description": "JSON integer represented exactly in test oracle; signed-i64 range checked by compiler/runtime adapters, not JS number rounding"
+          },
+          "return_destination": {
+            "enum": [
+              "ARM_RESULT",
+              "FUNCTION_RETURN"
+            ]
+          },
+          "support": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "llvm",
+              "graal"
+            ],
+            "properties": {
+              "llvm": {
+                "enum": [
+                  "candidate",
+                  "unsupported"
+                ]
+              },
+              "graal": {
+                "enum": [
+                  "candidate",
+                  "unsupported"
+                ]
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "form": {
+                  "enum": [
+                    "match",
+                    "switch"
+                  ]
+                }
+              },
+              "required": [
+                "form"
+              ]
+            },
+            "then": {
+              "properties": {
+                "return_destination": {
+                  "const": "ARM_RESULT"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "form": {
+                  "enum": [
+                    "do match",
+                    "do switch"
+                  ]
+                }
+              },
+              "required": [
+                "form"
+              ]
+            },
+            "then": {
+              "properties": {
+                "return_destination": {
+                  "const": "FUNCTION_RETURN"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 4
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "schema": "const-import-v1-proposal",
+  "note": "reference-model inputs; not guest compiler executions",
+  "accepts": [
+    {
+      "name": "file-int",
+      "scope": "file",
+      "decl": "define pub const int x = 42;",
+      "type": "int",
+      "value": 42
+    },
+    {
+      "name": "file-string",
+      "scope": "file",
+      "decl": "define pub const String s = \"foo\";",
+      "type": "String",
+      "value": "foo"
+    },
+    {
+      "name": "module-sym",
+      "scope": "module",
+      "decl": "pub const Symbol sym = #zzz;",
+      "type": "Symbol",
+      "value": {
+        "kind": "global",
+        "name": "zzz"
+      }
+    },
+    {
+      "name": "module-symbol-for",
+      "scope": "module",
+      "decl": "pub const Symbol sym = Symbol.for(\"abc\");",
+      "type": "Symbol",
+      "value": {
+        "kind": "global",
+        "name": "abc"
+      }
+    }
+  ],
+  "rejects": [
+    {
+      "name": "int-string",
+      "decl": "define pub const int x = \"bar\";",
+      "reason": "type-mismatch"
+    },
+    {
+      "name": "runtime-call",
+      "decl": "pub const int x = query();",
+      "reason": "runtime-expression"
+    },
+    {
+      "name": "runtime-symbol-for",
+      "decl": "pub const Symbol x = Symbol.for(getName());",
+      "reason": "runtime-expression"
+    }
+  ],
+  "graphs": [
+    {
+      "name": "import-cycle-but-const-acyclic",
+      "edges": [
+        [
+          "A.import",
+          "B.import"
+        ],
+        [
+          "B.import",
+          "A.import"
+        ]
+      ],
+      "constant_edges": [
+        [
+          "A.x",
+          "B.y"
+        ]
+      ],
+      "accept": true
+    },
+    {
+      "name": "constant-cycle",
+      "edges": [
+        [
+          "A.import",
+          "B.import"
+        ],
+        [
+          "B.import",
+          "A.import"
+        ]
+      ],
+      "constant_edges": [
+        [
+          "A.x",
+          "B.y"
+        ],
+        [
+          "B.y",
+          "A.x"
+        ]
+      ],
+      "accept": false
+    }
+  ]
+}

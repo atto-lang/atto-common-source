@@ -1,0 +1,5 @@
+// Expected diagnostic MODEL_PORT_SHAPE_MISMATCH.
+define model WrongDimensions as
+    Dense(784, 512)
+    Dense(128, 10)
+end

@@ -1,0 +1,8 @@
+define module Left as
+  pub type LeftId = int;
+end
+
+define module Right as
+  pub define class Item as
+  end
+end

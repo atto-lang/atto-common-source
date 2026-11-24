@@ -1,0 +1,3 @@
+// Expected syntax diagnostic: MODEL_EMPTY_BODY.
+define model EmptyModel as
+end

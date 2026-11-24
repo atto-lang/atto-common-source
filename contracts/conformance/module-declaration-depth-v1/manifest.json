@@ -1,0 +1,57 @@
+{
+  "suite": "module-declaration-depth-v1",
+  "version": 1,
+  "language": "AttoLang",
+  "stage": "parse-and-typecheck",
+  "cases": [
+    {
+      "source": "accept-module-type-members.atto",
+      "expected": "accept",
+      "rule": "class, trait, interface and type alias as direct module members"
+    },
+    {
+      "source": "accept-sibling-modules.atto",
+      "expected": "accept",
+      "rule": "independent file-level modules"
+    },
+    {
+      "source": "reject-nested-module.atto",
+      "expected": "reject",
+      "rule": "no nested modules"
+    },
+    {
+      "source": "reject-nested-class.atto",
+      "expected": "reject",
+      "rule": "no second named type-declaration layer"
+    },
+    {
+      "source": "reject-nested-protocol.atto",
+      "expected": "reject",
+      "rule": "no type declarations inside traits"
+    },
+    {
+      "source": "reject-nested-type.atto",
+      "expected": "reject",
+      "rule": "no type declarations inside interfaces"
+    }
+  ],
+  "requiredEvidence": [
+    "exact fixture blob sha",
+    "exact backend compiler sha",
+    "executed compiler command",
+    "process exit status",
+    "matching accepted/rejected outcome"
+  ],
+  "backendClaims": {
+    "java": "pending-executed-evidence",
+    "llvm": "pending-executed-evidence",
+    "rs": "pending-executed-evidence",
+    "net": "pending-executed-evidence",
+    "wasm": "pending-executed-evidence",
+    "js": "pending-executed-evidence",
+    "forge": "pending-executed-evidence",
+    "cranelift": "pending-executed-evidence",
+    "hdl": "pending-executed-evidence",
+    "atto": "pending-executed-evidence"
+  }
+}

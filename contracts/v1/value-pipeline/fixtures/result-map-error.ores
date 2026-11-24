@@ -1,0 +1,4 @@
+fnc annotate(String err): String { return err + "!"; }
+fnc main(): Result<int, String> {
+  return Err("bad") |> Result.map_err(annotate);
+}

@@ -1,0 +1,99 @@
+name: Actor hot-reload v1 source-free contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/v1/actor-hot-reload/**'
+      - '.github/workflows/actor-hot-reload-contract.yml'
+  push:
+    paths:
+      - 'contracts/v1/actor-hot-reload/**'
+      - '.github/workflows/actor-hot-reload-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference-monitor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source and run 3 non-skipped rounds
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -n "$(git rev-parse 'HEAD^{tree}')"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          export PYTHONDONTWRITEBYTECODE=1
+          for round in 1 2 3; do
+            python3 -I contracts/v1/actor-hot-reload/verify.py \
+              > "$RUNNER_TEMP/hot-reload-round-$round.log" 2>&1
+            grep -q '^Ran 17 tests in' "$RUNNER_TEMP/hot-reload-round-$round.log"
+            grep -qx 'OK' "$RUNNER_TEMP/hot-reload-round-$round.log"
+            if grep -Eq 'FAILED|skipped|expected failure|unexpected success' "$RUNNER_TEMP/hot-reload-round-$round.log"; then
+              cat "$RUNNER_TEMP/hot-reload-round-$round.log"
+              exit 1
+            fi
+            echo "HOT_RELOAD_SOURCEFREE_ROUND_${round}_PASS=17"
+          done
+      - name: Emit source-free-only exact-head receipt
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          def git(*args):
+              return subprocess.check_output(("git", *args), text=True).strip()
+
+          if git("rev-parse", "HEAD") != os.environ["EXPECTED_HEAD"]:
+              raise SystemExit("head changed during validation")
+          root = Path("contracts/v1/actor-hot-reload")
+          blobs = {
+              str(path): git("hash-object", str(path))
+              for path in (root / "README.md", root / "verify.py")
+          }
+          logs = []
+          for i in (1, 2, 3):
+              path = Path(os.environ["RUNNER_TEMP"]) / f"hot-reload-round-{i}.log"
+              data = path.read_bytes()
+              if b"Ran 17 tests in" not in data or b"\nOK\n" not in data:
+                  raise SystemExit("missing executed unittest result")
+              logs.append(hashlib.sha256(data).hexdigest())
+          record = {
+              "schema": "oreslang.hot_actor_reload.sourcefree/v1",
+              "head_sha": git("rev-parse", "HEAD"),
+              "tree_sha": git("rev-parse", "HEAD^{tree}"),
+              "repository_id": int(os.environ["GITHUB_REPOSITORY_ID"]),
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "git_blobs": blobs,
+              "round_log_sha256": logs,
+              "tests_executed": 51,
+              "source_free_only": True,
+              "actual_oreslang_compiler_executed": False,
+              "actual_oreslang_runtime_executed": False,
+              "code_loader_or_sandbox_certified": False,
+              "production_hot_reload_qualified": False,
+          }
+          target = Path(os.environ["RUNNER_TEMP"]) / "hot-actor-reload-sourcefree.json"
+          target.write_text(json.dumps(record, sort_keys=True, indent=2) + "\n")
+          PY
+      - name: Upload source-free receipt only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: actor-hot-reload-sourcefree-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hot-actor-reload-sourcefree.json
+          if-no-files-found: error
+          retention-days: 7

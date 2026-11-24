@@ -1,0 +1,23 @@
+{
+  "version": "ores-callback-facts/v0",
+  "procedures": [
+    {
+      "id": "foo",
+      "entry": "start",
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "launch",
+          "api": "doMore",
+          "timing": "mixed",
+          "lane": "unknown",
+          "publishes": [
+            {"emitter": "randie", "event": "done"}
+          ],
+          "next": ["install"]
+        },
+        {"id": "install", "kind": "subscribe", "emitter": "randie", "event": "done", "next": []}
+      ]
+    }
+  ]
+}

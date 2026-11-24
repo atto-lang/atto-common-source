@@ -1,0 +1,166 @@
+{
+  "id": "oreslang.heterogeneous-science.v1",
+  "status": "REFERENCE_MODEL_ONLY",
+  "guest_execution": "NOT_EXECUTED",
+  "domains": [
+    "host",
+    "pinned_host",
+    "gpu",
+    "remote",
+    "qpu"
+  ],
+  "profiles": {
+    "numeric_kernel": {
+      "allowed_effects": [
+        "numeric",
+        "read_buffer",
+        "write_buffer"
+      ],
+      "requires": [
+        "checked_layout",
+        "static_reachability"
+      ]
+    },
+    "gpu_kernel": {
+      "allowed_effects": [
+        "numeric",
+        "read_buffer",
+        "write_buffer",
+        "barrier"
+      ],
+      "requires": [
+        "device_capability",
+        "bound_workgroup",
+        "explicit_transfer",
+        "completed_fence"
+      ]
+    },
+    "hard_realtime": {
+      "allowed_effects": [
+        "numeric",
+        "read_buffer",
+        "write_buffer",
+        "bounded_actor_send"
+      ],
+      "requires": [
+        "aot",
+        "preallocated",
+        "timing_evidence",
+        "rtos_admission"
+      ]
+    },
+    "quantum_circuit": {
+      "allowed_effects": [
+        "quantum_gate",
+        "quantum_measure"
+      ],
+      "requires": [
+        "linear_qubits",
+        "qpu_capability"
+      ]
+    },
+    "orchestrator": {
+      "allowed_effects": [
+        "numeric",
+        "read_buffer",
+        "write_buffer",
+        "allocate",
+        "await",
+        "device_submit",
+        "qpu_submit",
+        "network",
+        "io"
+      ],
+      "requires": [
+        "capability_checks"
+      ]
+    },
+    "stream_data": {
+      "allowed_effects": [
+        "numeric",
+        "read_buffer",
+        "write_buffer",
+        "allocate",
+        "await",
+        "bounded_actor_send"
+      ],
+      "requires": [
+        "bounded_credits",
+        "watermarks",
+        "authenticated_lease"
+      ]
+    }
+  },
+  "negative_gates": [
+    "EFFECT_NOT_ADMITTED",
+    "UNBOUNDED_DEADLINE",
+    "INTEGER_OVERFLOW",
+    "INVALID_TENSOR_LAYOUT",
+    "BUFFER_LOAN_ACTIVE",
+    "FENCE_IN_FLIGHT",
+    "STALE_HANDLE",
+    "IMPLICIT_DEVICE_TRANSFER",
+    "QUBIT_NOT_COPYABLE",
+    "QUBIT_ALREADY_MEASURED",
+    "INVALID_QUANTUM_GATE",
+    "UNSUPPORTED_DEVICE",
+    "STALE_PARTITION_EPOCH",
+    "DUPLICATE_PARTITION_SEQUENCE",
+    "PARTITION_RECEIPT_BACKPRESSURE",
+    "INVALID_NUMERIC"
+  ],
+  "targets": {
+    "data_science": [
+      "arrow_interop",
+      "parquet_interop",
+      "columnar_layout",
+      "streaming_backpressure"
+    ],
+    "machine_learning": [
+      "tensor_shapes",
+      "forward_autodiff",
+      "reverse_autodiff",
+      "stablehlo"
+    ],
+    "gpu": [
+      "mlir_gpu",
+      "spirv",
+      "nvvm",
+      "amdgpu",
+      "hardware_fences"
+    ],
+    "hpc": [
+      "mpi",
+      "distributed_arrays",
+      "deterministic_reductions",
+      "numa"
+    ],
+    "realtime": [
+      "wcet",
+      "release_jitter",
+      "interference",
+      "rtos"
+    ],
+    "quantum": [
+      "openqasm3",
+      "qir",
+      "mid_circuit_feedback",
+      "qpu_provider"
+    ],
+    "robotics": [
+      "dma",
+      "device_affinity",
+      "sensor_streams",
+      "deadline_admission"
+    ]
+  },
+  "promotion": {
+    "reference_model": "host_only_no_guest_claims",
+    "source_frontend": "real_ores_source_positive_negative",
+    "cpu": "native_guest_execution_exact_sha",
+    "gpu": "real_hardware_verified_device_and_fence",
+    "quantum": "qasm_or_qir_compilation_then_simulator_run",
+    "hard_realtime": "hardware_timing_proof_named_board_rtos",
+    "cross_backend": "same_guest_fixtures_and_matching_observable_results"
+  }
+}

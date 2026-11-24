@@ -1,0 +1,67 @@
+{
+  "id": "oreslang.critical-gate.v1",
+  "version": 1,
+  "status": "target-runtime-internal-contract",
+  "note": "Java restricted actor-scalar critical compiler/runtime lowering and real .ores guest fixture authored; exact-head Java compilation and guest test still unverified. LLVM/.NET/Cranelift/Wasm guest critical lowering not implemented.",
+  "language_effects": {
+    "critical_body_suspends": false,
+    "critical_entry_may_suspend": true,
+    "suspends_means_may_suspend": true,
+    "async_callable_modifier": false,
+    "actor_turn_reservation_is_physical_lock": false
+  },
+  "admission": {
+    "uncontended": "ACQUIRED",
+    "contended": "QUEUED",
+    "try_while_contended": "EMPTY",
+    "queue_discipline": "FIFO",
+    "max_waiters_per_gate": 8192
+  },
+  "operations": {
+    "request": "Allocate an opaque unique ticket, immediately acquire or return queued; never wait for active guest body",
+    "try_request": "Immediate attempt; no enqueue, no wait on internal bookkeeping mutex; return EMPTY on contention",
+    "release": "Release owner and return next FIFO token, or cancel queued token; idempotent for stale same-gate tokens",
+    "holds": "Check active same-gate ownership before guest body; separately verify task and actor generation",
+    "retire": "Close gate, revoke owner and queued tickets after physical body quiescence; deny new admission"
+  },
+  "safety_invariants": [
+    "No physical mutex spans guest execution or any await",
+    "No guest callback is executed by request/release/retire or under metadata synchronization",
+    "Cancellation versus owner release never admits a cancelled continuation",
+    "A token from a retired actor generation never resumes in the new incarnation",
+    "Cross-tenant/isolate capability checks are independent of token identity",
+    "Retirement must not interrupt an active mutation or claim transactional rollback",
+    "Queue timeout, cancellation and supervisor shutdown are scheduler responsibilities",
+    "Compiler may admit only statically proven non-suspending bodies: restricted scalar subset initially; direct/indirect calls, FFI and unknown effects remain forbidden"
+  ],
+  "backend_state": {
+    "java": "restricted Java actor-critical guest path authored; promoted-waiter retirement race patched; Java exact-head guest CI still NOT_EXECUTED (steps=null); source-free alternate carrier verified, private mirror governance denied",
+    "llvm": "host-runtime-substrate-only",
+    "dotnet": "host-runtime-substrate-only",
+    "wasm": "javascript-host-runtime-substrate-only; not Wasmtime guest",
+    "cranelift": "rust-host-runtime-substrate-only"
+  },
+  "evidence": "No native Oreslang guest execution claimed",
+  "compiler_admission": {
+    "java": {
+      "critical_block": "restricted suspending actor instance methods only; typed+ownership checked bounded scalar bodies admitted through exact AST+Program+epoch proof",
+      "try_critical": "parsed into Ast.TryCriticalStmt with mandatory else; source gate rejects until immediate ticket/lexical cleanup",
+      "effect_check": "bounded conservative AST preflight; all unverified calls, FFI, awaits, channels and nested gates rejected",
+      "evaluation": "SourceTask scheduler-awaitable FIFO gate and lexical guard cleanup implemented for restricted actor bodies; ordinary sync evaluator remains fail-closed",
+      "evidence": "Java-source exact-head JUnit and .ores compiler guest checks still have no executed steps; two authored native fixture cases remain unverified",
+      "scheduler": "staged SourceTask awaits CriticalGate.requestAwaitable via OresScheduler; cancellation frames release granted tickets",
+      "runtime_authorization": "Ast.CheckedCriticalBlocks.require(program, node, epoch) before ticket; actor runtime/identity and gate revalidated on resume; no authority in detached task or lambda",
+      "actor_identity": "critical gate lazily owned by exact ActorCell incarnation, shared across that actor's code sites but isolated from other actors; STOP and re-incarnation fenced",
+      "retirement": "atomic retireIfQuiescent after source physical cleanup; live owner or queued future quarantines instead of falsely finalizing",
+      "resume_fence": "revalidate ActorRuntime instance + ActorId + live cell gate after scheduler Future await",
+      "race_tests": "late cancellation cannot revoke an already granted ticket; first holder must release before FIFO successor",
+      "guest_case": "Two native .ores guest fixtures authored: actor-critical-scalar.ores expects stdout 42; actor-critical-early-return.ores expects returned and actor finalization; neither executed in CI",
+      "retirement_race": "Promoted-but-unsettled Future remains in CriticalGate admission ledger until terminal settlement; retire fails outstanding future outside metadata mutex",
+      "ci_carrier": "gha-indie-worker/gha-indie-worker-docs source-free Java capacity run 41391572866 passed five executed steps; no source transferred; exact private mirror denied by source-main protection and independently reviewed destination allowlist"
+    },
+    "llvm": "host runtime ticket substrate only; source critical remains rejected",
+    "dotnet": "host runtime ticket substrate only; source critical remains rejected",
+    "cranelift": "host runtime ticket substrate only; source critical remains rejected",
+    "wasm": "JS host ticket substrate only; source critical remains rejected"
+  }
+}

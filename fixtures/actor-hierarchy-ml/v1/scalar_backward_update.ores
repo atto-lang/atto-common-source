@@ -1,0 +1,1 @@
+fnc main(w:int,x:int,t:int,rate:int):int{return w-rate*(w*x-t)*x;}
