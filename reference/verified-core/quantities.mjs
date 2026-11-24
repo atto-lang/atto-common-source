@@ -27,7 +27,11 @@ function unit(powers, n, d) {
 
 function sameDimension(left, right) {
   return left.powers.length === right.powers.length &&
-    left.powers.every(([name, power], i) => name === right.powers[i][0] && power === right.powers[i][1]);
+    left.powers.every(([name, power], i) => name === right.powers[i]?.[0] && power === right.powers[i]?.[1]);
+}
+
+export function sameUnit(left, right) {
+  return sameDimension(left, right) && left.n === right.n && left.d === right.d;
 }
 
 function scalar(type) {
@@ -51,7 +55,7 @@ function checked(value, code = "E_I64_OVERFLOW") {
   return value;
 }
 
-function elaborate(declarations) {
+export function elaborateQuantityDeclarations(declarations) {
   const dimensions = new Map();
   const units = new Map();
   const canonical = new Set();
@@ -83,7 +87,7 @@ function elaborate(declarations) {
   return units;
 }
 
-function lookup(units, name) {
+export function resolveQuantityUnit(units, name) {
   if (name === undefined) return dimensionless;
   const found = units.get(name);
   if (!found) reject("E_UNIT_NAME", name);
@@ -93,12 +97,12 @@ function lookup(units, name) {
 function infer(units, expr, depth = 0) {
   if (depth > 128) reject("E_UNIT_LIMIT", "expression too deep");
   if (expr.op === "literal") {
-    const type = lookup(units, expr.unit);
+    const type = resolveQuantityUnit(units, expr.unit);
     return { type, execute: () => checked(BigInt(expr.value)) };
   }
   if (expr.op === "convert") {
     const operand = infer(units, expr.value, depth + 1);
-    const type = lookup(units, expr.unit);
+    const type = resolveQuantityUnit(units, expr.unit);
     if (!sameDimension(operand.type, type)) reject("E_UNIT_DIMENSION", "conversion");
     // This profile folds a direct signed literal conversion at compilation.
     const n = operand.execute() * operand.type.n * type.d;
@@ -141,7 +145,7 @@ function infer(units, expr, depth = 0) {
 
 /** Type an int-returning source fragment, then evaluate its checked arithmetic. */
 export function evaluateQuantityMain(declarations, expression) {
-  const typed = infer(elaborate(declarations), expression);
+  const typed = infer(elaborateQuantityDeclarations(declarations), expression);
   if (!scalar(typed.type)) reject("E_UNIT_ERASURE", "int return requires dimensionless scale one");
   return typed.execute();
 }
