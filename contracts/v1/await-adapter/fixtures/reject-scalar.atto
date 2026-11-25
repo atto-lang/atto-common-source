@@ -1,0 +1,3 @@
+pub susp fnc main(): int {
+    return 42 |> std.await;
+}

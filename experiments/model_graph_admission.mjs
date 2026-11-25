@@ -1,3 +1,4 @@
+import { modelBufferLayoutOrdinal } from "./model_buffer_layout_v1.mjs";
 import { modelSymbolKindOrdinal } from "./model_symbol_constant_v1.mjs";
 // Source-free admission oracle for a proposed compiler-owned typed ModelGraph HIR.
 // NOT a guest Oreslang compiler, runtime, verified op registry or executable tensor backend.
@@ -65,7 +66,7 @@ function port(p) {
   exactFields(p, ["dtype", "shape", "layout", "unit"], "MODEL_INVALID_PORT");
   if (!BYTES.has(p.dtype) || !denseArray(p.shape) || p.shape.length > 8)
     fail("MODEL_INVALID_PORT");
-  if (p.layout !== undefined && !["contiguous", "scalar"].includes(p.layout))
+  if (modelBufferLayoutOrdinal(p.layout, p.shape.length) < 0)
     fail("MODEL_INVALID_PORT");
   if (p.unit !== undefined &&
       (typeof p.unit !== "string" || !/^[a-zA-Z0-9_/^-]{1,40}$/.test(p.unit)))
@@ -82,8 +83,6 @@ function port(p) {
   }
   const bytes = count * BYTES.get(p.dtype);
   if (bytes > MAX_SAFE) fail("MODEL_SIZE_OVERFLOW");
-  if (p.shape.length === 0 && p.layout === "contiguous") fail("MODEL_INVALID_PORT");
-  if (p.shape.length > 0 && p.layout === "scalar") fail("MODEL_INVALID_PORT");
   return bytes;
 }
 
@@ -96,8 +95,8 @@ function portMismatchCode(a, b) {
   if (a.dtype !== b.dtype) return "MODEL_PORT_DTYPE_MISMATCH";
   if (a.shape.length !== b.shape.length || a.shape.some((n, i) => n !== b.shape[i]))
     return "MODEL_PORT_SHAPE_MISMATCH";
-  const aLayout = a.layout ?? (a.shape.length === 0 ? "scalar" : "contiguous");
-  const bLayout = b.layout ?? (b.shape.length === 0 ? "scalar" : "contiguous");
+  const aLayout = modelBufferLayoutOrdinal(a.layout, a.shape.length);
+  const bLayout = modelBufferLayoutOrdinal(b.layout, b.shape.length);
   if (aLayout !== bLayout) return "MODEL_PORT_LAYOUT_MISMATCH";
   if ((a.unit ?? "") !== (b.unit ?? "")) return "MODEL_PORT_UNIT_MISMATCH";
   return null;

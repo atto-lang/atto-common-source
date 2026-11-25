@@ -1,0 +1,4 @@
+define module Outer as
+  define module Inner as
+  end
+end

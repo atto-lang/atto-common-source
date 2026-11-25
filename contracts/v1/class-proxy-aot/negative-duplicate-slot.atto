@@ -1,0 +1,9 @@
+// AOT_PROXY_UNSUPPORTED: nominal overload identity is name plus explicit arity.
+define class Foo as
+  pub read(int value): int { return value; }
+  pub read(String value): int { return 42; }
+end
+pub routine main(): void {
+  val wrapped = new Proxy(new Foo());
+  return;
+}

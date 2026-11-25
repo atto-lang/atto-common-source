@@ -81,3 +81,5 @@ jobs:
             tests/numeric-errors-contract.test.mjs
       - name: Verify critical state-loan fixture identity (not guest execution)
         run: node --test tests/actor-critical-modes-source.test.mjs
+      - name: Verify shared HIR and MIR structural evidence (not guest execution)
+        run: node --test tests/shared-compiler-evidence-v1.test.mjs

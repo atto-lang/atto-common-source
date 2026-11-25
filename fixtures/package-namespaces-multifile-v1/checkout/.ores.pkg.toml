@@ -1,0 +1,19 @@
+schema_version = "2"
+[project]
+name = "checkout"
+root = "."
+[source]
+roots = ["src"]
+[packages.checkout]
+files = [
+  "src/billing/invoice.ores",
+  "src/billing/charges.ores",
+  "src/billing/refunds.ores",
+  "src/billing/ledger.ores",
+  "src/identity/accounts.ores",
+  "src/identity/sessions.ores",
+  "src/identity/policies.ores",
+  "src/telemetry/events.ores",
+  "src/telemetry/metrics.ores",
+  "src/telemetry/traces.ores",
+]

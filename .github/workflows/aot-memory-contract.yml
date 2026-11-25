@@ -1,0 +1,38 @@
+name: Strict AOT and zero-collection contract structural gate
+on:
+  pull_request:
+    paths:
+      - 'contracts/aot-memory-isolation-v1.json'
+      - 'tests/test_aot_memory_contract.py'
+      - 'reference/query-memory-profiles.mjs'
+      - 'tests/query-memory-profiles.test.mjs'
+      - '.github/workflows/aot-memory-contract.yml'
+  push:
+    paths:
+      - 'contracts/aot-memory-isolation-v1.json'
+      - 'tests/test_aot_memory_contract.py'
+      - 'reference/query-memory-profiles.mjs'
+      - 'tests/query-memory-profiles.test.mjs'
+      - '.github/workflows/aot-memory-contract.yml'
+permissions:
+  contents: read
+jobs:
+  static-aot-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet HEAD --
+      - name: Test canonical contract and adversarial mutations
+        run: python3 -m unittest discover -s tests -p 'test_aot_memory_contract.py' -v
+      - name: Validate portable AOT/GC profile query
+        run: node --test tests/query-memory-profiles.test.mjs
+      - name: Evidence boundary
+        run: echo 'SPECIFICATION_AND_MUTATION_TESTS_ONLY — no compiled guest or collector measured'

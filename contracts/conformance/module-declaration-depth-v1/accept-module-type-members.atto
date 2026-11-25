@@ -1,0 +1,12 @@
+define module Models as
+  pub define class Item as
+  end
+
+  pub define trait Trackable as
+  end
+
+  pub define interface Identified as
+  end
+
+  pub define type ItemId = int;
+end
