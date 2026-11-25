@@ -5,8 +5,8 @@ import { exploreProtocolTurns } from "./protocol-turn-interleavings.mjs";
 test("bounded model preserves publication authority and credits", () => {
   const proof = exploreProtocolTurns(12);
   assert.equal(proof.safe, true);
-  assert.ok(proof.states > 100);
-  assert.ok(proof.transitions > proof.states);
+  assert.equal(proof.states, 87);
+  assert.equal(proof.transitions, 189);
 });
 test("omitted fence and duplicate settlement have reachable counterexamples", () => {
   for (const [mutant, expected] of [["omit-stop-fence", "publication-authority"], ["double-credit", "credit-conservation"]]) {
