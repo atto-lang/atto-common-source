@@ -1,0 +1,9 @@
+// AOT_PROXY_UNSUPPORTED: existing runtime value target needs typed ownership inference.
+define class Foo as
+  pub value(): int { return 42; }
+end
+pub routine main(): void {
+  val existing = new Foo();
+  val wrapped = new Proxy(existing);
+  return;
+}
