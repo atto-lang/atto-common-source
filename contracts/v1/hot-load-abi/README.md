@@ -75,3 +75,67 @@ single-use receipts. Closing the logical table is an immediate authority fence;
 this source-free model does **not** prove safe physical reclamation, native
 quiescence, or replay-free persistent storage. Three regressions cover pending
 heir, live owner and already acknowledged heir shutdown races.
+
+## Physical owner retirement gate and image label re-use (2026-11-08)
+
+**Normative acceptance requirement, model-only implementation:** An ETS owner-death
+event fences the previous writer but does **not** prove the old physical
+owner is gone. The heir receipt must remain pending until the trusted
+runtime independently establishes actor registry removal **and** drains all
+turn/Task/continuation/FFI/timer/ETS/external leases able to touch the table.
+Only that supervisor-owned proof at the exact table epoch may make the
+single-use heir acknowledgement eligible. A stale, cross-tenant or forged
+proof, unretired lease, pending transfer, or terminal stop MUST reject without
+publishing a second writer. Terminal stop also revokes already confirmed but
+unacknowledged retirement eligibility.
+
+A child restart MUST NOT discard live physical Task/FFI/ETS leases or an
+unacknowledged heir transfer. Retired or quarantined code-image identifiers
+MUST NOT be recycled while the old identity may remain mapped; the final
+runtime needs distinct monotonic generation IDs plus immutable content
+digests, rather than trusting this oracle's simplified string code labels.
+Actual owner-retirement proof requires runtime-owned actor registry,
+generation pin bookkeeping and loader/ETS integration. The Python method
+`confirm_owner_retired` represents the trusted observer **only**; calling
+it in a model is not physical teardown evidence.
+
+These eight additional source-free regressions intentionally do **not**
+validate a source actor, real ETS provider, native image unloading, compiler
+instrumentation, zero downtime, or backend parity. Together with the
+stacked terminal-stop patch, the expected source-free inventory is 35 Python
+cases per round (105 over three runs) **once executed on an admitted runner**.
+
+## Linearized ETS handoff and physical lease fencing (2026-11-08 follow-up)
+
+The source-free oracle now serializes the ETS-owner ledger and generation-pin
+admission using one short critical section. This models the **same-lock**
+requirement for owner death, DATA admission, physical retirement confirmation,
+heir ACK, table mutation, supervisor stop, and generation freeze/commit. It
+must NEVER hold this lock across guest callbacks, migration, I/O, blocking
+waits, or image cleanup. Implementation must use runtime-owned physical actor
+identities; an omitted model token means the currently active physical owner,
+not permission for an arbitrary guest to name an actor.
+
+While an owner-death transfer is pending, the old physical owner cannot acquire
+new turn/Task/continuation/FFI/ETS leases. ACK verifies both trusted
+retirement confirmation AND zero live leases inside the same table lock.
+After ACK the new heir can acquire leases; stale owner tokens cannot. Any
+injection of a live lease, including one discovered after confirmation, blocks
+ACK before a second writer is published. Terminal stop revokes ownership even
+when it races an ACK, and owner-death fencing linearizes with in-flight writes.
+
+Seven additional adversarial test methods exercise these conditions, including
+three bounded 40-round two-thread interleaving sweeps (ACK/pin, owner-death/
+write, stop/ACK). Source-free inventory is now **42 methods per round**,
+**126 cases across three rounds** once executed. This is not a C++/Java
+concurrency memory-model proof, authenticated physical actor registry, guest
+execution, or executed-hosted CI claim. The real runtime must prove fencing
+with scheduler/ETS registry ownership and model-check adversarial reorderings.
+
+### No implicit physical owner authority
+
+Generation-pin admission now requires the trusted host to supply the live
+physical owner identity explicitly; omitted and forged identities MUST fail
+closed even if an heir is now current. Never default a stale callback's owner
+identity to the current table owner. The source-free model has **42 methods**
+per round, **126 expected model cases** across three non-skipped runs.
