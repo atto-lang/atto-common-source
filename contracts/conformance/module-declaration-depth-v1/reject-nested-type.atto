@@ -1,0 +1,5 @@
+define module Outer as
+  define interface Parent as
+    define type Child = int;
+  end
+end

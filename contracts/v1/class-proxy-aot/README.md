@@ -81,3 +81,6 @@ proxy and a method-entry interception mechanism need separate designs.
    typed `before/after/around/proceed` hooks and cross-module class imports.
 4. Introduce actual shared runner automation; do not count manifest expectations
    as executed tests.
+
+
+This candidate is subordinate to [AttoSpec chapter 24](https://github.com/atto-lang/atto-spec/blob/main/spec/24-aot-zero-gc-controlled-dynamism.md); the [shared HIR/MIR review gate](../../../docs/AOT_ZERO_GC_CONTROLLED_DYNAMISM_V1.md) is complementary. Static slot restrictions are v1 candidate restrictions, not a change to global overload resolution. Do not infer compiler acceptance from these fixtures.

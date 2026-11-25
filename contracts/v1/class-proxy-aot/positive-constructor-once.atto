@@ -6,6 +6,6 @@ define class Foo as
 end
 pub routine main(): void {
   val wrapped = new Proxy(new Foo());
-  stdio.stdout.write(wrapped.count());
+  stdio.out.write(wrapped.count());
   return;
 }

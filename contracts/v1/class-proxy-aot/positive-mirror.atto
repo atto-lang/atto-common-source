@@ -7,7 +7,7 @@ define class Foo as
 end
 pub routine main(): void {
   val wrapped = new Proxy(new Foo());
-  stdio.stdout.write(wrapped.add(20, 22));
-  stdio.stdout.write(wrapped.add(2));
+  stdio.out.write(wrapped.add(20, 22));
+  stdio.out.write(wrapped.add(2));
   return;
 }
