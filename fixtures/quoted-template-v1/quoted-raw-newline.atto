@@ -1,0 +1,5 @@
+pub fnc main(): int {
+  const text = 'first
+second';
+  return 42;
+}

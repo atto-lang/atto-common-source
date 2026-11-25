@@ -1,0 +1,9 @@
+fnc transform_result(int x): int { return x + 1; }
+
+pub susp fnc main(): int {
+    val pending = task { return 41; };
+    ^ pending
+        |> std.await
+        |> transform_result
+        >> val result: int;
+}

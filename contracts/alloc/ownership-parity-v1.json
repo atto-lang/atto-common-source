@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "contract_id": "atto-alloc-ownership-parity-v1",
+  "policy": "Common semantics and verifiable outcomes; each backend owns its own .atto sources and compiler/runtime lowering. This registry does not certify implementation or runner availability.",
+  "candidate_backends": [
+    {
+      "id": "java",
+      "repository": "atto-lang/atto-source.java",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.java/pull/1775",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "llvm",
+      "repository": "atto-lang/atto-source.llvm",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.llvm/pull/874",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "rs",
+      "repository": "atto-lang/atto-source.rs",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.rs/pull/538",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "cranelift",
+      "repository": "atto-lang/atto-source.cranelift",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.cranelift/pull/93",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "forge",
+      "repository": "atto-lang/atto-source.forge",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.forge/pull/229",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "wasm",
+      "repository": "atto-lang/atto-source.wasm",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.wasm/pull/282",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "net",
+      "repository": "atto-lang/atto-source.net",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.net/pull/221",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "js",
+      "repository": "atto-lang/atto-source.js",
+      "profile": "hosted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.js/pull/133",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "hdl",
+      "repository": "atto-lang/atto-source.hdl",
+      "profile": "restricted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.hdl/pull/62",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "realtime",
+      "repository": "atto-lang/atto-source.realtime",
+      "profile": "restricted",
+      "candidate_pr": "https://github.com/atto-lang/atto-source.realtime/pull/12",
+      "evidence_state": "NOT_VERIFIED"
+    },
+    {
+      "id": "atto",
+      "repository": "atto-lang/atto-source.atto",
+      "profile": "hosted",
+      "candidate_pr": null,
+      "evidence_state": "NOT_VERIFIED"
+    }
+  ],
+  "allowed_outcomes": [
+    "PASS",
+    "REJECT"
+  ],
+  "required_guest_coverage": "Every applicable case must have a real executable guest/compiler observation; unsupported features must fail closed rather than be silently skipped or treated as passing.",
+  "cases": [
+    {
+      "id": "layout.negative_size",
+      "capability": "layout",
+      "expected": "REJECT",
+      "phase": "runtime",
+      "applicability": "all"
+    },
+    {
+      "id": "layout.invalid_alignment",
+      "capability": "layout",
+      "expected": "REJECT",
+      "phase": "runtime",
+      "applicability": "all"
+    },
+    {
+      "id": "layout.overflow",
+      "capability": "layout",
+      "expected": "REJECT",
+      "phase": "runtime",
+      "applicability": "all"
+    },
+    {
+      "id": "ledger.reserve_commit_retire",
+      "capability": "ledger",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "ledger.over_quota",
+      "capability": "ledger",
+      "expected": "REJECT",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "ledger.duplicate_retirement",
+      "capability": "ledger",
+      "expected": "REJECT",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "ledger.stale_generation",
+      "capability": "ledger",
+      "expected": "REJECT",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "ownership.use_after_move",
+      "capability": "ownership",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "all"
+    },
+    {
+      "id": "ownership.double_drop",
+      "capability": "ownership",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "all"
+    },
+    {
+      "id": "borrow.drop_while_live_read",
+      "capability": "borrow",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "all"
+    },
+    {
+      "id": "borrow.mut_aliased",
+      "capability": "borrow",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "all"
+    },
+    {
+      "id": "lexical.normal_return_once",
+      "capability": "lexical",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "lexical.early_return_once",
+      "capability": "lexical",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "lexical.exception_unwind_lifo",
+      "capability": "lexical",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "lexical.failed_destructor_quarantine",
+      "capability": "lexical",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "authority.forged_receipt_free",
+      "capability": "authority",
+      "expected": "REJECT",
+      "phase": "runtime",
+      "applicability": "hosted"
+    },
+    {
+      "id": "arc.last_strong_exactly_once",
+      "capability": "arc",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "weak.upgrade_after_retirement",
+      "capability": "arc",
+      "expected": "REJECT",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "actor.stop_quiescent_cleanup",
+      "capability": "actor",
+      "expected": "PASS",
+      "phase": "guest",
+      "applicability": "hosted"
+    },
+    {
+      "id": "actor.live_loan_suspend",
+      "capability": "actor",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "hosted"
+    },
+    {
+      "id": "restricted.unlowered_heap",
+      "capability": "restricted",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "restricted"
+    },
+    {
+      "id": "restricted.unbounded_allocation",
+      "capability": "restricted",
+      "expected": "REJECT",
+      "phase": "compile",
+      "applicability": "restricted"
+    }
+  ],
+  "proof_protocol": {
+    "version": 1,
+    "required_source_binding": [
+      "backend",
+      "source_head",
+      "source_tree",
+      "fixture_blob",
+      "mirror_head"
+    ],
+    "required_runner_binding": [
+      "run.id",
+      "run.run_attempt",
+      "run.head_sha",
+      "run.status",
+      "run.conclusion",
+      "job.id",
+      "job.run_id",
+      "job.run_attempt",
+      "job.runner_id",
+      "job.status",
+      "job.conclusion",
+      "job.steps"
+    ],
+    "required_successful_step": "Execute allocation conformance guest",
+    "records_are_offline_assertions_not_GitHub_attestations": true,
+    "mirror_tree_check": "verify complete Git tree, modes and blob SHA parity independently with scripts/exact_source_gate.py before releasing a backend certificate",
+    "aot": "AOT certification requires separate native executable receipts, not this host-only gate"
+  }
+}
