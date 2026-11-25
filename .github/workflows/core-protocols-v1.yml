@@ -5,6 +5,17 @@ on:
       - 'library/ores.core/protocols.atto'
       - 'contracts/v1/core-protocols-v1.json'
       - 'tests/core-protocols-v1.test.mjs'
+      - 'tests/core-protocol-signatures-v1.test.mjs'
+      - 'contracts/v1/core-protocol-signatures-v1.json'
+      - 'tests/core-actor-foundation-v1.test.mjs'
+      - 'tests/core-actor-security-v1.test.mjs'
+      - 'tests/core-actor-concurrency-affinity-v1.test.mjs'
+      - 'tests/native-actor-result-supervision-v1.test.mjs'
+      - 'contracts/v1/native-actor-result-supervision-v1.json'
+      - 'docs/NATIVE_ACTOR_RESULT_SUPERVISION_V1.md'
+      - 'tests/fixtures/native-actor-result-v1/**'
+      - 'contracts/v1/core-actor-foundation-v1.json'
+      - 'docs/CORE_AND_ACTOR_BASE_CLASSES_V1.md'
       - 'tests/fixtures/core-protocols-v1/**'
       - '.github/workflows/core-protocols-v1.yml'
   workflow_dispatch:
@@ -28,5 +39,5 @@ jobs:
           git diff --cached --quiet
       - name: Verify source-only protocol contract
         run: |
-          node --test tests/core-protocols-v1.test.mjs
+          node --test tests/core-protocols-v1.test.mjs tests/core-protocol-signatures-v1.test.mjs tests/core-actor-foundation-v1.test.mjs tests/core-actor-security-v1.test.mjs tests/core-actor-concurrency-affinity-v1.test.mjs tests/native-actor-result-supervision-v1.test.mjs
           echo "ATTO_CORE_PROTOCOLS_GUEST_EXECUTION=NOT_EXECUTED"
