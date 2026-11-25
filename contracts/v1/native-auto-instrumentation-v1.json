@@ -5,6 +5,8 @@
   "supported_target_backends": [
     "java",
     "llvm",
+    "rust",
+    "cranelift",
     "wasm",
     "forge",
     "net"
@@ -756,6 +758,8 @@
     "backend_execution_status": {
       "java": "NOT_EXECUTED",
       "llvm": "NOT_EXECUTED",
+      "rust": "NOT_EXECUTED",
+      "cranelift": "NOT_EXECUTED",
       "wasm": "NOT_EXECUTED",
       "forge": "NOT_EXECUTED",
       "net": "NOT_EXECUTED"
@@ -891,8 +895,43 @@
     "generate_source_parse_typecheck_guest_tests": true
   },
   "scoped_span_parity_v1": {
-    "status": "PARTIAL_EXECUTED_LLVM_NO_FULL_PARITY",
+    "status": "PARTIAL_EXECUTED_SCALAR_SCOPED_SPANS",
     "syntax": "using telemetry.span(operation) as scoped_name { statements }",
+    "execution_composition": {
+      "aot_baseline_required": true,
+      "statement_macro_output": "recheck_as_ordinary_using_scope",
+      "expression_macro_output": "recheck_as_ordinary_scope_operand",
+      "runtime_macro_expansion": false,
+      "aot_recording": "statically_lowered_scope_sites",
+      "jit_recording": "authorized_call_probes_in_checked_code",
+      "hybrid_context": "shared_logical_trace_context",
+      "hybrid_max_spans_per_lexical_site_entry": 1,
+      "in_flight_scope_cleanup_after_toggle_or_detach": "exactly_once",
+      "portable_scope_fixtures": {
+        "scoped-nested.atto": {
+          "guest_result": 42,
+          "recorded_spans_when_enabled": 3,
+          "recorded_spans_when_disabled": 0,
+          "active_scopes_on_return": 0,
+          "close_order": ["finished", "payment", "checkout"]
+        },
+        "scoped-return.atto": {
+          "guest_result": 42,
+          "recorded_spans_when_enabled": 1,
+          "recorded_spans_when_disabled": 0,
+          "active_scopes_on_return": 0
+        },
+        "scoped-escape.atto": {
+          "must_reject": true,
+          "artifact_emitted": false
+        }
+      },
+      "required_evidence": {
+        "aot": "linked_guest_runs_with_runtime_compiler_absent_or_disabled",
+        "jit": "guest_executes_newly_instrumented_code",
+        "hybrid": "both_paths_execute_in_one_workload_with_parentage_and_cleanup_verified"
+      }
+    },
     "portable_target": {
       "factory": "trusted_stdlib_telemetry_span",
       "resource_type": "opaque_linear_SpanScope",
@@ -945,8 +984,20 @@
       "wasm": {
         "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
       },
+      "rust": {
+        "status": "EXECUTED_SYNCHRONOUS_WASM_SCOPE_SUBSET",
+        "implementation": "wasm_finally_with_compiler_owned_host_tokens",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
+      },
+      "cranelift": {
+        "status": "EXECUTED_SCALAR_AOT_AND_JIT_SCOPE_SUBSET",
+        "implementation": "shared_clif_with_host_scope_hooks_and_checked_status_epilogue",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
+      },
       "forge": {
-        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+        "status": "EXECUTED_SCALAR_AOT_SCOPE_SUBSET",
+        "implementation": "generated_cpp_lexical_cleanup_with_host_scope_hooks",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
       },
       "net": {
         "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
