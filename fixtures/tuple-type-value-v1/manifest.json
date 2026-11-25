@@ -23,7 +23,7 @@
       "expect": "accept",
       "kind": "stdout",
       "stdout": "hello|world",
-      "source": "fnc pair(): Tuple[string, string] { return Tuple.of(\"hello\", \"world\"); }\npub routine main(): void {\n  val v: Tuple[string, string] = pair();\n  stdio.stdout.write(v[0]); stdio.stdout.write(\"|\"); stdio.stdout.write(v[1]);\n  return;\n}",
+      "source": "fnc pair(): Tuple[string, string] { return Tuple.of(\"hello\", \"world\"); }\npub routine main(): void {\n  val v: Tuple[string, string] = pair();\n  stdio.out.write(v[0]); stdio.out.write(\"|\"); stdio.out.write(v[1]);\n  return;\n}",
       "source_file": "fixtures/tuple-type-value-v1/positive/string-return.atto"
     },
     {

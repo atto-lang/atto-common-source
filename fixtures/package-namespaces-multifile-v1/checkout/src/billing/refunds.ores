@@ -1,0 +1,2 @@
+namespace billing;
+pub fnc refund(): int { return 2; }

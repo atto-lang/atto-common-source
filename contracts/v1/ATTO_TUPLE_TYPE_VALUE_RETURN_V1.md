@@ -4,7 +4,7 @@ Status: **proposed conformance targets; compiled guest and AOT parity NOT_EXECUT
 
 Companion fixture: `fixtures/tuple-type-value-v1/manifest.json` (6 accept / 18 reject).
 Reference work: [Java #2790](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2790), stacked on Java [#2734](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2734) and [#2733](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2733).
-Related broader aggregate work: common-source [#254](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/254) and [#257](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/257).
+Related broader aggregate work: [#104](https://github.com/atto-lang/atto-common-source/pull/104) and [#101](https://github.com/atto-lang/atto-common-source/pull/101). This tuple-only candidate does not ratify competing aggregate syntax; current AttoSpec takes precedence.
 This is a deliberately **tuple-only** contract, not a new collection runtime or factory registry.
 
 ## Type/value boundary
