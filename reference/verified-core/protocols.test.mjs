@@ -121,3 +121,15 @@ test("stop before publication fences the staged turn and restart fences the old 
   actor.stop();
   assert.deepEqual(actor.snapshot, { incarnation: 2n, state: "Connecting", value: 42n, live: false });
 });
+
+test("stage receives exactly the validated value, not a second read", () => {
+  const protocol = graph();
+  const actor = new SerialProtocolReference(protocol, 0n, value => value >= 0n);
+  let reads = 0;
+  const field = { get value() { return ++reads === 1 ? 42n : 60_001n; }, unit: protocol.unit("Millis") };
+  const request = { incarnation: 1n, message: "connect", payload: [field] };
+  assert.equal(actor.dispatch({ ...request, payload: new Array(1) }, () => assert.fail()), "invalid-payload");
+  assert.equal(actor.dispatch(request, (_, [value]) => ({ target: "Connecting", value })), "committed");
+  assert.equal(reads, 1);
+  assert.equal(actor.snapshot.value, 42n);
+});
