@@ -1,0 +1,12 @@
+// Target: mutually bound generated declarations retain one hygienic scope.
+define macro generate_pair() -> SyntaxList<Decl> {
+    return quote {
+        fnc generated_helper() -> int {
+            return 40 + 2;
+        }
+        fnc main() -> int {
+            return generated_helper();
+        }
+    };
+}
+generate_pair!();

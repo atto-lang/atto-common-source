@@ -1,0 +1,8 @@
+// Re-entry must check collisions before program-specific AOT emission.
+define macro make_main() -> Syntax<Decl> {
+    return quote {
+        fnc main() -> int { return 42; }
+    };
+}
+make_main!();
+fnc main() -> int { return 0; }
