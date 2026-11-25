@@ -152,11 +152,17 @@ export class SerialProtocolReference {
     if (this.#staging) return "busy";
     const edge = this.#protocol.edge(before.state, message);
     if (!edge) return "illegal-edge";
-    if (!Array.isArray(payload) || payload.length !== edge.signature.length || edge.signature.some((type, i) => {
+    if (!Array.isArray(payload) || payload.length !== edge.signature.length) return "invalid-payload";
+    // Detach the validated scalar values; do not read fields again during staging.
+    const values = [];
+    for (let i = 0; i < edge.signature.length; i++) {
+      const type = edge.signature[i];
+      if (!Object.hasOwn(payload, i)) return "invalid-payload";
       const { value, unit } = payload[i] ?? {};
-      return typeof value !== "bigint" || !includes(type.range, [value, value]) ||
-        !Array.isArray(unit?.powers) || !sameUnit(type.unit, unit);
-    })) return "invalid-payload";
+      if (typeof value !== "bigint" || !includes(type.range, [value, value]) ||
+          !Array.isArray(unit?.powers) || !sameUnit(type.unit, unit)) return "invalid-payload";
+      values.push(value);
+    }
 
     this.#staging = true;
     try {
@@ -164,7 +170,7 @@ export class SerialProtocolReference {
       // publish its returned scalar state and chosen destination together.
       let proposed;
       try {
-        proposed = stage(before.value, payload.map(field => field.value));
+        proposed = stage(before.value, values);
       } catch {
         return "handler-failed";
       }
