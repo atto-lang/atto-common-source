@@ -1,0 +1,42 @@
+// AttoLang actor persistence interfaces v1.
+// Target-language declarations only: compiler support and guest execution NOT VERIFIED.
+// Imports/names for core actor types are runtime-owned and not yet linked here.
+// In particular, this .atto contract must not be packaged as a working disk runtime.
+//
+// Logical identity and epoch must come from trusted runtime context.
+// State is an immutable, actor-owned snapshot, never a raw heap pointer.
+//
+// Builtin opaque types required from core.actor.persistence:
+// ActorId, ActorEpoch, CheckpointSequence, PersistenceContext,
+// ActorStateSnapshot<State>, CheckpointReceipt, PersistenceError.
+
+define pub trait Persistable as
+    // Marker: compiler-approved AOT codec and stable schema for reachable data.
+    // No reflection, arbitrary raw pointers or cross-actor mutable aliases.
+end
+
+define pub interface ActorCheckpointStore<State> as
+    // Application-provided backend protocol; e.g. SQLite, PostgreSQL, file.
+    // A missing record is different from a corrupt/unreadable record.
+    susp fnc read_state(ctx: PersistenceContext): Result<Option<ActorStateSnapshot<State>>, PersistenceError>;
+
+    // Must verify expected epoch + monotonically increasing checkpoint sequence.
+    // Receipt is only valid for the exact context and snapshot committed.
+    susp fnc commit_state(ctx: PersistenceContext, snapshot: ActorStateSnapshot<State>): Result<CheckpointReceipt, PersistenceError>;
+end
+
+define pub trait ActorPersistence<State> as
+    // Mandatory for every 'persistent actor'; not used by 'durable actor'.
+    // Called on revival before ordinary message admission, not inside a
+    // critical-read/critical-write scope.
+    susp fnc load_state(ctx: PersistenceContext): Result<Option<ActorStateSnapshot<State>>, PersistenceError>;
+
+    // Called at a runtime-proven quiescent message boundary.
+    // Implementations can delegate to ActorCheckpointStore<State>.
+    susp fnc save_state(ctx: PersistenceContext, snapshot: ActorStateSnapshot<State>): Result<CheckpointReceipt, PersistenceError>;
+end
+
+// No user-implementable DurableActor trait exists in v1.
+// 'define durable actor ...' opts into a compiler/runtime-owned storage engine
+// and generated codec. It must NOT be treated as a trait that user code
+// satisfies by returning a fabricated CheckpointReceipt.

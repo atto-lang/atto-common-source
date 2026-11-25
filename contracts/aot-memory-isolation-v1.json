@@ -1,0 +1,125 @@
+{
+  "schema": "atto.aot-memory-isolation.v1",
+  "version": 1,
+  "status": "SPECIFICATION_ONLY_NOT_EXECUTED",
+  "depends_on": [
+    "contracts/actor-tenant-isolation-v1.json"
+  ],
+  "language": "AttoLang (formerly Oreslang)",
+  "profiles": {
+    "llvm-native-aot": {
+      "backend": "llvm",
+      "native_machine_aot": true,
+      "runtime_jit": false,
+      "tracing_gc": "forbidden",
+      "memory": "per-actor owned heap/arena with deterministic retirement and tenant boundary",
+      "security": "tenant sandbox certification independent of arena isolation"
+    },
+    "graal-native-epsilon-aot": {
+      "backend": "java",
+      "native_machine_aot": true,
+      "runtime_jit": false,
+      "tracing_gc": "forbidden",
+      "selected_gc": "epsilon",
+      "memory": "unmanaged actor/tenant arenas; managed Java heap remains non-reclaiming, bounded for entire process lifetime",
+      "security": "require enforced tenant isolate or separate supported sandbox"
+    },
+    "graal-native-managed-aot": {
+      "backend": "java",
+      "native_machine_aot": true,
+      "runtime_jit": false,
+      "tracing_gc": "allowed",
+      "selected_gc": "serial",
+      "memory": "bounded/minimized managed allocations, explicit actor native storage reclamation",
+      "security": "require enforced tenant isolate or separate supported sandbox"
+    },
+    "java-jvm-low-gc": {
+      "backend": "java",
+      "native_machine_aot": false,
+      "runtime_jit": true,
+      "tracing_gc": "allowed",
+      "memory": "logical actor ownership plus minimized Java heap allocation; no claim of full native AOT",
+      "security": "JVM classloader/context alone is not a proven hostile-tenant sandbox"
+    },
+    "wasm-precompiled-aot": {
+      "backend": "wasm",
+      "native_machine_aot": true,
+      "runtime_jit": false,
+      "tracing_gc": "profile-dependent",
+      "memory": "guest linear memory per isolated tenant Store/Instance and bounded imports",
+      "security": "actual validated Wasm store memory isolation plus host resource controls"
+    },
+    "forge-native-aot": {
+      "backend": "forge",
+      "native_machine_aot": true,
+      "runtime_jit": false,
+      "tracing_gc": "forbidden",
+      "memory": "actor-private ownership, explicitly reclaimed native regions",
+      "security": "must reject untrusted tenants if enforced sandbox unavailable"
+    },
+    "net-native-aot": {
+      "backend": "net",
+      "native_machine_aot": true,
+      "runtime_jit": false,
+      "tracing_gc": "managed-or-profile-dependent",
+      "memory": "actor-owned unmanaged regions; managed .NET heap remains GC dependent without independently proved no-GC contract",
+      "security": "OS sandbox or restricted Wasm guest for untrusted tenants"
+    }
+  },
+  "guarantees": {
+    "full_aot": "The executable contains fully compiled guest logic; compiling only a native host launcher does not prove full guest AOT.",
+    "no_gc": "Strict zero-GC excludes tracing or collection at runtime. An Epsilon image satisfies no-collection only, not memory reclamation or stable RSS.",
+    "bounded_memory": "Zero-collection qualification requires bounded long-running managed heap growth plus independent reclamation of actor-owned off-heap regions; short smokes are insufficient.",
+    "actor_owned_arenas": "Actor arena owner/version/loans must bind to tenant and be fenced during teardown; retirement releases memory without cross-tenant alias escape.",
+    "tenant_isolation": "A logical region is not a hardware-enforced tenant boundary; native unsafe tenant code requires validated code confinement or a stronger OS process sandbox."
+  },
+  "measurement": {
+    "min_actor_operations": 100000,
+    "min_tenant_restarts": 100,
+    "heap_samples_min": 10,
+    "required_fields": [
+      "source_head_sha",
+      "compiler_head_sha",
+      "artifact_sha256",
+      "artifact_kind",
+      "native_image_builder_version",
+      "guest_fixture_sha256",
+      "guest_executed",
+      "guest_exit_code",
+      "runtime_jit_used",
+      "allocation_bytes",
+      "gc_collections_before",
+      "gc_collections_after",
+      "managed_heap_start_bytes",
+      "managed_heap_end_bytes",
+      "peak_rss_bytes",
+      "arena_bytes_before",
+      "arena_bytes_after",
+      "actor_operations",
+      "tenant_restarts",
+      "heap_samples",
+      "runner_url",
+      "evidence_kind"
+    ],
+    "rules": [
+      "Samples and GC counters must be available and originated from an executed runtime, not zero-filled missing telemetry.",
+      "No collection by Epsilon is not evidence of zero managed allocations. Report both allocation and actual heap growth.",
+      "Heap end less than or equal to start is not a substitute for peak growth bound. Require budgeted high-water marks and no monotone leak across restart windows.",
+      "Metadata containing only a toolchain string or a checksum supplied by the same untrusted guest does not authenticate the native artifact."
+    ]
+  },
+  "backend_status": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  },
+  "references": [
+    "ores-truffle-oreslang/oreslang-source.java#1976",
+    "ores-truffle-oreslang/oreslang-source.java#1278",
+    "ores-truffle-oreslang/oreslang-source.java#2012",
+    "ores-truffle-oreslang/oreslang-source.llvm#1343",
+    "ores-truffle-oreslang/oreslang-source.wasm#403"
+  ]
+}

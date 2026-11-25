@@ -1,0 +1,2 @@
+namespace telemetry;
+pub fnc measure(): int { return 1; }

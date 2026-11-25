@@ -1,0 +1,510 @@
+{
+  "contract_version": "attolang.package-binary-import.v1",
+  "status": "PROPOSED_SOURCE_FREE_REFERENCE_ONLY",
+  "source_extension": ".atto",
+  "manifest": "existing .atto.pkg.toml and legacy .ores.pkg.toml; precedence requires separate grammar ratification",
+  "grammar_proposal": {
+    "package_import": "import pkg bar from \"pkg:bar\";",
+    "module_import": "import module parser from \"pkg:bar\";",
+    "namespace_import": "import namespace network from \"pkg:bar\";",
+    "local_file_import": "import module parser from \"./parser.atto\";",
+    "canonical_root": "+/",
+    "package_alias_uses_lockfile": true
+  },
+  "invariants": {
+    "dependency_identity": "exact locked package instance, not package name or disk path",
+    "namespace_identity": "(package_instance_id, flat_namespace_name)",
+    "module_identity": "(package_instance_id, module_name)",
+    "exports": "qualified-only; public intersection with containing declaration",
+    "source_relative": "only inside the verified owning source package; not external binary ABI",
+    "compiled_binary": "must carry independently pinned public interface digest and compatible target payload",
+    "package_import_no_permissions": true,
+    "no_implicit_import_download": true,
+    "no_ambient_lock_shadowing": true,
+    "no_cross_package_namespace_merge": true,
+    "reserved_package_namespace_identifiers": [
+      "__root__",
+      "__proto__",
+      "prototype",
+      "constructor"
+    ]
+  },
+  "packages": [
+    {
+      "id": "app@2#aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "name": "app",
+      "source_files": [
+        "src/main.atto"
+      ],
+      "exports": []
+    },
+    {
+      "id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "name": "bar",
+      "source_files": [
+        "src/parser.atto",
+        "src/net.atto"
+      ],
+      "interface_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "exports": [
+        {
+          "kind": "module",
+          "name": "parser",
+          "visibility": "pub"
+        },
+        {
+          "kind": "namespace",
+          "name": "network",
+          "visibility": "pub"
+        },
+        {
+          "kind": "module",
+          "name": "private_tools",
+          "visibility": "pub[pkg]"
+        },
+        {
+          "kind": "namespace",
+          "name": "secrets",
+          "visibility": "private"
+        }
+      ]
+    },
+    {
+      "id": "bar@1#dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "name": "bar",
+      "source_files": [
+        "src/other.atto"
+      ],
+      "interface_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "exports": [
+        {
+          "kind": "namespace",
+          "name": "network",
+          "visibility": "pub"
+        }
+      ]
+    }
+  ],
+  "locks": [
+    {
+      "importer_id": "app@2#aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "alias": "bar",
+      "instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "interface_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "importer_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "alias": "self_bar",
+      "instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "interface_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "directory",
+      "package_instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "format": "source-directory",
+      "sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "members": [
+        {
+          "path": "src/parser.atto",
+          "kind": "file",
+          "size": 128
+        },
+        {
+          "path": "src/net.atto",
+          "kind": "file",
+          "size": 256
+        }
+      ]
+    },
+    {
+      "id": "source",
+      "package_instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "format": "source-archive",
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "members": [
+        {
+          "path": "src/parser.atto",
+          "kind": "file",
+          "size": 128
+        },
+        {
+          "path": "src/net.atto",
+          "kind": "file",
+          "size": 256
+        }
+      ]
+    },
+    {
+      "id": "binary",
+      "package_instance_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "format": "compiled",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "interface_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "targets": {
+        "java": {
+          "abi": "java-v1",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "llvm": {
+          "abi": "llvm-x86_64-v1",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+        }
+      }
+    }
+  ],
+  "backend_profiles": {
+    "java": {
+      "target": "java",
+      "abi": "java-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "llvm": {
+      "target": "llvm",
+      "abi": "llvm-x86_64-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "net": {
+      "target": "net",
+      "abi": "net-nativeaot-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "wasm": {
+      "target": "wasm",
+      "abi": "wasm32-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "forge": {
+      "target": "forge",
+      "abi": "forge-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "js": {
+      "target": "js",
+      "abi": "js-esm-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "rs": {
+      "target": "rs",
+      "abi": "rust-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "cranelift": {
+      "target": "cranelift",
+      "abi": "cranelift-v1",
+      "status": "NOT_EXECUTED"
+    },
+    "hdl": {
+      "target": "hdl",
+      "abi": "rtl-v1",
+      "status": "PROFILE_LIMITED_NOT_EXECUTED"
+    }
+  },
+  "cases": [
+    {
+      "id": "directory-pkg-public-api",
+      "artifact": "directory",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "expected": "admit",
+      "exports": [
+        "module:parser",
+        "namespace:network"
+      ]
+    },
+    {
+      "id": "directory-module",
+      "artifact": "directory",
+      "from": "pkg:bar",
+      "selector": "module",
+      "name": "parser",
+      "expected": "admit",
+      "exports": [
+        "module:parser"
+      ]
+    },
+    {
+      "id": "source-pkg-public-api",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "expected": "admit",
+      "exports": [
+        "module:parser",
+        "namespace:network"
+      ]
+    },
+    {
+      "id": "binary-pkg-same-api",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "java",
+      "expected": "admit",
+      "exports": [
+        "module:parser",
+        "namespace:network"
+      ]
+    },
+    {
+      "id": "binary-llvm-same-api",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "llvm",
+      "expected": "admit",
+      "exports": [
+        "module:parser",
+        "namespace:network"
+      ]
+    },
+    {
+      "id": "source-module",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "module",
+      "name": "parser",
+      "expected": "admit",
+      "exports": [
+        "module:parser"
+      ]
+    },
+    {
+      "id": "binary-namespace",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "namespace",
+      "name": "network",
+      "target": "java",
+      "expected": "admit",
+      "exports": [
+        "namespace:network"
+      ]
+    },
+    {
+      "id": "source-private-module",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "module",
+      "name": "private_tools",
+      "expected": "reject",
+      "code": "EXPORT_NOT_PUBLIC"
+    },
+    {
+      "id": "binary-private-namespace",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "namespace",
+      "name": "secrets",
+      "target": "java",
+      "expected": "reject",
+      "code": "EXPORT_NOT_PUBLIC"
+    },
+    {
+      "id": "unknown-alias",
+      "artifact": "source",
+      "from": "pkg:ghost",
+      "selector": "pkg",
+      "expected": "reject",
+      "code": "UNLOCKED_PACKAGE_ALIAS"
+    },
+    {
+      "id": "path-into-compiled-dependency",
+      "artifact": "binary",
+      "from": "pkg:bar/src/net.atto",
+      "selector": "pkg",
+      "target": "java",
+      "expected": "reject",
+      "code": "INVALID_PACKAGE_SPECIFIER"
+    },
+    {
+      "id": "path-into-source-dependency",
+      "artifact": "source",
+      "from": "pkg:bar/src/net.atto",
+      "selector": "pkg",
+      "expected": "reject",
+      "code": "INVALID_PACKAGE_SPECIFIER"
+    },
+    {
+      "id": "missing-module",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "module",
+      "name": "missing",
+      "expected": "reject",
+      "code": "EXPORT_MISSING"
+    },
+    {
+      "id": "incompatible-net-binary",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "net",
+      "expected": "reject",
+      "code": "TARGET_PAYLOAD_MISSING"
+    },
+    {
+      "id": "incompatible-wasm-binary",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "wasm",
+      "expected": "reject",
+      "code": "TARGET_PAYLOAD_MISSING"
+    },
+    {
+      "id": "source-relative-owned",
+      "artifact": "source",
+      "from": "./net.atto",
+      "selector": "file",
+      "importer_id": "bar@1#bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_unit": "src/parser.atto",
+      "expected": "admit",
+      "exports": [
+        "file:src/net.atto"
+      ]
+    },
+    {
+      "id": "cross-package-relative",
+      "artifact": "source",
+      "from": "./net.atto",
+      "selector": "file",
+      "source_unit": "src/main.atto",
+      "expected": "reject",
+      "code": "CROSS_PACKAGE_SOURCE_IMPORT"
+    },
+    {
+      "id": "binary-relative-reject",
+      "artifact": "binary",
+      "from": "./net.atto",
+      "selector": "file",
+      "source_unit": "src/parser.atto",
+      "expected": "reject",
+      "code": "BINARY_HAS_NO_SOURCE_PATHS"
+    },
+    {
+      "id": "archive-path-traversal",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "archive_traversal",
+      "expected": "reject",
+      "code": "ARCHIVE_MEMBER_UNSAFE"
+    },
+    {
+      "id": "archive-member-symlink",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "archive_symlink",
+      "expected": "reject",
+      "code": "ARCHIVE_MEMBER_UNSAFE"
+    },
+    {
+      "id": "archive-duplicate-member",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "archive_duplicate",
+      "expected": "reject",
+      "code": "ARCHIVE_MEMBER_DUPLICATE"
+    },
+    {
+      "id": "archive-unlisted-member",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "archive_unlisted",
+      "expected": "reject",
+      "code": "SOURCE_INVENTORY_DRIFT"
+    },
+    {
+      "id": "archive-oversize",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "archive_oversize",
+      "expected": "reject",
+      "code": "ARCHIVE_LIMIT"
+    },
+    {
+      "id": "binary-stale-interface",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "java",
+      "mutation": "stale_interface",
+      "expected": "reject",
+      "code": "INTERFACE_DIGEST_MISMATCH"
+    },
+    {
+      "id": "binary-target-abi",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "java",
+      "mutation": "bad_abi",
+      "expected": "reject",
+      "code": "TARGET_ABI_MISMATCH"
+    },
+    {
+      "id": "binary-target-digest",
+      "artifact": "binary",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "target": "java",
+      "mutation": "bad_target_digest",
+      "expected": "reject",
+      "code": "TARGET_DIGEST_INVALID"
+    },
+    {
+      "id": "lock-shadowing",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "shadow_pin",
+      "expected": "reject",
+      "code": "LOCK_ARTIFACT_MISMATCH"
+    },
+    {
+      "id": "undeclared-capability-grant",
+      "artifact": "source",
+      "from": "pkg:bar",
+      "selector": "pkg",
+      "mutation": "capability_grant",
+      "expected": "reject",
+      "code": "IMPORT_CANNOT_GRANT_CAPABILITY"
+    }
+  ],
+  "evidence_policy": {
+    "no_authored_fixture_as_executed": true,
+    "accepted_statuses": [
+      "NOT_EXECUTED",
+      "SOURCE_FREE_MODEL",
+      "RESOLVER_EXECUTED",
+      "LINKED_GUEST_EXECUTED"
+    ],
+    "guest_receipt_requires": [
+      "backend",
+      "target",
+      "source_sha256",
+      "compiler_sha",
+      "artifact_sha256",
+      "head_sha",
+      "run_id",
+      "nonzero_steps",
+      "guest_exit",
+      "guest_execution"
+    ],
+    "no_parity_claim_without_same_api_digest_and_independent_guest": true
+  },
+  "interface_digest_policy": {
+    "canonical_semantic_digest": "PROPOSED_NOT_IMPLEMENTED",
+    "oracle_interface_sha256_is": "abstract target-independent semantic export digest placeholder only, NOT Java .oresi v1 wire hash",
+    "java_oresi_v1": "target-specific compiler/ABI/profile envelope; independently pinned per namespace",
+    "example_java_oresi_sha256": "8db5681e1e41c389e2358f9e0cd5c46e78b5b33519ed4769056268a240847f3d",
+    "native_oresi_decoder": "LLVM compiler metadata preflight only; not a native linker nor guest proof",
+    "binary_payload": "always target-specific and separately authenticated"
+  }
+}

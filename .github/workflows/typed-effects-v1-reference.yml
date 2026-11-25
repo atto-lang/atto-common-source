@@ -1,0 +1,23 @@
+name: Typed effects v1 reference (source only)
+on:
+  pull_request:
+    paths:
+      - 'contracts/analysis/unified*'
+      - 'contracts/analysis/tests/test_unified_typed_effects_v1.py'
+      - 'contracts/analysis/fixtures/unified-typed-effects-v1-pure.json'
+      - '.github/workflows/typed-effects-v1-reference.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-reference-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Execute source-free Python reference model (not a compiler)
+        run: |
+          python3 -m unittest discover -s contracts/analysis/tests -p 'test_unified_typed_effects_v1.py' -v
+          python3 contracts/analysis/unified_typed_effects_v1.py contracts/analysis/fixtures/unified-typed-effects-v1-pure.json --profile pure --profile no_alloc

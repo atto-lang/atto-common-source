@@ -279,14 +279,30 @@
         "layout": {
           "enum": [
             "scalar",
-            "contiguous"
+            "contiguous",
+            "aos",
+            "soa"
           ]
         },
         "unit": {
           "type": "string",
           "pattern": "^[a-zA-Z0-9_/^-]{1,40}$"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["layout"], "properties": { "layout": { "enum": ["aos", "soa"] } } },
+          "then": { "properties": { "shape": { "minItems": 2, "maxItems": 2 } } }
+        },
+        {
+          "if": { "required": ["layout"], "properties": { "layout": { "const": "scalar" } } },
+          "then": { "properties": { "shape": { "maxItems": 0 } } }
+        },
+        {
+          "if": { "required": ["layout"], "properties": { "layout": { "const": "contiguous" } } },
+          "then": { "properties": { "shape": { "minItems": 1 } } }
+        }
+      ]
     },
     "nominalPort": {
       "type": "object",
