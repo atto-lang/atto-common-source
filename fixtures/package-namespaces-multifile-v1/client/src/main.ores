@@ -1,0 +1,5 @@
+namespace client;
+import namespace billing as payments from "checkout";
+pub fnc smoke(): int {
+  return payments.issue() + payments.charge(4) + payments.refund() + payments.balance();
+}

@@ -1,0 +1,152 @@
+{
+  "contract": "oreslang.actor-mailbox-channel-admission.v1",
+  "status": "DESIGN_ONLY_NOT_EXECUTED",
+  "scope": "Portable target; backend-specific implementation evidence required independently",
+  "semantics": {
+    "transport": "Actor mailbox user DATA enters an actor-owned Channel<T> adapter; never expose the raw inbox channel to guest code",
+    "immediate_channel": "try writech returns bool, never registers a waiter, never parks a scheduler carrier",
+    "deferred_channel": "nb writech returns Future<void> and may register a bounded write operation",
+    "logical_blocking_channel": "writech logically suspends current task until admission; backend must fail closed rather than park a carrier if continuation lowering is unavailable",
+    "actor_try_send": "Candidate compatibility API: immediate capacity result, no waiter; stale, stopped, unauthorized and invalid payload must be distinct typed errors, not capacity false.",
+    "actor_send_async": "Candidate compatibility API: bounded cooperative admission receipt, with explicit typed failure; await suspends the logical context, never the carrier.",
+    "legacy_actor_send": "Historical backend adapter may report MAILBOX_FULL by exception. Canonical target send(message) returns a typed admission Result<Ack, SendError> (or a Future thereof for asynchronous admission), per atto-spec chapter 05; legacy behavior is not the portable signature.",
+    "admission": "Success means exactly-once mailbox admission, not handler completion or durability",
+    "ownership": "Snapshot or validate payload before deferred admission; successful admission transfers ownership/quota at one linearization point; failed admission must preserve sender ownership or return the owned payload explicitly. Authorized native move/share/copy may replace wire snapshots only with equivalent semantics.",
+    "security": "Never share raw guest pointers, closures or mutable sender aliases across isolation domains; CONTROL capabilities are separate from DATA",
+    "supervision": "STOP, CANCEL, panic and supervisor CONTROL retain independent reserved progress under USER saturation",
+    "quiescence": "Pending send cancellation before credit transfer releases waiter and quotas; cancellation after transfer cannot retract admitted mail"
+  },
+  "scenarios": [
+    {
+      "id": "CH01",
+      "setup": "buffered Channel<int> capacity=1, write(1) succeeds",
+      "action": "try writech channel, 2",
+      "expect": {
+        "result": false,
+        "registered_waiters": 0,
+        "delivered_later": false
+      }
+    },
+    {
+      "id": "CH02",
+      "setup": "buffered Channel<int> capacity=1, write(1) succeeds",
+      "action": "nb writech channel, 2",
+      "expect": {
+        "future": "pending",
+        "bounded_waiter": true,
+        "delivered_after_read": true
+      }
+    },
+    {
+      "id": "CH03",
+      "setup": "rendezvous Channel<int> capacity=0, no pending reader",
+      "action": "try writech channel, 3",
+      "expect": {
+        "result": false,
+        "registered_waiters": 0
+      }
+    },
+    {
+      "id": "CH04",
+      "setup": "rendezvous Channel<int> capacity=0, compatible pending reader",
+      "action": "try writech channel, 3",
+      "expect": {
+        "result": true,
+        "reader_receives": 3,
+        "registered_waiters": 0
+      }
+    },
+    {
+      "id": "CH05",
+      "setup": "bounded channel pending writer; cancellation wins before read",
+      "action": "cancel write Future",
+      "expect": {
+        "no_delivery": true,
+        "quota_refunded": true
+      }
+    },
+    {
+      "id": "AR01",
+      "setup": "actor USER queue full and handler intentionally held",
+      "action": "worker.try_send(payload)",
+      "expect": {
+        "result": false,
+        "no_pending_producer": true,
+        "no_phantom_mail": true
+      }
+    },
+    {
+      "id": "AR02",
+      "setup": "actor USER queue full and handler intentionally held",
+      "action": "worker.send_async(payload)",
+      "expect": {
+        "future": "pending",
+        "bounded_producer": true,
+        "admission_after_space": true
+      }
+    },
+    {
+      "id": "AR03",
+      "setup": "actor USER queue saturated; supervisor emits STOP",
+      "action": "supervisor stop",
+      "expect": {
+        "stop_control_progress": true,
+        "not_blocked_by_user_capacity": true
+      }
+    },
+    {
+      "id": "AR04",
+      "setup": "serial actor attempts to await admission to its own full mailbox with no independently admissible drain",
+      "action": "await self_ref.send_async(payload)",
+      "expect": {
+        "typed_error": "WOULD_DEADLOCK",
+        "no_carrier_park": true
+      }
+    },
+    {
+      "id": "AR05",
+      "setup": "actor reference stopped, sealed, stale, or unauthorized",
+      "action": "try_send(payload)",
+      "expect": {
+        "result": "error_not_capacity_false",
+        "no_delivery": true
+      }
+    },
+    {
+      "id": "AR06",
+      "setup": "pending send canceled before transfer; concurrent mailbox drain",
+      "action": "cancel producer Future",
+      "expect": {
+        "single_commit_or_cancel": true,
+        "no_lost_quota": true,
+        "no_duplicate_mail": true
+      }
+    },
+    {
+      "id": "AR07",
+      "setup": "typed source actor receives ActorMail<T>",
+      "action": "try_send/send_async wrong payload type",
+      "expect": {
+        "compile_rejection": true
+      }
+    },
+    {
+      "id": "AR08",
+      "setup": "local native optimization and canonical MessagePack v2 share a type schema",
+      "action": "send equivalent owned/immutable values",
+      "expect": {
+        "same_decoded_value": true,
+        "same_errors": true,
+        "same_isolation": true
+      }
+    }
+  ],
+  "evidence_requirements": [
+    "exact compiler/runtime source SHA for each backend",
+    "executed source-level positive and negative tests",
+    "cancellation/stop adversarial schedules",
+    "no scheduler-carrier blocking trace",
+    "cross-backend type-and-ownership parity",
+    "report fail or NOT_EXECUTED rather than counting skips"
+  ]
+}

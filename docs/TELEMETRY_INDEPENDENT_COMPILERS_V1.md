@@ -102,3 +102,8 @@ Private-source export incidents #22 and #77 remain a blocker to an
 alternate-organization Git-tree mirror, even with private branches and
 token-free `GITHUB_TOKEN` checkout. Use approved source-org runners or
 record exact snapshot authorization before any source export.
+
+
+## Integration boundary (2026-11-25)
+
+The repository's [deterministic performance-probe contract](PERF_PROBES_AOT_V1.md) is complementary: numeric probe IDs identify a closed perf registry, whereas `rid_` and `sid_` identify source routines and sites. Neither is a runtime span/trace ID; the compiler owns any mapping and must preserve identities. Historical candidate repository names and receipt descriptions are retained as provenance, not a claim about the current renamed backend heads. Seven profiles in this v1 registry are an explicit subset, not the full current Atto backend matrix. Other instrumentation proposals must reconcile against these evidence boundaries before claiming parity.
