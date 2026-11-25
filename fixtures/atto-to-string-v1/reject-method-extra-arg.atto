@@ -1,0 +1,5 @@
+pub fnc main(): void {
+  val bool flag = true;
+  stdio.stdout.write(flag.to_string(42));
+  return;
+}

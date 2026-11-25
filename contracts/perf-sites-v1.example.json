@@ -1,0 +1,38 @@
+{
+  "schema": "atto.perf-sites.v1",
+  "typed_ir_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "mode": "aot",
+  "sites": [
+    {
+      "site_id": 1001,
+      "module_id": 1,
+      "function_id": 3,
+      "probe_id": 23,
+      "kind": "actor_mail",
+      "span_time": "wall",
+      "edges": [
+        "return",
+        "throw",
+        "cancel"
+      ],
+      "sampling_divisor": 1,
+      "static_enabled": true
+    },
+    {
+      "site_id": 1002,
+      "module_id": 1,
+      "function_id": 4,
+      "probe_id": 25,
+      "kind": "scheduler",
+      "span_time": "active",
+      "edges": [
+        "return",
+        "cancel",
+        "suspend",
+        "resume"
+      ],
+      "sampling_divisor": 1,
+      "static_enabled": true
+    }
+  ]
+}

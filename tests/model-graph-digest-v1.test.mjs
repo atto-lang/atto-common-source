@@ -236,3 +236,29 @@ test("Symbol constants bind nominal kind and NFC logical name, not #display synt
   err("MODEL_INVALID_CONST", () => digestModelGraphV1(getterGraph));
   assert.equal(touched, 0);
 });
+
+test("packed layout changes identity and must match across an edge", () => {
+  const graph = clone(vectors.base.graph);
+  function packed(layout) {
+    return { dtype: "f64", shape: [1, 3], layout };
+  }
+  graph.nodes[0].signature.output = packed("aos");
+  graph.nodes[1].signature.inputs = [packed("aos")];
+  graph.nodes[1].signature.output = packed("soa");
+  graph.nodes[2].signature.inputs = [packed("soa")];
+  const withConversion = digestModelGraphV1(graph);
+
+  const implicit = clone(graph);
+  implicit.nodes[2].signature.inputs[0].layout = "aos";
+  err("MODEL_PORT_TYPE_MISMATCH", () => digestModelGraphV1(implicit));
+
+  // With a singleton row these have identical byte order. The contracts still differ.
+  graph.nodes[1].signature.output.layout = "aos";
+  graph.nodes[2].signature.inputs[0].layout = "aos";
+  assert.notEqual(digestModelGraphV1(graph), withConversion);
+
+  graph.nodes[2].signature.output = { ...packed("soa"), shape: [3] };
+  err("MODEL_INVALID_PORT", () => digestModelGraphV1(graph));
+  graph.nodes[2].signature.output = { ...packed("soa"), layout: null };
+  err("MODEL_INVALID_PORT", () => digestModelGraphV1(graph));
+});
