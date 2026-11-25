@@ -1,0 +1,140 @@
+{
+  "schema": "ores-core-future-await-adapter-v1",
+  "version": 1,
+  "status": "pending-guest-execution",
+  "core_source": "library/ores.core/future.atto",
+  "targets": [
+    ".java",
+    ".llvm",
+    ".wasm",
+    ".forge",
+    ".net",
+    ".rs"
+  ],
+  "candidate_branch": {
+    "repo": "atto-lang/atto-source.rs",
+    "branch": "feature/core-await-pipeline-adapter-20261116",
+    "status": "source-changes-unverified"
+  },
+  "cases": [
+    {
+      "id": "future-41-42",
+      "fixture": "future-41-42.atto",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 42
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    },
+    {
+      "id": "caret-bind-42",
+      "fixture": "caret-bind-42.atto",
+      "expected": "accept-execute",
+      "oracle": {
+        "exit_code": 42
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    },
+    {
+      "id": "reject-factory",
+      "fixture": "reject-factory.atto",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "adapter-arity"
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    },
+    {
+      "id": "reject-nonsusp",
+      "fixture": "reject-nonsusp.atto",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "effect"
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    },
+    {
+      "id": "reject-scalar",
+      "fixture": "reject-scalar.atto",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "type"
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    },
+    {
+      "id": "reject-bare-await",
+      "fixture": "reject-bare-await.atto",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "syntax"
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    },
+    {
+      "id": "reject-moved-future",
+      "fixture": "reject-moved-future.atto",
+      "expected": "reject",
+      "oracle": {
+        "diagnostic_class": "ownership"
+      },
+      "pending": [
+        ".java",
+        ".llvm",
+        ".wasm",
+        ".forge",
+        ".net",
+        ".rs"
+      ],
+      "verified": []
+    }
+  ]
+}

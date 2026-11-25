@@ -1,0 +1,257 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const contract = JSON.parse(readFileSync(
+  new URL('../contracts/v1/telemetry-independent-backend-evidence-v1.json', import.meta.url),
+  'utf8',
+));
+const byId = new Map(contract.backends.map(backend => [backend.id, backend]));
+
+test('shared behavior never implies a shared compiler/MIR', () => {
+  assert.equal(contract.schema, 'atto.telemetry.independent-backends.v1');
+  assert.equal(contract.status, 'TARGET_SOURCE_CONTRACT_NOT_EXECUTABLE_PARITY');
+  assert.equal(contract.rules.compiler_implementation_shared, false);
+  assert.equal(contract.rules.shared_mir_required, false);
+  assert.equal(contract.rules.cross_backend_source_id_format, true);
+  assert.equal(contract.rules.runtime_jit_required_for_tracing, false);
+  assert.equal(contract.rules.no_python_tooling, true);
+});
+
+test('each backend gets a separate implementation profile and repository', () => {
+  assert.deepEqual([...byId.keys()].sort(),
+    ['java','llvm','net','rs','cranelift','forge','wasm'].sort());
+  assert.equal(new Set(contract.backends.map(x => x.repository)).size, 7);
+  for (const backend of contract.backends) {
+    assert.ok(backend.compiler_family.length >= 10);
+    assert.ok(backend.source_map.length >= 10);
+    assert.ok(backend.aot.length >= 10);
+    assert.ok(backend.jit.length >= 10);
+  }
+});
+
+test('Rust object compiler and independent Cranelift JIT are NOT aliases', () => {
+  assert.notEqual(byId.get('rs').repository, byId.get('cranelift').repository);
+  assert.equal(byId.get('rs').independent_source_frontend, true);
+  assert.equal(byId.get('cranelift').independent_source_frontend, true);
+  assert.match(byId.get('rs').jit, /no automatic linkage/);
+});
+
+test('Wasm source-to-Wasm bridge is not falsely called independent', () => {
+  assert.equal(byId.get('wasm').independent_source_frontend, false);
+  assert.match(byId.get('wasm').current_compiler_dependency, /LLVM/);
+  assert.ok(contract.prohibited_evidence_substitutions.some(v =>
+    v.includes('independent_wasm_frontend')));
+});
+
+test('source-control IDs and runtime OpenTelemetry identity are not conflated', () => {
+  const r = contract.rules;
+  assert.match(r.routine_id_type, /^rid_/);
+  assert.match(r.site_id_type, /^sid_/);
+  assert.match(r.runtime_trace_id, /distinct from routine_id and site_id/);
+  assert.match(r.runtime_span_id, /distinct from source identities/);
+  assert.equal(r.source_id_rekey_on_jit_recompile, false);
+  assert.equal(r.source_id_rekey_on_source_formatting, false);
+  assert.equal(r.hot_load_generation_must_pin_source_map, true);
+});
+
+test('source, native host and guest compiled claims have separate evidence gates', () => {
+  const substitutions = contract.prohibited_evidence_substitutions;
+  for (const pattern of ['nativeaot_host', 'llvm_native_host', 'host_dispatch', 'zero_step']) {
+    assert.ok(substitutions.some(v => v.includes(pattern)), pattern);
+  }
+  assert.ok(contract.gate_names.includes('independent_frontend_and_type_checker'));
+  assert.ok(contract.gate_names.includes('own_lowering_and_compiled_guest_artifact'));
+  assert.ok(contract.gate_names.includes('jit_codegen_proof_if_claimed'));
+  assert.ok(contract.gate_names.includes('nonzero_step_ci_and_exact_source_sha'));
+});
+
+test('experimental implementation reports explicitly exclude unsupported tracing modes', () => {
+  for (const candidate of contract.candidate_adapters) {
+    assert.ok(byId.has(candidate.backend));
+    assert.ok(candidate.pr.startsWith('https://github.com/'));
+    assert.ok(candidate.not_verified.length > 0);
+  }
+});
+
+test('canonical source ID byte-order vectors preserve independent native layouts', () => {
+  assert.match(contract.rules.source_id_binary_encoding, /network byte order/);
+  assert.equal(contract.source_id_test_vectors.length, 2);
+  for (const vector of contract.source_id_test_vectors) {
+    const prefix = vector.kind === 'routine' ? 'rid_' : 'sid_';
+    assert.equal(vector.text.slice(0, 4), prefix);
+    const hex = vector.text.slice(4);
+    assert.match(hex, /^[0-9a-f]{32}$/);
+    assert.equal(hex, vector.bytes_hex);
+    assert.equal(hex.slice(0, 16), vector.lane_high_hex);
+    assert.equal(hex.slice(16), vector.lane_low_hex);
+    assert.notEqual(hex, '0'.repeat(32));
+  }
+  for (const vector of contract.invalid_source_id_test_vectors) {
+    const prefix = vector.kind === 'routine' ? 'rid_' : 'sid_';
+    const valid = vector.text.startsWith(prefix) &&
+      /^[0-9a-f]{32}$/.test(vector.text.slice(4)) &&
+      vector.text.slice(4) !== '0'.repeat(32);
+    assert.equal(valid, false, vector.reason);
+  }
+});
+
+test('candidate metadata and execution gates do not certify guest callsites', () => {
+  for (const id of ['rs', 'llvm', 'java']) {
+    const candidate = contract.candidate_adapters.find(x => x.backend === id);
+    assert.ok(candidate, id);
+    assert.ok(candidate.not_verified.some(x =>
+      /guest|probe|OTel|OTLP|lowering|Maven|Cargo|IR integration/i.test(x)), id);
+  }
+  assert.ok(contract.gate_names.includes('compiler_owned_guest_source_id_binding'));
+  assert.ok(contract.gate_names.includes('runtime_site_probe_in_compiled_guest_not_only_host'));
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'source_only_registry_validation_as_compiled_site_instrumentation'));
+});
+
+test('host ring proof cannot satisfy linked guest logging evidence', () => {
+  for (const key of [
+    'distinct_checked_guest_log_site_ids',
+    'compiled_guest_log_callsite_and_host_ring_both_executed',
+    'exact_head_compiler_linked_guest_native_evidence'
+  ]) assert.ok(contract.gate_names.includes(key), key);
+  for (const key of [
+    'java_source_ast_binding_as_executed_guest_logging',
+    'llvm_host_static_log_ring_as_compiled_guest_ir_or_linked_aot_proof'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(key), key);
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  assert.match(llvm.verified_scope, /native C log ring passed/);
+  assert.ok(llvm.not_verified.some(x => x.includes('LLVM SDK')));
+  assert.ok(llvm.not_verified.some(x => x.includes('linked guest exit42')));
+  const java = contract.candidate_adapters.find(x => x.backend === 'java');
+  assert.ok(java.not_verified.includes('actual Truffle guest log.info runtime event'));
+  const rs = contract.candidate_adapters.find(x => x.backend === 'rs');
+  assert.ok(rs.not_verified.includes('automatic site-ID assignment'));
+});
+
+test('audited source identity fixes do not bypass pending compiler evidence', () => {
+  for (const gate of [
+    'exact_ast_verified_function_binding',
+    'source_log_return_expression_fail_closed',
+    'rust_root_level_proposal_no_clobber',
+    'native_log_50k_fifo_model_evidence'
+  ]) assert.ok(contract.gate_names.includes(gate), gate);
+  const rs = contract.candidate_adapters.find(c => c.backend === 'rs');
+  assert.match(rs.verified_scope, /Rust Cargo build and new tests not executed/);
+  const llvm = contract.candidate_adapters.find(c => c.backend === 'llvm');
+  assert.match(llvm.verified_scope, /3\/3 local CTest/);
+  assert.match(llvm.verified_scope, /50k operation FIFO model/);
+  assert.ok(llvm.not_verified.some(x => x.includes('LLVM SDK')));
+  const java = contract.candidate_adapters.find(c => c.backend === 'java');
+  assert.match(java.verified_scope, /unexecuted/);
+  assert.ok(java.not_verified.includes('actual Truffle guest log.info runtime event'));
+});
+
+test('linked synthetic IR and synthetic Java AST cannot masquerade as real guest compilers', () => {
+  for (const name of [
+    'ordinary_llvm_cli_verified_manifest_to_generated_guest',
+    'linked_guest_exit42_and_both_source_sites',
+    'real_java_parser_to_guest_log_execution',
+  ]) assert.ok(contract.gate_names.includes(name), name);
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'source_free_linked_llvm_ir_as_atto_compiler_generated_guest'));
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'synthetic_java_ast_as_real_java_parser_or_truffle_guest'));
+
+  const llvm = contract.candidate_adapters.find(item => item.backend === 'llvm');
+  assert.match(llvm.verified_scope, /source-free manually authored LLVM IR/);
+  assert.ok(llvm.not_verified.some(item =>
+    item.includes('real ordinary .atto')));
+  const java = contract.candidate_adapters.find(item => item.backend === 'java');
+  assert.match(java.verified_scope, /synthetic AST fixture/);
+  assert.ok(java.not_verified.includes('real Java Parser.parse + Maven/JUnit suite'));
+});
+
+test('full native AOT guest requires actual compiler, not linked synthetic stand-in', () => {
+  for (const gate of [
+    'physical_source_log_path_and_manifest_alias_denial',
+    'real_compiler_generated_ir_not_synthetic_abi',
+    'native_guest_link_exit42_and_two_static_site_receipts',
+  ]) assert.ok(contract.gate_names.includes(gate), gate);
+  for (const denied of [
+    'linked_guest_script_smoke_using_fake_compiler_as_real_atto_aot',
+    'synthetic_source_log_manifest_as_authenticated_protected_source'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(denied), denied);
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  assert.match(llvm.verified_scope, /Physical source path sanitizer 16 negatives/);
+  assert.match(llvm.verified_scope, /synthetic IR, not actual compiler/);
+  assert.ok(llvm.not_verified.some(x => x.includes('real ordinary .atto')));
+});
+
+test('private source path and compiler-owned routine IDs remain fail-closed', () => {
+  for (const gate of [
+    'source_log_physical_path_error_redaction',
+    'java_public_bind_rechecks_routine_registry',
+    'rust_source_manifest_hardlink_and_mutation_admission',
+    'llvm_flattend_import_function_provenance_denial'
+  ]) assert.ok(contract.gate_names.includes(gate), gate);
+  for (const substitution of [
+    'java_arbitrary_map_as_verified_routine_identity',
+    'rust_source_registry_inode_alias_as_independent_files',
+    'llvm_imported_callable_as_root_source_unit_identity'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(substitution), substitution);
+  const java = contract.candidate_adapters.find(x => x.backend === 'java');
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  const rust = contract.candidate_adapters.find(x => x.backend === 'rs');
+  assert.match(java.verified_scope, /16 negative host admission checks/);
+  assert.match(java.verified_scope, /Real Java Parser\/JUnit\/Truffle guest unexecuted/);
+  assert.match(llvm.verified_scope, /actual compiler\/linked-guest acceptance is unexecuted/);
+  assert.match(rust.verified_scope, /Rust Cargo build and new tests not executed/);
+});
+
+test('independent Java and LLVM bounded literals reject Unicode control spoofing', () => {
+  for (const name of [
+    'source_telemetry_literal_java_10k_host_validated',
+    'native_telemetry_literal_llvm_10k_sanitized',
+    'typed_source_signature_beyond_name_and_arity',
+    'span_alias_lexical_shadowing_checks',
+    'compiled_guest_not_inferred_from_host_literal_tests'
+  ]) assert.ok(contract.gate_names.includes(name), name);
+  for (const forbidden of [
+    'host_literal_admission_as_actual_guest_runtime_instrumentation',
+    'name_arity_only_as_exact_compiled_signature_id_binding',
+    'unicode_control_mismatch_between_java_and_llvm'
+  ]) assert.ok(contract.prohibited_evidence_substitutions.includes(forbidden), forbidden);
+  const llvm = contract.candidate_adapters.find(x => x.backend === 'llvm');
+  const java = contract.candidate_adapters.find(x => x.backend === 'java');
+  assert.match(llvm.verified_scope, /10k adversarial Unicode/);
+  assert.match(java.verified_scope, /10k Unicode\/boundary vectors/);
+  assert.match(llvm.verified_scope, /actual compiler\/linked-guest acceptance is unexecuted/);
+  assert.match(java.verified_scope, /Real Java Parser\/JUnit\/Truffle guest unexecuted/);
+});
+
+test('structured telemetry evidence cannot promote host-only tests to compiler/guest passes', () => {
+  assert.ok(contract.gate_names.includes('structured_host_evidence_cannot_promote_guest'));
+  assert.ok(contract.prohibited_evidence_substitutions.includes(
+    'host_only_literal_validation_as_compiler_guest_pass'));
+  const allowed = new Set(['passed_host_only', 'unexecuted', 'unsupported']);
+  const runtimeGates = [
+    'backend_compiler_ir',
+    'linked_atto_guest_aot',
+    'guest_runtime_log_receipts',
+    'jit_generated_guest_machine_code'
+  ];
+  for (const candidate of contract.candidate_adapters) {
+    const tiers = candidate.evidence_tiers;
+    assert.ok(tiers && typeof tiers === 'object', candidate.backend);
+    for (const value of Object.values(tiers))
+      assert.ok(allowed.has(value), candidate.backend + ':invalid evidence status');
+    for (const gate of runtimeGates)
+      assert.equal(tiers[gate], 'unexecuted', candidate.backend + ':' + gate);
+    assert.equal(tiers.cold_literal_validation,
+      candidate.backend === 'rs' ? 'unsupported' : 'passed_host_only');
+  }
+});
+
+test('Rust proposal byte budget includes newline, without claiming Cargo execution', () => {
+  assert.ok(contract.gate_names.includes('rust_proposal_newline_part_of_file_budget'));
+  const rust = contract.candidate_adapters.find(x => x.backend === 'rs');
+  assert.equal(rust.evidence_tiers.cold_literal_validation, 'unsupported');
+  assert.equal(rust.evidence_tiers.backend_compiler_ir, 'unexecuted');
+  assert.ok(rust.not_verified.includes('Rust Cargo build and CLI execution'));
+});

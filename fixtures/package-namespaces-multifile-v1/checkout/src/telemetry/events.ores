@@ -1,0 +1,2 @@
+namespace telemetry;
+pub fnc emit_event(): int { return 1; }

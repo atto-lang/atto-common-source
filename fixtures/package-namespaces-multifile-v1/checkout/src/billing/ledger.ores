@@ -1,0 +1,2 @@
+namespace billing;
+pub fnc balance(): int { return 3; }
