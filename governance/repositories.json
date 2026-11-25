@@ -1,0 +1,417 @@
+{
+  "schema_version": 1,
+  "organization": "atto-lang",
+  "expected_count": 68,
+  "provenance": "docs/REPOSITORY_MAP.md",
+  "sensitivity": "private",
+  "repos": [
+    {
+      "name": ".github",
+      "category": "Governance, specification and evidence",
+      "summary": "Public organization profile, default community/review policy; never private inventory",
+      "visibility": "public"
+    },
+    {
+      "name": "atto-spec",
+      "category": "Governance, specification and evidence",
+      "summary": "Normative language semantics and language-change proposals",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-common-source",
+      "category": "Governance, specification and evidence",
+      "summary": "Backend-neutral IR/ABI and canonical portable .atto core/std",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-target-profiles",
+      "category": "Governance, specification and evidence",
+      "summary": "Target capabilities, constraints and unsupported combinations",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform-conformance",
+      "category": "Governance, specification and evidence",
+      "summary": "Portable executed guest fixtures and five-backend receipts",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-compilers-parity-testing",
+      "category": "Governance, specification and evidence",
+      "summary": "Cross-compiler differential comparison and mismatch triage",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-ml-conformance",
+      "category": "Governance, specification and evidence",
+      "summary": "Executed numerical and ML backend parity",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-hot-loading-tests",
+      "category": "Governance, specification and evidence",
+      "summary": "Hot-upgrade generation, rollback and lifecycle conformance",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.java",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Java/GraalVM frontend and backend, Native Image, actor runtime",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.llvm",
+      "category": "Compilers, code generation and runtime",
+      "summary": "LLVM native lowering, actor/tenant memory and target code generation",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.net",
+      "category": "Compilers, code generation and runtime",
+      "summary": ".NET/CIL and NativeAOT compilation and runtime",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.rs",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Rust-authored compiler; Rust-to-Wasm browser compiler artifact",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.wasm",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Wasm backend, guest/host ABI, actor runtime contracts",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.js",
+      "category": "Compilers, code generation and runtime",
+      "summary": "AttoLang-to-JavaScript transpiler and worker runtime",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.forge",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Independent Forge compiler/runtime JIT/AOT experiments",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.cranelift",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Cranelift code generation and independent native runtime tests",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.hdl",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Synthesizable AttoLang subset and HDL lowering",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-source.realtime",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Planned deterministic real-time compiler/backend (bootstrap only)",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-runtime.realtime-java",
+      "category": "Compilers, code generation and runtime",
+      "summary": "Java latency-focused actor scheduler/arena research",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-format",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Canonical formatting rules and golden tests",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-cli",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Build/run/test project CLI surface",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-test.cli",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Guest test discovery, harness and receipts",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-static-analysis.rs",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Static diagnostics, ownership/effect/lint checks",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-vscode",
+      "category": "Developer tools and browser-facing products",
+      "summary": "VS Code editor package and language-service integration",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-sublime",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Sublime Text editor package",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-playground",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Static in-browser IDE, pinned compiler asset and browser tests",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-lang.github.io",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Official public language website and Pages release",
+      "visibility": "public"
+    },
+    {
+      "name": "atto-browser",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Reusable browser APIs and DOM/worker host bridges",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-wasm",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Reusable Wasm component, module and ABI interop",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-runtime-ui",
+      "category": "Developer tools and browser-facing products",
+      "summary": "Portable UI/event bridge and target surface contracts",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform.desktop",
+      "category": "Platforms and devices",
+      "summary": "Desktop lifecycle, native windows and packaging",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform.mobile",
+      "category": "Platforms and devices",
+      "summary": "Android/iOS lifecycle, APIs and app packaging",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform.embedded",
+      "category": "Platforms and devices",
+      "summary": "MCU, bare-metal and bounded-memory device targets",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform.iot",
+      "category": "Platforms and devices",
+      "summary": "IoT/edge host integration and secure device protocols",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform.fpga",
+      "category": "Platforms and devices",
+      "summary": "FPGA board flows and hardware tests",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-platform.asic",
+      "category": "Platforms and devices",
+      "summary": "ASIC-target validation and silicon-facing constraints",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-db",
+      "category": "Libraries and scientific packages",
+      "summary": "Portable DB APIs and persistence contract",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-postgres-orm.atto",
+      "category": "Libraries and scientific packages",
+      "summary": "PostgreSQL-specific ORM implemented in .atto",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-http-routing",
+      "category": "Libraries and scientific packages",
+      "summary": "HTTP routing semantics and immutable dispatch",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-rpc",
+      "category": "Libraries and scientific packages",
+      "summary": "RPC API, transport and schema evolution",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-ssr",
+      "category": "Libraries and scientific packages",
+      "summary": "Server-side rendering and client handoff",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-serialization-and-validation",
+      "category": "Libraries and scientific packages",
+      "summary": "Portable codecs, schemas and validation",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-otel",
+      "category": "Libraries and scientific packages",
+      "summary": "OpenTelemetry integration for traces/metrics/logs",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-linked-queue",
+      "category": "Libraries and scientific packages",
+      "summary": "Ownership-safe FIFO and queue lifecycle",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-rx",
+      "category": "Libraries and scientific packages",
+      "summary": "Reactive stream composition",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-rx-callbacks",
+      "category": "Libraries and scientific packages",
+      "summary": "Callback listener interop/lifetimes",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-rx-channels",
+      "category": "Libraries and scientific packages",
+      "summary": "Observable bridges for typed channels",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-rx-tasks",
+      "category": "Libraries and scientific packages",
+      "summary": "Reactive async task composition/cancellation",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-stategraph.atto",
+      "category": "Libraries and scientific packages",
+      "summary": "State machines and graphs in .atto",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-logic.atto",
+      "category": "Libraries and scientific packages",
+      "summary": "Logic programming and inference experiments",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-ml",
+      "category": "Libraries and scientific packages",
+      "summary": "Model-level ML execution and adapters",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-tensor",
+      "category": "Libraries and scientific packages",
+      "summary": "Tensor shape/layout and numerical kernels",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-autograd",
+      "category": "Libraries and scientific packages",
+      "summary": "Automatic differentiation and gradient tapes",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-data-science",
+      "category": "Libraries and scientific packages",
+      "summary": "Scientific/statistical computing workflows",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-demo",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Minimal first-run programs",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-demos",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Curated examples spanning domains/targets",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-proof-of-concepts",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Unstable research prototypes",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-design-patterns",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Documented idiomatic design patterns",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-demo-restful-server",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Introductory REST server demo",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-api-server.atto",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Reference .atto API server application",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-phoenix-server.atto",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Phoenix-inspired actor server experiment",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-websocket-server-demo.atto",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "WebSocket actor server demonstration",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-restful-server-perf-benchmarks",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Reproducible HTTP server performance studies",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-forward-proxy-demo.atto",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Forward proxy/SSRF-safe outbound demo",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-reverse-proxy-demo.atto",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Ingress reverse proxy and upstream demo",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-ai-agent-coordination-demo",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Agent actor orchestration demo",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-step-function-demo",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Step orchestration and durable state demo",
+      "visibility": "private"
+    },
+    {
+      "name": "atto-physics-demo.atto",
+      "category": "Examples, reference apps and benchmarks",
+      "summary": "Physics simulation and numerical execution demo",
+      "visibility": "private"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+name: package-binary-import-v1-reference
+on:
+  pull_request:
+    paths:
+      - 'contracts/conformance/package-binary-import-v1.json'
+      - 'tests/package-binary-import-v1.test.mjs'
+      - 'docs/PACKAGE_BINARY_IMPORT_PARITY_V1.md'
+      - '.github/workflows/package-binary-import-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact event SHA without credential persistence
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checked source ref
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "tested_head_sha=$EXPECTED_SHA"
+      - name: Run source-free import/package oracle (NOT guest execution)
+        run: node --test tests/package-binary-import-v1.test.mjs
