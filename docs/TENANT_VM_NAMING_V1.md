@@ -24,10 +24,10 @@ OS process
 
 1. An untrusted actor must enter only a **verified** TenantVM boundary with validated guest code, enforced private memory/CPU/resource caps and independent termination. If unavailable, the backend **fails closed**, without downgrading to a plain Context, in-process native callback, worker, or shared CLR heap.
 2. Distinct tenant generations never share writable module state, user symbols, capabilities, allocation grants, mutable buffers, mailboxes or actor references. Immutable approved compiled code may be shared.
-3. Inside a TenantVM, independent actors may execute concurrently, while actor state remains sealed and free of unsynchronized concurrent writes. Non-reentrant scalar turns cannot overlap. Host root scheduling must be fair **per tenant**, not let tenants with more actors starve others.
+3. Inside a TenantVM, independent actors may execute concurrently, while actor state remains sealed and free of unsynchronized concurrent writes. Ordinary actors may admit multiple invocations on distinct logical stacks within bounded policy; serial actors admit at most one live DATA invocation, including suspension. Each execution context has one physical segment at a time. Host root scheduling must be fair **per tenant**, not let tenants with more actors starve others.
 4. Direct cross-tenant actor references and borrowed pointers fail. Any cross-tenant message must pass an explicitly trusted, generation-fenced, capability-checked serialization/ownership broker; charge producer, destination and host aggregate quotas.
 5. Quiescence seals new admission, resource pins drain before teardown, and restart mints a new generation. One tenant's trap, OOM or stop must not compromise a neighbor.
-6. The *same OS process* may hold multiple TenantVMs. A process sandbox is optional defense in depth; neither the word `TenantVM` nor an actor arena implies physical isolation. A runtime/validator/compiler bug can still compromise multiple tenants in one process.
+6. The *same OS process* may hold multiple TenantVMs. A process sandbox may be required by the selected security profile and otherwise provides defense in depth; neither the word `TenantVM` nor an actor arena implies physical isolation. A runtime/validator/compiler bug can still compromise multiple tenants in one process.
 
 ## Naming and compatibility
 
@@ -43,7 +43,7 @@ OS process
 
 ## Conformance and evidence
 
-Canonical architecture: [tenant isolation v2](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/main/docs/TENANT_ISOLATION_V2_SHARED_PROCESS.md). Test actual two-tenant compiled actor guests, stale/forged grants, per-actor and aggregate caps, CPU/fuel/deadline cancellation, heap violation, restart, IO/loan retirement, and neighbor survival. Label source-only models as `SOURCE_FREE_REFERENCE`, host-only evidence as such, and unexecuted backend tests as `NOT_EXECUTED`. GitHub Actions jobs with **zero steps** do not certify anything. No private source mirroring without existing independent security approval.
+Canonical architecture: [tenant isolation v2](https://github.com/atto-lang/atto-platform-conformance/blob/main/docs/TENANT_ISOLATION_V2_SHARED_PROCESS.md). Test actual two-tenant compiled actor guests, stale/forged grants, per-actor and aggregate caps, CPU/fuel/deadline cancellation, heap violation, restart, IO/loan retirement, and neighbor survival. Label source-only models as `SOURCE_FREE_REFERENCE`, host-only evidence as such, and unexecuted backend tests as `NOT_EXECUTED`. GitHub Actions jobs with **zero steps** do not certify anything. No private source mirroring without existing independent security approval.
 
 ## Backend-specific interpretation
 

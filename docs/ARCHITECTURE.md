@@ -1,6 +1,6 @@
 # Proposed shared HIR → MIR architecture
 
-**Canonical naming (2026-11-11): TenantVM** is the per-tenant execution domain targeted by portable HIR/MIR; OresVM owns host authority, and actors own their private sealed state inside a TenantVM. See [TenantVM naming](TENANT_VM_NAMING_V1.md). This shared semantic contract does not certify runtime isolation.
+**Canonical terminology:** TenantVM is the per-tenant execution domain targeted by portable HIR/MIR; OresVM denotes the trusted host authority. Actors retain their private sealed state within a TenantVM. See [TenantVM naming](TENANT_VM_NAMING_V1.md). This semantic contract does not certify runtime isolation.
 
 Status: design proposal, 2026-10-08. The repository boundary is intentional; the detailed IR and integration choices remain open.
 

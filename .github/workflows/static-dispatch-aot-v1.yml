@@ -1,0 +1,53 @@
+name: AttoLang static dispatch AOT policy v1 (source contract only)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/static-dispatch-aot-v1.yml'
+      - 'docs/STATIC_DISPATCH_AOT_V1.md'
+      - 'fixtures/static-dispatch-aot-v1.json'
+      - 'tools/validate-static-dispatch-aot-v1.mjs'
+      - 'tests/static-dispatch-aot-v1.test.mjs'
+      - 'tests/specialization-closure-v1.test.mjs'
+      - 'tools/validate-specialization-closure-v1.mjs'
+  push:
+    paths:
+      - '.github/workflows/static-dispatch-aot-v1.yml'
+      - 'docs/STATIC_DISPATCH_AOT_V1.md'
+      - 'fixtures/static-dispatch-aot-v1.json'
+      - 'tools/validate-static-dispatch-aot-v1.mjs'
+      - 'tests/static-dispatch-aot-v1.test.mjs'
+      - 'tests/specialization-closure-v1.test.mjs'
+      - 'tools/validate-specialization-closure-v1.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  policy-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact candidate head without persisted token
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Record source identity and refuse a mismatched tree
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain)"
+          echo "ATTO_DISPATCH_CONTRACT_HEAD=$EXPECTED_HEAD"
+          echo "ATTO_DISPATCH_CONTRACT_TREE=$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Execute source-contract test suite (not compiler-backed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/static-dispatch-aot-v1.test.mjs tests/specialization-closure-v1.test.mjs
+          echo "ATTO_DISPATCH_CONTRACT_ONLY_TEST_EXECUTED=true"
