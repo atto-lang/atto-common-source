@@ -1,0 +1,2 @@
+namespace identity;
+pub fnc start_session(): int { return 1; }
