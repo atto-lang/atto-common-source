@@ -34,11 +34,11 @@ This README records the intended role of this repository; it is not a claim of f
 
 ## Repository ownership and contribution routing
 
-**Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and canonical portable core/std written in .atto.
+**Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and portable reference `.atto` sources and fixtures. Production core, alloc and std implementations are independently maintained in each `atto-source.*` backend; compatible public semantics do not require byte-identical implementations.
 
 **Belongs elsewhere:** Backend-specific codegen and host runtime shims belong in the respective atto-source.* repositories; changing language rules requires atto-spec.
 
-**Security and portability boundary:** Shared files must be versioned and byte-identical where required across backends; never silently let platform code redefine portable ownership, imports or concurrency.
+**Security and portability boundary:** Explicitly pinned shared fixtures and versioned artifacts must retain their declared identities; never silently let platform code redefine portable ownership, imports or concurrency.
 
 AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
 
@@ -46,13 +46,8 @@ AttoLang is the canonical project name; new source, examples and documentation u
 
 For the audited 68-repository routing index and distinctions between compiler backends, platform adapters and demos, see [Repository ownership map](docs/REPOSITORY_MAP.md). Keep this private catalog out of public organization metadata.
 
-## Repository ownership and migration (2026-11-08)
+## Organization boundary and migration safeguards
 
-**Current repository:** `ores-truffle-oreslang/oreslang-common-source` (legacy organization). The language is publicly **AttoLang**, formerly Oreslang. Do not remove working `.ores` source support or rename old package/CLI/repository identifiers as an incidental side effect.
+`atto-lang` owns language semantics, compiler backends, conformance and portable libraries. Hosted product infrastructure, deployment, identity and billing belong to separately governed product repositories. This repository is already maintained in `atto-lang`; historical migration proposals are not instructions to transfer, rename or overwrite it. Preserve explicit legacy `.ores` compatibility profiles and existing exported identifiers until a separately validated migration.
 
-- **This repo should contain:** canonical portable `.atto` core/std modules and shared cross-backend contracts.
-- **Exclude or route elsewhere:** host-specific Java/C#/LLVM semantics duplicates and cloud product services.
-- **Boundaries:** [`atto-lang`](https://github.com/atto-lang) owns language semantics, core/std, compilers, tooling, conformance and portable libraries. [`atto-co`](https://github.com/atto-co) owns separately governed hosted infrastructure, tenant cloud runtime, deployment, identity and billing. Existing new-org `atto-*` repos are distinct Git identities until reconciled; do not overwrite them.
-- **Proposed first destination:** `atto-lang/oreslang-common-source` via **reviewed transfer of this repository identity**, not a clone, rename or direct transfer to `atto-co`. Future AttoCo product carve-outs must be authorized separately.
-
-**Owner checklist:** coordinate in [migration issue #26](https://github.com/ores-truffle-oreslang/.github/issues/26) and review the private [transfer plan #25](https://github.com/ores-truffle-oreslang/.github/pull/25). Before any migration, document stable numeric repo ID, exact head SHA/tree, open PRs/issues, tags, consumers, packages, Pages, Actions and billing, branch/ruleset enforcement, secrets and app/webhook permissions, source/target administrators, independent security reviewer and rollback plan. No unapproved private-source mirror. After the authorized GitHub transfer, verify unchanged identity/history/tree and reinstate controls, then rerun exact-head tests. Zero executed CI steps (`steps=[]` or `null`) is `NOT_EXECUTED`; structural or host-only checks are not guest-runtime parity proof. Preserve old names and `.ores` compatibility while `.atto` source support is validated per compiler.
+Any future repository transfer requires explicit authorization, verified repository identity and exact tree, consumer and workflow inventory, access/ruleset review, rollback planning and post-transfer verification. A mirror must be separately authorized; exact-tree identity alone does not confer permission to copy confidential source. A zero-step job is `NOT_EXECUTED`, not a pass.

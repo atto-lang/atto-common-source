@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "kind": "attolang.typed-effects/v1",
+  "assurance": "COMPILER_TYPED_IR_OBSERVATION_NOT_RUNTIME_CERTIFICATION",
+  "producer": {
+    "backend": "reference",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "source_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "typed_ir_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "entries": [
+    "main"
+  ],
+  "functions": [
+    {
+      "id": "main",
+      "closure": "complete",
+      "direct_effects": [],
+      "declared_bound": [],
+      "calls": [
+        {
+          "kind": "direct",
+          "targets": [
+            "helper"
+          ],
+          "phase": "immediate"
+        }
+      ],
+      "work": "bounded_claim"
+    },
+    {
+      "id": "helper",
+      "closure": "complete",
+      "direct_effects": [],
+      "declared_bound": null,
+      "calls": [],
+      "work": "bounded_claim"
+    }
+  ]
+}
