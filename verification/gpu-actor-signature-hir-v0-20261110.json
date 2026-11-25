@@ -1,0 +1,36 @@
+{
+  "schema": "attolang.gpu-actor-signature-hir-evidence/0",
+  "date": "2026-11-10",
+  "stage": "TYPED_SIGNATURE_ONLY",
+  "scope": "pure source-shape validator and cross-backend contract, not compiled guest or GPU hardware",
+  "sourceRepo": "ores-truffle-oreslang/oreslang-common-source",
+  "sourceHeadAtMirror": "b30f3b61e27e9a22b5f4eb256979c008872999de",
+  "blobs": {
+    "contracts/v1/gpu-actor-signature-hir-v0.json": "b12630267fea550182a90acabe016b898adc9aa8",
+    "models/gpu-actor-signature-hir-v0.mjs": "2b4fc8a2314db0871727788ae10450ffd7b060ce",
+    "tests/gpu-actor-signature-hir-v0.test.mjs": "58ebe11911d30fa1646f215ae8dde563186b1b46"
+  },
+  "carrierRepo": "scintilla-run/scintilla-run-e2e",
+  "carrierHead": "b68b1e3cdf32acbc1f73073190c84c882c535c31",
+  "runId": 42908078977,
+  "runUrl": "https://github.com/scintilla-run/scintilla-run-e2e/actions/runs/42908078977",
+  "verification": {
+    "exactGitBlobChecksPassed": true,
+    "nodeVersion": "22",
+    "tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "fullCompilerGuest": false,
+    "realPhysicalGpu": false
+  },
+  "backendSourceParity": {
+    "java": "PARTIAL_SOURCE_DESCRIPTOR_SMOKE",
+    "llvm": "SEPARATE_FAIL_CLOSED_PARSER",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED"
+  },
+  "hardwareExecution": "NOT_EXECUTED",
+  "reviewRequired": true
+}
