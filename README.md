@@ -51,3 +51,7 @@ For the audited 68-repository routing index and distinctions between compiler ba
 `atto-lang` owns language semantics, compiler backends, conformance and portable libraries. Hosted product infrastructure, deployment, identity and billing belong to separately governed product repositories. This repository is already maintained in `atto-lang`; historical migration proposals are not instructions to transfer, rename or overwrite it. Preserve explicit legacy `.ores` compatibility profiles and existing exported identifiers until a separately validated migration.
 
 Any future repository transfer requires explicit authorization, verified repository identity and exact tree, consumer and workflow inventory, access/ruleset review, rollback planning and post-transfer verification. A mirror must be separately authorized; exact-tree identity alone does not confer permission to copy confidential source. A zero-step job is `NOT_EXECUTED`, not a pass.
+
+## AOT and zero-GC controlled dynamism
+
+See the [shared HIR/MIR review checklist](docs/AOT_ZERO_GC_CONTROLLED_DYNAMISM_V1.md) for proposed sealed-AOT admission, finite proxy/dispatch metadata, ownership/reclamation and executable per-backend evidence. This is a target, not proof of compiler support.
