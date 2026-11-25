@@ -1,0 +1,6 @@
+define module Outer as
+  define class Parent as
+    define class Child as
+    end
+  end
+end

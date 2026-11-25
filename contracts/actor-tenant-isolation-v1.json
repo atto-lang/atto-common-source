@@ -1,0 +1,49 @@
+{
+  "schema": "atto.actor-tenant-isolation.v1",
+  "version": 1,
+  "status": "PROPOSED_REFERENCE_MODEL_ONLY_NOT_BACKEND_EXECUTED",
+  "relatedContracts": [
+    "ores-truffle-oreslang/oreslang-platform-conformance:contracts/tenant-isolation-v2.json",
+    "ores-truffle-oreslang/oreslang-platform-conformance:contracts/actor-buffer-transfer-v1.json",
+    "ores-truffle-oreslang/oreslang-common-source:contracts/shared-actor-arenas.v1.json"
+  ],
+  "domains": {
+    "actor": "Every actor owns a distinct logical heap or arena and an incarnation-scoped identity. No direct mutable graph aliases across actors.",
+    "tenant": "One tenant VM/protection domain contains multiple actor arenas. A tenant security boundary requires enforced memory isolation, host-import restrictions, quotas, and independent termination; a mere arena is insufficient.",
+    "host": "A trusted host mediates and authorizes tenant creation, capability delegation, cross-tenant messaging and teardown."
+  },
+  "ownership": {
+    "exclusive_mutable": "A mutable graph has at most one usable actor owner; failed send admission preserves sender ownership.",
+    "immutable": "Deeply immutable reachable graphs may be safely shared within a tenant after mutable aliases are invalidated.",
+    "borrow": "Active read loans prevent writes, transfer, mutation or reclamation until released.",
+    "same_tenant_move": "Transfer by ownership-version change, with no required payload copy if runtime backing allows it.",
+    "cross_tenant": "Raw handles and pointers denied. Values cross via broker-authorized serialization/copy into the destination tenant domain."
+  },
+  "identity": "All handles bind to trusted root, tenant generation, actor incarnation, object version and unforgeable host-side authority; ID strings alone are not authorization.",
+  "capabilities": "All resource rights default denied. Host-granted tenant-scoped rights may be attenuated and revoked. Revoke before reuse and revalidate at privileged operations.",
+  "lifecycle": "Close mailbox to new admissions, fence work, revoke or drain outstanding loans, then reclaim actor/tenant allocation domains; no dangling cross-tenant references.",
+  "scheduling": "Bound tenant CPU, heap, actor count, mailbox and I/O budgets. Host must be able to terminate non-cooperating untrusted tenants without terminating neighbor tenants.",
+  "security": "A source-free reference model is not a memory sandbox. Untrusted guest execution requires actual validated Wasm/Graal isolate or other proven boundary; backend MUST fail closed if unavailable.",
+  "backendStatus": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  },
+  "requiredCases": [
+    "actor-private-heap",
+    "use-after-take-denied",
+    "borrow-blocks-write-and-move",
+    "deep-frozen-sharing",
+    "failed-mailbox-admission-retains-owner",
+    "foreign-tenant-handle-denied",
+    "broker-copy-does-not-alias",
+    "revoked-cross-tenant-capability-denied",
+    "tenant-quota",
+    "stale-tenant-generation-denied",
+    "neighbor-tenant-continues-after-retirement",
+    "untrusted-without-proven-sandbox-refused"
+  ],
+  "evidenceRule": "A test of the reference model cannot be reported as compiled guest execution, memory sandbox validation, or cross-backend parity."
+}
