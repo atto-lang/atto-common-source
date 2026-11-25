@@ -1,0 +1,5 @@
+pub fnc main(): int {
+  const left = 'say "hello"';
+  const right = "it's valid";
+  return 42;
+}
