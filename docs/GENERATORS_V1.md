@@ -50,7 +50,7 @@ AsyncIterator<T>.close(): Future<void>
 
 `IteratorResult<T>` distinguishes `yielded(T)` from `done`; null or an Option sentinel must not be used to encode completion because T may itself contain those values.
 
-Synchronous close is immediate from the caller's perspective. Asynchronous close is a nonblocking request: its Future completes only after required cleanup and physical producer/frame exit are complete. Repeated async close calls share one logical close operation and must not amplify scheduler work. Source that depends on retirement before continuing uses `await iterator.close()`; structured `for await` cleanup performs the equivalent suspension automatically. An async close implementation must not park an actor or reusable runtime carrier while waiting for retirement.
+Synchronous close is immediate from the caller's perspective. Asynchronous close is a nonblocking request: its Future completes only after required cleanup and physical producer/frame exit are complete. Repeated async close calls share one logical close operation and must not amplify scheduler work. Async close may cancel a pending pull and unwind finally/defer/delegates; it returns promptly with a memoizable completion Future. Source that depends on retirement before continuing uses `await iterator.close()`; structured `for await` cleanup performs the equivalent suspension automatically. An async close implementation must not park an actor or reusable runtime carrier while waiting for retirement.
 
 A generator may use `return;` for completion. `return value;` is rejected in v1. A future completion-result type would require a separately versioned contract.
 
@@ -75,8 +75,6 @@ Each generator has exactly one logical suspended activation.
 At most one async pull may be active at a time. An overlapping `next()` fails deterministically with a concurrent-pull error; it must not allocate a second producer, queue an unbounded number of scheduler tasks, or execute the body twice.
 
 A later pull after the previous pull settles is valid. Terminal DONE and terminal failure are sticky and repeatable according to the iterator protocol.
-
-Async close is itself asynchronous because it may need to cancel a pending pull, unwind finally/defer/delegates, and wait for physical producer/frame exit. Calling `AsyncIterator.close()` must return promptly with a memoizable `Future<void>`; it must not synchronously park an actor/runtime carrier while cleanup completes. Repeated closes share the same logical terminal cleanup and must not amplify cleanup tasks.
 
 Implementations may use a state-machine frame, coroutine, continuation, or another backend representation, but observable pull ordering is identical.
 
