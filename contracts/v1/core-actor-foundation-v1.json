@@ -174,12 +174,26 @@
     "Supervisor",
     "ActorLifecycle"
   ],
+  "execution_concurrency": {
+    "ordinary_actor_default": "BOUNDED_CONCURRENT_EFFECTIVE_TURNS",
+    "serial_actor": "AT_MOST_ONE_ACTIVE_GUEST_TURN",
+    "critical_read": "OVERLAPPING_IMMUTABLE_READ_LOANS_WHEN_SUPPORTED",
+    "critical_write": "EXCLUSIVE_AGAINST_ALL_CONFLICTING_READERS_AND_WRITERS",
+    "loan_may_escape_callback_or_cross_await": false,
+    "actor_spawned_task_executor": "OWNING_ACTOR_TASK_POOL",
+    "supervisor_control_executor": "SEPARATE_TRUSTED_CONTROL_POOL",
+    "task_or_continuation_may_use_supervisor_control_pool": false,
+    "continuation_identity": "ACTOR_ID_INCARNATION_GENERATION_CODE_IMAGE",
+    "physical_carrier_migration_allowed": true,
+    "await_or_mailbox_backpressure_parks_carrier": false,
+    "stop_cancel_restart_requires": "QUIESCENCE_AND_EXACTLY_ONCE_TERMINAL_ACCOUNTING"
+  },
   "security_invariants": [
     "Actor base conformance never grants supervisor CONTROL, actor spawning, or mailbox sender identity",
     "Only runtime-minted ActorRef and channel endpoints authorize delivery; plain IDs or structural methods do not",
     "Actor lifecycle init and receive are private runtime-only external ingress, never public guest-callable methods",
     "Actor-owned mutable state is sealed and accessed only by checked critical-read/critical-write; no raw state references escape or survive await",
-    "Each actor has serialized effective turns, immutable incarnation identity and generation-fenced mailbox admission",
+    "Ordinary actors allow bounded concurrent effective turns; serial actors admit at most one active guest turn, with immutable incarnation identity and generation-fenced mailbox admission",
     "Panic uses trusted supervisor priority CONTROL and cannot be intercepted by the actor that panicked",
     "Actor or trait implementers cannot provide their own Sendable, Drop, Receives or ActorLifecycle safety proof",
     "ores.core imports no ores.std or OS facilities; hosted bases require explicit runtime permissions and nonblocking I/O",
