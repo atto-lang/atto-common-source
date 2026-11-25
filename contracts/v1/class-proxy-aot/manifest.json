@@ -1,0 +1,118 @@
+{
+  "contract": "atto-class-proxy-aot-v1",
+  "status": "candidate—not yet independently validated in compiler-backed hosted CI",
+  "implementation_reference": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2650",
+  "semantics": {
+    "syntax": "new Proxy(new LocalClass(...))",
+    "compile_time_only": true,
+    "generated_type": "LocalClassProxy",
+    "typed_constructor_forwarding": true,
+    "mirrored_methods": "public synchronous instance members, by name and explicit value arity",
+    "private_methods": "not exposed",
+    "static_methods": "not mirrored in v1; future explicit class facade",
+    "interception_hooks": "not implemented",
+    "nominal_subtyping": "none implicit",
+    "runtime_reflection": false,
+    "runtime_codegen": false,
+    "dynamic_property_lookup": false,
+    "target_identity": "distinct from wrapper",
+    "self_calls": "not intercepted",
+    "constructor_evaluation": "exactly once",
+    "generated_name_resolution": "reject collisions across modules and explicit imports; reject imports capturing the target or Proxy intrinsic; reject unresolved wildcard imports",
+    "overload_identity": "name + explicit value arity; ambiguity rejects before generation",
+    "annotation_forwarding": "reject annotated target constructors and annotated forwarded methods until metadata is compiler-checked; never drop contracts",
+    "borrowed_or_callable_signature": "reject recursively on borrowed, callable, inferred, mutable struct or unresolved type-alias signatures until lifetime/effect/ownership lowering is proven",
+    "wrapped_target_return": "fail closed on direct or nested target-typed returns until identity-preserving proxy adaptation is proven"
+  },
+  "fixtures": [
+    {
+      "file": "positive-mirror.atto",
+      "expect": "stdout:4212",
+      "stage": "compiler-backed guest execution required"
+    },
+    {
+      "file": "negative-runtime-target.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/semantic"
+    },
+    {
+      "file": "negative-class-collision.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/semantic"
+    },
+    {
+      "file": "negative-annotated-method.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/synthesis"
+    },
+    {
+      "file": "negative-duplicate-slot.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/synthesis"
+    },
+    {
+      "file": "negative-target-identity-escape.atto",
+      "expect": "reject:AOT_PROXY_UNSUPPORTED",
+      "stage": "parse/synthesis"
+    },
+    {
+      "file": "positive-constructor-once.atto",
+      "expect": "stdout:1",
+      "stage": "compiler-backed guest execution required"
+    }
+  ],
+  "backends": {
+    "java/graalvm": {
+      "implementation": "draft PR #2650",
+      "guest": "unverified",
+      "native_image": "unverified"
+    },
+    "llvm": {
+      "implementation": "not implemented",
+      "guest": "unverified"
+    },
+    "net/nativeaot": {
+      "implementation": "not implemented",
+      "guest": "unverified"
+    },
+    "wasm": {
+      "implementation": "not implemented",
+      "guest": "unverified"
+    },
+    "forge/cranelift": {
+      "implementation": "not implemented",
+      "guest": "unverified"
+    },
+    "javascript": {
+      "implementation": "not implemented",
+      "guest": "unverified"
+    }
+  },
+  "required_negative_cases": [
+    "runtime target expression",
+    "unbound target",
+    "ambiguous target",
+    "generated class collision",
+    "generic method/class",
+    "suspends/async/effectful method",
+    "actor isolation bypass",
+    "mutable/structural parameter reborrowing",
+    "unapproved interface/nominal substitution",
+    "private method leakage",
+    "static method mistakenly treated as instance",
+    "constructor evaluates more than once",
+    "unwinding partially initialized proxy",
+    "cross-module synthetic name capture",
+    "explicit imported type/alias capture",
+    "wildcard imported type ambiguity",
+    "duplicate name-and-arity public instance slot",
+    "silent method annotation loss",
+    "nested borrow and function-valued parameter transport",
+    "direct or nested Foo return bypasses FooProxy",
+    "imported target-name capture (Foo import vs local Foo)",
+    "annotated target constructor contract loss",
+    "mutable struct value signature, including nested position",
+    "type-alias hiding target-identity return, including nested Option<AliasFoo>"
+  ],
+  "evidence_policy": "Use exact PR head + Git tree + nonzero executed jobs and steps + compiler-backed guest output; steps=[] and steps=null are runner admission failures and are not evidence."
+}

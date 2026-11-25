@@ -1,0 +1,4 @@
+pub fnc main(): int {
+  const text = 'legacy \q and \x41';
+  return 42;
+}

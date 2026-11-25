@@ -1,0 +1,9 @@
+// Freestanding core Future adapter (source-level reference declaration).
+// This module requires only an existing Future<T> and its executor capability.
+// No OS, ambient allocation, threads, I/O or detached task creation.
+//
+// Compiler admission of generic fnc aliases, keyword member names and the
+// ores.core resolver must be proven before publishing this as executable.
+define module future as
+    pub fnc await<T> = susp |pending: Future<T>| -> await pending;
+end

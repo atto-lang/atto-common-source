@@ -1,3 +1,4 @@
+import { modelBufferLayoutOrdinal } from "./model_buffer_layout_v1.mjs";
 import { createHash } from "node:crypto";
 import { modelSymbolKindOrdinal } from "./model_symbol_constant_v1.mjs";
 
@@ -9,7 +10,6 @@ const EFFECT = ["pure","io","network","random","clock","actor","ffi","suspend"];
 const PROVENANCE = ["verified-ores","trusted-native"];
 const ALLOCATION = ["none","scratch","dynamic"];
 const DTYPE = ["bool","i32","i64","f32","f64"];
-const LAYOUT = ["scalar","contiguous"];
 const CONST_KIND = ["bool","i64","f64bits","string","symbol"];
 const MAX_U32 = 0xffff_ffff;
 const MAX_U64 = (1n << 64n) - 1n;
@@ -157,11 +157,9 @@ function encodePort(out, p) {
   out.u8(enumOrdinal(p.dtype, DTYPE, "MODEL_INVALID_PORT"));
   out.u8(p.shape.length);
   for (const d of extents) out.u64(d);
-  const canonicalLayout = p.layout ?? (p.shape.length === 0 ? "scalar" : "contiguous");
-  if ((p.shape.length === 0 && canonicalLayout !== "scalar") ||
-      (p.shape.length > 0 && canonicalLayout !== "contiguous"))
-    fail("MODEL_INVALID_PORT");
-  out.u8(enumOrdinal(canonicalLayout, LAYOUT, "MODEL_INVALID_PORT"));
+  const layout = modelBufferLayoutOrdinal(p.layout, p.shape.length);
+  if (layout < 0) fail("MODEL_INVALID_PORT");
+  out.u8(layout);
   if (p.unit === undefined) out.u8(0);
   else { out.u8(1); out.string(p.unit); }
 }
@@ -178,8 +176,8 @@ function samePort(a, b) {
   }
   if (a.dtype !== b.dtype || !denseArray(a.shape) || !denseArray(b.shape) ||
       a.shape.length !== b.shape.length) return false;
-  const defaultLayout = p => p.layout ?? (p.shape.length === 0 ? "scalar" : "contiguous");
-  if (defaultLayout(a) !== defaultLayout(b)) return false;
+  if (modelBufferLayoutOrdinal(a.layout, a.shape.length) !==
+      modelBufferLayoutOrdinal(b.layout, b.shape.length)) return false;
   if (a.unit !== b.unit) return false;
   for (let i = 0; i < a.shape.length; i++) {
     if (u64Value(a.shape[i], "MODEL_INVALID_PORT") !==

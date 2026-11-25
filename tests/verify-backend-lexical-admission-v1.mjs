@@ -52,7 +52,7 @@ test('plausible complete GitHub receipt cannot authenticate test-plan PASS', () 
 test('reject missing backends, invalid corpus content, and unsupported without explanation', () => {
   const missing = load();
   missing.backends.pop();
-  assert.throws(() => validateAdmission(missing, corpus), /backend identities/);
+  assert.throws(() => validateAdmission(missing, corpus), /backends requires exact own data slots/);
   // Cranelift is an independent backend: do not alias LLVM or Forge.
   assert.deepEqual(load().backends.map(b => b.id),
     ['java', 'llvm', 'wasm', 'cranelift', 'net', 'forge']);
