@@ -1,0 +1,100 @@
+{
+  "schema": "atto.symbol-shared-ro-guest-fixtures/v1",
+  "description": "Source-level candidates, not compiler-executed evidence. Positive outputs and negative diagnostic classes are normative goals.",
+  "status": "NOT_EXECUTED",
+  "compatibility_note": ".atto preferred for AttoLang; legacy .ores is retained pending per-backend admission",
+  "witness_requirements": [
+    "exact_pr_head_sha",
+    "exact_git_tree_sha",
+    "compiler_build_identity",
+    "source_git_blob_sha",
+    "actual_job_steps_nonzero",
+    "diagnostic_or_guest_stdout",
+    "exit_status",
+    "independent_review"
+  ],
+  "cases": [
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-literal-identity.atto",
+      "git_blob_sha1": "7d4912365a3e166f4797beaaca2161391acac1f7",
+      "expected": "accept",
+      "stdout": "same"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-string-separation.atto",
+      "git_blob_sha1": "9bfa3eafe7c8ef692a5130cae732cd93c8968aee",
+      "expected": "accept",
+      "stdout": "distinct"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-quoted-equivalence.atto",
+      "git_blob_sha1": "0aa295a5047f7c5170a6a9ba847d296051ffc8da",
+      "expected": "accept",
+      "stdout": "equal"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-colon-symbol.atto",
+      "git_blob_sha1": "729531b4ab36fdbdf556f5f4a95c78e70027a24c",
+      "expected": "reject_parser"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-hash-space.atto",
+      "git_blob_sha1": "72da48fab92fa46f8696d02ab73bc9538f4fa043",
+      "expected": "reject_lexer"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-hash-number.atto",
+      "git_blob_sha1": "9537dd7562d8f245b0b5bf954849c8eb805d4feb",
+      "expected": "reject_lexer"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-symbol-as-int.atto",
+      "git_blob_sha1": "5b651ff237ecf196d669400917bbbd150c64e564",
+      "expected": "reject_typecheck"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-nfc-quoted-equivalence.atto",
+      "git_blob_sha1": "589852e57a70b7b031946f6f20592dfe8c5ea6a5",
+      "expected": "accept",
+      "stdout": "nfc"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/positive-256byte-quoted-symbol.atto",
+      "git_blob_sha1": "38efbfa06565bfe07ee425bb7eebc9581569e331",
+      "expected": "accept",
+      "stdout": "boundary"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-257byte-quoted-symbol.atto",
+      "git_blob_sha1": "cb321f4a4327a76bc0494f880f55b173d3046d4d",
+      "expected": "reject_lexer"
+    },
+    {
+      "path": "fixtures/symbols-shared-ro-v1/negative-unterminated-quoted-symbol.atto",
+      "git_blob_sha1": "f5156efa8050aedd3a405e04090b999654787569",
+      "expected": "reject_lexer"
+    }
+  ],
+  "backends": {
+    "java-graal": {
+      "status": "NOT_EXECUTED",
+      "reason": "requires exact-head compiler-backed guest run"
+    },
+    "llvm": {
+      "status": "NOT_EXECUTED",
+      "reason": "requires exact-head compiler-backed guest run"
+    },
+    "dotnet-nativeaot": {
+      "status": "NOT_EXECUTED",
+      "reason": "requires exact-head compiler-backed guest run"
+    },
+    "wasm": {
+      "status": "NOT_EXECUTED",
+      "reason": "requires exact-head compiler-backed guest run"
+    },
+    "forge": {
+      "status": "NOT_EXECUTED",
+      "reason": "requires exact-head compiler-backed guest run"
+    }
+  }
+}
