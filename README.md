@@ -34,11 +34,11 @@ This README records the intended role of this repository; it is not a claim of f
 
 ## Repository ownership and contribution routing
 
-**Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and canonical portable core/std written in .atto.
+**Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and portable reference `.atto` sources and fixtures. Production core, alloc and std implementations are independently maintained in each `atto-source.*` backend; compatible public semantics do not require byte-identical implementations.
 
 **Belongs elsewhere:** Backend-specific codegen and host runtime shims belong in the respective atto-source.* repositories; changing language rules requires atto-spec.
 
-**Security and portability boundary:** Shared files must be versioned and byte-identical where required across backends; never silently let platform code redefine portable ownership, imports or concurrency.
+**Security and portability boundary:** Explicitly pinned shared fixtures and versioned artifacts must retain their declared identities; never silently let platform code redefine portable ownership, imports or concurrency.
 
 AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
 
@@ -46,6 +46,12 @@ AttoLang is the canonical project name; new source, examples and documentation u
 
 For the audited 68-repository routing index and distinctions between compiler backends, platform adapters and demos, see [Repository ownership map](docs/REPOSITORY_MAP.md). Keep this private catalog out of public organization metadata.
 
-## AOT / zero-GC controlled-dynamism contract
+## Organization boundary and migration safeguards
 
-See [Shared HIR/MIR review gate](docs/AOT_ZERO_GC_CONTROLLED_DYNAMISM_V1.md) for proposed closed-world AOT admission, statically generated proxies, ownership/reclamation, compile-before-IR rejection and immutable per-backend execution evidence. This is a target; it is not proof of compiler support.
+`atto-lang` owns language semantics, compiler backends, conformance and portable libraries. Hosted product infrastructure, deployment, identity and billing belong to separately governed product repositories. This repository is already maintained in `atto-lang`; historical migration proposals are not instructions to transfer, rename or overwrite it. Preserve explicit legacy `.ores` compatibility profiles and existing exported identifiers until a separately validated migration.
+
+Any future repository transfer requires explicit authorization, verified repository identity and exact tree, consumer and workflow inventory, access/ruleset review, rollback planning and post-transfer verification. A mirror must be separately authorized; exact-tree identity alone does not confer permission to copy confidential source. A zero-step job is `NOT_EXECUTED`, not a pass.
+
+## AOT and zero-GC controlled dynamism
+
+See the [shared HIR/MIR review checklist](docs/AOT_ZERO_GC_CONTROLLED_DYNAMISM_V1.md) for proposed sealed-AOT admission, finite proxy/dispatch metadata, ownership/reclamation and executable per-backend evidence. This is a target, not proof of compiler support.
