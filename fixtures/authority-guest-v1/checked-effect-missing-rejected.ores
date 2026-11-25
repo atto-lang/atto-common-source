@@ -1,0 +1,2 @@
+fnc risky(): int throws string { return 1; }
+fnc wrapper(): int { return risky(); }

@@ -1,0 +1,181 @@
+{
+  "contract": "oreslang-shared-domain-proxy-source-v1",
+  "version": 1,
+  "status": "source-contract-only",
+  "public_operations": {
+    "rt_share": "approved-shared-ownership-not-mutable-proxy",
+    "rt_proxy": "consume-owner-to-synchronized-proxy"
+  },
+  "access_lowering": {
+    "read": "critical-read",
+    "write": "critical-write",
+    "readonly_method": "critical-read",
+    "unknown_or_mutating_method": "critical-write"
+  },
+  "suspension": {
+    "admission": "may-suspend-before-lease",
+    "critical_body": "must-not-suspend",
+    "resume": "scheduler-owned-capability-wake-only"
+  },
+  "backend_support": {
+    "java": "host-runtime-candidate-no-guest-lowering",
+    "llvm": "source-admission-no-executable-lowering",
+    "net": "unsupported",
+    "wasm": "unsupported",
+    "forge": "unsupported"
+  },
+  "cases": [
+    {
+      "id": "proxy-consumes-owner",
+      "expect": "required"
+    },
+    {
+      "id": "share-is-not-mutable-proxy",
+      "expect": "required"
+    },
+    {
+      "id": "actor-ref-not-memory-capability",
+      "expect": "deny"
+    },
+    {
+      "id": "domain-id-unnameable",
+      "expect": "required"
+    },
+    {
+      "id": "proxy-capability-unforgeable",
+      "expect": "required"
+    },
+    {
+      "id": "proxy-read-lowers-critical-read",
+      "expect": "required"
+    },
+    {
+      "id": "proxy-write-lowers-critical-write",
+      "expect": "required"
+    },
+    {
+      "id": "readonly-method-may-read-lease",
+      "expect": "required"
+    },
+    {
+      "id": "unknown-method-conservative-write",
+      "expect": "required"
+    },
+    {
+      "id": "admission-may-suspend-before-lease",
+      "expect": "required"
+    },
+    {
+      "id": "critical-body-await-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "critical-body-select-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "critical-body-blocking-suspend-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "critical-body-cooperate-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "critical-body-yield-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "guest-callback-under-lease-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "raw-mutable-child-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "pointer-child-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "borrow-child-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "capability-child-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "same-domain-child-rewrapped-proxy",
+      "expect": "required"
+    },
+    {
+      "id": "cross-domain-nested-proxy-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "read-to-write-upgrade-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "queued-cancellation-removes-waiter",
+      "expect": "required"
+    },
+    {
+      "id": "writer-barrier-prevents-reader-barging",
+      "expect": "required"
+    },
+    {
+      "id": "scheduler-derives-current-principal",
+      "expect": "required"
+    },
+    {
+      "id": "wake-bound-to-owner-and-ticket",
+      "expect": "required"
+    },
+    {
+      "id": "data-turn-cannot-spoof-wake",
+      "expect": "deny"
+    },
+    {
+      "id": "physical-release-before-logical-handoff",
+      "expect": "required"
+    },
+    {
+      "id": "lifetime-pin-separate-from-byte-authority",
+      "expect": "required"
+    },
+    {
+      "id": "retirement-seals-new-proxy-authority",
+      "expect": "required"
+    },
+    {
+      "id": "proxy-return-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "proxy-call-argument-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "proxy-message-send-escape-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "proxy-serialization-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "private-untrusted-proxy-transport-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "stale-proxy-generation-denied",
+      "expect": "deny-stale"
+    },
+    {
+      "id": "rt-share-no-unchecked-proxy-conversion",
+      "expect": "deny"
+    }
+  ]
+}

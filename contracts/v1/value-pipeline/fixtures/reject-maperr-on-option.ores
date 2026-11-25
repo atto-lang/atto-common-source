@@ -1,0 +1,2 @@
+fnc fail(int value): int { return value + 1; }
+fnc main(): Option<int> { return Some(1) |> Result.map_err(fail); }

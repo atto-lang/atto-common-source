@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.dev/contracts/runtime/durable-actor-snapshot.v0.schema.json",
+  "title": "Oreslang durable actor snapshot envelope (design v0)",
+  "description": "Logical durable snapshot metadata; host pointers, secrets, and live descriptors are forbidden in state.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "tenant_id",
+    "workflow_id",
+    "run_id",
+    "node_id",
+    "state_schema_version",
+    "code_generation",
+    "activation_epoch",
+    "state_version",
+    "inbox_cursor",
+    "state",
+    "pending_operations",
+    "snapshot_digest"
+  ],
+  "properties": {
+    "format_version": {
+      "const": 0
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "workflow_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "node_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "state_schema_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "code_generation": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "activation_epoch": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "state_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "inbox_cursor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "state": {
+      "type": "object"
+    },
+    "pending_operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "idempotency_key",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "sent",
+              "acknowledged",
+              "reconciling"
+            ]
+          },
+          "receipt_ref": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "snapshot_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 of RFC 8785 JSON Canonicalization Scheme (JCS) serialization of the complete snapshot envelope with snapshot_digest omitted."
+    }
+  }
+}

@@ -1,0 +1,4 @@
+pub fnc main(): int {
+  const text = `invalid ${/* only comment */}`;
+  return 42;
+}

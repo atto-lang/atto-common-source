@@ -1,0 +1,5 @@
+fnc to_string(int value): String { return "custom"; }
+pub fnc main(): void {
+  stdio.stdout.write(to_string(42));
+  return;
+}

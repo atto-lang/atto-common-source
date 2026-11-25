@@ -1,0 +1,2 @@
+namespace telemetry;
+pub fnc start_trace(): int { return 1; }

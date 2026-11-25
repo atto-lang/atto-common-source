@@ -1,0 +1,5 @@
+// |> remains a value pipeline; not layer declaration syntax.
+// Expected diagnostic MODEL_NON_LAYER_EXPRESSION.
+define model WrongPipe as
+    Dense(8, 8) |> ReLU()
+end

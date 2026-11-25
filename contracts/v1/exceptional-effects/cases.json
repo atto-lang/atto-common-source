@@ -1,0 +1,58 @@
+{
+  "schema": "oreslang.exceptional-callable-effects.v1",
+  "status": "proposed-not-admitted",
+  "note": "Fixture expectations describe intended semantics; current backend fail-closed rejection remains required until implementation and executable parity.",
+  "cases": [
+    {
+      "id": "effect.fnctyped",
+      "phase": "parser",
+      "source": "fnc fetch(id: int) -> User throws(NetworkError, DecodeError) raises(AuthError) panics(InvariantError) { return lookup(id); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "effect.bare-effects",
+      "phase": "parser",
+      "source": "fnc fallback() -> void throws raises panics { panic new Error(); }\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "effect.method",
+      "phase": "parser",
+      "source": "define class Worker as {\n method handle() -> void raises(AuthError) { raise new AuthError(); }\n static fnc close() -> void panics(InvariantError) { panic new InvariantError(); }\n}\n",
+      "expected": "accept-after-admission"
+    },
+    {
+      "id": "effect.duplicates",
+      "phase": "parser",
+      "source": "fnc bad() -> void raises(Error) raises(Error) { raise new Error(); }\n",
+      "expected": "reject",
+      "diagnostic": "duplicate-effect-annotation"
+    },
+    {
+      "id": "effect.empty",
+      "phase": "parser",
+      "source": "fnc bad() -> void throws() { throw new Error(); }\n",
+      "expected": "reject",
+      "diagnostic": "empty-effect-types"
+    },
+    {
+      "id": "effect.string-not-error",
+      "phase": "semantic",
+      "source": "fnc bad() -> void throws(Error) { throw \"plain string\"; }\n",
+      "expected": "reject",
+      "diagnostic": "exception-operand-must-be-nominal-Error"
+    },
+    {
+      "id": "effect.raise-bypasses-catch",
+      "phase": "runtime",
+      "source": "// TODO: executable source fixture when defer/recover grammar is admitted\n",
+      "expected": "raise-bypasses-catch-trap-recovered-in-direct-defer-only"
+    },
+    {
+      "id": "effect.actor-panic",
+      "phase": "runtime",
+      "source": "// TODO: executable actor/supervisor fixture when native source lowering is admitted\n",
+      "expected": "no-local-handler-supervisor-control-exactly-once"
+    }
+  ]
+}

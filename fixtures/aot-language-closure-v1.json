@@ -1,0 +1,188 @@
+{
+  "schema": "oreslang.aot-language-closure.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "explicit_returns": {
+    "nonvoid_nonlambda_requires_explicit_return": true,
+    "tail_expression_returns": false,
+    "lambda_expression_body_exception": true,
+    "value_dispatch_outer_return": "FUNCTION_RETURN",
+    "value_dispatch_block_arm_return": "ARM_RESULT"
+  },
+  "match_arms": {
+    "expression": "on pattern [when guard] -> expression;",
+    "block": "on pattern [when guard] -> :: statements end",
+    "block_value_requires_explicit_return": true
+  },
+  "closure_requirements": [
+    "macros_eliminated",
+    "imports_resolved",
+    "finite_generic_graph",
+    "closed_actor_handler_tables",
+    "static_trait_dispatch",
+    "fixed_layouts",
+    "generated_serializers",
+    "known_effect_sets",
+    "ownership_validated",
+    "no_runtime_code_generation"
+  ],
+  "features": [
+    {
+      "id": "with",
+      "lowering": "typed_control_flow",
+      "runtime_interpreter": false,
+      "aot": "required"
+    },
+    {
+      "id": "comprehension",
+      "lowering": "static_iterator_or_kernel",
+      "runtime_code_compile": false,
+      "aot": "required"
+    },
+    {
+      "id": "traits_protocols",
+      "lowering": "monomorphization_or_static_witness",
+      "runtime_registry": false,
+      "aot": "required"
+    },
+    {
+      "id": "struct_update_typed_path",
+      "lowering": "fixed_accessor_or_layout_operation",
+      "runtime_reflection": false,
+      "aot": "required"
+    },
+    {
+      "id": "sigils",
+      "lowering": "compile_time_parser_to_constants_ast_ir",
+      "runtime_parser_required": false,
+      "aot": "required"
+    },
+    {
+      "id": "alias_import",
+      "lowering": "compile_time_namespace_resolution",
+      "runtime_module_discovery": false,
+      "aot": "required"
+    },
+    {
+      "id": "actor_contract",
+      "lowering": "closed_handler_abi",
+      "runtime_source_compile": false,
+      "aot": "required"
+    },
+    {
+      "id": "comptime",
+      "lowering": "compile_time_value_type_layout_evaluation",
+      "survives_to_runtime": false,
+      "aot": "required"
+    },
+    {
+      "id": "define_macro",
+      "lowering": "compile_time_ast_generation",
+      "survives_to_runtime": false,
+      "aot": "required"
+    }
+  ],
+  "compile_time_authority": {
+    "ambient_network": false,
+    "ambient_wall_clock": false,
+    "ambient_random": false,
+    "undeclared_environment": false,
+    "arbitrary_host_files": false,
+    "runtime_capability_minting": false,
+    "generated_code_rechecked": true,
+    "hygienic_by_default": true,
+    "resource_bounded": true,
+    "fallback_to_runtime_on_exhaustion": false
+  },
+  "generics": {
+    "finite_reachable_instantiations": true,
+    "runtime_new_instantiation": false,
+    "permitted": [
+      "monomorphization",
+      "explicit_specialization",
+      "shape_sharing",
+      "static_witness"
+    ]
+  },
+  "runtime": {
+    "generated_data_allowed": true,
+    "generated_oreslang_code_execution": false,
+    "eval_source_strings": false,
+    "runtime_macro_expansion": false,
+    "runtime_jit_required": false,
+    "runtime_reflection_required": false,
+    "mutable_protocol_registry": false
+  },
+  "hot_reload": {
+    "candidate_is_precompiled_aot_image": true,
+    "abi_validation_before_admission": true,
+    "runtime_source_compiler_required": false
+  },
+  "cases": [
+    {
+      "id": "nonvoid-tail-expression",
+      "kind": "function",
+      "return_type": "int",
+      "body": "42;",
+      "expected": "reject"
+    },
+    {
+      "id": "nonvoid-explicit-return",
+      "kind": "function",
+      "return_type": "int",
+      "body": "return 42;",
+      "expected": "accept"
+    },
+    {
+      "id": "lambda-expression-body",
+      "kind": "lambda",
+      "body": "|x| -> x + 1",
+      "expected": "accept"
+    },
+    {
+      "id": "match-expression-arm",
+      "source": "on Err(e) -> Err(e);",
+      "expected": "accept"
+    },
+    {
+      "id": "match-block-explicit-arm-result",
+      "source": "on n -> :: let x = n * 2; return Ok(x); end",
+      "expected": "accept"
+    },
+    {
+      "id": "match-block-tail-expression",
+      "source": "on n -> :: let x = n * 2; Ok(x); end",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-eval",
+      "mechanism": "eval(source)",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-protocol-registry",
+      "mechanism": "lookup implementation by runtime type name",
+      "expected": "reject"
+    },
+    {
+      "id": "compiletime-network",
+      "mechanism": "macro fetches network without declared build input",
+      "expected": "reject"
+    },
+    {
+      "id": "runtime-data-generation",
+      "mechanism": "generate HTML/JSON/JS text as data",
+      "expected": "accept"
+    },
+    {
+      "id": "precompiled-hot-reload",
+      "mechanism": "load ABI-validated AOT generation",
+      "expected": "accept"
+    },
+    {
+      "id": "runtime-source-hot-reload",
+      "mechanism": "compile source inside OresVM",
+      "expected": "reject"
+    }
+  ],
+  "macro_contract": "oreslang.macro-semantics.v1"
+}

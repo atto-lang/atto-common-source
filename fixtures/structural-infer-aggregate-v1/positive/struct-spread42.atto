@@ -1,0 +1,1 @@
+pub fnc main():int { const a=infer struct{x:20}; const b=infer struct{...a,y:22}; return b.x+b.y; }

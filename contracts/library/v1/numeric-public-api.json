@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "oreslang.numeric-public-api.v1",
+  "status": "proposed-api-contract-not-backend-proof",
+  "source_ownership": {
+    "public_api": "Oreslang source",
+    "backend_primitives": "sealed compiler/runtime implementation detail",
+    "forbidden": [
+      "public Java/.NET/C/C++/JavaScript numeric interop defining guest semantics",
+      "implicit binary64 coercion for BigInt or Decimal",
+      "host-global mutable decimal rounding context",
+      "host overflow/wrap behavior leaking through Math.abs or Math.neg"
+    ]
+  },
+  "types": {
+    "int": "checked signed fixed-width integer domain",
+    "f64": "IEEE-754 binary64",
+    "f32": "IEEE-754 binary32; must be a distinct representation or rejected",
+    "bigint": "arbitrary-precision signed integer subject to explicit resource budgets",
+    "decimal": "arbitrary-precision/resource-bounded base-10 coefficient plus signed scale",
+    "DecimalContext": "immutable explicit precision and rounding policy"
+  },
+  "math_overloads": {
+    "Math.abs": {
+      "int": "same type; minimum signed value reports ArithmeticOverflowError",
+      "f64": "clear sign bit; -0 -> +0; infinities preserved positive; NaN remains NaN",
+      "bigint": "exact",
+      "decimal": "exact and scale preserving"
+    },
+    "Math.neg": {
+      "int": "same type; minimum signed value reports ArithmeticOverflowError",
+      "f64": "toggle sign; +0 -> -0; -0 -> +0; NaN remains NaN",
+      "bigint": "exact",
+      "decimal": "exact and scale preserving"
+    }
+  },
+  "bigint_api": {
+    "parse": "BigInt.parse(text: String) -> Result<bigint, NumericParseError | NumericResourceError>",
+    "quot": "BigInt.quot(dividend: bigint, divisor: bigint) -> Result<bigint, DivisionByZeroError | NumericResourceError>",
+    "rem": "BigInt.rem(dividend: bigint, divisor: bigint) -> Result<bigint, DivisionByZeroError | NumericResourceError>",
+    "div_rem": "BigInt.div_rem(dividend: bigint, divisor: bigint) -> Result<(bigint, bigint), DivisionByZeroError | NumericResourceError>",
+    "to_i64_checked": "BigInt.to_i64_checked(value: bigint) -> Result<int, ArithmeticOverflowError>",
+    "to_f64_exact": "BigInt.to_f64_exact(value: bigint) -> Result<f64, InexactConversionError | NumericRangeError>",
+    "to_f64_nearest": "BigInt.to_f64_nearest(value: bigint) -> Result<f64, NumericRangeError>"
+  },
+  "decimal_api": {
+    "parse": "Decimal.parse(text: String) -> Result<decimal, NumericParseError | NumericResourceError>",
+    "divide_exact": "Decimal.divide_exact(a: decimal, b: decimal) -> Result<decimal, DivisionByZeroError | NonterminatingDecimalError | NumericResourceError>",
+    "divide": "Decimal.divide(a: decimal, b: decimal, context: DecimalContext) -> Result<decimal, DivisionByZeroError | NumericContextError | NumericResourceError>",
+    "round": "Decimal.round(value: decimal, context: DecimalContext) -> Result<decimal, NumericContextError | NumericResourceError>",
+    "to_f64_exact": "Decimal.to_f64_exact(value: decimal) -> Result<f64, InexactConversionError | NumericRangeError>",
+    "to_f64_nearest": "Decimal.to_f64_nearest(value: decimal) -> Result<f64, NumericRangeError>"
+  },
+  "parsing": {
+    "BigInt": {
+      "accepted": [
+        "0",
+        "-0",
+        "42",
+        "-42",
+        "9007199254740993"
+      ],
+      "canonical_output": [
+        "0",
+        "42",
+        "-42",
+        "9007199254740993"
+      ],
+      "rejected": [
+        "",
+        "+1",
+        "01",
+        "-01",
+        "1.0",
+        "1e3",
+        "_1",
+        "1_",
+        "1__0"
+      ]
+    },
+    "Decimal": {
+      "accepted": [
+        "0",
+        "-0",
+        "0.1",
+        "-12.3400",
+        "1e3",
+        "1E-3"
+      ],
+      "exact": true,
+      "rejected": [
+        "",
+        "+1",
+        ".1",
+        "1.",
+        "1__0",
+        "nan",
+        "inf",
+        "-inf"
+      ]
+    }
+  },
+  "rounding_modes": [
+    "HALF_EVEN",
+    "HALF_UP",
+    "HALF_DOWN",
+    "UP",
+    "DOWN",
+    "CEILING",
+    "FLOOR",
+    "UNNECESSARY"
+  ],
+  "errors": [
+    "ArithmeticOverflowError",
+    "DivisionByZeroError",
+    "InexactConversionError",
+    "NumericRangeError",
+    "NumericParseError",
+    "NumericContextError",
+    "NumericResourceError",
+    "NonterminatingDecimalError"
+  ],
+  "hard_rt": {
+    "fixed_int_and_floats": "eligible subject to target profile and WCET proof",
+    "bigint_and_decimal": "not hard-real-time by default; require statically bounded operands, allocation and WCET"
+  },
+  "namespaces": {
+    "BigInt": "operations/constructors for values of source type bigint",
+    "Decimal": "operations/constructors for values of source type decimal",
+    "Math": "numeric functions whose dispatch is compiler/type-system owned"
+  },
+  "conversions": {
+    "implicit_numeric_conversions": "none",
+    "mixed_numeric_arithmetic": "operands must already have the same numeric representation; conversions are explicit",
+    "int_to_f64": "Integer.to_f64_exact(value: int) -> Result<f64, InexactConversionError> or Integer.to_f64_nearest(value: int) -> f64",
+    "f64_to_int": "explicit checked/truncating/rounding API required; assignment never narrows implicitly",
+    "bigint_to_binary_float": "explicit exact or nearest conversion only",
+    "decimal_to_binary_float": "explicit exact or nearest conversion only"
+  },
+  "integer_api": {
+    "to_f64_exact": "Integer.to_f64_exact(value: int) -> Result<f64, InexactConversionError>",
+    "to_f64_nearest": "Integer.to_f64_nearest(value: int) -> f64"
+  }
+}

@@ -1,0 +1,85 @@
+name: common contracts
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: common-contracts-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Enforce exact checked-out commit
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Python contract tests still awaiting Rust migration
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Compile remaining Python contract tools
+        run: python3 -m py_compile scripts/*.py
+      - name: Verify pinned editor syntax lexical contract v1
+        run: node --test tests/verify-editor-lexical-v1.mjs
+      - name: Reject fabricated lexical backend admission receipts
+        run: node --test tests/verify-backend-lexical-admission-v1.mjs
+      - name: Validate full lexical case comparisons and LLVM adapter fail-closed protocol
+        run: node --test tests/verify-lexical-case-receipts-v1.mjs tests/verify-llvm-lexical-probe-adapter-v1.mjs
+      - name: Verify String/CString ABI v1 reference contract
+        run: node tests/verify-string-abi-v1.mjs
+      - name: Verify developer and systems hardening v1 inventory (reference only)
+        run: node tests/developer-systems-hardening-v1.test.mjs
+      - name: Format and lint Rust IPC models
+        run: |
+          cargo fmt --manifest-path tools/ipc-models/Cargo.toml -- --check
+          cargo clippy --offline --manifest-path tools/ipc-models/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust IPC receipt and delivery models
+        run: cargo test --offline --manifest-path tools/ipc-models/Cargo.toml
+      - name: Format and lint Rust recovery register gate
+        run: |
+          cargo fmt --manifest-path tools/recovery-register/Cargo.toml -- --check
+          cargo clippy --offline --manifest-path tools/recovery-register/Cargo.toml --all-targets -- -D warnings
+      - name: Test Rust recovery register integrity gate
+        run: cargo test --offline --manifest-path tools/recovery-register/Cargo.toml
+      - name: Check fifty-item recovery register integrity (not live issues)
+        run: cargo run --offline --manifest-path tools/recovery-register/Cargo.toml
+      - name: Verify canonical native numeric source identity and i64 contract
+        run: node --test tests/canonical-numeric-source.test.mjs tests/core-math-i64-contract.test.mjs
+      - name: Record numeric contract Git blob identities
+        run: |
+          git hash-object \
+            contracts/library/v1/native-math-unary-precision.json \
+            contracts/library/v1/bigint-exact.json \
+            contracts/library/v1/decimal-precision.json \
+            contracts/library/v1/binary-floating.json \
+            contracts/library/v1/numeric-public-api.json \
+            contracts/library/v1/numeric-backend-status.json \
+            contracts/library/v1/numeric-portable-guests.json \
+            contracts/library/v1/numeric-errors.json \
+            fixtures/numeric-v1/math-i64-ok.ores \
+            fixtures/numeric-v1/math-i64-abs-min.ores \
+            fixtures/numeric-v1/math-i64-neg-min.ores
+      - name: Execute numeric semantic reference contracts
+        run: |
+          node --test \
+            tests/native-math-unary-precision-contract.test.mjs \
+            tests/bigint-exact-contract.test.mjs \
+            tests/decimal-precision-contract.test.mjs \
+            tests/binary-floating-contract.test.mjs \
+            tests/numeric-public-api-contract.test.mjs \
+            tests/numeric-backend-status.test.mjs \
+            tests/numeric-portable-guests.test.mjs \
+            tests/numeric-errors-contract.test.mjs
+      - name: Verify critical state-loan fixture identity (not guest execution)
+        run: node --test tests/actor-critical-modes-source.test.mjs
+      - name: Verify shared HIR and MIR structural evidence (not guest execution)
+        run: node --test tests/shared-compiler-evidence-v1.test.mjs

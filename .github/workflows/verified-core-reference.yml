@@ -1,0 +1,28 @@
+name: Verified Core reference tests (not compiler parity)
+on:
+  pull_request:
+    paths:
+      - 'reference/verified-core/**'
+      - '.github/workflows/verified-core-reference.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact checkout
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          git rev-parse HEAD HEAD^{tree}
+      - name: Run independent reference suites
+        run: |
+          node --version
+          node --test reference/verified-core/*.test.mjs
+          echo 'Reference tests only; no backend guest or proof certification'

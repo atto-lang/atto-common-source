@@ -72,6 +72,7 @@ class ActorState:
 class TenantState:
     ref: TenantRef
     byte_limit: int
+    actor_limit: int
     used_bytes: int = 0
     active: bool = True
     actors: dict = field(default_factory=dict)
@@ -96,16 +97,17 @@ class HostModel:
         self.capabilities = {}
         self.next_id = 1
 
-    def create_tenant(self, name, byte_limit=1024):
+    def create_tenant(self, name, byte_limit=1024, actor_limit=256):
         require(isinstance(name, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", name)
                 and name not in (".", ".."), "INVALID_TENANT")
         require(isinstance(byte_limit, int) and not isinstance(byte_limit, bool)
                 and byte_limit >= 0, "INVALID_QUOTA")
+        require(type(actor_limit) is int and 0 <= actor_limit <= 100_000, "INVALID_ACTOR_QUOTA")
         require(name not in self.tenants or not self.tenants[name].active, "ACTIVE_TENANT")
         generation = self.generations.get(name, 0) + 1
         self.generations[name] = generation
         ref = TenantRef(name, generation)
-        self.tenants[name] = TenantState(ref, byte_limit)
+        self.tenants[name] = TenantState(ref, byte_limit, actor_limit)
         return ref
 
     def _tenant(self, ref):
@@ -120,6 +122,7 @@ class HostModel:
         require(isinstance(capacity, int) and not isinstance(capacity, bool)
                 and capacity >= 0, "INVALID_MAILBOX_CAP")
         require(name not in state.actors, "DUPLICATE_ACTOR")
+        require(len(state.actors) < state.actor_limit, "ACTOR_QUOTA")
         ref = ActorRef(tenant, name, 1)
         state.actors[name] = ActorState(ref, capacity)
         return ref

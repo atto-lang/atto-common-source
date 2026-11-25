@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.org/contracts/v1/tensor-data-envelope.schema.json",
+  "title": "Oreslang actor pipeline tensor DATA and control-plane envelopes (proposed v1)",
+  "description": "Draft schema only. Authentic run/actor tokens, tensor shape semantics and immutable lease rights require trusted runtime enforcement.",
+  "x-oreslang-guestExecution": "NOT_EXECUTED",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/data"
+    },
+    {
+      "$ref": "#/$defs/ack"
+    },
+    {
+      "$ref": "#/$defs/watermark"
+    }
+  ],
+  "$defs": {
+    "tensor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dtype",
+        "shape",
+        "strides",
+        "byteLength"
+      ],
+      "properties": {
+        "dtype": {
+          "const": "f64"
+        },
+        "shape": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "strides": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "epoch",
+        "mode"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mode": {
+          "const": "frozen"
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "runId",
+        "graphEpoch",
+        "actorEpoch",
+        "partitionId",
+        "sequence",
+        "stepId",
+        "microbatchId",
+        "watermarkMs",
+        "tensor",
+        "lease",
+        "digest"
+      ],
+      "properties": {
+        "kind": {
+          "const": "data"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "graphEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actorEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partitionId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stepId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "microbatchId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "watermarkMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tensor": {
+          "$ref": "#/$defs/tensor"
+        },
+        "lease": {
+          "$ref": "#/$defs/lease"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8,64}$"
+        }
+      }
+    },
+    "ack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "runId",
+        "graphEpoch",
+        "actorEpoch",
+        "partitionId",
+        "sequence",
+        "digest"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ack"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "graphEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actorEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partitionId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8,64}$"
+        }
+      }
+    },
+    "watermark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "runId",
+        "graphEpoch",
+        "actorEpoch",
+        "partitionId",
+        "watermarkMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "watermark"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "graphEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actorEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partitionId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "watermarkMs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

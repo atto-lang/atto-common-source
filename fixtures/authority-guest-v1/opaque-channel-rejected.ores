@@ -1,0 +1,3 @@
+pub fnc bad(Channel<any> values): void {
+  return;
+}

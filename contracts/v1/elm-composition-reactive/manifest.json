@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "status": "draft_not_verified",
+  "canonical_naming": "snake_case",
+  "cases": [
+    {
+      "id": "option_none_map",
+      "input": "None",
+      "expect": "None",
+      "callback_calls": 0
+    },
+    {
+      "id": "option_some_map",
+      "input": "Some(4)",
+      "expect": "Some(8)",
+      "callback_calls": 1
+    },
+    {
+      "id": "result_err_flat_map",
+      "input": "Err(x)",
+      "expect": "Err(x)",
+      "callback_calls": 0
+    },
+    {
+      "id": "result_map_err",
+      "input": "Err(x)",
+      "expect": "Err(mapped)",
+      "callback_calls": 1
+    },
+    {
+      "id": "observable_filter_map",
+      "input": "[1,2,3,4]",
+      "expect": "[2,4] and complete",
+      "callback_calls": 4
+    },
+    {
+      "id": "observable_take_zero",
+      "input": "[1,2]",
+      "expect": "complete without pulling",
+      "callback_calls": 0
+    },
+    {
+      "id": "future_panic",
+      "input": "panic from callback",
+      "expect": "failure not stream completion",
+      "callback_calls": 1
+    },
+    {
+      "id": "channel_subscribers",
+      "input": "single consumer channel",
+      "expect": "no silent multicast",
+      "callback_calls": null
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+// PROPOSED define model grammar. Not executable on current backends.
+define model Classifier as
+    Dense(784, 512)
+    ReLU()
+    Dense(512, 10)
+end
