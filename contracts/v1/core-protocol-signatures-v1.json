@@ -1,0 +1,200 @@
+{
+  "schema": "attolang.core-protocol-signatures.v1",
+  "status": "SOURCE_ONLY_COMPILER_GUEST_EXECUTION_NOT_CERTIFIED",
+  "canonical_source": "library/ores.core/protocols.atto",
+  "semantics": "closed independent contract for all named generic parameters, direct method signatures and inherited trait parents; not proof of runtime behavior",
+  "traits": {
+    "Eq": {
+      "params": [
+        "T"
+      ],
+      "parents": [],
+      "methods": [
+        "equals(T other) => bool"
+      ]
+    },
+    "Ord": {
+      "params": [
+        "T"
+      ],
+      "parents": [
+        "Eq<T>"
+      ],
+      "methods": [
+        "compare(T other) => int"
+      ]
+    },
+    "Hash": {
+      "params": [],
+      "parents": [],
+      "methods": [
+        "hash_value() => int"
+      ]
+    },
+    "Clone": {
+      "params": [
+        "T"
+      ],
+      "parents": [],
+      "methods": [
+        "clone_value() => T"
+      ]
+    },
+    "Read": {
+      "params": [
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "read_async(int max_bytes) => Future<Result<Option<Array<u8>>, E>>"
+      ]
+    },
+    "Write": {
+      "params": [
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "write_all_async(Array<u8> bytes) => Future<Result<void, E>>"
+      ]
+    },
+    "Flush": {
+      "params": [
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "flush_async() => Future<Result<void, E>>"
+      ]
+    },
+    "Close": {
+      "params": [],
+      "parents": [],
+      "methods": [
+        "close() => void"
+      ]
+    },
+    "AsyncClose": {
+      "params": [
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "close_async() => Future<Result<void, E>>"
+      ]
+    },
+    "Seek": {
+      "params": [
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "seek_async(int absolute_offset) => Future<Result<int, E>>"
+      ]
+    },
+    "Source": {
+      "params": [
+        "T",
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "next_async() => Future<Result<Option<T>, E>>"
+      ]
+    },
+    "Sink": {
+      "params": [
+        "T",
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "send_async(T value) => Future<Result<void, E>>",
+        "flush_async() => Future<Result<void, E>>"
+      ]
+    },
+    "IntoIterator": {
+      "params": [
+        "T"
+      ],
+      "parents": [],
+      "methods": [
+        "into_iter() => Iterator<T>"
+      ]
+    },
+    "Service": {
+      "params": [
+        "Request",
+        "Reply",
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "call_async(Request request) => Future<Result<Reply, E>>"
+      ]
+    },
+    "TryFrom": {
+      "params": [
+        "Src",
+        "Dst",
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "try_from(Src value) => Result<Dst, E>"
+      ]
+    },
+    "ReadWrite": {
+      "params": [
+        "E"
+      ],
+      "parents": [
+        "Read<E>",
+        "Write<E>"
+      ],
+      "methods": []
+    },
+    "Transform": {
+      "params": [
+        "I",
+        "O",
+        "E"
+      ],
+      "parents": [
+        "Sink<I, E>",
+        "Source<O, E>"
+      ],
+      "methods": []
+    },
+    "BatchWritable": {
+      "params": [
+        "T",
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "send_batch_async(Array<T> values) => Future<Result<void, E>>"
+      ]
+    },
+    "KeyValueStore": {
+      "params": [
+        "K",
+        "V",
+        "E"
+      ],
+      "parents": [],
+      "methods": [
+        "get_async(K key) => Future<Result<Option<V>, E>>",
+        "put_async(K key, V value) => Future<Result<void, E>>",
+        "delete_async(K key) => Future<Result<bool, E>>"
+      ]
+    }
+  },
+  "backend_evidence": {
+    "java": "NOT_EXECUTED_THIS_CHANGE",
+    "llvm": "NOT_EXECUTED_THIS_CHANGE",
+    "wasm": "NOT_EXECUTED_THIS_CHANGE",
+    "forge": "NOT_EXECUTED_THIS_CHANGE",
+    "net": "NOT_EXECUTED_THIS_CHANGE"
+  }
+}

@@ -70,21 +70,33 @@
       "role": "implicit actor nominal; not an ordinary guest-constructible class",
       "stage": "existing_language_intrinsic",
       "runtime_owned": true,
-      "control_access": false
+      "control_access": false,
+      "guest_defined_privilege": false,
+      "implementation": "native_atto_or_compiler_intrinsic",
+      "control_authority": "none",
+      "private_control_ingress": false
     },
     {
       "name": "SupervisorActor",
       "role": "runtime-validated supervisor; CONTROL callbacks never ordinary callable methods",
       "stage": "proposed_checked_base",
       "runtime_owned": true,
-      "control_access": true
+      "control_access": true,
+      "guest_defined_privilege": false,
+      "implementation": "native_atto_or_compiler_intrinsic",
+      "control_authority": "runtime_authenticated_supervisor_only",
+      "private_control_ingress": true
     },
     {
       "name": "ServiceActor<Request,Reply>",
       "role": "typed request/reply actor, does not turn Service trait into mailbox authority",
       "stage": "proposed_checked_base",
       "runtime_owned": true,
-      "control_access": false
+      "control_access": false,
+      "guest_defined_privilege": false,
+      "implementation": "native_atto_or_compiler_intrinsic",
+      "control_authority": "none",
+      "private_control_ingress": false
     }
   ],
   "std_hosted_bases": [
@@ -94,7 +106,10 @@
         "NETWORK"
       ],
       "stage": "proposed_hosted_adapter",
-      "privileged": false
+      "privileged": false,
+      "guest_implementation": "native_atto",
+      "runtime_permission_enforced": true,
+      "nonblocking_provider_required": true
     },
     {
       "name": "TcpActor",
@@ -102,7 +117,10 @@
         "NETWORK"
       ],
       "stage": "proposed_hosted_adapter",
-      "privileged": false
+      "privileged": false,
+      "guest_implementation": "native_atto",
+      "runtime_permission_enforced": true,
+      "nonblocking_provider_required": true
     },
     {
       "name": "WebSocketActor",
@@ -110,7 +128,10 @@
         "NETWORK"
       ],
       "stage": "proposed_hosted_adapter",
-      "privileged": false
+      "privileged": false,
+      "guest_implementation": "native_atto",
+      "runtime_permission_enforced": true,
+      "nonblocking_provider_required": true
     },
     {
       "name": "ChildProcManager",
@@ -118,7 +139,10 @@
         "PROCESS"
       ],
       "stage": "proposed_hosted_adapter",
-      "privileged": false
+      "privileged": false,
+      "guest_implementation": "native_atto",
+      "runtime_permission_enforced": true,
+      "nonblocking_provider_required": true
     },
     {
       "name": "PersistenceActor",
@@ -126,7 +150,10 @@
         "FILESYSTEM_OR_STORAGE_PROVIDER"
       ],
       "stage": "proposed_hosted_adapter",
-      "privileged": false
+      "privileged": false,
+      "guest_implementation": "native_atto",
+      "runtime_permission_enforced": true,
+      "nonblocking_provider_required": true
     }
   ],
   "existing_hosted_policy_modules": [
@@ -147,18 +174,36 @@
     "Supervisor",
     "ActorLifecycle"
   ],
+  "execution_concurrency": {
+    "ordinary_actor_default": "BOUNDED_CONCURRENT_EFFECTIVE_TURNS",
+    "serial_actor": "AT_MOST_ONE_ACTIVE_GUEST_TURN",
+    "critical_read": "OVERLAPPING_IMMUTABLE_READ_LOANS_WHEN_SUPPORTED",
+    "critical_write": "EXCLUSIVE_AGAINST_ALL_CONFLICTING_READERS_AND_WRITERS",
+    "loan_may_escape_callback_or_cross_await": false,
+    "actor_spawned_task_executor": "OWNING_ACTOR_TASK_POOL",
+    "supervisor_control_executor": "SEPARATE_TRUSTED_CONTROL_POOL",
+    "task_or_continuation_may_use_supervisor_control_pool": false,
+    "continuation_identity": "ACTOR_ID_INCARNATION_GENERATION_CODE_IMAGE",
+    "physical_carrier_migration_allowed": true,
+    "await_or_mailbox_backpressure_parks_carrier": false,
+    "stop_cancel_restart_requires": "QUIESCENCE_AND_EXACTLY_ONCE_TERMINAL_ACCOUNTING"
+  },
   "security_invariants": [
     "Actor base conformance never grants supervisor CONTROL, actor spawning, or mailbox sender identity",
     "Only runtime-minted ActorRef and channel endpoints authorize delivery; plain IDs or structural methods do not",
     "Actor lifecycle init and receive are private runtime-only external ingress, never public guest-callable methods",
     "Actor-owned mutable state is sealed and accessed only by checked critical-read/critical-write; no raw state references escape or survive await",
-    "Each actor has serialized effective turns, immutable incarnation identity and generation-fenced mailbox admission",
+    "Ordinary actors allow bounded concurrent effective turns; serial actors admit at most one active guest turn, with immutable incarnation identity and generation-fenced mailbox admission",
     "Panic uses trusted supervisor priority CONTROL and cannot be intercepted by the actor that panicked",
     "Actor or trait implementers cannot provide their own Sendable, Drop, Receives or ActorLifecycle safety proof",
     "ores.core imports no ores.std or OS facilities; hosted bases require explicit runtime permissions and nonblocking I/O",
     "Async Read/Write/Source/Sink/KeyValueStore do not imply concrete I/O implementations or durable completion",
     "Cancellation, close, start failure and supervisor crash settle pending futures and release bounded quotas exactly once",
-    "Serial HTTP means concurrency policy requestConcurrency=1,messageConcurrency=1, not a new privileged actor species"
+    "Serial HTTP means concurrency policy requestConcurrency=1,messageConcurrency=1, not a new privileged actor species",
+    "Native Atto code implements all public actor bases and hosted actor policies; Java, LLVM, Wasm, Forge and .NET supply only compiler lowering, trusted runtime primitives and validated providers",
+    "Guest inheritance of SupervisorActor never mints CONTROL authority: only the runtime validates parent/child incarnation and routes private CONTROL notices",
+    "Mailbox send_async may suspend a task on full capacity without parking a runtime carrier; try_send returns bounded admission/backpressure/closed outcomes without suspension",
+    "A runtime-delivered ActorMail view or ActorId must never be convertible to a sender, reply capability, ActorRef or supervisor CONTROL token"
   ],
   "backend_evidence": {
     "java": "NOT_EXECUTED",
@@ -166,5 +211,29 @@
     "wasm": "NOT_EXECUTED",
     "forge": "NOT_EXECUTED",
     "net": "NOT_EXECUTED"
+  },
+  "native_actor_policy": {
+    "user_facing_implementation": "NATIVE_ATTO_ONLY",
+    "backend_role": "COMPILER_LOWERING_SCHEDULER_MEMORY_AND_CAPABILITY_ENFORCEMENT",
+    "runtime_authority_cannot_be_user_implemented": true,
+    "base_class_inheritance_grants_control": false,
+    "supervisor_control_source": "TRUSTED_RUNTIME_ONLY",
+    "guest_callable_control_ingress": false,
+    "guest_callable_init_or_receive": false,
+    "actor_mail_envelope_is_authority": false,
+    "actor_id_is_sender_capability": false,
+    "actor_ref_identity": "IMMUTABLE_GENERATION_AND_CODE_IMAGE_FENCED",
+    "state_direct_access": false,
+    "critical_loan_may_escape_or_suspend": false,
+    "mailbox_full_send": "ASYNC_SUSPEND_WITHOUT_CARRIER_PARKING",
+    "mailbox_nonblocking_send": "try_send",
+    "mailbox_async_send": "send_async",
+    "mailbox_admission": "LINEARIZABLE_QUOTA_CHECKED",
+    "control_priority": "SEPARATE_TRUSTED_PATH_NOT_USER_BACKPRESSURE",
+    "panic_delivery": "UNINTERCEPTABLE_SUPERVISOR_NOTICE",
+    "pending_completion": "EXACTLY_ONCE_SETTLEMENT_AND_QUOTA_REFUND",
+    "service_trait_grants_actor_endpoint": false,
+    "hosted_import_grants_permission": false,
+    "blocking_host_io_fallback_allowed": false
   }
 }
