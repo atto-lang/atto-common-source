@@ -1,0 +1,8 @@
+define class Box as
+  pub val int value;
+end
+pub fnc main(): void {
+  val Box box = new Box(42);
+  stdio.stdout.write(to_string(box));
+  return;
+}

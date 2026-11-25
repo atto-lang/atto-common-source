@@ -1,0 +1,3 @@
+pub fnc use_future(Future<int> pending): int {
+    return pending |> std.await;
+}

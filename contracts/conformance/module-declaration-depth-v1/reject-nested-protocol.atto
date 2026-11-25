@@ -1,0 +1,6 @@
+define module Outer as
+  define trait Parent as
+    define interface Child as
+    end
+  end
+end

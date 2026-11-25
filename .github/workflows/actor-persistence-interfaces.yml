@@ -1,0 +1,27 @@
+name: Actor persistence interfaces (static only)
+on:
+  pull_request:
+    paths:
+      - 'interfaces/actor_persistence_v1.atto'
+      - 'contracts/actor-persistence-interfaces-v1.json'
+      - 'tests/test_actor_persistence_contract.py'
+      - '.github/workflows/actor-persistence-interfaces.yml'
+  push:
+    paths:
+      - 'interfaces/actor_persistence_v1.atto'
+      - 'contracts/actor-persistence-interfaces-v1.json'
+      - 'tests/test_actor_persistence_contract.py'
+      - '.github/workflows/actor-persistence-interfaces.yml'
+permissions:
+  contents: read
+jobs:
+  structural-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: python3 -m json.tool contracts/actor-persistence-interfaces-v1.json >/dev/null
+      - run: python3 -m unittest discover -s tests -p 'test_actor_persistence_contract.py' -v
+      - run: echo 'STATIC_CONTRACT_ONLY - target .atto interface signatures were not compiled'
