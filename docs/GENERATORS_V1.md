@@ -113,6 +113,23 @@ A generator instance method retains `self` beyond the source call. Until the typ
 
 Actor mailbox-turn `self` may not escape through a generator activation.
 
+## Actor-owned async generator continuations
+
+A generator activation created or pulled inside an authenticated actor turn must not silently escape that actor's scheduler domain. In particular, `async gen*` and `suspend gen*` are **not** permission to run guest producer code on a root-task executor, an arbitrary virtual thread, an I/O completion thread, or the supervisor CONTROL pool.
+
+For an actor-local activation:
+
+- First pull, subsequent pulls, delegated-generator resumes, nested task work, and guest `finally`/`defer` execution must be admitted by the originating actor incarnation's **kind-specific actor task pool** (SHARED, ISOLATED/PRIVATE, or UNTRUSTED), with the same authenticated owner and generation.
+- Foreign Future completion may enqueue an actor-owned continuation, but may not execute guest code or mint/rebind actor authority on the completing thread.
+- Each activation resumes only its own admitted execution context across `yield`, `await`, and `yield*`; ordinary actors may admit other invocations on distinct logical stacks, while serial actors retain single-invocation admission. Conflicting state loans remain excluded. Actor-state loans and guards must not cross suspension without explicit compiler/runtime proof; unproven ordinary borrows and escaping actor-state references are rejected.
+- STOP/cancellation fences all further guest pulls, cancels descendants, and waits for exactly-once guest cleanup and physical continuation retirement before successful actor `get_done()`. CONTROL may carry supervisor notices, but may not execute ordinary generator bodies.
+- An iterator that retains actor-scoped authority is not implicitly transferable to a caller outside that actor. Transfer requires a separately proven Sendable/owned activation contract; otherwise reject at compile/runtime admission.
+- Non-actor generators retain their own root-task scheduling contract; no implementation may infer actor ownership merely from an ambient Java thread name.
+
+A backend that cannot prove these rules must reject actor-local async/suspend generator use **explicitly**, rather than running it on the wrong pool. Java actor-task work is tracked separately from generator-v1 compiler support; a passing standalone host-iterator test is not evidence of actor-pool affinity.
+
+Required negative and positive executable witnesses: a SHARED/PRIVATE/UNTRUSTED actor creates and pulls a generator, awaits a foreign Future, delegates `yield*`, and performs cleanup on cancellation/STOP; record authenticated actor identity, pool domain, incarnation, one-shot continuation ownership, per-invocation stack identity, serial admission or bounded concurrent admission, and physical retirement. Inject a CONTROL-only dispatcher that rejects guest scheduling and verify zero ordinary guest tasks reach it. Reject actor-`self` escape and active guard/borrow across each yield/await. These are additional conformance gates; source-free models and zero-step CI cannot satisfy them.
+
 ## Effects and diagnostics
 
 `throws`, `raises`, and `panics` remain distinct. Generator construction does not trigger body effects. Effects occur while pulling and retain causal provenance across yield/await boundaries.
