@@ -63,6 +63,9 @@ def check(path):
         source = case["source"]
         if not isinstance(source, str) or not (8 <= len(source) <= 4096):
             raise ValueError("source candidate is empty/overlarge")
+        if REMOVED_TILDE.search(source) and (case["expected"] != "REJECT"
+                                             or case["phase"] != "parser"):
+            raise ValueError("removed tilde constructor must be a parser rejection")
         if family == "legacy":
             legacy += 1
             continue
@@ -70,9 +73,6 @@ def check(path):
         if case["expected"] == "ACCEPT":
             if f"{family.capitalize()}.of" not in source or REMOVED_TILDE.search(source):
                 raise ValueError("positive case does not exercise canonical Type.of factory")
-        if REMOVED_TILDE.search(source) and (case["expected"] != "REJECT"
-                                             or case["phase"] != "parser"):
-            raise ValueError("removed tilde constructor must be a parser rejection")
     for family in FAMILIES:
         named = [c for c in cases if c["family"] == family
                  and c["id"] in (family + "-tilde", "map-explicit-tilde")]

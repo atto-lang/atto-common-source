@@ -1,0 +1,100 @@
+{
+  "schema": "attolang.gpu-actor-signature-hir/0",
+  "status": "TYPED_SIGNATURE_ONLY_NOT_EXECUTABLE",
+  "description": "Cross-backend immutable source-level GPU actor signature; NOT GPU kernel MIR or runtime authorization",
+  "related": [
+    "attolang.gpu-explicit-launch-ir/1",
+    "oreslang.heterogeneous-compute/1",
+    "atto.gpu-actors/0"
+  ],
+  "sourceSyntax": "define gpu actor Name as state { ... } end",
+  "methodNames": "snake_case",
+  "valueKinds": [
+    "VOID",
+    "BOOL",
+    "I32",
+    "I64",
+    "U32",
+    "U64",
+    "F32",
+    "F64",
+    "F32_DEVICE_BUFFER"
+  ],
+  "nonVoidArguments": true,
+  "nonVoidState": true,
+  "gpuBufferShape": "GpuBuffer<f32>",
+  "budgets": {
+    "maxNameChars": 1024,
+    "maxStateFields": 128,
+    "maxMethods": 64,
+    "maxParametersPerMethod": 32,
+    "maxBodyTokens": 1024
+  },
+  "sourceDescriptor": {
+    "required": [
+      "name",
+      "visibility",
+      "state",
+      "methods",
+      "admissionStage",
+      "bodyEffectsVerified",
+      "ownedDeviceBuffersVerified",
+      "executable",
+      "physicalGpuVerified"
+    ],
+    "admissionStage": "TYPED_SIGNATURE_ONLY",
+    "proofFlags": {
+      "bodyEffectsVerified": false,
+      "ownedDeviceBuffersVerified": false,
+      "executable": false,
+      "physicalGpuVerified": false
+    }
+  },
+  "futureRuntimeMir": {
+    "status": "NOT_IMPLEMENTED",
+    "required": [
+      "actorIdentity",
+      "actorGeneration",
+      "perActorMailboxSequence",
+      "tenantAuthority",
+      "deviceIdentity",
+      "queueAuthority",
+      "deviceGeneration",
+      "stateLayoutAndOwnership",
+      "boundedMessageCredits",
+      "kernelSymbolAndTypedArgs",
+      "bufferAccessFootprints",
+      "allocationGenerations",
+      "explicitTransferRecords",
+      "completionEventAuthority",
+      "retirementFence",
+      "supervisorControlSink"
+    ],
+    "prohibitions": [
+      "cross-actor-mutable-alias",
+      "host-io-in-device",
+      "kernel-direct-mailbox-send",
+      "unbounded-device-alloc",
+      "await-inside-critical",
+      "implicit-cpu-fallback",
+      "implicit-device-copy",
+      "unfenced-actor-restart"
+    ],
+    "deviceFailureScope": "all-actors-sharing-affected-device-cohort"
+  },
+  "backends": {
+    "java": "GPU_EXECUTION_NOT_ATTESTED",
+    "llvm": "GPU_EXECUTION_NOT_ATTESTED",
+    "wasm": "GPU_EXECUTION_NOT_ATTESTED",
+    "forge": "GPU_EXECUTION_NOT_ATTESTED",
+    "net": "GPU_EXECUTION_NOT_ATTESTED"
+  },
+  "promotion": {
+    "schemaOrHostTestsCannotProveGpu": true,
+    "compilerSourceSignatureIsNotExecutable": true,
+    "physicalExecutionRequiresRealGpu": true,
+    "physicalExecutionRequiresProviderAuthenticatedEvent": true,
+    "fullGuestAndDeviceEvidenceRequired": true,
+    "neverInferHardwareFromSourceFields": true
+  }
+}

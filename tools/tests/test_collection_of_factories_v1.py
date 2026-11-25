@@ -43,6 +43,12 @@ class CollectionFactoryManifestTest(unittest.TestCase):
             lambda d: d["cases"][1].update(source="const m = Map.of<string,int>(\"a\" => 1);"),
             "negative tilde fixture no longer exercises removed constructor")
 
+    def test_legacy_family_cannot_readmit_removed_constructor(self):
+        self.check_mutant(
+            lambda d: next(c for c in d["cases"] if c["id"] == "old-array-literal")
+            .update(source="const a = ~array(1, 2);"),
+            "removed tilde constructor must be a parser rejection")
+
     def test_baseline_is_source_only(self):
         self.assertEqual(MODULE.check(MANIFEST), 37)
 
@@ -60,7 +66,7 @@ class CollectionFactoryManifestTest(unittest.TestCase):
         self.check_mutant(
             lambda d: d["cases"].__setitem__(
                 slice(None), [c for c in d["cases"] if c["family"] != "set"]),
-            "missing positive/negative coverage")
+            "missing negative tilde constructor coverage: set")
 
     def test_authored_case_cannot_claim_guest_pass(self):
         self.check_mutant(lambda d: d["cases"][0].update(status="GUEST_PASS"),
