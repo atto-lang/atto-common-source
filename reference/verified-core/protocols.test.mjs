@@ -133,3 +133,23 @@ test("stage receives exactly the validated value, not a second read", () => {
   assert.equal(reads, 1);
   assert.equal(actor.snapshot.value, 42n);
 });
+
+test("validation cannot reenter a turn or leak its busy fence", () => {
+  const protocol = graph();
+  const actor = new SerialProtocolReference(protocol, 0n, x => x >= 0n);
+  const good = { incarnation: 1n, message: "connect", payload: [{ value: 42n, unit: protocol.unit("Millis") }] };
+  const stage = (_, [value]) => ({ target: "Connecting", value });
+  const before = actor.snapshot;
+  const throwing = { get value() { throw new Error("bad host value"); }, unit: protocol.unit("Millis") };
+  assert.equal(actor.dispatch({ ...good, payload: [throwing] }, stage), "invalid-payload");
+  assert.equal(actor.snapshot, before);
+  const reentrant = { get value() {
+    assert.equal(actor.dispatch(good, () => assert.fail("nested turn")), "busy");
+    actor.stop();
+    return 42n;
+  }, unit: protocol.unit("Millis") };
+  assert.equal(actor.dispatch({ ...good, payload: [reentrant] }, () => assert.fail("stopped before staging")), "interrupted");
+  assert.equal(actor.snapshot.value, 0n);
+  actor.restart(0n);
+  assert.equal(actor.dispatch({ ...good, incarnation: 2n }, stage), "committed");
+});
