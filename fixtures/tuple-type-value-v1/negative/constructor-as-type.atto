@@ -1,0 +1,1 @@
+fnc bad(): ~tuple(int, int) { return ~tuple(40, 2); }

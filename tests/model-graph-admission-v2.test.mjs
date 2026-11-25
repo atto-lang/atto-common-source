@@ -400,3 +400,36 @@ test("portable Symbol admission rejects presentation strings and forged kinds", 
     errs("MODEL_INVALID_CONST", () => admit(candidate(value), safe));
   }
 });
+
+test("packed record ports require an explicit layout conversion with a reverse rule", () => {
+  const aos = { dtype: "f64", shape: [2, 3], layout: "aos" };
+  const soa = { ...aos, layout: "soa" };
+  const registry = new Map([
+    ["Rows", op([], aos)],
+    ["ToColumns", op([aos], soa, { vjp: true })],
+    ["ColumnOp", op([soa], soa, { vjp: true })],
+  ]);
+  const direct = g([n("rows", "Rows"), n("out", "ColumnOp", "rows")]);
+  errs("MODEL_PORT_LAYOUT_MISMATCH", () => admit(direct, registry));
+
+  const explicit = g([n("rows", "Rows"), n("columns", "ToColumns", "rows"),
+    n("out", "ColumnOp", "columns")]);
+  const accepted = admit(explicit, registry, grad(["out"], ["rows"]));
+  assert.equal(accepted.gradientEdges, 2);
+  assert.equal(accepted.upperBoundBytes, 144);
+
+  registry.set("ToColumns", op([aos], soa));
+  assert.doesNotThrow(() => admit(explicit, registry));
+  errs("MODEL_MISSING_VJP", () => admit(explicit, registry, grad(["out"], ["rows"])));
+});
+
+test("packed layouts require rank two, including at zero extent", () => {
+  for (const layout of ["aos", "soa"]) {
+    const port = { dtype: "i32", shape: [Number.MAX_SAFE_INTEGER, 0], layout };
+    assert.equal(admit(g([n("empty", "Data")]), new Map([["Data", op([], port)]])).upperBoundBytes, 0);
+    for (const shape of [[], [0], [0, 1, 2]]) {
+      const registry = new Map([["Data", op([], { ...port, shape })]]);
+      errs("MODEL_INVALID_PORT", () => admit(g([n("invalid", "Data")]), registry));
+    }
+  }
+});

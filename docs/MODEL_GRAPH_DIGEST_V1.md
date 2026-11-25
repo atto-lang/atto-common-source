@@ -38,7 +38,7 @@ effect:      pure=0, io=1, network=2, random=3, clock=4, actor=5, ffi=6, suspend
 provenance:  verified-ores=0, trusted-native=1
 allocation:  none=0, scratch=1, dynamic=2
 dtype:       bool=0, i32=1, i64=2, f32=3, f64=4
-layout:      scalar=0, contiguous=1
+layout:      scalar=0, contiguous=1, aos=2, soa=3
 constant:    bool=0, i64=1, f64bits=2, string=3, symbol=4
 port kind:   buffer=0, nominal=1
 ```
@@ -114,7 +114,18 @@ has_unit:u8
 unit:string            # only if has_unit=1
 ```
 
-A missing layout is canonicalized before hashing to `scalar` for rank zero and `contiguous` otherwise. A present but inconsistent layout is rejected rather than normalized.
+A missing layout is canonicalized before hashing to `scalar` for rank zero and
+`contiguous` otherwise. A present but inconsistent layout is rejected.
+
+Packed `aos` and `soa` require rank two and share a logical shape of
+`[rows, fields]` with one element dtype. AoS indexes `row * fields + field`.
+SoA indexes `field * rows + row`. Each has a distinct type and digest ordinal,
+even when a singleton or empty axis makes the byte sequences coincide.
+Dependent operations must agree on the layout, dtype, and extents. Changing
+layout requires an explicit, admitted conversion operation. Its reverse rule
+is the inverse permutation. The layout tag carries no device placement or
+transfer authority. Execution stays subject to the selected profile and to
+Atto's existing explicit `gpu { ... }` admission rules.
 
 A nominal port encodes:
 
