@@ -152,20 +152,25 @@ export class SerialProtocolReference {
     if (this.#staging) return "busy";
     const edge = this.#protocol.edge(before.state, message);
     if (!edge) return "illegal-edge";
-    if (!Array.isArray(payload) || payload.length !== edge.signature.length) return "invalid-payload";
-    // Detach the validated scalar values; do not read fields again during staging.
-    const values = [];
-    for (let i = 0; i < edge.signature.length; i++) {
-      const type = edge.signature[i];
-      if (!Object.hasOwn(payload, i)) return "invalid-payload";
-      const { value, unit } = payload[i] ?? {};
-      if (typeof value !== "bigint" || !includes(type.range, [value, value]) ||
-          !Array.isArray(unit?.powers) || !sameUnit(type.unit, unit)) return "invalid-payload";
-      values.push(value);
-    }
-
     this.#staging = true;
     try {
+      // Detach once under the turn fence. Host getters may throw or reenter;
+      // neither is permitted to start a nested turn or bypass validation.
+      const values = [];
+      try {
+        if (!Array.isArray(payload) || payload.length !== edge.signature.length) return "invalid-payload";
+        for (let i = 0; i < edge.signature.length; i++) {
+          const type = edge.signature[i];
+          if (!Object.hasOwn(payload, i)) return "invalid-payload";
+          const { value, unit } = payload[i] ?? {};
+          if (typeof value !== "bigint" || !includes(type.range, [value, value]) ||
+              !Array.isArray(unit?.powers) || !sameUnit(type.unit, unit)) return "invalid-payload";
+          values.push(value);
+        }
+      } catch {
+        return "invalid-payload";
+      }
+      if (this.#state !== before) return "interrupted";
       // The oracle assumes a pure staged handler. Only this operation can
       // publish its returned scalar state and chosen destination together.
       let proposed;
