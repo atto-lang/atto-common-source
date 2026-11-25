@@ -1,0 +1,35 @@
+{
+  "schema": "atto.m8.cooperative-ir.v1",
+  "status": "CANDIDATE_CONTRACT_NOT_BACKEND_CERTIFICATION",
+  "instruction_limit": 4096,
+  "reduction_budget": {"min": 1, "max": 65536},
+  "frame": {
+    "generation": "nonzero increasing u64, failure on wrap",
+    "status": ["EMPTY", "SUSPENDED", "RUNNING", "DONE", "CLOSED"],
+    "resume_pc": "integer 0..4096",
+    "owned_slots": ["amount:i64", "total:i64", "index:i64"],
+    "borrow_across_suspend": false,
+    "critical_loan_across_suspend": false
+  },
+  "instructions": [
+    {"pc": 0, "op": "ENTRY", "next": 1},
+    {"pc": 1, "op": "LOOP_GUARD", "false_next": 4, "true_next": 2},
+    {"pc": 2, "op": "CHECKED_ACCUMULATE_AND_INCREMENT", "next": 3},
+    {"pc": 3, "op": "COOPERATE", "resume_pc": 1, "suspends": true},
+    {"pc": 4, "op": "DONE"}
+  ],
+  "observable": {
+    "yield": "SUSPENDED with same accepted message, charged reductions >=1",
+    "resume": "same frame and message, no side-effect replay",
+    "stop": "fence new admission; drain admitted in-flight and queued",
+    "panic": "fence new dispatch and resume; account abandoned; wait for physical quiescence",
+    "serial": "at most one RUNNING receive per actor incarnation"
+  },
+  "scope": {
+    "profile": "signed-i64 monotonic accumulator loop with explicit rt cooperate",
+    "full_language": false,
+    "await_select": false,
+    "production_borrow_checker": false,
+    "hard_real_time": false
+  }
+}
