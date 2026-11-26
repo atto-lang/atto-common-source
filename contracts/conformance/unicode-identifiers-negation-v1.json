@@ -62,13 +62,23 @@
     },
     {
       "id": "bidi-string",
-      "source": "pub fnc main(): int { return 42; } /* ⁦ */",
+      "source": "pub fnc main(): int { val string name = \"x⁦\"; return 42; }",
       "expect": "reject"
     },
     {
       "id": "duplicate",
       "source": "pub fnc main(): int { val ρ = 1; val ρ = 2; return ρ; }",
       "expect": "reject"
+    },
+    {
+      "id": "bidi-block-comment",
+      "source": "pub fnc main(): int { return 42; } /* ⁦ */",
+      "expect": "reject"
+    },
+    {
+      "id": "greek-rho-distinct-from-latin-p",
+      "source": "pub fnc main(): int { val ρ = 10; val p = 32; return ρ + p; }",
+      "expect": 42
     }
   ]
 }
