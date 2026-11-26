@@ -58,3 +58,11 @@ must implement equivalent source-to-native lowering independently.
   target repository's CI transfer-authorization policy.
 
 Source presence, static checks and host-only tests are not runtime parity.
+
+## Empty input and left-fold regression (source-only)
+
+`positive/member-methods-empty-fold-order.atto` exercises Array, Vector and List member adapters: empty map/filter, empty reduction with seed 7, ordered non-associative fold with seed 4 and input [1,2,3] (4123), all/none filters, retained order and input size preservation. Expected exit 42, no stdout; distinct failure exits identify kind and property. Blob `ae00212e1e09bf73d3a9b7bb7f1987f1ffeb8ea1`. This does not count callback invocations, verify cleanup, or prove ownership; those remain separate gates. No compiled guest receipt yet.
+
+## Canonical library migration gate
+
+The November 22 [core/alloc/std contract](https://github.com/atto-lang/atto-spec/blob/main/language/core-alloc-std-libraries-v1.md) supersedes the historical layer name: growable Array/List/Vector and their allocating combinators belong to alloc, not freestanding heap-free core. Treat `ores.core/collections` as a legacy migration adapter only. Before canonical publication, register an alloc-layer module with explicit allocator-provider dependency, reconcile #90 and #30/#150, preserve byte-identical source between backend registries where applicable, reject core-to-alloc transitive dependencies, and retain read-loan/cleanup guarantees. Do not silently reclassify the historical module or claim it is freestanding core. The new fixture intentionally targets the staged legacy member syntax, not the future canonical module selector.
