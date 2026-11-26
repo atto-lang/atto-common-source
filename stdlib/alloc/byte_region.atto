@@ -1,0 +1,52 @@
+// Portable alloc-layer façade around the sealed OwnedBytes runtime primitive.
+// Candidate source: compiler must authenticate the import and native capability.
+// No raw host pointers, global allocators, sockets or ambient tenant privileges.
+import module bounds from "stdlib/core/byte_bounds.atto";
+
+define class ByteRegion as
+  private let mut OwnedBytes storage = OwnedBytes.empty();
+
+  // An empty region needs neither heap allocation nor quota reservation.
+  constructor() {
+  }
+
+  pub static fnc empty(): ByteRegion {
+    return new ByteRegion();
+  }
+
+  constructor(int count) throws Error {
+    if count < 0 then
+      throw BufferAllocationError("negative region length");
+    fi
+    // Allocation/reservation/zeroing must be atomic before publication.
+    // The compiler-sealed primitive enforces tenant, actor and generation.
+    self.storage = OwnedBytes.allocate_zeroed(count);
+  }
+
+  pub static fnc allocate_zeroed(int count): ByteRegion throws Error {
+    return new ByteRegion(count);
+  }
+
+  pub length(): int {
+    return self.storage.length;
+  }
+
+  pub read_byte(int offset): int throws Error {
+    if bounds.byte_range_valid(self.storage.length, offset, 1) == false then
+      throw BufferBoundsError("region byte offset out of bounds");
+    fi
+    return self.storage.read_byte(offset);
+  }
+end
+
+// A mutable exclusive receiver loan is required; no read-only aliases may
+// outlive or overlap a write. Never expose raw OwnedBytes or host pointers.
+pub mtd (mut self: ByteRegion) write_byte(int offset, int value): void throws Error {
+  if bounds.byte_range_valid(self.storage.length, offset, 1) == false then
+    throw BufferBoundsError("region byte offset out of bounds");
+  fi
+  if bounds.byte_u8_valid(value) == false then
+    throw BufferValueError("region byte value out of range");
+  fi
+  self.storage.write_byte(offset, value);
+}

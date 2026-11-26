@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
  * Canonical .atto source byte comparator. This checks caller-supplied bytes,
  * not independently retrieved backend compiler source or guest executions.
  */
-const targets = ['java','llvm','net','wasm','forge'];
+const targets = ["atto","cranelift","forge","hdl","java","js","llvm","net","realtime","rs","wasm"];
 const sha256 = b => createHash('sha256').update(b).digest('hex');
 const utf8 = new TextDecoder('utf-8',{fatal:true});
 function error(s) {throw new TypeError('E_STDLIB_' + s);}

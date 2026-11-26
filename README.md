@@ -59,3 +59,7 @@ See the [shared HIR/MIR review checklist](docs/AOT_ZERO_GC_CONTROLLED_DYNAMISM_V
 ## Actor fault classes (target only)
 
 The [v1 failure taxonomy](contracts/v1/actor-fatal-fault-classes-v1.json) distinguishes recoverable guest failures from fatal host failures, with all seven backend profiles explicitly pending. See [AttoSpec chapter 07](https://github.com/atto-lang/atto-spec/blob/main/spec/07-errors-and-failure.md) and [chapter 18](https://github.com/atto-lang/atto-spec/blob/main/spec/18-runtime-guarantees.md). The external-process evidence rule applies only to an optional stronger containment claim; it does not change the standard shared-process TenantVM profile or promise survival of a host-fatal event. `node --test tests/actor-fatal-fault-classes-v1.test.mjs` validates classifications only, not isolation.
+
+## Freestanding library reference guard
+
+The [core / alloc / std audit](docs/FREESTANDING_LIBRARY_LAYERS.md) and [versioned reference-source manifest](contracts/library-layers-v1.json) enforce a conservative, **host-only structural** dependency boundary over seven portable reference `.atto` sources. These fixtures are not production library implementations; each compiler owns its production core/alloc/std implementation. Run `node --test tests/library-layers.test.mjs && node src/library-layers.mjs .`. Exact-byte checks apply only to explicitly pinned reference artifacts, not independent backend implementations. No compiled guest or backend parity claim is made.

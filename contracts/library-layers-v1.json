@@ -1,0 +1,82 @@
+{
+  "schema": "atto.library.layers.v1",
+  "status": "CANDIDATE_NOT_EXECUTED",
+  "sources": [
+    {
+      "path": "stdlib/alloc/byte_region.atto",
+      "layer": "alloc",
+      "imports": [
+        "stdlib/core/byte_bounds.atto"
+      ],
+      "capabilities": [
+        "allocator"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/core/byte_bounds.atto",
+      "layer": "core",
+      "imports": [],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/core/identity.atto",
+      "layer": "core",
+      "imports": [],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/core/size_math.atto",
+      "layer": "core",
+      "imports": [],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/core/u32_endian.atto",
+      "layer": "core",
+      "imports": [],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/std/buffer.atto",
+      "layer": "std",
+      "imports": [
+        "stdlib/core/byte_bounds.atto",
+        "stdlib/core/u32_endian.atto",
+        "stdlib/alloc/byte_region.atto"
+      ],
+      "capabilities": [
+        "allocator"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "stdlib/std/byte_ops.atto",
+      "layer": "std",
+      "imports": [
+        "stdlib/alloc/byte_region.atto"
+      ],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    }
+  ],
+  "proof": {
+    "compiledGuestCases": 0,
+    "freestandingImageLinked": false,
+    "backendParityVerified": false
+  }
+}

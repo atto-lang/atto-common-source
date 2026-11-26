@@ -6,23 +6,35 @@ import {compareCanonicalStdlibBytes as compare} from '../src/canonical-stdlib-by
 const manifest=JSON.parse(readFileSync(new URL('../contracts/canonical-stdlib-v1.json',import.meta.url)));
 const filename='stdlib/core/identity.atto';
 const source=readFileSync(new URL('../stdlib/core/identity.atto',import.meta.url));
-const targetNames=['java','llvm','net','wasm','forge'];
-const canonical=()=>({[filename]:Buffer.from(source)});
-const replicas=()=>Object.fromEntries(targetNames.map(b=>[b,{[filename]:Buffer.from(source)}]));
+const targetNames=["atto","cranelift","forge","hdl","java","js","llvm","net","realtime","rs","wasm"];
+const canonical=()=>Object.fromEntries(manifest.sources.map(s=>[s.path,readFileSync(new URL('../'+s.path,import.meta.url))]));
+const replicas=()=>Object.fromEntries(targetNames.map(b=>[b,canonical()]));
 const denied=f=>assert.throws(f,/E_STDLIB_/);
 
-test('one canonical .atto module is pinned to exact bytes, not a .ores alias',()=>{
+test('seven canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
  assert.equal(manifest.status,'CANDIDATE_NOT_COMPILED');
  assert.equal(manifest.sourcePolicy,'CANONICAL_ATTO_BYTES_ONLY');
- assert.equal(manifest.sources.length,1);
- assert.equal(manifest.sources[0].path,filename);
+ assert.deepEqual(manifest.sources.map(s=>s.path),[
+   'stdlib/alloc/byte_region.atto','stdlib/core/byte_bounds.atto',
+   'stdlib/core/identity.atto','stdlib/core/size_math.atto','stdlib/core/u32_endian.atto',
+   'stdlib/std/buffer.atto','stdlib/std/byte_ops.atto'
+ ]);
+ const bounds=readFileSync(new URL('../stdlib/core/byte_bounds.atto',import.meta.url));
+ assert.equal(bounds.byteLength,726);
+ assert.equal(createHash('sha256').update(bounds).digest('hex'),'7465eb4b8e3325957d47fd0fc92206e75231c1ad140b5605cec56c5262cb5c7e');
+ const endian=readFileSync(new URL('../stdlib/core/u32_endian.atto',import.meta.url));
+ assert.equal(endian.byteLength,791);
+ assert.equal(createHash('sha256').update(endian).digest('hex'), '18223c1ecfbe1f16b03540670d10ba13c6dc7fdc21be940f82fb621d8c943c67');
+ const bufferSource=readFileSync(new URL('../stdlib/std/buffer.atto',import.meta.url));
+ assert.equal(bufferSource.byteLength,4816);
+ assert.equal(createHash('sha256').update(bufferSource).digest('hex'),'e2f3a749f6ed0bb78b741384a5e0cf8ba0649790be00644c0e660fbf11c8f412');
  assert.equal(source.byteLength,55);
- assert.equal(manifest.sources[0].sha256,'bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688');
+ assert.equal(manifest.sources.find(s=>s.path===filename).sha256,'bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688');
  assert.equal(readFileSync(new URL('../stdlib/core/identity.atto',import.meta.url),'utf8'),
   'pub fnc identity(int value) -> int {\n  return value;\n}\n');
 });
 
-test('all five supplied backend copies are byte-identical without any compiler claim',()=>{
+test('all eleven supplied backend copies are byte-identical without any compiler claim',()=>{
  const res=compare(manifest,canonical(),replicas());
  assert.equal(res.sourceByteIdentical,true);
  assert.equal(res.evidence,'SUPPLIED_BYTES_ONLY');
@@ -56,7 +68,7 @@ test('bad UTF-8, source BOM and missing trailing newline cannot masquerade as ca
    denied(()=>compare(manifest,c,replicas()));
  }
 });
-test('false evidence labels and unsafe source paths cannot claim five-backend execution',()=>{
+test('false evidence labels and unsafe source paths cannot claim eleven-backend execution',()=>{
  for(const mutate of [
    m=>m.targets[0].execution='PASS',
    m=>m.targets.pop(),
@@ -70,9 +82,10 @@ test('false evidence labels and unsafe source paths cannot claim five-backend ex
 test('matching BOM bytes and corresponding manifest hash still fail closed',()=>{
  const bom=Buffer.from('\ufeff'+source.toString('utf8'),'utf8');
  const m=structuredClone(manifest);
- m.sources[0].bytes=bom.byteLength;
- m.sources[0].sha256=createHash('sha256').update(bom).digest('hex');
- const c={[filename]:Buffer.from(bom)};
- const replicasWithBom=Object.fromEntries(targetNames.map(b=>[b,{[filename]:Buffer.from(bom)}]));
+ m.sources.find(s=>s.path===filename).bytes=bom.byteLength;
+ m.sources.find(s=>s.path===filename).sha256=createHash('sha256').update(bom).digest('hex');
+ const c=canonical(); c[filename]=Buffer.from(bom);
+ const replicasWithBom=replicas();
+ for(const b of targetNames) replicasWithBom[b][filename]=Buffer.from(bom);
  denied(()=>compare(m,c,replicasWithBom));
 });

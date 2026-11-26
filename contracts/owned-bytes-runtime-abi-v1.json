@@ -1,0 +1,160 @@
+{
+  "schema": "atto.owned-bytes.runtime-abi.v1",
+  "status": "CANDIDATE_NOT_COMPILED",
+  "canonical_source": "stdlib/alloc/byte_region.atto",
+  "normative": "atto-lang/atto-spec/language/byte-buffer-v1.md",
+  "layer": "alloc",
+  "runtime_type": "OwnedBytes",
+  "visibility": "COMPILER_SEALED_LIBRARY_ONLY",
+  "authority": {
+    "identity": [
+      "tenant_id",
+      "actor_id",
+      "actor_generation"
+    ],
+    "identity_issuance": "TRUSTED_RUNTIME_ONLY",
+    "cross_tenant_transfer": "DENIED_BY_DEFAULT",
+    "cross_actor_transfer": "EXPLICIT_AFFINE_HANDOFF_ONLY",
+    "read_borrow": "SCOPED_NONESCAPING",
+    "write_borrow": "EXCLUSIVE",
+    "untrusted_pointer_exposure": "FORBIDDEN",
+    "quota_policy": "ATOMIC_RESERVE_BEFORE_PUBLISH",
+    "memory_accounting": [
+      "logical_bytes",
+      "reserved_capacity",
+      "allocator_metadata"
+    ],
+    "recycle_policy": "ZEROIZE_BEFORE_NEW_TENANT_EXPOSURE",
+    "generation_policy": "CHECKED_NO_WRAP_REUSE",
+    "stale_view": "REJECT"
+  },
+  "surface": [
+    {
+      "name": "OwnedBytes.empty",
+      "kind": "constructor",
+      "result": "OwnedBytes",
+      "effects": []
+    },
+    {
+      "name": "OwnedBytes.allocate_zeroed",
+      "kind": "constructor",
+      "args": [
+        "int length"
+      ],
+      "result": "OwnedBytes",
+      "effects": [
+        "alloc"
+      ],
+      "errors": [
+        "BufferAllocationError",
+        "TenantQuotaError"
+      ]
+    },
+    {
+      "name": "OwnedBytes.length",
+      "kind": "property",
+      "result": "int",
+      "effects": []
+    },
+    {
+      "name": "OwnedBytes.read_byte",
+      "kind": "method",
+      "args": [
+        "int offset"
+      ],
+      "result": "int",
+      "effects": [],
+      "range": [
+        0,
+        255
+      ],
+      "errors": [
+        "BufferBoundsError"
+      ]
+    },
+    {
+      "name": "OwnedBytes.write_byte",
+      "kind": "exclusive_method",
+      "args": [
+        "int offset",
+        "int byte"
+      ],
+      "result": "void",
+      "effects": [],
+      "range": [
+        0,
+        255
+      ],
+      "errors": [
+        "BufferBoundsError",
+        "BufferValueError"
+      ]
+    }
+  ],
+  "contract": [
+    "OwnedBytes is a built-in sealed alloc capability, not a public user-constructible class",
+    "Only authenticated canonical alloc.ByteRegion linkage may call the sealed OwnedBytes primitive; std.ByteBuffer and arbitrary guests cannot directly obtain it or forge owner/generation/capability tokens",
+    "allocate_zeroed rejects negative sizes and overflow before allocation; honors the active TenantVM and actor limits; zeroes logical length before publication",
+    "byte indices use checked integer access, forbid host signed-char/JS signed32 coercion and do not permit endianness-dependent interpretation",
+    "read_byte and write_byte never suspend or allocate after successful admission",
+    "write_byte must be infallible for a live exclusive loan, preflight-verified index and octet; host faults must never become partial ordinary source throws after first write",
+    "region length is stable throughout a verified byte write; no simultaneous mutable or readonly aliases may invalidate its backing storage",
+    "region deallocation happens once after all pinned users retire; stale borrowed views and stale handle generations fail closed",
+    "no ambient socket, file, system allocator, GC, or FFI privilege is conferred by raw byte access",
+    "compiler must enforce direct and transitive import privileges; lexical source checks are insufficient",
+    "typed BufferBoundsError BufferValueError BufferAllocationError and TenantQuotaError are Error subclasses; source throw, trap and Result semantics apply",
+    "failure to implement this ABI requires deterministic unsupported diagnostics and no executable guest artifact",
+    "Native cancellation teardown may explicitly drop a region and release its charge exactly once; any prior borrow or stale region handle must be rejected by the compiler/runtime"
+  ],
+  "evidence": {
+    "actual_guest_runs": 0,
+    "backend_results": [
+      {
+        "backend": "atto",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "cranelift",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "forge",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "hdl",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "java",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "js",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "llvm",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "net",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "realtime",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "rs",
+        "status": "NOT_EXECUTED"
+      },
+      {
+        "backend": "wasm",
+        "status": "NOT_EXECUTED"
+      }
+    ],
+    "host_oracle": "RUST_REFERENCE_NOT_GUEST",
+    "release_authorized": false
+  }
+}

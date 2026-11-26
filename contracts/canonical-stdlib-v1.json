@@ -4,14 +4,64 @@
   "sourcePolicy": "CANONICAL_ATTO_BYTES_ONLY",
   "sources": [
     {
+      "path": "stdlib/alloc/byte_region.atto",
+      "sha256": "0f832ff43de76ceaeda33234b96426cf3728e1fb10540aa1b97cd9ed0bfd876f",
+      "bytes": 1859
+    },
+    {
+      "path": "stdlib/core/byte_bounds.atto",
+      "sha256": "7465eb4b8e3325957d47fd0fc92206e75231c1ad140b5605cec56c5262cb5c7e",
+      "bytes": 726
+    },
+    {
       "path": "stdlib/core/identity.atto",
       "sha256": "bed9da0b8cc8c9bee0e6e7fe302df1a1b2734699fd220f59af8a52ac67c18688",
       "bytes": 55
+    },
+    {
+      "path": "stdlib/core/size_math.atto",
+      "sha256": "cd370ae9c28e139fbcc67b3c8640848a2551a51cb76b9e1e5e2ab156ff4a3e38",
+      "bytes": 748
+    },
+    {
+      "path": "stdlib/core/u32_endian.atto",
+      "sha256": "18223c1ecfbe1f16b03540670d10ba13c6dc7fdc21be940f82fb621d8c943c67",
+      "bytes": 791
+    },
+    {
+      "path": "stdlib/std/buffer.atto",
+      "sha256": "e2f3a749f6ed0bb78b741384a5e0cf8ba0649790be00644c0e660fbf11c8f412",
+      "bytes": 4816
+    },
+    {
+      "path": "stdlib/std/byte_ops.atto",
+      "sha256": "5e4e1de8fb49b33e344aa3826c5d3f76fb4ad78202347db9582c662f99f840dc",
+      "bytes": 548
     }
   ],
   "targets": [
     {
+      "backend": "atto",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "cranelift",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "forge",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "hdl",
+      "execution": "NOT_EXECUTED"
+    },
+    {
       "backend": "java",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "js",
       "execution": "NOT_EXECUTED"
     },
     {
@@ -23,11 +73,15 @@
       "execution": "NOT_EXECUTED"
     },
     {
-      "backend": "wasm",
+      "backend": "realtime",
       "execution": "NOT_EXECUTED"
     },
     {
-      "backend": "forge",
+      "backend": "rs",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "backend": "wasm",
       "execution": "NOT_EXECUTED"
     }
   ]
