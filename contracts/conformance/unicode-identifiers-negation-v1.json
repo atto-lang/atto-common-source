@@ -32,7 +32,7 @@
     },
     {
       "id": "nonboolean",
-      "source": "pub fnc main(): bool { return ¬1; }",
+      "source": "pub fnc main(): int { if ¬1 then return 42; else return 0; fi }",
       "expect": "reject",
       "diagnostic": "type|bool"
     },
@@ -101,7 +101,7 @@
     },
     {
       "id": "dead-rhs-still-typed",
-      "source": "pub fnc main(): bool { return false && ¬1; }",
+      "source": "pub fnc main(): int { if false && ¬1 then return 42; else return 0; fi }",
       "expect": "reject",
       "diagnostic": "type|bool"
     },
