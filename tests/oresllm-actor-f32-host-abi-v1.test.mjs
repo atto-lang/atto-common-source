@@ -20,7 +20,7 @@ function verify(c){
  assert.equal(c.limits.max_output_bytes,4096);
  assert.equal(c.limits.bytes_per_f32,4);
  assert.equal(c.limits.pool_slots,16);
- assert.equal(c.caller.origin,'trusted scheduler dispatch, not guest-authored actor/tenant integers');
+ assert.equal(c.scope.origin,'trusted scheduler dispatch, not guest-authored actor/tenant integers');
  assert.equal(c.caller.all_fields_host_supplied,true);
  assert.equal(c.caller.guest_controls_authority_fields,false);
  assert.equal(c.caller.allocation_kind,'ACTOR');
@@ -59,6 +59,7 @@ test('forged readiness, pointer exposure and unsafe ownership changes are reject
  const bad=change=>{const copy=structuredClone(data);change(copy);assert.throws(()=>verify(copy));};
  bad(c=>c.certification.release_ready=true);
  bad(c=>c.certification.compiler_emitted_guest='PASSED');
+ bad(c=>c.scope.origin='guest supplied');
  bad(c=>c.caller.allocation_kind='TASK');
  bad(c=>c.caller.guest_controls_authority_fields=true);
  bad(c=>c.caller.new_operations_after_stop='ALLOW');

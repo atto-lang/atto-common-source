@@ -1,0 +1,166 @@
+{
+  "schema": "atto.symbol-shared-ro/v1",
+  "evidence": "reference-only; no backend parser, runtime or actor proof",
+  "syntax": [
+    {
+      "source": "let ready = #ready",
+      "kind": "existing-literal",
+      "expect": "accept"
+    },
+    {
+      "source": "let ready = #class",
+      "kind": "existing-literal",
+      "expect": "accept"
+    },
+    {
+      "source": "let ready = #'ready foo'",
+      "kind": "existing-literal",
+      "expect": "accept"
+    },
+    {
+      "source": "let ready = #\"ready foo\"",
+      "kind": "existing-literal",
+      "expect": "accept"
+    },
+    {
+      "source": "let ready = Symbol.process(\"ready\")",
+      "kind": "existing-factory",
+      "expect": "accept"
+    },
+    {
+      "source": "let ready = Symbol.stable(\"550e8400-e29b-41d4-a716-446655440000\")",
+      "kind": "existing-factory",
+      "expect": "accept"
+    },
+    {
+      "source": "let ready = :ready",
+      "kind": "rejected-alias",
+      "expect": "reject"
+    },
+    {
+      "source": "let ready = # ready",
+      "kind": "rejected-literal",
+      "expect": "reject"
+    },
+    {
+      "source": "let ready = #123",
+      "kind": "rejected-literal",
+      "expect": "reject"
+    },
+    {
+      "source": "let ready = #",
+      "kind": "rejected-literal",
+      "expect": "reject"
+    },
+    {
+      "source": "const Symbol READY = #ready;",
+      "kind": "candidate-binding",
+      "expect": "not-yet-admitted"
+    },
+    {
+      "source": "pub const Symbol READY = #ready;",
+      "kind": "candidate-export",
+      "expect": "not-yet-admitted"
+    },
+    {
+      "source": "pub define symbols Lifecycle as Ready = #ready; Failed = #failed; end",
+      "kind": "candidate-group",
+      "expect": "not-yet-admitted"
+    }
+  ],
+  "actor_cases": [
+    {
+      "label": "public process symbol for untrusted actor",
+      "kind": "process",
+      "name": "ready",
+      "trust": "untrusted",
+      "tenant": "a",
+      "endpoint": "worker",
+      "protocol": "v1",
+      "allow": true
+    },
+    {
+      "label": "private process name in untrusted actor",
+      "kind": "process",
+      "name": "private",
+      "trust": "untrusted",
+      "tenant": "a",
+      "endpoint": "worker",
+      "protocol": "v1",
+      "allow": false
+    },
+    {
+      "label": "exported process name in matching tenant",
+      "kind": "process",
+      "name": "event",
+      "trust": "untrusted",
+      "tenant": "a",
+      "endpoint": "worker",
+      "protocol": "v1",
+      "allow": true
+    },
+    {
+      "label": "exported process name in different tenant",
+      "kind": "process",
+      "name": "event",
+      "trust": "untrusted",
+      "tenant": "b",
+      "endpoint": "worker",
+      "protocol": "v1",
+      "allow": false
+    },
+    {
+      "label": "exported process name in different endpoint",
+      "kind": "process",
+      "name": "event",
+      "trust": "untrusted",
+      "tenant": "a",
+      "endpoint": "other",
+      "protocol": "v1",
+      "allow": false
+    },
+    {
+      "label": "stable never untrusted",
+      "kind": "stable",
+      "name": "550e8400-e29b-41d4-a716-446655440000",
+      "trust": "untrusted",
+      "tenant": "a",
+      "endpoint": "worker",
+      "protocol": "v1",
+      "allow": false
+    },
+    {
+      "label": "trusted stable allowed",
+      "kind": "stable",
+      "name": "550e8400-e29b-41d4-a716-446655440000",
+      "trust": "trusted",
+      "tenant": "a",
+      "endpoint": "worker",
+      "protocol": "v1",
+      "allow": true
+    }
+  ],
+  "quotas": {
+    "max_symbol_utf8_bytes": 256,
+    "max_raw_input_code_units": 1024,
+    "max_reference_graph_nodes": 64,
+    "max_reference_graph_depth": 16
+  },
+  "admission_manifest": {
+    "core_process_names": [
+      "ready",
+      "error",
+      "Symbol.iterator"
+    ],
+    "exports": [
+      {
+        "tenant": "a",
+        "endpoint": "worker",
+        "protocol": "v1",
+        "process_names": [
+          "event"
+        ]
+      }
+    ]
+  }
+}

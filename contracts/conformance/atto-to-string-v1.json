@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0.0",
+  "id": "atto.to_string.v1",
+  "source_extension": ".atto",
+  "scope": "portable prospective semantic contract; compiler/guest status is NOT EXECUTED",
+  "semantics": {
+    "function": "to_string(value) requires exactly one positional argument of int, bool or String; user-declared fnc with matching arity resolves first",
+    "method": "int.to_string(), bool.to_string(), String.to_string() have no explicit arguments; declared class to_string() resolves through nominal method dispatch",
+    "int": "signed i64 base-10 ASCII, no locale or grouping",
+    "bool": "lowercase true/false",
+    "string": "identity, preserves exact decoded Unicode and embedded NUL data",
+    "class": "no implicit class-to-String conversion or host Object.toString fallback; classes must explicitly declare to_string(): String",
+    "template": "interpolation requires String statically; no implicit scalar/object to_string; each conversion evaluates once in source order",
+    "security": "no reflection, automatic class field disclosure, host object stringification, capabilities, or implicit JSON serialization"
+  },
+  "backend_evidence": {
+    "java": {
+      "implementation": "DRAFT",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2978",
+      "compiler_executed": false,
+      "guest_executed": false
+    },
+    "llvm": {
+      "implementation": "NOT_IMPLEMENTED",
+      "pr": null,
+      "compiler_executed": false,
+      "guest_executed": false
+    },
+    "wasm": {
+      "implementation": "HOST_PREFLIGHT_ONLY",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/479",
+      "compiler_executed": false,
+      "guest_executed": false
+    },
+    "forge": {
+      "implementation": "STRING_BACKEND_UNSUPPORTED",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/271",
+      "compiler_executed": false,
+      "guest_executed": false
+    },
+    "net": {
+      "implementation": "STRING_BACKEND_UNSUPPORTED",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/495",
+      "compiler_executed": false,
+      "guest_executed": false
+    }
+  },
+  "cases": [
+    {
+      "id": "scalar-fnc-and-method",
+      "path": "fixtures/atto-to-string-v1/scalar-fnc-and-method.atto",
+      "expect_frontend": "ACCEPT",
+      "expected_output_or_diagnostic": "v:-42 b:true s:é😀中",
+      "git_blob_sha": "188a2493b83b0770225981360334a1278e9bc227",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "declared-to-string-method",
+      "path": "fixtures/atto-to-string-v1/declared-to-string-method.atto",
+      "expect_frontend": "ACCEPT",
+      "expected_output_or_diagnostic": "Box:7",
+      "git_blob_sha": "e0d449c550a04c43048b814d377a8772caf6de2e",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "user-fnc-shadow",
+      "path": "fixtures/atto-to-string-v1/user-fnc-shadow.atto",
+      "expect_frontend": "ACCEPT",
+      "expected_output_or_diagnostic": "custom",
+      "git_blob_sha": "f0f362029d03b2ee218816406b47c6d9811e9a08",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-implicit-int-template",
+      "path": "fixtures/atto-to-string-v1/reject-implicit-int-template.atto",
+      "expect_frontend": "REJECT",
+      "expected_output_or_diagnostic": "TYPE_MISMATCH",
+      "git_blob_sha": "65ec5b494e1484ec8dc5dc38967652f41d59757f",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-implicit-class-conversion",
+      "path": "fixtures/atto-to-string-v1/reject-implicit-class-conversion.atto",
+      "expect_frontend": "REJECT",
+      "expected_output_or_diagnostic": "UNSUPPORTED_CONVERSION",
+      "git_blob_sha": "ebf8b5eacbd8a0f1d7b44ba3d3691e14209598cb",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-float-to-string",
+      "path": "fixtures/atto-to-string-v1/reject-float-to-string.atto",
+      "expect_frontend": "REJECT",
+      "expected_output_or_diagnostic": "UNSUPPORTED_CONVERSION",
+      "git_blob_sha": "a2580a95a10bc8c41594ecb67921e0bb9c014bb7",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-method-extra-arg",
+      "path": "fixtures/atto-to-string-v1/reject-method-extra-arg.atto",
+      "expect_frontend": "REJECT",
+      "expected_output_or_diagnostic": "WRONG_ARITY",
+      "git_blob_sha": "dc61b9bcaf5c7fbe8c9b8f8ae5459185831b0961",
+      "guest_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "reject-class-return-type-template",
+      "path": "fixtures/atto-to-string-v1/reject-class-return-type-template.atto",
+      "expect_frontend": "REJECT",
+      "expected_output_or_diagnostic": "TYPE_MISMATCH",
+      "git_blob_sha": "3d0bcd6c082487243d9005639dbc91fa3a5e65af",
+      "guest_status": "NOT_EXECUTED"
+    }
+  ],
+  "promotion": "Do not promote draft implementations, source-only checks, lexical admission or GitHub Actions jobs with zero executed steps to runtime parity. Exact source and runtime receipts are required.",
+  "security_note": "No private Git object may be copied to another organization without independently reviewed protected-main source-side export approval for exact commit/tree/destination."
+}

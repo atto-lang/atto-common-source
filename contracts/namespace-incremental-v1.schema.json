@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/atto-lang/atto-common-source/blob/main/contracts/namespace-incremental-v1.schema.json",
+  "title": "AttoLang namespace-incremental snapshot v1 (reference input)",
+  "description": "Trusted snapshots: explicit namespaces span verified files; null namespace indicates a distinct file-owned compilation unit with its own ABI and dependency edges. Validation of compiler provenance remains external.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "semantic_profile",
+    "codegen_profile",
+    "packages",
+    "files",
+    "namespaces"
+  ],
+  "properties": {
+    "semantic_profile": {
+      "$ref": "#/$defs/digest"
+    },
+    "codegen_profile": {
+      "$ref": "#/$defs/digest"
+    },
+    "packages": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "manifest_sha"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "manifest_sha": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "maxItems": 131072,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "package",
+          "namespace",
+          "path",
+          "source_sha"
+        ],
+        "properties": {
+          "package": {
+            "type": "string",
+            "minLength": 1
+          },
+          "namespace": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/namespace"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 4096,
+            "pattern": "\\.atto$"
+          },
+          "source_sha": {
+            "$ref": "#/$defs/digest"
+          },
+          "interface_sha": {
+            "$ref": "#/$defs/digest"
+          },
+          "imports": {
+            "$ref": "#/$defs/edges"
+          },
+          "inlines": {
+            "$ref": "#/$defs/edges"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "namespace": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "namespace"
+              ]
+            },
+            "then": {
+              "required": [
+                "interface_sha",
+                "imports",
+                "inlines"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "interface_sha"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "imports"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "inlines"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "namespaces": {
+      "type": "array",
+      "maxItems": 131072,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "package",
+          "name",
+          "interface_sha",
+          "imports",
+          "inlines"
+        ],
+        "properties": {
+          "package": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "$ref": "#/$defs/namespace"
+          },
+          "interface_sha": {
+            "$ref": "#/$defs/digest"
+          },
+          "imports": {
+            "$ref": "#/$defs/edges"
+          },
+          "inlines": {
+            "$ref": "#/$defs/edges"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 4
+      }
+    }
+  }
+}

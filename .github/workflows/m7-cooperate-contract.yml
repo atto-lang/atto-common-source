@@ -1,0 +1,30 @@
+name: M7 actor cooperative continuation ABI contract
+on:
+  push:
+    branches: [feat/m7-cooperate-safepoint-abi-20261115]
+  pull_request:
+    paths:
+      - 'contracts/actor-cooperate-safepoint-v1.json'
+      - 'docs/m7-cooperate-abi-v1.md'
+      - 'tests/test_m7_cooperate_contract.py'
+      - '.github/workflows/m7-cooperate-contract.yml'
+permissions:
+  contents: read
+jobs:
+  m7-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head and execute M7 ABI contract tests
+        env:
+          EXPECTED_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_GIT_SHA"
+          python3 -m unittest discover -s tests -p 'test_m7_cooperate_contract.py' -v
+          echo M7_SAFEPOINT_ABI_CONTRACT_EXECUTED=PASS
+      - name: Evidence scope
+        run: echo 'CONTRACT SHAPE ONLY; no compiled Atto guest or hard-real-time guarantee'

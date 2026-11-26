@@ -1,0 +1,10 @@
+// A macro cannot mint a new compiler macro declaration.
+define macro generate_macro() -> Syntax<Decl> {
+    return quote {
+        define macro injected() -> Syntax<Expr> {
+            return quote(42);
+        }
+    };
+}
+generate_macro!();
+fnc main() -> int { return 42; }

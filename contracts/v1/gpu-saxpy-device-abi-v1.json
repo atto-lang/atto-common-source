@@ -1,0 +1,28 @@
+{
+  "schema": "attolang.gpu-kernel-device-abi/1",
+  "status": "RESTRICTED_SAXPY_G2_ONLY",
+  "symbol": "saxpy",
+  "deviceSymbol": "attolang_saxpy_v1",
+  "sourceBlobSha": "48290eaac9f64358cfb0e1b792d8a63fa48ae150",
+  "openclArtifactSha256": "b5076980355531632de445e05e35554d3fb54ceeebaf707457863571bdeb77a4",
+  "target": "spir64-unknown-unknown",
+  "result": "void",
+  "parameters": [
+    {"name":"scale","type":"f32","direction":"value","residency":"device-copyable"},
+    {"name":"x","type":"GpuArray<f32>","direction":"read","residency":"device"},
+    {"name":"y","type":"GpuArray<f32>","direction":"read","residency":"device"},
+    {"name":"out","type":"GpuArray<f32>","direction":"write","residency":"device"},
+    {"name":"n","type":"u64","direction":"value","residency":"device-copyable"}
+  ],
+  "kernelEffects": ["device.read", "device.write"],
+  "indexIntrinsic": "gpu.global_id(0)",
+  "boundsGuard": "i >= n => return",
+  "memoryPolicy": "exclusive-write-loan-required",
+  "numericPolicy": "OPENCL_FP_CONTRACT_OFF_NO_BITWISE_PARITY_CLAIM",
+  "evidence": {
+    "typedHostKernelIR": "DESCRIPTOR_VALIDATION_ONLY",
+    "nativeLlvmGuestParser": "NOT_EXECUTED",
+    "physicalGpu": "NOT_EXECUTED",
+    "deviceFence": "NOT_EXECUTED"
+  }
+}

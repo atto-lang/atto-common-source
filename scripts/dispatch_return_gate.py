@@ -30,8 +30,14 @@ def blob_sha(text: str) -> str:
     return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
 
 
-def oracle(path: str | Path) -> dict:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+def validate_manifest(data: dict) -> dict:
+    """Validate external and already-parsed manifests identically.
+
+    compare() must not trust a caller-supplied dictionary merely because
+    oracle() normally validates files: CI adapters can pass dicts directly.
+    """
+    if not isinstance(data, dict) or set(data) != {"version", "cases"}:
+        raise DispatchParityError("unexpected or missing oracle fields")
     if data.get("version") != "dispatch-return-v1" or not isinstance(data.get("cases"), list):
         raise DispatchParityError("invalid oracle version or cases")
     unique = set()
@@ -39,11 +45,15 @@ def oracle(path: str | Path) -> dict:
     for item in data["cases"]:
         if not isinstance(item, dict):
             raise DispatchParityError("invalid case")
+        if set(item) != {"id", "form", "return_destination", "expected_result", "support", "source"}:
+            raise DispatchParityError("unexpected or missing case fields")
         name = item.get("id")
         form = item.get("form")
-        if not isinstance(name, str) or name in unique:
+        if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]*", name) or name in unique:
             raise DispatchParityError("duplicate or invalid oracle id")
         unique.add(name)
+        if not isinstance(form, str):
+            raise DispatchParityError("dispatch form must be a string")
         if form in INVALID_DISPATCH_FORMS:
             raise DispatchParityError("nb match/switch is invalid; nb is a channel/select wait mode")
         if form not in EXPECTED_DEST or item.get("return_destination") != EXPECTED_DEST[form]:
@@ -64,6 +74,10 @@ def oracle(path: str | Path) -> dict:
     if unique_forms != set(EXPECTED_DEST) or len(data["cases"]) != len(EXPECTED_DEST):
         raise DispatchParityError("exactly four dispatch forms required")
     return data
+
+
+def oracle(path: str | Path) -> dict:
+    return validate_manifest(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
 def _integer(value) -> bool:
@@ -111,6 +125,7 @@ def compare(graal: dict, llvm: dict, manifest: dict, *, require_full: bool = Tru
     # fetch immutable CI job evidence and verify the cited source Git trees.
     # The default rejects a partial four-form subset; callers requesting a
     # partial audit must explicitly opt in with require_full=False.
+    manifest = validate_manifest(manifest)
     common = [
         c for c in manifest["cases"]
         if c["support"]["graal"] == c["support"]["llvm"] == "candidate"
