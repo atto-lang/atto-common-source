@@ -75,3 +75,39 @@ The model checks 15 focused scenarios (including heap/stack ownership, overlappi
 **Evidence boundary:** The 11 new focused compact-reference model tests were executed locally with strict GCC and Clang ASan/UBSan on x86-64. Local i386 headers are unavailable; the CI workflow must actually execute the `-m32` build before 32-bit host validation may be marked PASS. No Java, LLVM, .NET or other Atto guest binary was executed by these model tests.
 
 **Target support caveat:** AttoLang *language* support for 32-bit hardware must not imply every host backend can currently produce a 32-bit executable. LLVM native should target i686 and ARM32 where supported. Microsoft documents NativeAOT x86 on Windows and Arm32 on Linux for .NET 9+; verify exact RID and toolchain before claiming support (https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/). GraalVM Native Image's current platform descriptions enumerate AMD64/AArch64 (https://www.graalvm.org/25.3/javadoc/sdk/org/graalvm/nativeimage/package-summary.html), so treat 32-bit GraalVM Native Image as unsupported unless a specific toolchain demonstrates otherwise. GraalVM's existing **host Java-object compressed references** are a separate optimization from Atto guest `Ref32` handles, and their gains must not be double counted.
+
+
+## Affine control-flow and drop-elaboration qualification (2026-11-25)
+
+This is a proposed common qualification slice, not a new syntax or an assertion of backend parity. The provisional Java compiler reference is [Java #1883](https://github.com/atto-lang/atto-source.java/pull/1883), exact tested head `fe705f3f77885bf7860a0b701a16a4036e51076c`, tree `2c5fc67940f480a6aad5c67dd2a924c5bf5ff83e`, [Maven run 45731831394](https://github.com/declarative-migrations/atto-ci/actions/runs/45731831394), job 139615461653: 38 tests, zero failures/errors/skips. Its checked drop-plan instructions are compiler IR; the test-only adapter executes real native lexical cell moves/retirements using NativeList stand-ins, not a production Array ABI, per-payload deallocation, or native guest AOT proof.
+
+The following path-level invariants must be preserved independently of concrete MIR representation, runtime language, or whether the compiler specializes continuations or uses proven runtime drop flags:
+
+| Case | Required observable result |
+| --- | --- |
+| Two owned parameters, void return | Remaining owners retired newest-first |
+| Owned return | Returned owner transferred before remaining locals retired; caller owns result |
+| Conditional transfer into local | Source invalidated only on selected path; local retired at its scope exit, untouched owner retired on other path |
+| Conditional owned return | Both paths return the selected owner and retire the unreturned owner; no second drop |
+| One predecessor transfers, later unconditional owner use | Compile-time refusal unless independent definite-ownership proof |
+| Borrow/write marker | A live exclusive loan's write witness corresponds to its actual owner-slot write; unmatched or mismatched witness is not authorization |
+| Borrow at scope exit | Terminate valid loans before owner destruction; reject unproven escaping loans |
+| Unsupported structured ownership | Typed refusal before artifact emission; do not count refusal as positive implementation parity |
+
+Actual compilation and execution of common source fixtures must subsequently demonstrate the same outcomes, including both condition values, returned identities, no-artifact negative controls and deterministic disposal. Guest-visible events, lexical slot retirement, registry count changes, physical payload destruction and whole-region release are distinct observations. A backend must not substitute one for another.
+
+| Compiler lane | Relevant work / next evidence |
+| --- | --- |
+| Java | #1883: scoped compiler and native-slot tests passed; real guest array/drop ABI and native AOT pending |
+| LLVM | [#631](https://github.com/atto-lang/atto-source.llvm/pull/631), [#646](https://github.com/atto-lang/atto-source.llvm/pull/646): conservative conditional-take refusal and complete tracked join metadata; native positive affine drop paths pending |
+| Rust | [#288](https://github.com/atto-lang/atto-source.rs/pull/288): diagnostic scalar loan-lifecycle census, not codegen authority; general affine heap/control-flow proof pending |
+| Wasm | Rust-authored compiler emits Wasm; distinguish emitted guest execution from browser worker lifecycle and standalone Wasm ownership/runtime evidence |
+| Forge | [#196](https://github.com/atto-lang/atto-source.forge/pull/196): fail-closed contextual immutable-update admission; native typed drop glue pending |
+| .NET | [#179](https://github.com/atto-lang/atto-source.net/pull/179): native buffer-pool host primitive; source-to-CIL and standalone NativeAOT drop paths pending |
+| Cranelift | [#39](https://github.com/atto-lang/atto-source.cranelift/pull/39): restricted scalar/native numeric lowering; affine heap/drop lowering unverified |
+| JS | [#149](https://github.com/atto-lang/atto-source.js/pull/149): scalar/worker operator reconciliation; deterministic guest ownership separate from host GC |
+| HDL | Target-subset ownership/lifetime admission; dynamic actor heap support not established |
+| Atto self-hosted | Stage-0 scalar seed only; compiler-owned drop elaboration not established |
+| Realtime | Bootstrap repository; no compiler execution evidence established |
+
+The table is a work-routing inventory, not a test result matrix. No lane is marked fully conformant. Use the normative spec and target profiles, and retain exact compiler/tree/fixture/toolchain/artifact receipts in platform conformance. Any restricted checker or diagnostic census remains non-authoritative for general code generation until its emitted IR correspondence is independently established.
