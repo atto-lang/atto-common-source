@@ -1,0 +1,127 @@
+{
+  "schema": "atto.actor-fatal-fault-classes.v1",
+  "status": "DRAFT_TARGET_NOT_EXECUTED",
+  "certification": "NONE",
+  "description": "Machine-readable failure classification only; no runtime or compiler implementation and no execution or release authorization.",
+  "accepted_scopes": [
+    "actor",
+    "tenant",
+    "process"
+  ],
+  "mechanisms": [
+    "same-process-guards",
+    "bounded-guest-vm",
+    "dedicated-worker-process",
+    "none"
+  ],
+  "failure_classes": [
+    {
+      "id": "guest-panic",
+      "host_fatal": false,
+      "external_process_required_for_actor_claim": false,
+      "os_memory_limit_required": false
+    },
+    {
+      "id": "guest-stack-quota",
+      "host_fatal": false,
+      "external_process_required_for_actor_claim": false,
+      "os_memory_limit_required": false
+    },
+    {
+      "id": "guest-memory-bounds",
+      "host_fatal": false,
+      "external_process_required_for_actor_claim": false,
+      "os_memory_limit_required": false
+    },
+    {
+      "id": "actor-oom",
+      "host_fatal": false,
+      "external_process_required_for_actor_claim": false,
+      "os_memory_limit_required": false
+    },
+    {
+      "id": "native-segv",
+      "host_fatal": true,
+      "external_process_required_for_actor_claim": true,
+      "os_memory_limit_required": false
+    },
+    {
+      "id": "host-oom",
+      "host_fatal": true,
+      "external_process_required_for_actor_claim": true,
+      "os_memory_limit_required": true
+    },
+    {
+      "id": "os-process-kill",
+      "host_fatal": true,
+      "external_process_required_for_actor_claim": true,
+      "os_memory_limit_required": false
+    },
+    {
+      "id": "vm-corruption",
+      "host_fatal": true,
+      "external_process_required_for_actor_claim": true,
+      "os_memory_limit_required": false
+    }
+  ],
+  "backend_status": [
+    {
+      "id": "oreslang-source.java",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    },
+    {
+      "id": "oreslang-source.llvm",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    },
+    {
+      "id": "oreslang-source.wasm",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    },
+    {
+      "id": "oreslang-source.forge",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    },
+    {
+      "id": "oreslang-source.net",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    },
+    {
+      "id": "oreslang-source.rs",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    },
+    {
+      "id": "oreslang-source.cranelift",
+      "status": "pending",
+      "actor_containment_certified": false,
+      "process_fatal_containment_certified": false
+    }
+  ],
+  "evidence_requirements": [
+    "exact_guest_source_blob",
+    "immutable_compiler_tree",
+    "compiled_binary_identity",
+    "physical_fault_trigger",
+    "post_fault_sibling_progress",
+    "cleanup_and_generation_fencing",
+    "independently_verified_runner_steps",
+    "bounded_external_supervisor"
+  ],
+  "security_notes": [
+    "Same-process signal handlers and actor heaps do not prove containment of native segfaults or VM corruption.",
+    "OS process kills and host out-of-memory require an independently surviving supervisor and worker limits.",
+    "Positive shape/model tests do not certify execution, isolation, or cross-backend parity.",
+    "Only disposable constrained child processes may execute fatal-host fault injection probes."
+  ]
+}

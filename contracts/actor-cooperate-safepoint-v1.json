@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atto-lang.github.io/contracts/actor-cooperate-safepoint-v1.json",
+  "title": "Atto M7 cooperative continuation observation contract v1",
+  "description": "Observable boundaries for one in-flight serial-actor receive continuation. An admitted DATA turn is either queued, in-flight (running or suspended), completed, failed, or abandoned. STOP drains, PANIC fences, and CONTROL precedes new DATA starts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "actor_generation", "message_id", "resume_pc", "lifecycle", "budget_reductions", "charged_reductions", "result"],
+  "properties": {
+    "schema": {"const": "atto.actor.cooperate.v1"},
+    "actor_generation": {"type": "integer", "minimum": 1},
+    "message_id": {"type": "integer", "minimum": 1},
+    "resume_pc": {"type": "integer", "minimum": 0, "maximum": 4096},
+    "lifecycle": {"enum": ["QUEUED", "RUNNING", "SUSPENDED", "COMPLETED", "FAILED", "ABANDONED"]},
+    "budget_reductions": {"type": "integer", "minimum": 1, "maximum": 65536},
+    "charged_reductions": {"type": "integer", "minimum": 0, "maximum": 65536},
+    "result": {"enum": ["NONE", "YIELD", "DONE", "PANIC"]},
+    "control": {"enum": ["NONE", "STOP", "PANIC"]},
+    "critical_loan_live": {"const": false},
+    "borrow_across_suspend": {"const": false},
+    "carrier_thread_id": {"type": "integer", "minimum": 0}
+  },
+  "allOf": [
+    {"if": {"properties": {"result": {"const": "YIELD"}}, "required": ["result"]}, "then": {"properties": {"lifecycle": {"const": "SUSPENDED"}, "charged_reductions": {"minimum": 1}}}},
+    {"if": {"properties": {"result": {"const": "DONE"}}, "required": ["result"]}, "then": {"properties": {"lifecycle": {"const": "COMPLETED"}}}},
+    {"if": {"properties": {"result": {"const": "PANIC"}}, "required": ["result"]}, "then": {"properties": {"lifecycle": {"const": "FAILED"}, "control": {"const": "PANIC"}}}}
+  ]
+}

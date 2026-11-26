@@ -1,0 +1,9 @@
+// Syntax<Decl> cannot be used as a runtime Syntax<Expr>.
+define macro make_helper() -> Syntax<Decl> {
+    return quote {
+        fnc helper() -> int { return 42; }
+    };
+}
+fnc main() -> int {
+    return make_helper!();
+}

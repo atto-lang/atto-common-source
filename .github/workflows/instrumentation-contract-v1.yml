@@ -1,0 +1,24 @@
+name: Atto instrumentation contract v1
+on:
+  pull_request:
+    paths:
+      - 'contracts/runtime/v1/instrumentation-v1.json'
+      - 'tools/verify-instrumentation-v1.mjs'
+      - 'tests/instrumentation-v1.test.mjs'
+      - '.github/workflows/instrumentation-contract-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-manifest-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Assert exact checkout SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Run signed instrumentation admission reference tests (not guest execution)
+        run: node --test tests/instrumentation-v1.test.mjs

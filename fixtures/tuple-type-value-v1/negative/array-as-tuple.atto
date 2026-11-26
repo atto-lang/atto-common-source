@@ -1,0 +1,1 @@
+fnc bad(): Tuple[int, int] { return Array.of(40, 2); }

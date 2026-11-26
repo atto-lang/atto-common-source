@@ -1,0 +1,41 @@
+name: Perf AOT/JIT metadata validation (SOURCE ONLY)
+on:
+  pull_request:
+    paths:
+      - 'contracts/perf-probes-aot-v1.json'
+      - 'contracts/perf-sites-v1.example.json'
+      - 'tools/generate-perf-probes.mjs'
+      - 'tools/plan-perf-sites.mjs'
+      - 'tests/perf-probes-aot-v1.test.mjs'
+      - 'tests/perf-site-plan.test.mjs'
+      - '.github/workflows/perf-aot-site-plan.yml'
+  push:
+    paths:
+      - 'contracts/perf-probes-aot-v1.json'
+      - 'contracts/perf-sites-v1.example.json'
+      - 'tools/generate-perf-probes.mjs'
+      - 'tools/plan-perf-sites.mjs'
+      - 'tests/perf-probes-aot-v1.test.mjs'
+      - 'tests/perf-site-plan.test.mjs'
+      - '.github/workflows/perf-aot-site-plan.yml'
+permissions:
+  contents: read
+jobs:
+  static-aot-plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout candidate tree
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Validate deterministic probe/site plans (NOT compiled guest)
+        run: |
+          set -euo pipefail
+          node --test tests/perf-probes-aot-v1.test.mjs tests/perf-site-plan.test.mjs
+          node tools/generate-perf-probes.mjs contracts/perf-probes-aot-v1.json /tmp/PerfIds.atto /tmp/perf-plan.json
+          node tools/plan-perf-sites.mjs contracts/perf-sites-v1.example.json contracts/perf-probes-aot-v1.json /tmp/perf-sites.json

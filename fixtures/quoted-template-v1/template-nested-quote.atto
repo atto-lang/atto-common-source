@@ -1,0 +1,4 @@
+pub fnc main(): int {
+  const text = `hello ${'quoted }'}`;
+  return 42;
+}

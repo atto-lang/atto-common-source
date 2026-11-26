@@ -1,0 +1,8 @@
+// A macro cannot add imports or change its compilation authority.
+define macro generate_import() -> Syntax<Decl> {
+    return quote {
+        import * as hidden from "./hidden.atto";
+    };
+}
+generate_import!();
+fnc main() -> int { return 42; }
