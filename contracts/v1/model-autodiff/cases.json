@@ -1,0 +1,474 @@
+{
+  "contract": "oreslang.model.autodiff.actor.v1",
+  "status": "PROPOSED",
+  "guest_execution": "NOT_EXECUTED",
+  "reference_tests": "HOST_ONLY",
+  "source_cases": [
+    {
+      "id": "simple-model",
+      "fixture": "fixtures/simple.ores",
+      "expect": "accept",
+      "diagnostic_class": null,
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "parameterized-model",
+      "fixture": "fixtures/parameterized.ores",
+      "expect": "accept",
+      "diagnostic_class": null,
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "empty-body",
+      "fixture": "fixtures/reject_empty.ores",
+      "expect": "reject",
+      "diagnostic_class": "MODEL_EMPTY_BODY",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "mismatched-layer-port",
+      "fixture": "fixtures/reject_shape.ores",
+      "expect": "reject",
+      "diagnostic_class": "MODEL_PORT_SHAPE_MISMATCH",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "non-differentiable-op",
+      "fixture": "fixtures/accept_forward_without_vjp.ores",
+      "expect": "accept",
+      "diagnostic_class": null,
+      "guest_execution": "NOT_EXECUTED",
+      "note": "Forward-only declaration is legal. MODEL_MISSING_VJP is a later gradient-admission diagnostic when a requested live derivative path traverses this op."
+    },
+    {
+      "id": "effectful-body",
+      "fixture": "fixtures/reject_effect.ores",
+      "expect": "reject",
+      "diagnostic_class": "MODEL_EFFECTFUL_BODY",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "dynamic-topology",
+      "fixture": "fixtures/reject_dynamic.ores",
+      "expect": "reject",
+      "diagnostic_class": "MODEL_DYNAMIC_TOPOLOGY",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "pipe-is-not-layer",
+      "fixture": "fixtures/reject_value_pipe.ores",
+      "expect": "reject",
+      "diagnostic_class": "MODEL_NON_LAYER_EXPRESSION",
+      "guest_execution": "NOT_EXECUTED"
+    }
+  ],
+  "runtime_cases": [
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "two-edge-fan-in",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "right"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        },
+        {
+          "op": "commit"
+        }
+      ],
+      "expect": "accept",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "distinct-microbatches",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "forward",
+          "mb": 2
+        },
+        {
+          "op": "backward",
+          "mb": 2,
+          "edge": "left"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "right"
+        },
+        {
+          "op": "backward",
+          "mb": 2,
+          "edge": "right"
+        },
+        {
+          "op": "commit"
+        }
+      ],
+      "expect": "accept",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "duplicate-gradient",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_DUPLICATE_GRADIENT",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "missing-fan-in",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        },
+        {
+          "op": "commit"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_STEP_NOT_QUIESCENT",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "unrecognized-edge",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "intruder"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_UNKNOWN_EDGE",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "stale-graph",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left",
+          "gen": 8
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_GRAPH_GENERATION_MISMATCH",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "stale-weight",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left",
+          "ver": 0
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_WEIGHT_VERSION_MISMATCH",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "wrong-run",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left",
+          "run": "otherRun"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_RUN_MISMATCH",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "missing-activation",
+      "events": [
+        {
+          "op": "backward",
+          "mb": 99,
+          "edge": "left"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_UNKNOWN_ACTIVATION",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "capacity-enforced",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "forward",
+          "mb": 2
+        },
+        {
+          "op": "forward",
+          "mb": 3
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_BACKPRESSURE",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "cancel-invalidates-lease",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "cancel"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_RUN_CANCELLED",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "duplicate-update",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "right"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "commit",
+          "ver": 2
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_STEP_ALREADY_COMMITTED",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "old-weight-after-step",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "left"
+        },
+        {
+          "op": "backward",
+          "mb": 1,
+          "edge": "right"
+        },
+        {
+          "op": "commit"
+        },
+        {
+          "op": "forward",
+          "mb": 2,
+          "ver": 1
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_WEIGHT_VERSION_MISMATCH",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "duplicated-microbatch",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1
+        },
+        {
+          "op": "forward",
+          "mb": 1
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_DUPLICATE_MICROBATCH",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "no-gradient-step",
+      "events": [
+        {
+          "op": "commit"
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_STEP_NO_GRADIENTS",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "edges": [
+        "left",
+        "right"
+      ],
+      "capacity": 2,
+      "id": "wrong-forward-generation",
+      "events": [
+        {
+          "op": "forward",
+          "mb": 1,
+          "gen": 8
+        }
+      ],
+      "expect": "reject",
+      "diagnostic_class": "ML_GRAPH_GENERATION_MISMATCH",
+      "guest_execution": "NOT_EXECUTED"
+    }
+  ]
+}

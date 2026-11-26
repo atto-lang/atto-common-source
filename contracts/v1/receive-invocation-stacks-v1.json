@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "contract": "receive-invocation-stacks-v1",
+  "status": "NOT_EXECUTED",
+  "reference_only": true,
+  "note": "No source/head/run attestations; not valid input to evaluateReceiveStackCandidate until exact-source guest results exist",
+  "cases": [
+    "receive_stack_distinct",
+    "task_stack_distinct",
+    "serial_suspend_slot",
+    "concurrent_receive_disjoint",
+    "nested_frame_resume",
+    "one_shot_wake",
+    "aggregate_stack_budget",
+    "physical_cleanup_before_restart",
+    "critical_borrow_no_escape",
+    "actor_overflow_sibling_survival"
+  ],
+  "backends": {
+    "java": {
+      "status": "NOT_EXECUTED",
+      "executed_guest": false
+    },
+    "llvm": {
+      "status": "NOT_EXECUTED",
+      "executed_guest": false
+    },
+    "wasm": {
+      "status": "NOT_EXECUTED",
+      "executed_guest": false
+    },
+    "forge": {
+      "status": "NOT_EXECUTED",
+      "executed_guest": false
+    },
+    "net": {
+      "status": "NOT_EXECUTED",
+      "executed_guest": false
+    }
+  }
+}

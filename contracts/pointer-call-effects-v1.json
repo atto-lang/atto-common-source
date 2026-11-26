@@ -1,0 +1,83 @@
+{
+  "schema": "atto.pointer-call-effects.v1.target",
+  "status": "TARGET_ONLY_NOT_EXECUTED",
+  "spec": "https://github.com/atto-lang/atto-spec/pull/259",
+  "default_argument": "BorrowRead",
+  "primitive_argument": "Value",
+  "mutable_argument": "BorrowWrite",
+  "consuming_argument": "Take",
+  "operations": {
+    "alloc": "StaticOwned",
+    "alloc_value": "StaticOwned",
+    "len": "BorrowRead",
+    "size_bytes": "BorrowRead",
+    "is_empty": "BorrowRead",
+    "read": "BorrowRead",
+    "read_at": "BorrowRead",
+    "borrow_at": "BorrowRead",
+    "slice": "BorrowRead",
+    "same_location": "BorrowRead",
+    "write": "BorrowWrite",
+    "write_at": "BorrowWrite",
+    "borrow_mut_at": "BorrowWrite",
+    "slice_mut": "BorrowWrite",
+    "fill": "BorrowWrite",
+    "copy_from": "BorrowWrite",
+    "swap_at": "BorrowWrite",
+    "take_at": "OwnerElement",
+    "replace_at": "OwnerElement",
+    "close": "ConsumeReceiver"
+  },
+  "backends": [
+    {
+      "id": "atto-source.atto",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.cranelift",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.forge",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.hdl",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.java",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.js",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.llvm",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.net",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.realtime",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.rs",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atto-source.wasm",
+      "status": "NOT_EXECUTED"
+    }
+  ],
+  "notes": [
+    "Receiver evaluated once and classified before lowering; this is only an effect admission model, not full typed HIR or a compiler.",
+    "BorrowRead and BorrowWrite preserve the region owner. ConsumeReceiver requires direct unique owner authority and no live loans.",
+    "OwnerElement requires owner-only element authority independently of an exclusive receiver loan. The initial profile conservatively rejects it through ordinary borrowed formals and views.",
+    "Local ref! handle operations are independently checked by v1; no allocation method is admitted on a local lease by this model."
+  ]
+}

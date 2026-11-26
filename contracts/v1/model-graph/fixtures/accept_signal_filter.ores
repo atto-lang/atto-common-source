@@ -1,0 +1,9 @@
+// PROPOSED general-purpose define model fixture. Not executable on current backends.
+// DSP is a domain consumer; model itself does not imply ML, autograd, actors or GPU.
+define model AudioFilter(
+    cutoff_hz: int = 3000
+) as
+    DecodeSamples()
+    LowPass(cutoff_hz)
+    Normalize()
+end

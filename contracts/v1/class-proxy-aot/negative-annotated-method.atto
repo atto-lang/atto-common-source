@@ -1,0 +1,9 @@
+// AOT_PROXY_UNSUPPORTED: never discard method annotations in a generated forwarder.
+define class Foo as
+  @ReviewedSurface
+  pub read(): int { return 42; }
+end
+pub routine main(): void {
+  val wrapped = new Proxy(new Foo());
+  return;
+}

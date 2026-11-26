@@ -1,0 +1,5 @@
+fnc recover_error(String s): Result<int,String> { return Ok(7); }
+pub fnc main(): int {
+  val Result<int,String> input = Err("bad");
+  return input |> Result.or_else(recover_error) |> Result.unwrap_or(0);
+}

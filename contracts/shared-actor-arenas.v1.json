@@ -1,0 +1,129 @@
+{
+  "schema_version": "shared-actor-arenas.v1-proposal",
+  "status": "contract-only-no-runtime-parity-claim",
+  "cases": [
+    {
+      "id": "actor_private_foreign_handle",
+      "actor": "B",
+      "action": "read",
+      "arena_owner": "A",
+      "expect": "reject"
+    },
+    {
+      "id": "actor_ref_not_heap_capability",
+      "actor": "B",
+      "action": "read-with-actor-ref",
+      "arena_owner": "A",
+      "expect": "reject"
+    },
+    {
+      "id": "persistent_survives_turn",
+      "actor": "A",
+      "action": "read-after-next-turn",
+      "arena_owner": "A",
+      "allocation": "persistent",
+      "expect": "allow"
+    },
+    {
+      "id": "scratch_stale_epoch",
+      "actor": "A",
+      "action": "read-after-next-turn",
+      "arena_owner": "A",
+      "allocation": "scratch",
+      "expect": "reject"
+    },
+    {
+      "id": "scratch_await_escape",
+      "actor": "A",
+      "action": "borrow-across-await",
+      "arena_owner": "A",
+      "allocation": "scratch",
+      "expect": "reject"
+    },
+    {
+      "id": "stale_incarnation",
+      "actor": "A",
+      "action": "read-after-restart",
+      "arena_owner": "A",
+      "allocation": "persistent",
+      "expect": "reject"
+    },
+    {
+      "id": "region_cross_domain",
+      "actor": "B",
+      "action": "read",
+      "allocation": "shared",
+      "rights": [
+        "read"
+      ],
+      "domain": "different",
+      "expect": "reject"
+    },
+    {
+      "id": "shared_read",
+      "actor": "B",
+      "action": "read",
+      "allocation": "shared",
+      "rights": [
+        "read"
+      ],
+      "domain": "same",
+      "lease": "live",
+      "expect": "allow"
+    },
+    {
+      "id": "shared_write_without_lease",
+      "actor": "B",
+      "action": "write",
+      "allocation": "shared",
+      "rights": [
+        "write"
+      ],
+      "domain": "same",
+      "lease": "none",
+      "expect": "reject"
+    },
+    {
+      "id": "shared_write_with_exclusive_lease",
+      "actor": "B",
+      "action": "write",
+      "allocation": "shared",
+      "rights": [
+        "write"
+      ],
+      "domain": "same",
+      "lease": "exclusive",
+      "expect": "allow"
+    },
+    {
+      "id": "shared_lease_prevents_free",
+      "action": "retire-physical",
+      "outstanding_leases": 1,
+      "expect": "defer"
+    },
+    {
+      "id": "all_leases_released",
+      "action": "retire-physical",
+      "outstanding_leases": 0,
+      "active_turns": 0,
+      "pending_callbacks": 0,
+      "expect": "allow"
+    },
+    {
+      "id": "quota_overflow",
+      "action": "allocate",
+      "requested_bytes": "SIZE_MAX",
+      "expect": "reject"
+    },
+    {
+      "id": "double_drop",
+      "action": "drop-twice",
+      "expect": "reject"
+    },
+    {
+      "id": "teardown_once",
+      "action": "close-twice",
+      "expect": "idempotent"
+    }
+  ]
+}

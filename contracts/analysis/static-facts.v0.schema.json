@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.org/contracts/analysis/static-facts.v0.schema.json",
+  "title": "Experimental Oreslang static analyzer compiler facts v0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "unit",
+    "procedures",
+    "edges",
+    "taint_sources",
+    "flows",
+    "sinks",
+    "permission_checks"
+  ],
+  "properties": {
+    "version": {
+      "const": "ores-static-facts/v0"
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "minLength": 71,
+      "maxLength": 71
+    },
+    "procedures": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "loops"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "loops": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "exit",
+                "safepoint"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/id"
+                },
+                "exit": {
+                  "enum": [
+                    "proved_terminates",
+                    "proved_no_exit",
+                    "unknown"
+                  ]
+                },
+                "safepoint": {
+                  "type": "boolean"
+                },
+                "location": {
+                  "$ref": "#/$defs/location"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 8192,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "kind",
+          "fanout",
+          "guard"
+        ],
+        "properties": {
+          "from": {
+            "$ref": "#/$defs/id"
+          },
+          "to": {
+            "$ref": "#/$defs/id"
+          },
+          "kind": {
+            "enum": [
+              "call",
+              "actor_spawn",
+              "task_spawn",
+              "message",
+              "callback",
+              "supervisor_restart",
+              "retry"
+            ]
+          },
+          "fanout": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              },
+              {
+                "const": "unknown"
+              }
+            ]
+          },
+          "guard": {
+            "enum": [
+              "proved_bounded",
+              "unproved"
+            ],
+            "description": "proved_bounded means a compiler-proven finite TOTAL traversal budget across the cycle, not merely per-invocation fanout"
+          },
+          "enclosing_loop": {
+            "$ref": "#/$defs/id"
+          },
+          "location": {
+            "$ref": "#/$defs/location"
+          }
+        }
+      }
+    },
+    "taint_sources": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "class"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "class": {
+            "enum": [
+              "untrusted",
+              "secret"
+            ]
+          },
+          "location": {
+            "$ref": "#/$defs/location"
+          }
+        }
+      }
+    },
+    "flows": {
+      "type": "array",
+      "maxItems": 50000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "$ref": "#/$defs/id"
+          },
+          "to": {
+            "$ref": "#/$defs/id"
+          },
+          "validated_for": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/risk"
+            }
+          },
+          "location": {
+            "$ref": "#/$defs/location"
+          }
+        }
+      }
+    },
+    "sinks": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "risk"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "risk": {
+            "$ref": "#/$defs/risk"
+          },
+          "location": {
+            "$ref": "#/$defs/location"
+          }
+        }
+      }
+    },
+    "permission_checks": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "requested",
+          "ceiling"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "requested": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/permission"
+            }
+          },
+          "ceiling": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/permission"
+            }
+          },
+          "location": {
+            "$ref": "#/$defs/location"
+          }
+        }
+      }
+    },
+    "callback_orderings": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "emitter",
+          "event",
+          "publisher",
+          "invocation_timing",
+          "order",
+          "registration_continuation",
+          "registration_completion"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "emitter": {
+            "$ref": "#/$defs/id"
+          },
+          "event": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "publisher": {
+            "$ref": "#/$defs/id"
+          },
+          "invocation_timing": {
+            "enum": [
+              "inline_only",
+              "deferred_after_turn",
+              "concurrent",
+              "mixed",
+              "unknown"
+            ]
+          },
+          "order": {
+            "enum": [
+              "publish_first",
+              "register_first",
+              "unknown"
+            ]
+          },
+          "registration_continuation": {
+            "enum": [
+              "same_uninterrupted_turn",
+              "may_suspend",
+              "unknown"
+            ]
+          },
+          "location": {
+            "$ref": "#/$defs/location"
+          },
+          "registration_completion": {
+            "enum": [
+              "proved_sync_install",
+              "unproved"
+            ],
+            "description": "Whether listener installation completes synchronously before on() returns; must be compiler/library verified"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "line"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200000000
+        }
+      }
+    },
+    "risk": {
+      "enum": [
+        "shell",
+        "raw_sql",
+        "file_path",
+        "network_destination",
+        "html",
+        "ffi_pointer",
+        "secret_log"
+      ]
+    },
+    "permission": {
+      "enum": [
+        "read",
+        "write",
+        "net",
+        "env",
+        "run",
+        "sys",
+        "ffi",
+        "import"
+      ]
+    }
+  },
+  "description": "Experimental advisory facts; caps match the v0 restricted Rust consumer. Global combined loop cap of 4096 and duplicate caller/callee edges are validated by importer, not solely JSON Schema. Source SHA256 is an identity, NOT producer attestation."
+}

@@ -1,0 +1,9 @@
+pub routine main(): void {
+  const Symbol tag = #ready;
+  if tag eq #ready then
+    stdio.stdout.write("same");
+  else
+    stdio.stdout.write("wrong");
+  fi
+  return;
+}

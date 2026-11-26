@@ -1,0 +1,319 @@
+{
+  "contract_version": "attolang.import-resolution.v1",
+  "status": "normative-input-contract; independent backend adoption required",
+  "inputs": {
+    "static_import_specifier": "AttoLang UTF-8 quoted import string",
+    "environment": "explicit immutable compiler environment snapshot",
+    "project_root": "selected verified .ores.pkg.toml manifest and configured [project].root",
+    "package_graph": "Zed lockfile pinned artifact identities"
+  },
+  "syntax": {
+    "project_root_prefix": "+/",
+    "project_root_examples": [
+      "+/src/config",
+      "+/lib/math"
+    ],
+    "env_interpolation": "${NAME}",
+    "env_variable_name": "[A-Za-z_][A-Za-z0-9_]*",
+    "env_interpolation_examples": [
+      "${repo}/src/config",
+      "${LIB_ROOT}/${LIB_VERSION}/math",
+      "+/lib/${MODULE}"
+    ],
+    "literal_dollar_not_alias": "$repo/src/config",
+    "relative_prefixes": [
+      "./",
+      "../"
+    ]
+  },
+  "resolution_rules": [
+    "Expand only braced ${NAME} placeholders exactly once from a supplied compiler environment snapshot; never shell-expand or execute.",
+    "Do not rewrite $repo to +/, to the project root, or to an environment variable; bare dollar spellings are not aliases.",
+    "The +/ prefix remains a distinct project-root namespace and never consults a variable named repo.",
+    "Missing, empty, malformed and nested env expansion values fail closed before source opening; no implicit defaults.",
+    "Expand before determining absolute-vs-relative filesystem paths, but preserve original import spelling as the graph-edge key.",
+    "Resolve every input to one canonical physical source identity and package boundary; reject traversal or symlink escapes after interpolation.",
+    "Lock-pinned dependencies cannot be shadowed by user search paths, vendor copies, or cache aliases.",
+    "Environment variables participating in source resolution must enter compiler cache keys and build provenance without disclosing secrets.",
+    "HTTPS import resolution is a separate gated feature: explicit URL, permission, immutable digest, signed provenance as applicable, offline and frozen no-network."
+  ],
+  "search_paths": {
+    "canonical_env": "ATTO_PATHS",
+    "legacy_envs_in_order": [
+      "ORES_PATHS",
+      "ORESLANG_PATH"
+    ],
+    "priority": "if ATTO_PATHS exists use only it; otherwise use ORES_PATHS if present; otherwise ORESLANG_PATH; explicit empty disables legacy fallback",
+    "separators": "host OS path-list separator; ignore empty components, never treat them as cwd",
+    "configured_roots": "project source roots and explicit manifest import paths precede ambient fallback",
+    "vendor": "project-local vendor accepted only with declared and checked package identities",
+    "cache": "Zed-owned immutable store by pinned digest (suggested platform-appropriate zpkg data directory); ~/.atto reserved for compiler state",
+    "no_ambient_home_search": [
+      "$HOME/.zed",
+      "$HOME/.zpkg",
+      "$HOME/.atto"
+    ],
+    "dynamic_cache_requirements": "include variable names, resolved values or safe hash, and source identities; never leak secret values into diagnostics"
+  },
+  "positives": [
+    {
+      "id": "actual-repo-variable",
+      "raw": "${repo}/src/config",
+      "environment": {
+        "repo": "/work/app"
+      },
+      "expect": "/work/app/src/config"
+    },
+    {
+      "id": "multiple-variables",
+      "raw": "${LIB_ROOT}/${LIB_VERSION}/math",
+      "environment": {
+        "LIB_ROOT": "/sdk",
+        "LIB_VERSION": "v2"
+      },
+      "expect": "/sdk/v2/math"
+    },
+    {
+      "id": "root-is-not-env",
+      "raw": "+/src/config",
+      "environment": {
+        "repo": "/other"
+      },
+      "expect": "+/src/config"
+    },
+    {
+      "id": "root-with-braced-component",
+      "raw": "+/${MODULE}/config",
+      "environment": {
+        "MODULE": "src"
+      },
+      "expect": "+/src/config"
+    },
+    {
+      "id": "unbraced-dollar-not-expanded",
+      "raw": "$repo/src/config",
+      "environment": {
+        "repo": "/work/app"
+      },
+      "expect": "$repo/src/config"
+    },
+    {
+      "id": "relative-import-unchanged",
+      "raw": "./shared/config",
+      "environment": {
+        "repo": "/work/app"
+      },
+      "expect": "./shared/config"
+    },
+    {
+      "id": "variable-not-recursively-expanded",
+      "raw": "${repo}/app",
+      "environment": {
+        "repo": "/work"
+      },
+      "expect": "/work/app"
+    },
+    {
+      "id": "valid-native-zed-package-marker",
+      "manifest": "[package]\nname = \"consumer\"\n",
+      "raw": "+/src/helper",
+      "expected_manifest_authority": "modern-Zed-package-root",
+      "expected_status": "backend-resolver-positive; guest-execution-pending"
+    },
+    {
+      "id": "configured-project-root",
+      "manifest": "schema_version = \"1\"\n[project]\nroot = \"application\"\n",
+      "raw": "+/src/helper",
+      "expected_resolved_relative_to_manifest": "application/src/helper.atto",
+      "expected_status": "backend-resolver-positive; guest-execution-pending"
+    }
+  ],
+  "rejections": [
+    {
+      "id": "missing-variable",
+      "raw": "${HOME}/foo",
+      "environment": {
+        "repo": "/work"
+      },
+      "error": "missing-variable"
+    },
+    {
+      "id": "empty-variable",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": ""
+      },
+      "error": "empty-variable"
+    },
+    {
+      "id": "invalid-variable-name",
+      "raw": "${bad-name}/foo",
+      "environment": {
+        "bad-name": "/work"
+      },
+      "error": "invalid-variable"
+    },
+    {
+      "id": "invalid-numeric-leading",
+      "raw": "${1ROOT}/foo",
+      "environment": {
+        "1ROOT": "/work"
+      },
+      "error": "invalid-variable"
+    },
+    {
+      "id": "unterminated-placeholder",
+      "raw": "${repo/foo",
+      "environment": {
+        "repo": "/work"
+      },
+      "error": "unterminated-placeholder"
+    },
+    {
+      "id": "default-syntax-not-shell",
+      "raw": "${repo:-/tmp}/foo",
+      "environment": {
+        "repo": "/work"
+      },
+      "error": "invalid-variable"
+    },
+    {
+      "id": "nested-expansion-denied",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": "${OTHER}"
+      },
+      "error": "nested-expansion"
+    },
+    {
+      "id": "control-byte-denied",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": "a\nb"
+      },
+      "error": "control-character"
+    },
+    {
+      "id": "larger-than-4096-bytes",
+      "raw": "${repo}/foo",
+      "environment": {
+        "repo": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "error": "length"
+    },
+    {
+      "id": "bidi-override-rejected",
+      "raw": "${repo}/file",
+      "environment": {
+        "repo": "/work/‮hidden"
+      },
+      "error": "control-or-display-spoofing"
+    },
+    {
+      "id": "noncanonical-utf8-rejected",
+      "raw": "${repo}/file",
+      "environment": {
+        "repo": "INVALID_UTF8_BYTES_FF"
+      },
+      "error": "invalid-utf8-host-bytes"
+    },
+    {
+      "id": "java-uri-smuggling",
+      "raw": "${repo}",
+      "environment": {
+        "repo": "java:java.lang.Runtime"
+      },
+      "error": "unsupported-import-scheme"
+    },
+    {
+      "id": "file-uri-smuggling",
+      "raw": "${repo}",
+      "environment": {
+        "repo": "file:///tmp/untrusted"
+      },
+      "error": "unsupported-import-scheme"
+    },
+    {
+      "id": "modern-package-marker-missing-name",
+      "raw": "+/src/helper",
+      "environment": {},
+      "error": "manifest-authority-failure"
+    },
+    {
+      "id": "configured-root-traversal",
+      "raw": "+/src/helper",
+      "environment": {},
+      "error": "manifest-project-root-traversal"
+    }
+  ],
+  "backend_gates": {
+    "java": "real .atto compile/link/execute, negative env and ATTO_PATHS tests",
+    "llvm": "real native .atto import graph and generated executable, negative cases",
+    "wasm": "verified LLVM source graph to wasm32 with real guest execution, not JS-only simulation",
+    "forge": "parser/linker/source execution; a standalone host resolver is NOT guest parity",
+    "net": "Native AOT linked .atto execution; host-only resolver is NOT guest parity"
+  },
+  "proof_policy": "A contract fixture, parser acceptance, static lint or zero-step run never implies compiler/linker/executable parity. Zed path-index CLI execution does not establish an offline frozen install; host interpolation checks do not establish compiled guest execution.",
+  "security_admission_v1": {
+    "modern_manifest": ".ores.pkg.toml",
+    "legacy_manifest": ".oreslangc.cfg.toml",
+    "modern_marker_precedence": "modern exists (including invalid/non-regular): reject or use modern; never silently switch to legacy",
+    "root_namespace": "+/ must resolve using nearest verified modern manifest and its configured [project].root; never CWD inference",
+    "environment_derived_absolute": "Require verified importing project manifest; physical target must remain within authorized project root or explicit manifest [source].import_paths; ambient ATTO_PATHS cannot authorize absolute env path",
+    "cross_backend_current_delta": "Java PR #2568 supports explicit manifest import_paths; LLVM PR #1442 restricts env absolute paths to importing physical package pending policy parser. Full cross-project parity NOT_IMPLEMENTED.",
+    "remote": "http:// and https:// denied until locked integrity, network permission, frozen offline, size/redirect and canonical graph checks",
+    "modern_manifest_authority": "schema_version = \"1\" OR validated [package].name lowercase ASCII identifier in modern .ores.pkg.toml; malformed modern marker never falls back to legacy",
+    "configured_project_root": "[project].root is a manifest-directory-relative root; physical realpath stays within package; +/ selects beneath configured root, never process cwd or ${repo}",
+    "uri_scheme_admission": "No inferred file:, java:, ftp:, other URI schemes from literal or interpolated source paths; HTTP(S) remains disabled pending verified Zed URL lock",
+    "unicode_path_policy": "Valid UTF-8 only; reject C0/C1, DEL, U+061C, U+200E/F, U+2028/29, U+202A-E, U+2066-69; no invalid surrogate/replacement aliasing"
+  },
+  "guest_execution_corpus_v1": [
+    {
+      "id": "distinct-root-and-env-imports",
+      "source_file": "src/main.atto",
+      "manifest": ".ores.pkg.toml",
+      "imports": [
+        "+/src/root_helper",
+        "${repo}/src/env_helper"
+      ],
+      "fixture_roots": {
+        "root_helper_return": 19,
+        "env_helper_return": 23
+      },
+      "expect_exit": 42,
+      "required": [
+        "Java/Graal source compile+execute",
+        "LLVM native compile+IR+clang guest execute"
+      ],
+      "status": "pending-exact-head-executed-test"
+    },
+    {
+      "id": "project-root-respects-configured-subdirectory",
+      "manifest_project_root": "application",
+      "specifier": "+/src/helper",
+      "resolved": "application/src/helper.atto",
+      "status": "pending-exact-head-executed-test"
+    },
+    {
+      "id": "external-env-source-authorized-manifest",
+      "specifier": "${OTHER_ROOT}/lib",
+      "required_authority": "declared [source].import_paths + source identity; do not use ambient ATTO_PATHS as policy",
+      "status": "Java-test-added; LLVM policy adapter pending"
+    },
+    {
+      "id": "env-no-manifest-failclosed",
+      "specifier": "${repo}/src/helper",
+      "expected": "reject-untrusted-absolute-environment-import"
+    },
+    {
+      "id": "nested-project-failclosed",
+      "specifier": "${repo}/nested/secret",
+      "expected": "reject-cross-package"
+    },
+    {
+      "id": "bare-dollar-remains-literal",
+      "specifier": "$repo/src/helper",
+      "expected": "never-project-root-alias"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "atto.instrumentation-contract.v1",
+  "status": "CONTRACT_ONLY_NO_BACKEND_EXECUTION_CREDIT",
+  "version": 1,
+  "backend_ids": ["java-graal", "llvm", "dotnet", "wasm", "cranelift"],
+  "modes": {
+    "OFF": "AOT dispatch; no spans recorded",
+    "ON": "Existing AOT probes; no runtime code generation required",
+    "DEEP": "Optional validated instrumented variants; never an implicit JIT fallback"
+  },
+  "manifest_schema": "atto.instrumentation-manifest.v1",
+  "envelope_schema": "atto.instrumentation-envelope.v1",
+  "function_id": "lowercase hex SHA-256 prefix (32 chars) of UTF-8 'atto-function-v1\\0' + module + '\\0' + qualified_name",
+  "probe_id": "lowercase hex SHA-256 prefix (32 chars) of UTF-8 'atto-probe-v1\\0' + function_id + '\\0' + kind + '\\0' + site decimal",
+  "probe_kinds": ["function_entry", "function_exit", "message_send", "message_receive", "suspend", "resume", "cancel", "error", "supervisor", "http_in", "http_out"],
+  "required_source_binding": ["source_head", "source_tree", "compiler_sha256", "executable_sha256"],
+  "required_function_fingerprints": ["abi_sha256", "effects_sha256", "ownership_sha256", "continuation_sha256"],
+  "code_replacement": {
+    "dispatch_policy": "new_calls_only",
+    "suspended_continuations": "pin_original_version",
+    "retirement": "after_all_inflight_calls_and_continuations_quiesce",
+    "aot_default": true,
+    "uninstrumented_aot_must_remain_available": true,
+    "forbid_deep_in_hard_realtime": true,
+    "require_wx_executable_memory": true,
+    "no_dynamic_type_or_capability_minting": true,
+    "actor_heap_isolation_mandatory": true
+  },
+  "security": {
+    "signature_algorithm": "Ed25519",
+    "canonical_payload": "UTF-8 JSON with lexicographically sorted object keys and no whitespace",
+    "trust_anchor": "out_of_band_public_key_not_embedded_in_manifest",
+    "authorization": "independent_tenant_scoped_control_plane_capability_required",
+    "signature_does_not_grant_authorization": true,
+    "source_binding_required": true,
+    "resource_quotas_required": true
+  },
+  "proof_layers": ["contract", "host_dispatch", "compiler_admission", "guest_execution", "binary_aot", "jit_replacement"],
+  "proof_policy": {
+    "structural_validation_is_not_jit_execution": true,
+    "host_dispatch_is_not_guest_execution": true,
+    "empty_or_synthetic_workflow_is_not_executed": true,
+    "cross_backend_parity_requires_independent_execution": true,
+    "unsupported_is_not_pass": true,
+    "private_ci_mirror_requires_independent_source_side_approval": true
+  }
+}

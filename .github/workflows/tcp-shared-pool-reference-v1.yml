@@ -1,0 +1,46 @@
+name: TCP shared pool host and source reference v1
+
+on:
+  pull_request:
+    paths:
+      - 'tests/tcp_shared_*.test.mjs'
+      - 'contracts/v1/TCP_SHARED_POOL_CAPABILITIES_V1.md'
+      - '.github/workflows/tcp-shared-pool-reference-v1.yml'
+  push:
+    paths:
+      - 'tests/tcp_shared_*.test.mjs'
+      - 'contracts/v1/TCP_SHARED_POOL_CAPABILITIES_V1.md'
+      - '.github/workflows/tcp-shared-pool-reference-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference:
+    name: Node host loopback and source model (NOT Oreslang guest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Syntax admission
+        run: |
+          node --check tests/tcp_shared_pool_model_v1.test.mjs
+          node --check tests/tcp_shared_pool_interleavings_v1.test.mjs
+          node --check tests/tcp_shared_slab_registry_v1.test.mjs
+          node --check tests/tcp_shared_pool_loopback_v1.test.mjs
+          node --check tests/tcp_frozen_slab_portable_v1.test.mjs
+      - name: Model conformance (no socket syscall)
+        run: |
+          node tests/tcp_shared_pool_model_v1.test.mjs
+          node tests/tcp_shared_pool_interleavings_v1.test.mjs
+          node tests/tcp_shared_slab_registry_v1.test.mjs
+      - name: Real loopback TCP safety oracle (Node host only, NOT Oreslang guest)
+        run: node --test tests/tcp_shared_pool_loopback_v1.test.mjs
+      - name: Portable frozen byte-slab fixture (model only)
+        run: node --test tests/tcp_frozen_slab_portable_v1.test.mjs

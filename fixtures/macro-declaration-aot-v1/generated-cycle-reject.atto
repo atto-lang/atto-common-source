@@ -1,0 +1,7 @@
+// Recursive declaration expansion must reject before IR or guest artifact creation.
+define macro cycle() -> Syntax<Decl> {
+    return quote {
+        cycle!();
+    };
+}
+cycle!();

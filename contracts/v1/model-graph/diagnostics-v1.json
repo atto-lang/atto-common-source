@@ -1,0 +1,693 @@
+{
+  "contract": "oreslang.model.diagnostics.v1",
+  "status": "PROPOSED",
+  "rule": "A diagnostic class has exactly one phase in v1. Backends may add locations/details but must preserve the class for shared fixtures.",
+  "phase_order": [
+    "syntax",
+    "lowering",
+    "admission",
+    "gradient",
+    "identity",
+    "implementation"
+  ],
+  "diagnostics": [
+    {
+      "code": "MODEL_EMPTY_BODY",
+      "phase": "syntax",
+      "ordinal": 0,
+      "meaning": "model declaration contains no operation"
+    },
+    {
+      "code": "MODEL_NON_LAYER_EXPRESSION",
+      "phase": "syntax",
+      "ordinal": 1,
+      "meaning": "v1 model body contains syntax other than a nominal operation call"
+    },
+    {
+      "code": "MODEL_DYNAMIC_TOPOLOGY",
+      "phase": "syntax",
+      "ordinal": 2,
+      "meaning": "v1 source attempts data-dependent/control-flow graph topology"
+    },
+    {
+      "code": "MODEL_EFFECTFUL_BODY",
+      "phase": "syntax",
+      "ordinal": 3,
+      "meaning": "source-level model body directly contains an effectful construct"
+    },
+    {
+      "code": "MODEL_UNKNOWN_OP",
+      "phase": "lowering",
+      "ordinal": 4,
+      "meaning": "nominal operation cannot be resolved"
+    },
+    {
+      "code": "MODEL_ARITY_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 5,
+      "meaning": "operation dependency arity differs from resolved signature"
+    },
+    {
+      "code": "MODEL_CONST_ARITY_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 6,
+      "meaning": "static argument count differs from resolved signature"
+    },
+    {
+      "code": "MODEL_CONST_TYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 7,
+      "meaning": "static argument canonical kind differs from resolved signature"
+    },
+    {
+      "code": "MODEL_FORGED_OP_METADATA",
+      "phase": "lowering",
+      "ordinal": 8,
+      "meaning": "guest/source HIR attempts to supply compiler-owned operation metadata"
+    },
+    {
+      "code": "MODEL_UNTRUSTED_OP_REGISTRY",
+      "phase": "lowering",
+      "ordinal": 9,
+      "meaning": "operation registry does not originate from the trusted compiler/linker boundary"
+    },
+    {
+      "code": "MODEL_INVALID_OP_ID",
+      "phase": "lowering",
+      "ordinal": 10,
+      "meaning": "operation identity is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_OP_SIGNATURE",
+      "phase": "lowering",
+      "ordinal": 11,
+      "meaning": "resolved operation signature is malformed or incomplete"
+    },
+    {
+      "code": "MODEL_EFFECTFUL_OP",
+      "phase": "lowering",
+      "ordinal": 12,
+      "meaning": "resolved operation has an effect forbidden inside the pure model graph"
+    },
+    {
+      "code": "MODEL_PORT_TYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 13,
+      "meaning": "nominal/buffer port family or nominal ABI is incompatible"
+    },
+    {
+      "code": "MODEL_PORT_DTYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 14,
+      "meaning": "buffer element dtype is incompatible"
+    },
+    {
+      "code": "MODEL_PORT_SHAPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 15,
+      "meaning": "buffer rank or extent is incompatible"
+    },
+    {
+      "code": "MODEL_PORT_LAYOUT_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 16,
+      "meaning": "buffer physical layout is incompatible"
+    },
+    {
+      "code": "MODEL_PORT_UNIT_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 17,
+      "meaning": "buffer physical unit/dimension is incompatible"
+    },
+    {
+      "code": "MODEL_INVALID_PORT",
+      "phase": "lowering",
+      "ordinal": 18,
+      "meaning": "resolved port descriptor is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_EXTENT",
+      "phase": "lowering",
+      "ordinal": 19,
+      "meaning": "buffer extent is negative, fractional or otherwise invalid"
+    },
+    {
+      "code": "MODEL_SIZE_OVERFLOW",
+      "phase": "lowering",
+      "ordinal": 20,
+      "meaning": "checked port size arithmetic overflows the admitted range"
+    },
+    {
+      "code": "MODEL_INVALID_CONST",
+      "phase": "lowering",
+      "ordinal": 21,
+      "meaning": "canonical static argument representation is malformed"
+    },
+    {
+      "code": "MODEL_CONST_OVERFLOW",
+      "phase": "lowering",
+      "ordinal": 22,
+      "meaning": "canonical integer static argument exceeds i64"
+    },
+    {
+      "code": "MODEL_NONFINITE_CONST",
+      "phase": "lowering",
+      "ordinal": 23,
+      "meaning": "canonical floating static argument is NaN or infinity"
+    },
+    {
+      "code": "MODEL_INVALID_SCRATCH",
+      "phase": "lowering",
+      "ordinal": 24,
+      "meaning": "operation scratch bound is malformed"
+    },
+    {
+      "code": "MODEL_NONCONSTANT_CONFIG",
+      "phase": "lowering",
+      "meaning": "model static configuration is not a bounded canonical compile-time constant",
+      "ordinal": 25
+    },
+    {
+      "code": "MODEL_RECURSIVE_COMPOSITION",
+      "phase": "lowering",
+      "meaning": "nominal model composition forms a recursive dependency instead of a finite graph",
+      "ordinal": 26
+    },
+    {
+      "code": "MODEL_INVALID_GRAPH",
+      "phase": "admission",
+      "ordinal": 27,
+      "meaning": "structural graph input is malformed"
+    },
+    {
+      "code": "MODEL_DUPLICATE_NODE",
+      "phase": "admission",
+      "ordinal": 28,
+      "meaning": "node identity is duplicated or malformed"
+    },
+    {
+      "code": "MODEL_FORWARD_OR_CYCLIC_EDGE",
+      "phase": "admission",
+      "ordinal": 29,
+      "meaning": "dependency is forward, cyclic or unresolved in canonical order"
+    },
+    {
+      "code": "MODEL_UNKNOWN_OUTPUT",
+      "phase": "admission",
+      "ordinal": 30,
+      "meaning": "graph output does not resolve to an admitted node"
+    },
+    {
+      "code": "MODEL_DUPLICATE_OUTPUT",
+      "phase": "admission",
+      "ordinal": 31,
+      "meaning": "graph output is duplicated"
+    },
+    {
+      "code": "MODEL_INVALID_OPTIONS",
+      "phase": "admission",
+      "ordinal": 32,
+      "meaning": "admission options are malformed"
+    },
+    {
+      "code": "MODEL_INVALID_BUDGET",
+      "phase": "admission",
+      "ordinal": 33,
+      "meaning": "resource budget is malformed"
+    },
+    {
+      "code": "MODEL_NODE_BUDGET",
+      "phase": "admission",
+      "ordinal": 34,
+      "meaning": "node count exceeds the admitted budget"
+    },
+    {
+      "code": "MODEL_EDGE_BUDGET",
+      "phase": "admission",
+      "ordinal": 35,
+      "meaning": "edge count exceeds the admitted budget"
+    },
+    {
+      "code": "MODEL_DEPTH_BUDGET",
+      "phase": "admission",
+      "ordinal": 36,
+      "meaning": "path depth exceeds the admitted budget"
+    },
+    {
+      "code": "MODEL_MEMORY_BUDGET",
+      "phase": "admission",
+      "ordinal": 37,
+      "meaning": "conservative output/scratch memory exceeds the admitted budget"
+    },
+    {
+      "code": "MODEL_PROFILE_UNSUPPORTED",
+      "phase": "admission",
+      "ordinal": 38,
+      "meaning": "requested execution profile cannot be satisfied"
+    },
+    {
+      "code": "MODEL_DYNAMIC_ALLOCATION",
+      "phase": "admission",
+      "ordinal": 39,
+      "meaning": "requested no-dynamic-allocation profile encounters a dynamic allocator"
+    },
+    {
+      "code": "MODEL_NONDETERMINISTIC_OP",
+      "phase": "admission",
+      "ordinal": 40,
+      "meaning": "requested deterministic profile encounters a nondeterministic operation"
+    },
+    {
+      "code": "MODEL_INVALID_GRADIENT_REQUEST",
+      "phase": "gradient",
+      "ordinal": 41,
+      "meaning": "gradient output/target request is malformed"
+    },
+    {
+      "code": "MODEL_DUPLICATE_GRADIENT_ENDPOINT",
+      "phase": "gradient",
+      "ordinal": 42,
+      "meaning": "gradient output or target is duplicated"
+    },
+    {
+      "code": "MODEL_UNKNOWN_GRADIENT_ENDPOINT",
+      "phase": "gradient",
+      "ordinal": 43,
+      "meaning": "gradient endpoint does not resolve to an admitted node"
+    },
+    {
+      "code": "MODEL_UNKNOWN_GRADIENT_OUTPUT",
+      "phase": "gradient",
+      "ordinal": 44,
+      "meaning": "gradient source is not an exposed graph output"
+    },
+    {
+      "code": "MODEL_GRADIENT_DISCONNECTED",
+      "phase": "gradient",
+      "ordinal": 45,
+      "meaning": "requested derivative target is not connected to the requested output"
+    },
+    {
+      "code": "MODEL_MISSING_VJP",
+      "phase": "gradient",
+      "ordinal": 46,
+      "meaning": "a live requested derivative path crosses an operation without a validated VJP"
+    },
+    {
+      "code": "MODEL_INVALID_RESOLVED_GRAPH",
+      "phase": "identity",
+      "ordinal": 47,
+      "meaning": "resolved graph supplied to portable identity encoding is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_RESOLVED_NODE",
+      "phase": "identity",
+      "ordinal": 48,
+      "meaning": "resolved node supplied to portable identity encoding is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_IMPLEMENTATION_DIGEST",
+      "phase": "identity",
+      "ordinal": 49,
+      "meaning": "resolved operation implementation digest is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_OP_PROFILE",
+      "phase": "identity",
+      "ordinal": 50,
+      "meaning": "resolved portable operation profile is malformed"
+    },
+    {
+      "code": "MODEL_DIGEST_ENCODING",
+      "phase": "identity",
+      "ordinal": 51,
+      "meaning": "value cannot be represented by portable digest v1 encoding"
+    },
+    {
+      "code": "MODEL_DIGEST_STRING",
+      "phase": "identity",
+      "ordinal": 52,
+      "meaning": "string contains an ill-formed Unicode scalar sequence"
+    },
+    {
+      "code": "MODEL_INVALID_GRAPH_IDENTITY",
+      "phase": "identity",
+      "ordinal": 53,
+      "meaning": "graph identity tuple is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_MODEL_TYPE_ID",
+      "phase": "identity",
+      "ordinal": 54,
+      "meaning": "nominal model type identity is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_GRAPH_DIGEST",
+      "phase": "identity",
+      "ordinal": 55,
+      "meaning": "portable graph digest is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_GRAPH_GENERATION",
+      "phase": "identity",
+      "ordinal": 56,
+      "meaning": "graph generation is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_INSTANCE_IDENTITY",
+      "phase": "identity",
+      "ordinal": 57,
+      "meaning": "model instance identity tuple is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_INSTANCE_ID",
+      "phase": "identity",
+      "ordinal": 58,
+      "meaning": "model instance identity is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_PARAMETER_VERSION",
+      "phase": "identity",
+      "ordinal": 59,
+      "meaning": "parameter version is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_EXECUTION_PROFILE",
+      "phase": "identity",
+      "ordinal": 60,
+      "meaning": "execution profile digest is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_RUN_REQUEST",
+      "phase": "identity",
+      "ordinal": 61,
+      "meaning": "run request identity tuple is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_RUN_ID",
+      "phase": "identity",
+      "ordinal": 62,
+      "meaning": "run identity is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_RUN_STAMP",
+      "phase": "identity",
+      "ordinal": 63,
+      "meaning": "run stamp is malformed"
+    },
+    {
+      "code": "MODEL_INSTANCE_TYPE_MISMATCH",
+      "phase": "identity",
+      "ordinal": 64,
+      "meaning": "instance belongs to a different nominal model type"
+    },
+    {
+      "code": "MODEL_INSTANCE_GRAPH_MISMATCH",
+      "phase": "identity",
+      "ordinal": 65,
+      "meaning": "instance belongs to a different graph digest"
+    },
+    {
+      "code": "MODEL_GRAPH_GENERATION_MISMATCH",
+      "phase": "identity",
+      "ordinal": 66,
+      "meaning": "run/instance belongs to a different published graph generation"
+    },
+    {
+      "code": "MODEL_INSTANCE_ID_MISMATCH",
+      "phase": "identity",
+      "ordinal": 67,
+      "meaning": "run state belongs to a different model instance"
+    },
+    {
+      "code": "MODEL_PARAMETER_VERSION_MISMATCH",
+      "phase": "identity",
+      "ordinal": 68,
+      "meaning": "run state belongs to a different parameter snapshot"
+    },
+    {
+      "code": "MODEL_EXECUTION_PROFILE_MISMATCH",
+      "phase": "identity",
+      "ordinal": 69,
+      "meaning": "run state belongs to a different execution profile"
+    },
+    {
+      "code": "MODEL_RUN_MISMATCH",
+      "phase": "identity",
+      "ordinal": 70,
+      "meaning": "state/continuation belongs to a different run"
+    },
+    {
+      "code": "MODEL_PARAMETER_VERSION_OVERFLOW",
+      "phase": "identity",
+      "ordinal": 71,
+      "meaning": "parameter publication version would wrap"
+    },
+    {
+      "code": "MODEL_STATELESS_INSTANCE",
+      "phase": "identity",
+      "ordinal": 72,
+      "meaning": "parameter publication attempted on a stateless model instance"
+    },
+    {
+      "code": "MODEL_LOWERING_NOT_IMPLEMENTED",
+      "phase": "implementation",
+      "ordinal": 73,
+      "meaning": "parser accepted the declaration but executable typed ModelGraph lowering is intentionally gated"
+    },
+    {
+      "code": "MODEL_GRAPH_GENERATION_OVERFLOW",
+      "phase": "identity",
+      "ordinal": 74,
+      "meaning": "graph publication generation would wrap"
+    },
+    {
+      "code": "MODEL_RUN_REPLAY",
+      "phase": "identity",
+      "ordinal": 75,
+      "meaning": "a run identity has already committed or published and cannot commit again"
+    },
+    {
+      "code": "MODEL_NONCANONICAL_EXECUTION_PROFILE",
+      "phase": "identity",
+      "ordinal": 76,
+      "meaning": "execution profile metadata is valid in shape but not in canonical v1 ordering/representation"
+    },
+    {
+      "code": "MODEL_NAMED_ARGUMENT_UNRESOLVED",
+      "phase": "lowering",
+      "ordinal": 77,
+      "meaning": "source static configuration uses a name the trusted op signature cannot resolve; labels may not be silently erased"
+    },
+    {
+      "code": "MODEL_FORMAL_DEFAULT_TYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 78,
+      "meaning": "model formal default literal kind conflicts with its declared type"
+    },
+    {
+      "code": "MODEL_FORMAL_BUDGET",
+      "phase": "admission",
+      "ordinal": 79,
+      "meaning": "model AST exceeds the maximum allowed declared formal count"
+    },
+    {
+      "code": "MODEL_DUPLICATE_FORMAL",
+      "phase": "lowering",
+      "ordinal": 80,
+      "meaning": "model contains repeated formal names even after direct AST construction"
+    },
+    {
+      "code": "MODEL_ARGUMENT_BUDGET",
+      "phase": "admission",
+      "ordinal": 81,
+      "meaning": "model operation has more static configuration arguments than the bounded frontend permits"
+    },
+    {
+      "code": "MODEL_INVALID_OP_ABI",
+      "phase": "lowering",
+      "ordinal": 82,
+      "meaning": "compiler-supplied resolved operation ABI identifier is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_IMPL_DIGEST",
+      "phase": "lowering",
+      "ordinal": 83,
+      "meaning": "compiler-supplied operation implementation hash is malformed"
+    },
+    {
+      "code": "MODEL_INVALID_OP_PROVENANCE",
+      "phase": "lowering",
+      "ordinal": 84,
+      "meaning": "operation provenance does not match a trusted compiler-recognized category"
+    },
+    {
+      "code": "MODEL_UNKNOWN_FORMAL",
+      "phase": "lowering",
+      "ordinal": 85,
+      "meaning": "model argument or override references an undeclared formal name"
+    },
+    {
+      "code": "MODEL_GRAPH_BUDGET",
+      "phase": "admission",
+      "ordinal": 86,
+      "meaning": "resolved graph or output collection exceeds the portable identity size limit"
+    },
+    {
+      "code": "MODEL_PORT_ARITY_MISMATCH",
+      "phase": "admission",
+      "ordinal": 87,
+      "meaning": "resolved operation dependency count violates its typed input signature"
+    },
+    {
+      "code": "MODEL_AMBIGUOUS",
+      "phase": "lowering",
+      "ordinal": 88,
+      "meaning": "unqualified model lookup is ambiguous and requires an explicit module qualifier"
+    },
+    {
+      "code": "MODEL_AMBIGUOUS_OP",
+      "phase": "lowering",
+      "ordinal": 89,
+      "meaning": "operation resolution finds more than one candidate for the same executable arity"
+    },
+    {
+      "code": "MODEL_BUDGET",
+      "phase": "admission",
+      "ordinal": 90,
+      "meaning": "model declaration count exceeds the executable profile budget"
+    },
+    {
+      "code": "MODEL_COMPOSITION_NOT_ENABLED",
+      "phase": "lowering",
+      "ordinal": 91,
+      "meaning": "nonrecursive model composition is valid in the general architecture but not enabled in executable v1"
+    },
+    {
+      "code": "MODEL_CONFIG_ARITY",
+      "phase": "lowering",
+      "ordinal": 92,
+      "meaning": "model construction supplies too many values or omits a required configuration parameter"
+    },
+    {
+      "code": "MODEL_CONFIG_BUDGET",
+      "phase": "admission",
+      "ordinal": 93,
+      "meaning": "model configuration parameter count exceeds the executable profile budget"
+    },
+    {
+      "code": "MODEL_CONFIG_DEFAULT_ORDER",
+      "phase": "lowering",
+      "ordinal": 94,
+      "meaning": "a required model configuration parameter follows a defaulted parameter"
+    },
+    {
+      "code": "MODEL_CONFIG_NAMED_UNSUPPORTED",
+      "phase": "implementation",
+      "ordinal": 95,
+      "meaning": "the backend executable profile does not yet support named model-constructor configuration"
+    },
+    {
+      "code": "MODEL_CONFIG_SHAPE",
+      "phase": "identity",
+      "ordinal": 96,
+      "meaning": "a configured model identity does not bind exactly the declared configuration parameter set"
+    },
+    {
+      "code": "MODEL_CONFIG_TYPE_ARGUMENTS",
+      "phase": "lowering",
+      "ordinal": 97,
+      "meaning": "model construction attempts unsupported generic type arguments"
+    },
+    {
+      "code": "MODEL_CONFIG_TYPE_MISMATCH",
+      "phase": "lowering",
+      "ordinal": 98,
+      "meaning": "a model configuration value does not match the declared canonical configuration type"
+    },
+    {
+      "code": "MODEL_DUPLICATE",
+      "phase": "lowering",
+      "ordinal": 99,
+      "meaning": "the same nominal model is declared more than once in one ownership scope"
+    },
+    {
+      "code": "MODEL_DUPLICATE_PARAMETER",
+      "phase": "lowering",
+      "ordinal": 100,
+      "meaning": "a model declaration repeats a configuration parameter name"
+    },
+    {
+      "code": "MODEL_INVALID_CONFIG_TYPE",
+      "phase": "lowering",
+      "ordinal": 101,
+      "meaning": "a model configuration parameter uses a type outside the executable profile"
+    },
+    {
+      "code": "MODEL_INVALID_IDENTIFIER",
+      "phase": "lowering",
+      "ordinal": 102,
+      "meaning": "a model, operation, or configuration identifier is not canonical for portable executable v1"
+    },
+    {
+      "code": "MODEL_INVALID_STATIC_ARG",
+      "phase": "lowering",
+      "ordinal": 103,
+      "meaning": "the compiler-internal static argument descriptor is malformed"
+    },
+    {
+      "code": "MODEL_MISSING_CONFIG",
+      "phase": "identity",
+      "ordinal": 104,
+      "meaning": "configured model identity or execution is missing a declared configuration binding"
+    },
+    {
+      "code": "MODEL_RUN_ARITY",
+      "phase": "lowering",
+      "ordinal": 105,
+      "meaning": "model.run is invoked with the wrong number of dynamic inputs"
+    },
+    {
+      "code": "MODEL_STATIC_ARG_BUDGET",
+      "phase": "admission",
+      "ordinal": 106,
+      "meaning": "one operation or the whole model exceeds the executable static-argument budget"
+    },
+    {
+      "code": "MODEL_TYPE_NAME_COLLISION",
+      "phase": "lowering",
+      "ordinal": 107,
+      "meaning": "a model nominal type collides with another nominal declaration"
+    },
+    {
+      "code": "MODEL_UNKNOWN_CONFIG",
+      "phase": "identity",
+      "ordinal": 108,
+      "meaning": "configured model identity contains a configuration key that is not declared by the model"
+    },
+    {
+      "code": "MODEL_VALUE_NAME_COLLISION",
+      "phase": "lowering",
+      "ordinal": 109,
+      "meaning": "a model value constructor collides with another callable/value declaration"
+    },
+    {
+      "code": "MODEL_VALUE_STORAGE_UNSUPPORTED",
+      "phase": "implementation",
+      "ordinal": 110,
+      "meaning": "the backend executable profile does not yet support storing first-class model values"
+    },
+    {
+      "code": "MODEL_ACTOR_TRANSFER_UNSUPPORTED",
+      "phase": "implementation",
+      "ordinal": 111,
+      "meaning": "the backend executable profile does not permit model values to cross an actor/message boundary"
+    },
+    {
+      "code": "MODEL_INVALID_PROGRAM",
+      "phase": "implementation",
+      "ordinal": 112,
+      "meaning": "compiler ModelGraph entrypoint received an invalid or missing program object rather than a checked source program"
+    }
+  ]
+}

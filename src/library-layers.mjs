@@ -56,14 +56,14 @@ export function lexAtto(source){
       continue;
     }
     if(ch==='"'||ch==="'"){
-      const quote=ch;let value='',closed=false;i++;
+      const quote=ch;let value='',closed=false,escaped=false;i++;
       while(i<source.length){
-        if(source[i]==='\\'){if(i+1>=source.length)break;value+=source[i+1];i+=2;continue;}
+        if(source[i]==='\\'){escaped=true;if(i+1>=source.length)break;value+=source[i+1];i+=2;continue;}
         if(source[i]===quote){i++;closed=true;break;}
         value+=source[i++];
       }
       if(!closed) FAIL('E_LIBRARY_SOURCE','unclosed string literal');
-      out.push({kind:'string',value});continue;
+      out.push({kind:'string',value,escaped});continue;
     }
     if(/[A-Za-z_]/.test(ch)){
       const start=i++;while(i<source.length&&/[A-Za-z0-9_]/.test(source[i]))i++;
@@ -85,13 +85,13 @@ export function inspectAtto(source,layer){
     const w=at(t,i),next=at(t,i+1),isWord=t[i].kind==='word';
     if(w==='import'&&isWord){
       let p;
-      if(next==='module' && t[i+2]?.kind==='word'&&at(t,i+3)==='from'
-          &&t[i+4]?.kind==='string'){
+      if(next==='module' && t[i+1]?.kind==='word' && t[i+2]?.kind==='word' &&
+          at(t,i+3)==='from' && t[i+3]?.kind==='word' && t[i+4]?.kind==='string'){
         p=t[i+4].value;i+=4;
       }else if(t[i+1]?.kind==='string'){p=t[i+1].value;i++;}
       else FAIL('E_LIBRARY_IMPORT','unrecognized import syntax');
-      if(!canonical(p))FAIL('E_LIBRARY_IMPORT','import must use canonical stdlib path: '+p);
-      if(at(t,i+1)!==';')FAIL('E_LIBRARY_IMPORT','import must end with semicolon');
+      if(t[i].escaped || !canonical(p))FAIL('E_LIBRARY_IMPORT','import must use canonical stdlib path: '+p);
+      if(at(t,i+1)!==';' || t[i+1]?.kind!=='punct')FAIL('E_LIBRARY_IMPORT','import must end with semicolon');
       imports.push(p);i++;continue;
     }
     if(isWord && ['extern','foreign','syscall','dlopen','ffi'].includes(w))
@@ -128,7 +128,8 @@ export function validateLibraryLayers(manifest,sources){
   if(manifest.proof.compiledGuestCases!==0||manifest.proof.freestandingImageLinked!==false
      ||manifest.proof.backendParityVerified!==false)
     FAIL('E_LIBRARY_EVIDENCE','structural-only manifest cannot claim guest proof');
-  if(!Array.isArray(manifest.sources)||manifest.sources.length===0)
+  uniqueArray(manifest.sources,'source inventory');
+  if(manifest.sources.length===0)
     FAIL('E_LIBRARY_MANIFEST','empty inventory');
   exact(sources,['files'],'source set');
   exactSourceFiles(sources.files);
@@ -186,8 +187,10 @@ export function validateLibraryLayers(manifest,sources){
 function exactSourceFiles(files){
   if(!files||typeof files!=='object'||Array.isArray(files)||Object.getPrototypeOf(files)!==Object.prototype)
     FAIL('E_LIBRARY_INVENTORY','source set must be a plain object');
-  for(const [p,s] of Object.entries(files)){
-    if(!canonical(p)||typeof s!=='string')FAIL('E_LIBRARY_INVENTORY','unknown source path/content');
+  for(const p of Reflect.ownKeys(files)){
+    const d=Object.getOwnPropertyDescriptor(files,p);
+    if(!canonical(p)||!d?.enumerable||!Object.hasOwn(d,'value')||typeof d.value!=='string')
+      FAIL('E_LIBRARY_INVENTORY','unknown, hidden or accessor source path/content');
   }
 }
 export function readLibraryTree(root){

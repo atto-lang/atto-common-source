@@ -1,0 +1,10 @@
+fnc double(int n): int { return n * 2; }
+fnc advance(int n): Result<int,String> { return Ok(n + 1); }
+fnc format_error(String s): String { return s + "!"; }
+pub fnc main(): int {
+  val Result<int,String> good = Ok(3);
+  val Result<int,String> bad = Err("oops");
+  val int success = good |> Result.map(double) |> Result.and_then(advance) |> Result.unwrap_or(0);
+  val int fallback = bad |> Result.map_err(format_error) |> Result.unwrap_or(0);
+  return success + fallback;
+}

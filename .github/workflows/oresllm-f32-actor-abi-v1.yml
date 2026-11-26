@@ -1,0 +1,34 @@
+# Source-organization contract only; no private compiler checkout/mirror.
+name: OresLLM actor f32 ABI v1 source contract
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/oresllm-f32-actor-abi-v1.yml'
+      - 'contracts/v1/oresllm-actor-f32-host-abi-v1.json'
+      - 'tests/oresllm-actor-f32-host-abi-v1.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Prove exact PR source head and clean worktree
+        env:
+          PR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$PR_SOURCE_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          echo "ORESLLM_F32_ABI_SOURCE_HEAD_PASS|sha=$PR_SOURCE_HEAD|guest=NOT_EXECUTED"
+      - name: Execute fail-closed host-only ABI contract tests
+        run: |
+          set -Eeuo pipefail
+          node --version
+          node --test tests/oresllm-actor-f32-host-abi-v1.test.mjs
+          echo "ORESLLM_F32_ABI_HOST_CONTRACT_PASS|compiler_lowering=NOT_IMPLEMENTED|guest=NOT_EXECUTED"

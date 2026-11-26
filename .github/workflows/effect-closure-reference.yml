@@ -1,0 +1,33 @@
+name: effect-closure-reference
+on:
+  pull_request:
+    paths:
+      - 'experiments/effect-closure-v1/**'
+      - '.github/workflows/effect-closure-reference.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/effect-closure-v1/**'
+      - '.github/workflows/effect-closure-reference.yml'
+jobs:
+  reference-model:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Test standalone reference model (not compiler certification)
+        run: python3 -m unittest discover -s experiments/effect-closure-v1/tests -v
+      - name: Check positive declared-effect fixture
+        run: python3 experiments/effect-closure-v1/effect_closure.py experiments/effect-closure-v1/fixtures/pure.json --profile hard_rt --profile zero_gc --profile full_aot
+      - name: Require incompatible fixture rejection
+        run: |
+          set +e
+          python3 experiments/effect-closure-v1/effect_closure.py experiments/effect-closure-v1/fixtures/impure.json --profile hard_rt
+          result=$?
+          set -e
+          test "$result" -eq 2

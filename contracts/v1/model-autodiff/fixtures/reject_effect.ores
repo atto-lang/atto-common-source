@@ -1,0 +1,5 @@
+// A model graph declaration cannot spawn or perform arbitrary effects.
+// Expected diagnostic MODEL_EFFECTFUL_BODY.
+define model Spawning as
+    spawn Worker()
+end

@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "oreslang.numeric-backend-status.v1",
+  "status": "evidence-ledger-not-semantic-contract",
+  "rule": "Only exact-head real compiler/runtime execution may set verified_compiled=true. Host/reference models and zero-step workflows never do.",
+  "backends": {
+    "java": {
+      "math_i64": "staged_checked_guest",
+      "float_f64": "staged_binary64_guest",
+      "f32": "fail_closed",
+      "bigint": "reference_class_only",
+      "decimal": "reference_class_only",
+      "strict_conversions": "tracked_java_issue_2194_not_complete",
+      "overflow_error_abi": "guest_ArithmeticOverflowError_code_65537_catch_and_trap_staged; explicit source throw/raise/panic still closed",
+      "verified_compiled": false
+    },
+    "llvm": {
+      "math_i64": "staged_checked_ast_ir_native",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "tracked_llvm_issue_1111_not_complete",
+      "overflow_error_abi": "typed_Throw_code_65537_terminal_try_catch_staged; restricted_private_straight_line_i64_call_codegen_uses_value_kind_code_effect_result; cross_frame_leaf_middle_outer_catch_fixture_9d28e45c_staged; uncaught_cross_frame_root_Throw_to_Raise_to_Panic_exit1_fixture_26768bad_staged; actor_runtime_CONTROL_bridge_promotes_Throw65537_to_Panic_preserving_origin_and_code; source_actor_callback_effect_ABI_not_wired; nominal_Error_object_identity_fail_closed",
+      "verified_compiled": false
+    },
+    "wasm": {
+      "math_i64": "staged_real_llvm_compiler_gate",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "depends_on_pinned_llvm_frontend",
+      "overflow_error_abi": "wasm_trap_provisional; LLVM typed catch frame deliberately fail_closed",
+      "verified_compiled": false
+    },
+    "net": {
+      "math_i64": "staged_verified_oresir_cil",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "tracked_net_issue_272",
+      "overflow_error_abi": "Throw_code_65537_normalized_in_OresIR_and_emitted_CIL_verification; production_generated_CIL_still_uses_CLR_checked_exception_transport; source_catch_not_lowered",
+      "verified_compiled": false
+    },
+    "forge": {
+      "math_i64": "staged_checked_ir_interpreter_native_codegen",
+      "float_f64": "fail_closed",
+      "f32": "fail_closed",
+      "bigint": "fail_closed",
+      "decimal": "fail_closed",
+      "strict_conversions": "tracked_forge_issue_155",
+      "overflow_error_abi": "Throw_code_65537_checked_interpreter_and_effect_aware_x86_64_AArch64_native_ABI_staged; no_handler_native_path_still_traps; source_catch_not_lowered",
+      "verified_compiled": false
+    }
+  },
+  "blockers": [
+    "full ArithmeticOverflowError propagation through production call ABIs, nominal source handlers, generated source-actor callback effect ABI, and root/actor escalation on every backend",
+    "strict explicit-only numeric conversions on every backend",
+    "distinct f32 representation where claimed",
+    "source primitive bigint and decimal representations across all five backends",
+    "exact-head stepful compiler/runtime/AOT evidence",
+    "independently bound source-to-compiler-binary provenance for cross-backend carrier evidence"
+  ],
+  "evidence_notes": {
+    "overflow_error_abi": "Staged semantics are not compiled verification. Java has a guest ArithmeticOverflowError object with Error-root matching but explicit source throw/raise/panic remains closed. LLVM has restricted native cross-frame propagation for private straight-line scalar helpers. Its native root wrapper now accepts an internal {value,kind,code} guest-main result only when an effect-capable helper actually escapes, performs root-owned teardown first, and stages explicit Throw -> Raise -> Panic process escalation with exit status 1; exact root fixture blob 26768bad4603a12d00f2486ca70a58bb2a2f0b84. The native EffectSupervisorBridge now uses the same escalation helper and tests ArithmeticOverflowError(65537) delivery as supervisor priority CONTROL Panic while preserving origin Throw, code, actor id and parent id; ordinary user mail is not admitted in that turn. This actor evidence is runtime-bridge evidence only: SourceActorBootstrap still uses a plain i64 callback ABI, so compiler-generated source actors cannot yet propagate the effect result into supervision. The three-frame caught source fixture remains blob 9d28e45cd65f5500d8b34e01f7f14264a19bac06. Exported/module/method/async/task/pipeline/Wasm/Cortex-M ABIs remain excluded and nominal Error objects remain fail-closed. .NET normalizes CLR overflow to Throw/65537 in OresIR and emitted-CIL verification, while production generated CIL still uses CLR checked-exception transport until a guest handler frame is emitted. Forge has Throw/65537 in the checked interpreter and an opt-in effect-aware x86-64/AArch64 register ABI; its no-handler native emitter still traps."
+  }
+}

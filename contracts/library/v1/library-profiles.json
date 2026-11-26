@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "oreslang.library.profiles",
+  "status": "normative-contract",
+  "publicProfiles": [
+    {
+      "id": "core",
+      "osRequired": false,
+      "ambientAllocatorAllowed": false,
+      "admittedLibraryLayers": ["core"],
+      "optionalProviders": [
+        "allocator.explicit",
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted",
+        "clock.monotonic"
+      ],
+      "forbiddenCapabilities": [
+        "os",
+        "posix",
+        "linux",
+        "libc",
+        "filesystem",
+        "network",
+        "process",
+        "ambient-threads",
+        "ambient-clock",
+        "java-interop"
+      ]
+    },
+    {
+      "id": "std",
+      "osRequired": true,
+      "ambientAllocatorAllowed": true,
+      "admittedLibraryLayers": ["core", "std"],
+      "optionalProviders": [
+        "allocator.explicit",
+        "executor.explicit",
+        "mailbox.bounded",
+        "control.trusted",
+        "clock.monotonic",
+        "host.capabilities.explicit"
+      ],
+      "forbiddenCapabilities": []
+    }
+  ],
+  "libraryLayers": [
+    {
+      "id": "core",
+      "dependsOn": [],
+      "osRequired": false
+    },
+    {
+      "id": "std",
+      "dependsOn": ["core"],
+      "osRequired": true
+    }
+  ],
+  "providerKinds": [
+    "allocator.explicit",
+    "executor.explicit",
+    "mailbox.bounded",
+    "control.trusted",
+    "clock.monotonic",
+    "host.capabilities.explicit"
+  ],
+  "forbiddenPublicProfileNames": [
+    "alloc",
+    "actor",
+    "otp",
+    "hosted",
+    "freestanding-core",
+    "freestanding-alloc",
+    "freestanding-actor",
+    "freestanding-otp"
+  ],
+  "rules": {
+    "coreMustRemainLinkableWithoutOS": true,
+    "coreMustNotRequireHeap": true,
+    "coreMayUseExplicitProviders": true,
+    "coreMayNotDependOnStd": true,
+    "stdMayDependOnCore": true,
+    "providerRequirementsMustBeCompilerInferred": true,
+    "actorRuntimeIsOptional": true,
+    "backendMustRejectUnsupportedProfileTargetPairs": true
+  },
+  "validation": "contract only; backend execution evidence is required separately"
+}

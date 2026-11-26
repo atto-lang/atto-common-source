@@ -1,0 +1,36 @@
+{
+  "contract": "oreslang.model.graph.canonical.v1",
+  "status": "COMPATIBILITY_VIEW",
+  "scope": "common-i64-linear-model-subset",
+  "source_model": "PriceAdjust",
+  "canonical": {
+    "operation_abi": {
+      "Identity": "ores-model-op-v1(int)->int",
+      "AddDelta": "ores-model-op-v1(int,int)->int"
+    },
+    "implementation_digest": {
+      "Identity": "962f6b4865f7d64c5dfea914b09abdac61af4f1a41679e8f6b3adaa2bfabc9fe",
+      "AddDelta": "75370f10ccb547c3a559258c0ced1fa07cdf603b4e612702b8204250d3c4f71a"
+    },
+    "blueprint_graph_digest": "6c5e66eb67149e59c7d4d2d962b5671850ee3298f729214127d1452cb8d5ca21",
+    "default_configured_graph_digest": "3975a5571cb2fddcc6206ee0b3f0f893dcb3fa9bfbe591b8c5b9f5ab8ff539e1"
+  },
+  "semantics": {
+    "parameter": "delta:int=2",
+    "operations": [
+      "Identity()",
+      "AddDelta(delta)"
+    ],
+    "input_type": "int",
+    "output_type": "int"
+  },
+  "evidence": {
+    "java_pr": 1574,
+    "llvm_pr": 708,
+    "executed_cross_backend": false,
+    "note": "Pinned canonical identity target. Matching literals/formulas are not a substitute for executing both compilers."
+  },
+  "superseded_by": "executable-v1-conformance.json",
+  "corpus_revision": "model-core-i64-v1.2026-10-20.10",
+  "note": "Compatibility view of executable-v1-conformance.json. Operation body identity is alpha-stable: parameter references are canonical arg ordinals."
+}

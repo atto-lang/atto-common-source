@@ -1,0 +1,10 @@
+pub routine main(): void {
+  const Symbol one = #'ready foo';
+  const Symbol two = #"ready foo";
+  if one eq two then
+    stdio.stdout.write("equal");
+  else
+    stdio.stdout.write("different");
+  fi
+  return;
+}
