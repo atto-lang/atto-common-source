@@ -1,0 +1,216 @@
+{
+  "schema": "attolang.core.protocols.v1",
+  "status": "SOURCE_DECLARED_BACKEND_EXECUTION_UNVERIFIED",
+  "import_root": "ores.core/",
+  "module": "protocols",
+  "canonical_source": "library/ores.core/protocols.atto",
+  "git_blob_sha": "7aee9ad151e784c8852aff277b6337df230a1498",
+  "traits": {
+    "Eq": {
+      "arity": 1,
+      "methods": [
+        "equals"
+      ]
+    },
+    "Ord": {
+      "arity": 1,
+      "extends": [
+        "Eq<T>"
+      ],
+      "methods": [
+        "compare"
+      ]
+    },
+    "Hash": {
+      "arity": 0,
+      "methods": [
+        "hash_value"
+      ]
+    },
+    "Clone": {
+      "arity": 1,
+      "methods": [
+        "clone_value"
+      ]
+    },
+    "Read": {
+      "arity": 1,
+      "methods": [
+        "read_async"
+      ]
+    },
+    "Write": {
+      "arity": 1,
+      "methods": [
+        "write_all_async"
+      ]
+    },
+    "Flush": {
+      "arity": 1,
+      "methods": [
+        "flush_async"
+      ]
+    },
+    "Close": {
+      "arity": 0,
+      "methods": [
+        "close"
+      ]
+    },
+    "AsyncClose": {
+      "arity": 1,
+      "methods": [
+        "close_async"
+      ]
+    },
+    "Seek": {
+      "arity": 1,
+      "methods": [
+        "seek_async"
+      ]
+    },
+    "Source": {
+      "arity": 2,
+      "methods": [
+        "next_async"
+      ]
+    },
+    "Sink": {
+      "arity": 2,
+      "methods": [
+        "send_async",
+        "flush_async"
+      ]
+    },
+    "IntoIterator": {
+      "arity": 1,
+      "methods": [
+        "into_iter"
+      ]
+    },
+    "Service": {
+      "arity": 3,
+      "methods": [
+        "call_async"
+      ]
+    },
+    "TryFrom": {
+      "arity": 3,
+      "methods": [
+        "try_from"
+      ]
+    },
+    "ReadWrite": {
+      "arity": 1,
+      "extends": [
+        "Read<E>",
+        "Write<E>"
+      ],
+      "methods": []
+    },
+    "Transform": {
+      "arity": 3,
+      "extends": [
+        "Sink<I, E>",
+        "Source<O, E>"
+      ],
+      "methods": []
+    },
+    "BatchWritable": {
+      "arity": 2,
+      "methods": [
+        "send_batch_async"
+      ]
+    },
+    "KeyValueStore": {
+      "arity": 3,
+      "methods": [
+        "get_async",
+        "put_async",
+        "delete_async"
+      ]
+    }
+  },
+  "compiler_intrinsics_not_user_implementable": [
+    "Sendable",
+    "Shareable",
+    "Copy",
+    "Drop",
+    "Receives",
+    "Supervisor",
+    "ActorLifecycle"
+  ],
+  "requirements": [
+    "Import selection must use compiler-owned identity; no local filesystem shadowing",
+    "Only verified nonblocking providers may implement core Future-returning I/O",
+    "read_async returns None for EOF; empty data is not EOF",
+    "write_all_async moves input and must not report success on partial writes",
+    "send_async success means bounded admission, not persistence",
+    "compiler-intrinsic Sendable and actor state/control are never granted by source trait conformance",
+    "all five backend lanes require real guest execution before declaring parity",
+    "ReadWrite and Transform only compose interface signatures; no capability or hidden I/O is granted",
+    "TryFrom is explicit and fallible; no implicit numeric/string coercions",
+    "BatchWritable success is whole-batch bounded admission, not durable persistence",
+    "KeyValueStore is an abstract provider interface: no ambient filesystem/network and no sealed actor-state aliasing"
+  ],
+  "backend_evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  },
+  "fixtures": [
+    {
+      "id": "eq-positive",
+      "path": "tests/fixtures/core-protocols-v1/eq-positive.atto",
+      "kind": "positive",
+      "expected_exit_code": 42,
+      "git_blob_sha": "999dbddcfa53f9b52db677e587c038ef94afa9f7"
+    },
+    {
+      "id": "ord-inherited-positive",
+      "path": "tests/fixtures/core-protocols-v1/ord-inherited-positive.atto",
+      "kind": "positive",
+      "expected_exit_code": 42,
+      "git_blob_sha": "1e62bb7f4fe58afd056006c4b367319408ea4a20"
+    },
+    {
+      "id": "eq-interface-dispatch-positive",
+      "path": "tests/fixtures/core-protocols-v1/eq-interface-dispatch-positive.atto",
+      "kind": "positive",
+      "expected_exit_code": 42,
+      "git_blob_sha": "c9e796cb42732d2261655c959515647080a086a6"
+    },
+    {
+      "id": "eq-missing-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-missing-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "40d64114073512f4bec9cbcff5ad40a84c009cdc"
+    },
+    {
+      "id": "eq-wrong-signature-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-wrong-signature-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "8136e91293fd7094c179b67a8e31b882d90cd1d7"
+    },
+    {
+      "id": "eq-private-method-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-private-method-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "fcebab2a17f7fb54f33f146d1b7793067c4b80d5"
+    },
+    {
+      "id": "ord-inherited-missing-negative",
+      "path": "tests/fixtures/core-protocols-v1/ord-inherited-missing-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "26195243cdb020a9b65e46b74f8eb6d09097ef4d"
+    },
+    {
+      "id": "eq-interface-impostor-negative",
+      "path": "tests/fixtures/core-protocols-v1/eq-interface-impostor-negative.atto",
+      "kind": "compile_reject_expected",
+      "git_blob_sha": "65c42b5b32ba25182fec7794d3f78b203bc8625b"
+    }
+  ]
+}
