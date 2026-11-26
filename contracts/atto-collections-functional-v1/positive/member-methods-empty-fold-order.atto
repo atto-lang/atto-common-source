@@ -1,0 +1,77 @@
+// Source-only acceptance fixture: expected exit 42; no stdout.
+// Exercises the legacy v1 member adapter; promotion requires compiled guests.
+pub fnc main(): int {
+  let mut Array<int> array_empty = new Array<int>();
+  val Array<int> array_mapped = array_empty.map(|int n| -> int { return n + 1; });
+  if array_mapped.size > 0 then return 1; fi
+  val Array<int> array_filtered = array_empty.filter(|int n| -> bool { return n > 0; });
+  if array_filtered.size > 0 then return 2; fi
+  val int array_seed = array_empty.reduce(7, |int acc, int n| -> int { return acc * 10 + n; });
+  if array_seed < 7 then return 3; fi
+  if array_seed > 7 then return 3; fi
+  let mut Array<int> array_values = new Array<int>();
+  array_values.add(1); array_values.add(2); array_values.add(3);
+  val int array_fold = array_values.reduce(4, |int acc, int n| -> int { return acc * 10 + n; });
+  if array_fold < 4123 then return 4; fi
+  if array_fold > 4123 then return 4; fi
+  val Array<int> array_none = array_values.filter(|int n| -> bool { return n > 9; });
+  if array_none.size > 0 then return 5; fi
+  val Array<int> array_all = array_values.filter(|int n| -> bool { return n > 0; });
+  if array_all.size < 3 then return 6; fi
+  if array_all.size > 3 then return 6; fi
+  val int array_order = array_all.reduce(4, |int acc, int n| -> int { return acc * 10 + n; });
+  if array_order < 4123 then return 7; fi
+  if array_order > 4123 then return 7; fi
+  if array_values.size < 3 then return 8; fi
+  if array_values.size > 3 then return 8; fi
+
+  let mut Vector<int> vector_empty = new Vector<int>();
+  val Vector<int> vector_mapped = vector_empty.map(|int n| -> int { return n + 1; });
+  if vector_mapped.size > 0 then return 11; fi
+  val Vector<int> vector_filtered = vector_empty.filter(|int n| -> bool { return n > 0; });
+  if vector_filtered.size > 0 then return 12; fi
+  val int vector_seed = vector_empty.reduce(7, |int acc, int n| -> int { return acc * 10 + n; });
+  if vector_seed < 7 then return 13; fi
+  if vector_seed > 7 then return 13; fi
+  let mut Vector<int> vector_values = new Vector<int>();
+  vector_values.add(1); vector_values.add(2); vector_values.add(3);
+  val int vector_fold = vector_values.reduce(4, |int acc, int n| -> int { return acc * 10 + n; });
+  if vector_fold < 4123 then return 14; fi
+  if vector_fold > 4123 then return 14; fi
+  val Vector<int> vector_none = vector_values.filter(|int n| -> bool { return n > 9; });
+  if vector_none.size > 0 then return 15; fi
+  val Vector<int> vector_all = vector_values.filter(|int n| -> bool { return n > 0; });
+  if vector_all.size < 3 then return 16; fi
+  if vector_all.size > 3 then return 16; fi
+  val int vector_order = vector_all.reduce(4, |int acc, int n| -> int { return acc * 10 + n; });
+  if vector_order < 4123 then return 17; fi
+  if vector_order > 4123 then return 17; fi
+  if vector_values.size < 3 then return 18; fi
+  if vector_values.size > 3 then return 18; fi
+
+  let mut List<int> list_empty = new List<int>();
+  val List<int> list_mapped = list_empty.map(|int n| -> int { return n + 1; });
+  if list_mapped.size > 0 then return 21; fi
+  val List<int> list_filtered = list_empty.filter(|int n| -> bool { return n > 0; });
+  if list_filtered.size > 0 then return 22; fi
+  val int list_seed = list_empty.reduce(7, |int acc, int n| -> int { return acc * 10 + n; });
+  if list_seed < 7 then return 23; fi
+  if list_seed > 7 then return 23; fi
+  let mut List<int> list_values = new List<int>();
+  list_values.add(1); list_values.add(2); list_values.add(3);
+  val int list_fold = list_values.reduce(4, |int acc, int n| -> int { return acc * 10 + n; });
+  if list_fold < 4123 then return 24; fi
+  if list_fold > 4123 then return 24; fi
+  val List<int> list_none = list_values.filter(|int n| -> bool { return n > 9; });
+  if list_none.size > 0 then return 25; fi
+  val List<int> list_all = list_values.filter(|int n| -> bool { return n > 0; });
+  if list_all.size < 3 then return 26; fi
+  if list_all.size > 3 then return 26; fi
+  val int list_order = list_all.reduce(4, |int acc, int n| -> int { return acc * 10 + n; });
+  if list_order < 4123 then return 27; fi
+  if list_order > 4123 then return 27; fi
+  if list_values.size < 3 then return 28; fi
+  if list_values.size > 3 then return 28; fi
+
+  return 42;
+}
