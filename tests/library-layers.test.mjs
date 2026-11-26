@@ -193,3 +193,24 @@ test('non-declared prototype layer names and hidden/accessor manifest metadata r
     denied('E_LIBRARY_MANIFEST',()=>check(m,s));
   }
 });
+
+
+test('import admission requires actual keyword and punctuation tokens and literal paths',()=>{
+  for(const bad of [
+    'import "stdlib/core/identity.atto" ";"',
+    'import module identity "from" "stdlib/core/identity.atto";',
+    'import "stdlib/core/identi\\ty.atto";'
+  ]) denied('E_LIBRARY_IMPORT',()=>inspectAtto(bad,'core'));
+  assert.deepEqual(inspectAtto('import module identity from "stdlib/core/identity.atto";','core'),[id]);
+});
+
+test('inventory rejects hidden, symbol and accessor source entries without invoking getters',()=>{
+  for(const mutate of [
+    s=>Object.defineProperty(s.files,al,{value:'ignored'}),
+    s=>Object.defineProperty(s.files,Symbol('hidden'),{value:'ignored'}),
+    s=>Object.defineProperty(s.files,id,{enumerable:true,get(){throw Error('getter invoked');}})
+  ]) {const m=manifest(),s=sources();mutate(s);denied('E_LIBRARY_INVENTORY',()=>check(m,s));}
+  const m=manifest(),s=sources();
+  Object.defineProperty(m.sources,'0',{enumerable:true,get(){throw Error('getter invoked');}});
+  denied('E_LIBRARY_MANIFEST',()=>check(m,s));
+});
