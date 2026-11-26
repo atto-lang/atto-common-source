@@ -337,6 +337,97 @@
       "category": "suspends",
       "lowering_pending": false,
       "source": "pub suspends ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-long-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ ∂ fnc invalid(): void { return; }"
     }
   ]
 }
