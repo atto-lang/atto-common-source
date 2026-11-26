@@ -5,9 +5,9 @@ import { pathToFileURL } from 'node:url';
 
 const ORDER = Object.freeze({core:0, alloc:1, std:2});
 const PROFILES = Object.freeze({
-  core: ['core'],
-  alloc: ['core','alloc'],
-  std: ['core','alloc','std']
+  core: Object.freeze(['core']),
+  alloc: Object.freeze(['core','alloc']),
+  std: Object.freeze(['core','alloc','std'])
 });
 const SCHEMA='atto.library.layers.v1';
 const FAIL = (code, detail) => { throw new TypeError(code + ': ' + detail); };
@@ -25,12 +25,15 @@ const exact=(o,keys,where)=>{
 const canonical=p=>typeof p==='string' && /^stdlib\/(core|alloc|std)\/[A-Za-z0-9_/-]+\.atto$/.test(p)
  && !p.split('/').includes('..') && !p.includes('//');
 const uniqueArray=(v,where)=>{
-  if (!Array.isArray(v)||Reflect.ownKeys(v).length!==v.length+1 ||
-      Array.from({length:v.length},(_,i)=>{
-        const d=Object.getOwnPropertyDescriptor(v,String(i));
-        return d&&Object.hasOwn(d,'value');
-      }).some(valid=>!valid) || new Set(v).size!==v.length)
-    FAIL('E_LIBRARY_MANIFEST',where+' is not dense, ordinary and unique');
+  const reject=()=>FAIL('E_LIBRARY_MANIFEST',where+' is not dense, ordinary and unique');
+  if (!Array.isArray(v)||Object.getPrototypeOf(v)!==Array.prototype ||
+      Reflect.ownKeys(v).length!==v.length+1) reject();
+  const seen=new Set();
+  for(let i=0;i<v.length;i++){
+    const d=Object.getOwnPropertyDescriptor(v,String(i));
+    if(!d?.enumerable || !Object.hasOwn(d,'value') || seen.has(d.value)) reject();
+    seen.add(d.value);
+  }
 };
 // Simple lexical scanner, protecting comments/strings from host-name false positives.
 // Unknown/unclosed source forms are rejected rather than guessed safe.
