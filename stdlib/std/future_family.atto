@@ -1,0 +1,30 @@
+// Native AttoLang Future-family adapters (hosted std layer).
+// TARGET: generic take! capability formals and cross-suspension ownership
+// require compiler admission. No guest/compiler backend is yet certified.
+// A caller MUST pass take! receipt (explicitly moving its unique result right).
+// Borrowed Future/TaskFuture/ActorFuture parameters may not be awaited here.
+// These functions neither forge authority nor silently flatten Result/Future.
+define module future_family as
+  pub susp fnc await_future<T>(take! Future<T> receipt) -> T {
+    return await receipt;
+  }
+
+  // Consumes the entire TaskFuture handle, including control rights.
+  // To preserve task control, first split with get_ready(), then pass the
+  // unique Future<T> result receipt to await_future(take! receipt).
+  pub susp fnc await_task<T>(take! TaskFuture<T> child) -> T {
+    return await child;
+  }
+
+  // The runtime MUST authenticate producer actor incarnation and ticket.
+  // This is one-shot: ActorStream<T> has a different backpressure protocol.
+  pub susp fnc await_actor<T>(take! ActorFuture<T> reply) -> T {
+    return await reply;
+  }
+
+  // Preserve Result<T,E> precisely. An actor CONTROL failure is a distinct
+  // failed await, never implicitly converted into Result.Ok or Result.Err.
+  pub susp fnc await_actor_result<T,E>(take! ActorFuture<Result<T,E>> reply) -> Result<T,E> {
+    return await reply;
+  }
+end

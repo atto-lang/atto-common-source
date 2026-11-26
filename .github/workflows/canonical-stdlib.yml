@@ -12,6 +12,12 @@ on:
       - 'contracts/canonical-stdlib-v1.json'
       - 'src/canonical-stdlib-bytes.mjs'
       - 'tests/canonical-stdlib-bytes.test.mjs'
+      - 'tests/native-future-family-v1.test.mjs'
+      - 'tests/native-future-family-fixtures-v1.test.mjs'
+      - 'tests/fixtures/native-future-family-v1/**'
+      - 'contracts/native-future-family-v1.json'
+      - 'contracts/native-future-family-guest-matrix-v1.json'
+      - 'docs/NATIVE_FUTURE_FAMILY_V1.md'
       - 'docs/CANONICAL_ATTO_STDLIB.md'
       - '.github/workflows/canonical-stdlib.yml'
   push:
@@ -37,7 +43,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test canonical byte-copy and source ABI contracts (not guest execution)
-        run: node --test tests/canonical-stdlib-bytes.test.mjs tests/byte_buffer_source_contract.test.mjs tests/alloc_core_std_source.test.mjs
+        run: node --test tests/canonical-stdlib-bytes.test.mjs tests/byte_buffer_source_contract.test.mjs tests/alloc_core_std_source.test.mjs tests/native-future-family-v1.test.mjs tests/native-future-family-fixtures-v1.test.mjs
       - name: Rust host-only endian/range reference (NOT Atto guest)
         run: |
           rustc --version

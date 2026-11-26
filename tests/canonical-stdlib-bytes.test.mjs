@@ -11,13 +11,13 @@ const canonical=()=>Object.fromEntries(manifest.sources.map(s=>[s.path,readFileS
 const replicas=()=>Object.fromEntries(targetNames.map(b=>[b,canonical()]));
 const denied=f=>assert.throws(f,/E_STDLIB_/);
 
-test('seven canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
+test('eight canonical .atto modules are SHA-pinned, never a .ores alias',()=>{
  assert.equal(manifest.status,'CANDIDATE_NOT_COMPILED');
  assert.equal(manifest.sourcePolicy,'CANONICAL_ATTO_BYTES_ONLY');
  assert.deepEqual(manifest.sources.map(s=>s.path),[
    'stdlib/alloc/byte_region.atto','stdlib/core/byte_bounds.atto',
    'stdlib/core/identity.atto','stdlib/core/size_math.atto','stdlib/core/u32_endian.atto',
-   'stdlib/std/buffer.atto','stdlib/std/byte_ops.atto'
+   'stdlib/std/buffer.atto','stdlib/std/byte_ops.atto','stdlib/std/future_family.atto'
  ]);
  const bounds=readFileSync(new URL('../stdlib/core/byte_bounds.atto',import.meta.url));
  assert.equal(bounds.byteLength,726);

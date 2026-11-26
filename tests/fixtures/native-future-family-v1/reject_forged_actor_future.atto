@@ -1,0 +1,5 @@
+import module future_family from "stdlib/std/future_family.atto";
+pub susp fnc main(): int {
+  val ActorFuture<int> reply = ActorFuture<int>.of(42);
+  return await future_family.await_actor(take! reply);
+}

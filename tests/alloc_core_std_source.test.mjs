@@ -13,7 +13,8 @@ const sourcePaths = [
   'stdlib/core/size_math.atto',
   'stdlib/core/u32_endian.atto',
   'stdlib/std/buffer.atto',
-  'stdlib/std/byte_ops.atto'
+  'stdlib/std/byte_ops.atto',
+  'stdlib/std/future_family.atto'
 ];
 const core = read('stdlib/core/size_math.atto');
 const alloc = read('stdlib/alloc/byte_region.atto');
