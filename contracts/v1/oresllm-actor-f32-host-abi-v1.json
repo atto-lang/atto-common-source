@@ -1,0 +1,176 @@
+{
+  "contract": "attolang.oresllm.actor-f32-host-bridge",
+  "version": 1,
+  "status": "DESIGN_AND_PREFLIGHT_ONLY",
+  "canonical_source_organization": "ores-truffle-oreslang",
+  "name": "Actor-bound bounded f32 GEMM host ABI",
+  "scope": {
+    "operations": [
+      "f32_pool_acquire",
+      "f32_pool_begin",
+      "f32_pool_read",
+      "f32_pool_write",
+      "f32_gemm",
+      "f32_pool_retire",
+      "f32_pool_release"
+    ],
+    "origin": "trusted scheduler dispatch, not guest-authored actor/tenant integers",
+    "target_backends": [
+      "java-graal",
+      "llvm"
+    ],
+    "native_implementation": "ores-llm/ores-llm-ml-kernels-cpu.atto#29 (production C11 HOST ONLY)",
+    "tensor_provider": "ores-llm/ores-llm-tensor.atto#37 (production C11 HOST ONLY)"
+  },
+  "limits": {
+    "max_axis": 32,
+    "max_output_bytes": 4096,
+    "bytes_per_f32": 4,
+    "pool_slots": 16,
+    "inputs_min": -256,
+    "inputs_max": 256
+  },
+  "caller": {
+    "required_context_fields": [
+      "runtime_domain",
+      "execution_id",
+      "allocation_kind",
+      "allocation_domain",
+      "actor_owner",
+      "actor_generation",
+      "physical_turn_claim"
+    ],
+    "allocation_kind": "ACTOR",
+    "all_fields_host_supplied": true,
+    "guest_controls_authority_fields": false,
+    "backend_validator": "live physically owned RUNNING actor turn",
+    "requires_revocation_and_restart_fence": true,
+    "new_operations_after_stop": "DENY",
+    "cancellation": "no early physical-memory release until in-flight call/turn quiesces"
+  },
+  "tensors": {
+    "representation": "host-private broker pointer plus generation-fenced, nonbearer pool reference",
+    "guest_native_pointer_exposure": false,
+    "shape": "exact live row/column dimensions, not a guest assertion",
+    "lifetime": "inputs borrowed for full operation; result exclusively owned until release",
+    "failure": "do not modify caller output handle; rollback unpublished output and physical reservation exactly once",
+    "ownership_compiler_requirements": [
+      "reject_use_after_take",
+      "reject_mutable_alias",
+      "reject_borrow_across_suspend_unpinned",
+      "reject_stale_or_foreign_actor_domain",
+      "drop_on_exception_and_cancellation"
+    ]
+  },
+  "abi_candidate": {
+    "symbol": "ores_f32_guest_gemm_v1",
+    "binding_kind": "TRUSTED_RUNTIME_INTERNAL_ONLY",
+    "parameters": [
+      "host_owned_context",
+      "host_owned_tensor_broker",
+      "lhs_opaque_ref",
+      "lhs_generation",
+      "lhs_rows",
+      "lhs_cols",
+      "rhs_opaque_ref",
+      "rhs_generation",
+      "rhs_rows",
+      "rhs_cols",
+      "max_output_bytes",
+      "out_ref",
+      "out_generation"
+    ],
+    "expose_to_guest": "NEVER",
+    "direct_ffi_compiler_lowering": "NOT_IMPLEMENTED",
+    "source_typechecker_intrinsic": "NOT_IMPLEMENTED",
+    "statuses": [
+      "DENIED",
+      "INVALID_SHAPE",
+      "QUOTA",
+      "STALE",
+      "PROVIDER_FAULT",
+      "BACKEND_UNAVAILABLE",
+      "OK_ONLY_AFTER_REAL_EXECUTION"
+    ]
+  },
+  "witnesses": {
+    "java": "ExecutionContext allocation-kind ACTOR + scheduler physical turn guard; admission candidate only, no Java Native Image FFI",
+    "llvm": "OresNativeExecutionContext + ores_execution_owns_running on supervisor authority, admission candidate only",
+    "shared_candidate": "host-only admission is not evidence of full compiler lowering"
+  },
+  "negative_cases": [
+    "no_turn",
+    "foreign_thread_copied_claim",
+    "stopping_actor",
+    "restarted_generation",
+    "foreign_actor_scope",
+    "invalid_shape",
+    "output_quota",
+    "stale_tensor_generation",
+    "forged_pool_ref",
+    "use_after_take",
+    "loan_across_await"
+  ],
+  "release_gates": [
+    "exact_source_head_host_native_matrix",
+    "executed_compiler_guest_java",
+    "executed_compiler_guest_llvm",
+    "executed_graalvm_native_image",
+    "executed_llvm_aot",
+    "ownership_compile_negative",
+    "actor_derived_runtime_authority",
+    "no_cross_org_private_compiler_source_without_approval"
+  ],
+  "security_incident": "ores-llm/ores-llm-ml-conformance-tests#29",
+  "certification": {
+    "compiler_emitted_guest": "NOT_EXECUTED",
+    "java_aot": "NOT_EXECUTED",
+    "llvm_aot": "NOT_EXECUTED",
+    "tenant_isolation": "NOT_CERTIFIED",
+    "release_ready": false
+  },
+  "host_stage": {
+    "classification": "LOCALLY_EXECUTED_TRUSTED_HOST_COMPONENTS_NOT_COMPILER_BRIDGE",
+    "java_actor_pin": {
+      "repository": "ores-truffle-oreslang/oreslang-source.java",
+      "pr": 2731,
+      "source_head": "eeac0e56c53734ada4f1d3c7d3fdb016a45d21ba",
+      "runtime_blob": "ed5793389fe7c10a4ef9b9560b7ce8cc4e871afc",
+      "test_blob": "6a4b2b8abc5c5f61c72f7ead2b133186d4d2d6f4",
+      "runner_blob": "ac96f50f442ca7bf80e98921e3c8843739e39fa2",
+      "local_execution": "PASS_JDK_21_HOST_ONLY",
+      "scheduler_dispatch_wiring": "NOT_IMPLEMENTED"
+    },
+    "llvm_actor_pin": {
+      "repository": "ores-truffle-oreslang/oreslang-source.llvm",
+      "pr": 1628,
+      "source_head": "901c9aad50903641fea8a23a260d09d3bde77075",
+      "lease_blob": "60730da754b9edd1e8486c1f37d346352c8894fe",
+      "test_blob": "fefc6b67def07c9757d04d1c0ff93d8fdf2f4eb7",
+      "runner_blob": "775b38f957f61cd6f56ad3c0b9bc60b2eb9d2d91",
+      "local_execution": "PASS_GCC_CLANG_O1_O2_ASAN_UBSAN_HOST_ONLY",
+      "compiler_lowering": "NOT_IMPLEMENTED"
+    },
+    "production_host_broker": {
+      "repository": "ores-llm/ores-llm-ml-kernels-cpu.atto",
+      "pr": 30,
+      "source_head": "68d1388c384c36507e3213a09f64cebefb8c5d55",
+      "header_blob": "2482d603331c15acf687560c63d6e340c7fbce3a",
+      "implementation_blob": "7b08c7f652bdc14c0b981fa0f3d95cb0817023e7",
+      "test_blob": "cbd21637de91ad99989e6da3bb9a154b14e15134",
+      "local_execution": "PASS_REAL_C11_GCC_CLANG_O1_O2_ASAN_UBSAN",
+      "golden": "22,28,49,64",
+      "forced_commit_rollbacks": 256,
+      "forced_stop_during_allocator": true,
+      "executor_callbacks": "TEST_MODEL_ONLY"
+    },
+    "compiler_intrinsic_call": "NOT_IMPLEMENTED",
+    "java_native_image": "NOT_EXECUTED",
+    "llvm_aot_guest": "NOT_EXECUTED",
+    "borrow_take_compile_negative": "NOT_EXECUTED",
+    "source_github_actions": "BLOCKED_ZERO_STEP",
+    "source_security_incident": "OPEN",
+    "cross_org_private_compiler_source_copy": false,
+    "release_ready": false
+  }
+}
