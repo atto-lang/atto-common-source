@@ -38,19 +38,19 @@
     },
     {
       "id": "postfix",
-      "source": "pub fnc main(bool b): bool { return b¬; }",
+      "source": "pub fnc main(): int { val bool b = true; if b¬ then return 42; else return 0; fi }",
       "expect": "reject",
       "diagnostic": "syntax|expected|unexpected|token"
     },
     {
       "id": "composite-eq",
-      "source": "pub fnc main(bool b): bool { return b ¬eq true; }",
+      "source": "pub fnc main(): int { val bool b = true; if b ¬eq true then return 42; else return 0; fi }",
       "expect": "reject",
       "diagnostic": "syntax|expected|unexpected|token"
     },
     {
       "id": "composite-equal",
-      "source": "pub fnc main(bool b): bool { return b ¬= true; }",
+      "source": "pub fnc main(): int { val bool b = true; if b ¬= true then return 42; else return 0; fi }",
       "expect": "reject",
       "diagnostic": "syntax|expected|unexpected|token"
     },
@@ -109,7 +109,7 @@
       "id": "unicode-not-not-a-bang-keyword",
       "source": "pub fnc main(): int { return copy¬ 42; }",
       "expect": "reject",
-      "diagnostic": "syntax|expected|unexpected|token|unbound|unknown"
+      "diagnostic": "syntax|expected|unexpected|token|unbound|unknown|undefined local ['\"]copy['\"]"
     }
   ]
 }
