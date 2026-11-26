@@ -45,7 +45,7 @@ try{
    if(r.error||r.signal)throw Error('compiler infrastructure failure');
    if(c.expect==='reject'){
     let d;try{d=JSON.parse(r.stderr.trim())}catch{throw Error('not a compiler diagnostic: '+r.stderr)}
-    if(r.status!==1||row.artifact||typeof d.message!=='string'||!/^(Error|SyntaxError|TypeError|CompileError)$/.test(d.name)||!new RegExp(c.diagnostic,'i').test(d.message)||/entrypoint|main\(\).*return|not implemented|unsupported feature/i.test(d.message))throw Error('unexpected rejection: '+d.message);
+    if(r.status!==1||row.artifact||typeof d.message!=='string'||!/^(ProgramCompileError|ProgramIRError)$/.test(d.name)||!new RegExp(c.diagnostic,'i').test(d.message)||/entrypoint|main\(\).*return|not implemented|unsupported feature/i.test(d.message))throw Error('unexpected rejection: '+d.message);
     row.diagnostic=d.message;
    }else{
     if(r.status!==0||!row.artifact)throw Error('compiler failure: '+r.stderr);
