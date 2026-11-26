@@ -12,7 +12,7 @@ import re
 from typing import Any
 
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
-_NS = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+_NS = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\Z")
 
 
 class InvalidSnapshot(ValueError):
@@ -33,7 +33,9 @@ def _sha(value: Any) -> bool:
 
 def _path(value: Any) -> bool:
     return (isinstance(value, str) and len(value) <= 4096
-            and value.endswith(".atto") and "\\" not in value
+            and len(value) >= 6 and value.endswith(".atto") and "\\" not in value
+            and not any(ord(ch) < 32 or ord(ch) == 127 for ch in value)
+            and not re.match(r"^[A-Za-z]:", value)
             and all(part not in ("", ".", "..") for part in value.split("/"))
             and not value.startswith("/"))
 
@@ -74,7 +76,8 @@ def _snapshot(raw: dict[str, Any]) -> dict[str, Any]:
             raise InvalidSnapshot("invalid package descriptor")
         name = pkg["id"]
         if (not isinstance(name, str) or not name or len(name) > 512
-                or "::" in name or name in packages or not _sha(pkg["manifest_sha"])):
+                or "::" in name or any(ord(ch) < 32 or ord(ch) == 127 for ch in name)
+                or name in packages or not _sha(pkg["manifest_sha"])):
             raise InvalidSnapshot("invalid or duplicate pinned package")
         packages[name] = pkg["manifest_sha"]
     namespaces = {}
@@ -82,7 +85,7 @@ def _snapshot(raw: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(ns, dict) or set(ns) != {"package", "name", "interface_sha", "imports", "inlines"}:
             raise InvalidSnapshot("invalid namespace descriptor")
         pkg, name = ns["package"], ns["name"]
-        if pkg not in packages or not isinstance(name, str) or not _NS.fullmatch(name) or not _sha(ns["interface_sha"]):
+        if not isinstance(pkg, str) or pkg not in packages or not isinstance(name, str) or not _NS.fullmatch(name) or not _sha(ns["interface_sha"]):
             raise InvalidSnapshot("unresolved namespace identity/interface")
         key = _identity(pkg, name)
         if key in namespaces:
@@ -98,7 +101,7 @@ def _snapshot(raw: dict[str, Any]) -> dict[str, Any]:
         pkg, ns, path = unit.get("package"), unit.get("namespace"), unit.get("path")
         bare_fields = {"package", "namespace", "path", "source_sha"}
         file_fields = bare_fields | {"interface_sha", "imports", "inlines"}
-        if (not _path(path) or pkg not in packages or (pkg, path) in paths
+        if (not _path(path) or not isinstance(pkg, str) or pkg not in packages or (pkg, path) in paths
                 or not _sha(unit.get("source_sha"))):
             raise InvalidSnapshot("invalid source ownership, path or digest")
         if ns is None:
@@ -175,7 +178,11 @@ def plan_incremental(previous: dict[str, Any] | None, current: dict[str, Any]) -
             desc = new["namespaces"][key]
             prev = old["namespaces"].get(key)
             pkg = desc["package"]
-            if prev is None or prev["interface_sha"] != desc["interface_sha"]:
+            if (prev is None or prev["interface_sha"] != desc["interface_sha"]
+                    or prev["imports"] != desc["imports"]
+                    or new["packages"][pkg] != old["packages"].get(pkg)):
+                # A binding/manifest rebind can change nominal identity or re-exports
+                # even when the supplied local signature digest is unchanged.
                 api_changed.add(key)
             if (prev is None or new["files"][key] != old["files"][key]
                     or new["packages"][pkg] != old["packages"].get(pkg)
@@ -196,8 +203,17 @@ def plan_incremental(previous: dict[str, Any] | None, current: dict[str, Any]) -
     # Embedded bodies require code regeneration even when signatures are stable.
     codegen = _closure(codegen, _reverse(new, "inlines")) & now
     changed_packages = {new["namespaces"][key]["package"] for key in codegen}
-    if old is not None:
+    if old is None:
+        changed_packages.update(new["packages"])
+    else:
         changed_packages.update(old["namespaces"][key]["package"] for key in removed)
+        # Packages can contain only resources/metadata and no source units.
+        # Their creation, removal or manifest change still requires bundle work.
+        changed_packages.update(pkg for pkg in new["packages"].keys() | old["packages"].keys()
+                                if new["packages"].get(pkg) != old["packages"].get(pkg))
+        if (new["semantic_profile"] != old["semantic_profile"]
+                or new["codegen_profile"] != old["codegen_profile"]):
+            changed_packages.update(new["packages"])
     package_reverse: dict[str, set[str]] = defaultdict(set)
     for key, ns in new["namespaces"].items():
         for dep in ns["imports"] + ns["inlines"]:
