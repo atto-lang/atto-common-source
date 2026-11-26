@@ -1,0 +1,17 @@
+name: Pointer receiver effect model (target only)
+on:
+  pull_request:
+    paths:
+      - 'contracts/pointer-call-effects-v1.json'
+      - 'tests/pointer-call-effects-v1.test.mjs'
+      - '.github/workflows/pointer-call-effects-v1.yml'
+permissions:
+  contents: read
+jobs:
+  target-model:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node tests/pointer-call-effects-v1.test.mjs
