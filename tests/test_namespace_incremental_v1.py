@@ -104,7 +104,7 @@ class NamespaceIncrementalTests(unittest.TestCase):
         old, new = self.change()
         new["packages"][0]["manifest_sha"] = h("f")
         p = plan_incremental(old, new)
-        self.assertEqual(set(p.recheck), {"shop@sha:111::users", "shop@sha:111::payments", "shop@sha:111::metrics"})
+        self.assertEqual(set(p.recheck), {"shop@sha:111::users", "shop@sha:111::payments", "shop@sha:111::metrics", "app@sha:222::ui"})
         old, new = self.change()
         new["codegen_profile"] = h("e")
         p = plan_incremental(old, new)
@@ -115,11 +115,11 @@ class NamespaceIncrementalTests(unittest.TestCase):
         p = plan_incremental(old, new)
         self.assertEqual(len(p.recheck), 4)
 
-    def test_import_dependency_change_invalidates_only_importer(self):
+    def test_import_dependency_change_invalidates_transitive_importers(self):
         old, new = self.change()
         new["namespaces"][0]["imports"] = ["shop@sha:111::metrics"]
         p = plan_incremental(old, new)
-        self.assertEqual(p.recheck, ("shop@sha:111::users",))
+        self.assertEqual(p.recheck, ("app@sha:222::ui", "shop@sha:111::users"))
 
     def test_reordered_snapshot_is_stable(self):
         old, new = self.change()
@@ -223,6 +223,54 @@ class NamespaceIncrementalTests(unittest.TestCase):
         p = plan_incremental(old, new)
         self.assertIn("shop@sha:111::users", p.recheck)
         self.assertIn("shop@sha:111::payments", p.recheck)
+
+    def test_metadata_only_package_lifecycle_and_profiles(self):
+        old, new = self.change()
+        empty = {"id": "resources@sha:333", "manifest_sha": h("a")}
+        new["packages"].append(empty)
+        p = plan_incremental(old, new)
+        self.assertEqual(p.relink_packages, ("resources@sha:333",))
+        self.assertEqual(p.codegen, ())
+        self.assertIn("resources@sha:333", plan_incremental(None, new).relink_packages)
+        self.assertEqual(plan_incremental(new, old).relink_packages, ("resources@sha:333",))
+        changed = copy.deepcopy(new)
+        changed["packages"][-1]["manifest_sha"] = h("b")
+        self.assertEqual(plan_incremental(new, changed).relink_packages, ("resources@sha:333",))
+        changed["codegen_profile"] = h("f")
+        self.assertIn("resources@sha:333", plan_incremental(new, changed).relink_packages)
+
+    def test_dotted_namespace_and_malformed_segments(self):
+        old, new = self.change()
+        for snap in (old, new):
+            snap["namespaces"][2]["name"] = "net.http"
+            snap["files"][2]["namespace"] = "net.http"
+        new["files"][2]["source_sha"] = h("f")
+        self.assertEqual(plan_incremental(old, new).recheck, ("shop@sha:111::net.http",))
+        new["namespaces"][2]["name"] = "net..http"
+        with self.assertRaises(InvalidSnapshot):
+            plan_incremental(old, new)
+
+    def test_invalid_package_types_and_nonportable_paths(self):
+        for bad in ([], {}, None, 17):
+            for collection in ("files", "namespaces"):
+                with self.subTest(bad=bad, collection=collection):
+                    old, new = self.change()
+                    new[collection][0]["package"] = bad
+                    with self.assertRaises(InvalidSnapshot):
+                        plan_incremental(old, new)
+        for path in ("C:/a.atto", "a\\b.atto", "a\x00.atto", ".atto"):
+            with self.subTest(path=path):
+                old, new = self.change()
+                new["files"][0]["path"] = path
+                with self.assertRaises(InvalidSnapshot):
+                    plan_incremental(old, new)
+
+    def test_rebind_propagates_even_with_equal_interface_hashes(self):
+        old, new = self.change()
+        new["namespaces"][0]["imports"] = ["shop@sha:111::metrics"]
+        p = plan_incremental(old, new)
+        self.assertEqual(set(p.codegen), {"shop@sha:111::users", "app@sha:222::ui"})
+        self.assertNotIn("shop@sha:111::payments", p.recheck)
 
 
 if __name__ == "__main__":
