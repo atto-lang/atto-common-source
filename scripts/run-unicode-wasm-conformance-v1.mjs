@@ -4,7 +4,6 @@ import {createHash} from 'node:crypto';
 import {readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
-import {fileURLToPath} from 'node:url';
 
 const [profile, checkoutArg, expectedHead, expectedTree] = process.argv.slice(2);
 if (!['rust','llvm-browser'].includes(profile) || !checkoutArg ||
@@ -51,8 +50,12 @@ try {
     try{
       if(compile.error||compile.signal)throw Error('compiler infrastructure failure: '+(compile.error?.message||compile.signal));
       if(c.expect==='reject'){
-        if(compile.status!==1||row.artifact||!/(?:^|\s)E_[A-Z_]+:/.test(compile.stderr)||
-           !new RegExp(c.diagnostic,'i').test(compile.stderr))throw Error('missing relevant compiler rejection');
+        // Match only the diagnostic code/message, never the fixture filename or
+        // unrelated entrypoint admission errors (which can mask invalid operands).
+        const diagnostics=compile.stderr.split(/\r?\n/).map(line=>line.match(/(?:^|\s)(E_[A-Z_]+):\s*(.*)$/)).filter(Boolean);
+        if(compile.status!==1||row.artifact||!diagnostics.some(d=>
+            d[1]!=='E_ENTRY' && new RegExp(c.diagnostic,'i').test(d[1]+': '+d[2])))
+          throw Error('missing relevant compiler rejection: '+compile.stderr.trim());
         row.diagnostic=compile.stderr.trim();
         row.status='PASS';
       }else{
