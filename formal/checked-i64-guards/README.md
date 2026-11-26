@@ -9,3 +9,7 @@ P07 and P09 cover both reachable and rejected paths, including the constant-fold
 ## Backend acceptance
 
 Java, LLVM, Forge, .NET, Wasm, Cranelift, Rust and JS should separately derive each guard from actual typed IR and compare it with this independent contract. HDL is applicable only to the corresponding implemented integer profile. For each backend record exact source and compiler revision, solver version, obligation ID, generated IR and solver transcript, negative mutations and actual compiled guest results (including min/-1, zero, signed extremes). Do not promote model results to backend pass. Unknown, unsupported, timed-out and unexecuted checks remain unverified. No cross-org source transfer is required for this standalone model.
+
+## Replay gate
+
+Run `node --test formal/checked-i64-guards/replay.test.mjs` and `node formal/checked-i64-guards/replay.mjs /absolute/path/to/trusted/z3`. The runner pins SHA-256 `460ffe9878ea2fc84e207592fae72f6c0f6b1d455dd5a65e6370daeda25c53cd`, then sends the same verified bytes to the solver on stdin. Deliberate model edits must be reviewed before updating the pin. A 12-case regression suite includes four model-byte rejection cases and six invalid-transcript rejection cases. This is a consistency gate, not a proof certificate checker or solver attestation. The solver executable and host environment remain trusted; a version string does not authenticate them. Locally the exact model and replay code ran against libz3 4.13.3.0 through a CLI-compatible adapter; official CLI and hosted execution remain unverified.
