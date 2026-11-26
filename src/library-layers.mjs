@@ -41,8 +41,15 @@ export function lexAtto(source){
   const out=[];let i=0;
   while(i<source.length){
     const ch=source[i],nx=source[i+1];
-    if(/\s/.test(ch)){i++;continue;}
-    if(ch==='/' && nx==='/'){i=source.indexOf('\n',i+2);if(i<0)break;continue;}
+    if(/[\s\u0085]/.test(ch)){i++;continue;}
+    if(ch==='/' && nx==='/'){
+      // Match the line separators admitted by the JS worker lexer. Other
+      // backends may reject some Unicode controls outright; this is only
+      // a conservative structural guard, not source-language admission.
+      i+=2;
+      while(i<source.length && !/[\r\n\u0085\u2028\u2029]/.test(source[i]))i++;
+      continue;
+    }
     if(ch==='/' && nx==='*'){
       i+=2;let depth=1;
       while(i<source.length && depth){

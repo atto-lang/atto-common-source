@@ -214,3 +214,16 @@ test('inventory rejects hidden, symbol and accessor source entries without invok
   Object.defineProperty(m.sources,'0',{enumerable:true,get(){throw Error('getter invoked');}});
   denied('E_LIBRARY_MANIFEST',()=>check(m,s));
 });
+
+
+test('line comments end at supported CR/LF and Unicode line boundaries',()=>{
+  for(const sep of ['\r','\n','\r\n','\u0085','\u2028','\u2029']){
+    assert.deepEqual(inspectAtto('// stdio.out is inert'+sep+
+      'pub fnc f() -> int { return 1; }','core'),[]);
+    denied('E_LIBRARY_HOST',()=>inspectAtto('// note'+sep+'stdio.out << 1;','core'));
+    denied('E_LIBRARY_RUNTIME',()=>inspectAtto('// note'+sep+'await job;','alloc'));
+    assert.deepEqual(inspectAtto('// note'+sep+
+      'import "stdlib/core/identity.atto";','core'),[id]);
+  }
+  assert.deepEqual(inspectAtto('// final comment without newline: stdio.out','core'),[]);
+});
