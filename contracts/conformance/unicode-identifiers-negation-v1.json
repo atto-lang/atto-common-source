@@ -33,52 +33,83 @@
     {
       "id": "nonboolean",
       "source": "pub fnc main(): bool { return ¬1; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "type|bool"
     },
     {
       "id": "postfix",
       "source": "pub fnc main(bool b): bool { return b¬; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token"
     },
     {
       "id": "composite-eq",
       "source": "pub fnc main(bool b): bool { return b ¬eq true; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token"
     },
     {
       "id": "composite-equal",
       "source": "pub fnc main(bool b): bool { return b ¬= true; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token"
     },
     {
       "id": "unbound",
       "source": "pub fnc main(): int { return 未定義; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "unbound|unresolved|unknown|undefined"
     },
     {
       "id": "bidi-comment",
       "source": "pub fnc main(): int { return 42; } // ‮",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "bidi|bidirectional"
     },
     {
       "id": "bidi-string",
       "source": "pub fnc main(): int { val string name = \"x⁦\"; return 42; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "bidi|bidirectional"
     },
     {
       "id": "duplicate",
       "source": "pub fnc main(): int { val ρ = 1; val ρ = 2; return ρ; }",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "duplicate|shadow|already"
     },
     {
       "id": "bidi-block-comment",
       "source": "pub fnc main(): int { return 42; } /* ⁦ */",
-      "expect": "reject"
+      "expect": "reject",
+      "diagnostic": "bidi|bidirectional"
     },
     {
       "id": "greek-rho-distinct-from-latin-p",
       "source": "pub fnc main(): int { val ρ = 10; val p = 32; return ρ + p; }",
       "expect": 42
+    },
+    {
+      "id": "unicode-helper-parameters",
+      "source": "fnc 合計(int Φ, int φ, int 数量, int 𠮷): int { return Φ + φ + 数量 + 𠮷; } pub fnc main(): int { return 合計(10,20,30,40); }",
+      "expect": 100
+    },
+    {
+      "id": "negation-precedence",
+      "source": "pub fnc main(): int { return (false || true && ¬false) ? 42 : 0; }",
+      "expect": 42
+    },
+    {
+      "id": "dead-rhs-still-typed",
+      "source": "pub fnc main(): bool { return false && ¬1; }",
+      "expect": "reject",
+      "diagnostic": "type|bool"
+    },
+    {
+      "id": "unicode-not-not-a-bang-keyword",
+      "source": "pub fnc main(): int { return copy¬ 42; }",
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token|unbound|unknown"
     }
   ]
 }
