@@ -214,3 +214,21 @@ test('inventory rejects hidden, symbol and accessor source entries without invok
   Object.defineProperty(m.sources,'0',{enumerable:true,get(){throw Error('getter invoked');}});
   denied('E_LIBRARY_MANIFEST',()=>check(m,s));
 });
+
+
+test('manifest arrays reject hidden indices and custom iterators before invoking them',()=>{
+  for(const mutate of [
+    m=>Object.defineProperty(m.sources,'0',{enumerable:false}),
+    m=>Object.setPrototypeOf(m.sources,{[Symbol.iterator](){throw Error('iterator invoked');}}),
+    m=>Object.defineProperty(m.sources[0].capabilities,'0',{enumerable:false}),
+    m=>Object.setPrototypeOf(m.sources[0].imports,{[Symbol.iterator](){throw Error('iterator invoked');}}),
+    m=>Object.defineProperty(m.sources[0].capabilities,'0',{get(){throw Error('getter invoked');}}),
+    m=>m.sources[0].capabilities.push('pure'),
+    m=>m.sources.extra=1
+  ]) {const m=manifest();mutate(m);denied('E_LIBRARY_MANIFEST',()=>check(m,sources()));}
+});
+test('returned profile metadata is immutable across admissions',()=>{
+  const first=check(manifest(),sources());
+  assert.throws(()=>first.profiles.core.push('std'),TypeError);
+  assert.deepEqual(check(manifest(),sources()).profiles.core,['core']);
+});
