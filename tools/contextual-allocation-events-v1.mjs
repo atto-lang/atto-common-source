@@ -4,7 +4,8 @@
 export function replay(events) {
   if (!Array.isArray(events) || events.length === 0 || events.length > 1_000_000) throw Error("event count");
   const contexts = new Map(), tasks = new Map(), allocations = new Map();
-  let mainOpened = false, total = 0n, peak = 0n, retired = 0, released = 0;
+  const taskHistory = new Set();
+  let mainContext = null, liveActors = 0, total = 0n, peak = 0n, retired = 0, released = 0;
   const require = (ok, reason) => { if (!ok) throw Error(reason); };
   const id = x => typeof x === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(x);
   const nat = x => Number.isSafeInteger(x) && x >= 0;
@@ -24,15 +25,16 @@ export function replay(events) {
         shape(e,["op","context","kind","quota"]);
         require(id(e.context) && !contexts.has(e.context) && positive(e.quota), "context identity/quota");
         require(e.kind === "main" || e.kind === "actor", "context kind");
-        if (e.kind === "main") { require(!mainOpened,"duplicate main"); mainOpened=true; }
-        else require(mainOpened, "actor before main");
+        if (e.kind === "main") { require(mainContext===null,"duplicate main"); mainContext=e.context; }
+        else { require(mainContext!==null && contexts.get(mainContext)?.state==="open", "actor outside main lifetime"); liveActors++; }
         contexts.set(e.context,{kind:e.kind,quota:BigInt(e.quota),bytes:0n,state:"open",tasks:0,pins:new Set()});
         break;
       }
       case "enter": {
         shape(e,["op","context","task"]);
         const c=getContext(e.context);
-        require(id(e.task) && !tasks.has(e.task), "task already bound");
+        require(id(e.task) && !taskHistory.has(e.task), "task identity reused");
+        taskHistory.add(e.task);
         tasks.set(e.task,{context:e.context,active:true});
         c.tasks++; break;
       }
@@ -81,12 +83,14 @@ export function replay(events) {
         shape(e,["op","context"]);
         const c=getContext(e.context);
         require(c.tasks===0 && c.pins.size===0 && c.bytes===0n,"live retirement");
+        if(c.kind==="main") require(liveActors===0,"main retires before actors");
+        else liveActors--;
         c.state="retired";retired++;break;
       }
       default: throw Error("unsupported event");
     }
   }
-  require(mainOpened && total===0n && tasks.size===0 && retired===contexts.size,"incomplete lifetime");
+  require(mainContext!==null && liveActors===0 && total===0n && tasks.size===0 && retired===contexts.size,"incomplete lifetime");
   return {peak_bytes:peak.toString(),released,retired,certified:false};
 }
 function selfTest(){
@@ -109,7 +113,11 @@ function selfTest(){
     x=>x.splice(12,0,{...x[11]}),x=>x.splice(12,1),x=>x.pop(),
     x=>x[4].extra=1,x=>x[4].bytes=Number.MAX_SAFE_INTEGER+1,
     x=>x[4].op="gc",x=>x[4].op="host_alloc",x=>x.splice(9,0,alloc("alloc","actor","a","a3",1,1)),
-    x=>x.splice(13,0,open("actor","actor")),x=>x[6].allocation="a1"
+    x=>x.splice(13,0,open("actor","actor")),x=>x[6].allocation="a1",
+    x=>{x.push(open("late","actor"),retire("late"));},
+    x=>{const r=x.splice(13,1)[0];x.push(r);},
+    x=>{x.splice(13,0,task("enter","actor","a"),task("leave","actor","a"));},
+    x=>{x.splice(14,0,task("enter","main","a"),task("leave","main","a"));}
   ];
   for(const mutate of bad){const x=good();mutate(x);let denied=false;try{replay(x)}catch{denied=true}if(!denied)throw Error("negative accepted "+n);n++;}
   // Valid repeated alloc/release on a long-lived contextual owner, no new contexts.
