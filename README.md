@@ -25,3 +25,7 @@ This README records the intended role of this repository; it is not a claim of f
 - [AttoLang](https://github.com/atto-lang)
 - [Language specification](https://github.com/atto-lang/atto-spec)
 - [Cross-platform conformance](https://github.com/atto-lang/atto-platform-conformance)
+
+## Actor-local reference provenance (draft)
+
+- [Ref32 origin and generation audit](docs/REF32_ORIGIN_PROVENANCE_V1.md) describes why equal four-byte tokens from separate actor heaps cannot authorize cross-actor access, and requires typed HIR/MIR origin proofs before compiled guest use. Its [12-case registry](contracts/ref32-origin-provenance-v1.json) is target-only, with Java/LLVM guest status **NOT_EXECUTED**.

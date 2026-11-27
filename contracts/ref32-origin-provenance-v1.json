@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "feature": "actor-local-ref32-origin-provenance",
+  "contract": "docs/REF32_ORIGIN_PROVENANCE_V1.md",
+  "status": "TARGET_ONLY_NOT_EXECUTED",
+  "owners": [
+    "atto-lang/atto-source.java",
+    "atto-lang/atto-source.llvm"
+  ],
+  "cases": [
+    {
+      "id": "R32-01",
+      "name": "A and B allocate same numeric slot/generation",
+      "required_behavior": "reject foreign-source dereference despite equal numeric token",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-02",
+      "name": "caller owner differs",
+      "required_behavior": "deny read/write without changing any actor state",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-03",
+      "name": "actor incarnation restarts",
+      "required_behavior": "deny old-ref read, write and release",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-04",
+      "name": "generation expires on ref release",
+      "required_behavior": "reject stale token even if same offset/class reused",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-05",
+      "name": "generation reaches 4095",
+      "required_behavior": "retire slot, never wrap into valid old token",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-06",
+      "name": "null and forged high slot",
+      "required_behavior": "reject before dereference and before native pointer computation",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-07",
+      "name": "type id mismatch",
+      "required_behavior": "reject typed access or conversion without mutable state changes",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-08",
+      "name": "payload offset misaligned or out of bounds",
+      "required_behavior": "reject before memory access with overflow-safe arithmetic",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-09",
+      "name": "critical-read and exclusive write borrow",
+      "required_behavior": "reject conflicting aliases in typed IR before codegen",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-10",
+      "name": "Ref32 carried as actor message",
+      "required_behavior": "reject implicit cross-domain transport; no cast to ActorRef",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-11",
+      "name": "borrow spans suspension without pin proof",
+      "required_behavior": "reject before emitting compiled guest artifact",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    },
+    {
+      "id": "R32-12",
+      "name": "STOP and sibling actor",
+      "required_behavior": "quiesce/scrub/retire owner without affecting sibling ref validity",
+      "expected_status": "TARGET_ONLY_NOT_EXECUTED",
+      "java_guest": "NOT_EXECUTED",
+      "llvm_guest": "NOT_EXECUTED"
+    }
+  ],
+  "releaseRequirements": [
+    "source_tree_sha",
+    "compiler_head_sha",
+    "fixture_blob_sha",
+    "compiled_guest_artifact_digest",
+    "negative_no_artifact_evidence",
+    "memory_sanitizer_result_or_not_executed",
+    "separate_host_model_status",
+    "independent_review"
+  ]
+}
