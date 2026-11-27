@@ -488,6 +488,9 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
             } else {
                 return Err(syntax("unsupported with expression"));
             };
+            if constraint_property == Property::Length && bound < 0 {
+                return Err(syntax("negative length bound"));
+            }
             predicates.push(Predicate {
                 property: constraint_property,
                 op,
@@ -869,6 +872,9 @@ mod tests {
             "type Bad = string with chars letters;",
             "type Bad = string with chars [A-Z];",
             "type Bad = string with min_length -1;",
+            "type Bad = string with max_length -1;",
+            "type Bad = string with length >= -1;",
+            "type Bad = string with length ne -1;",
             "type Bad = string with chars ascii_letters or chars han;",
         ] {
             assert!(parse(source).is_err(), "accepted {source}");
