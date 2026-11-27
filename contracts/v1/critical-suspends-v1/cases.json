@@ -428,6 +428,90 @@
       "category": "suspends",
       "lowering_pending": false,
       "source": "pub ∂ ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "direct-result-long",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub suspends fnc value(): int { return 42; } pub suspends fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-long",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub suspends fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "direct-result-short",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub susp fnc value(): int { return 42; } pub susp fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-short",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub susp fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "direct-result-partial",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub ∂ fnc value(): int { return 42; } pub ∂ fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-partial",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub ∂ fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "direct-result-hourglass",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub ⧖ fnc value(): int { return 42; } pub ⧖ fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-hourglass",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub ⧖ fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "ordinary-stdout-direct",
+      "expected": "accept",
+      "category": "runtime-parking",
+      "lowering_pending": true,
+      "source": "pub fnc output(): void { stdio.out.write(\"A\"); process.stdout.write(\"B\"); }"
+    },
+    {
+      "id": "ordinary-stdout-transitive",
+      "expected": "accept",
+      "category": "runtime-parking",
+      "lowering_pending": true,
+      "source": "pub fnc output(): void { stdio.out.write(\"A\"); } pub fnc caller(): int { output(); process.stdout.write(\"B\"); return 42; }"
+    },
+    {
+      "id": "critical-stdout-direct",
+      "expected": "reject",
+      "category": "runtime-parking-critical",
+      "lowering_pending": false,
+      "source": "pub suspends fnc invalid(): void { critical { stdio.out.write(\"A\"); } }"
+    },
+    {
+      "id": "critical-stdout-transitive",
+      "expected": "reject",
+      "category": "runtime-parking-critical",
+      "lowering_pending": false,
+      "source": "pub fnc output(): void { process.stdout.write(\"A\"); } pub suspends fnc invalid(): void { critical { output(); } }"
     }
   ]
 }
