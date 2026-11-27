@@ -125,6 +125,16 @@ test('measurement catalog: every declared linear scale and dimension is independ
   const expected = new Map(Object.entries({
     Meter:['Length',1n,1n], Millimeter:['Length',1n,1000n], Centimeter:['Length',1n,100n],
     Kilometer:['Length',1000n,1n], Micrometer:['Length',1n,1000000n], Nanometer:['Length',1n,1000000000n],
+    Decameter:['Length',10n,1n], Hectometer:['Length',100n,1n],
+    Megameter:['Length',10n**6n,1n], Gigameter:['Length',10n**9n,1n],
+    Terameter:['Length',10n**12n,1n], Petameter:['Length',10n**15n,1n],
+    Exameter:['Length',10n**18n,1n], Zettameter:['Length',10n**21n,1n],
+    Yottameter:['Length',10n**24n,1n], Ronnameter:['Length',10n**27n,1n],
+    Quettameter:['Length',10n**30n,1n], Decimeter:['Length',1n,10n],
+    Picometer:['Length',1n,10n**12n], Femtometer:['Length',1n,10n**15n],
+    Attometer:['Length',1n,10n**18n], Zeptometer:['Length',1n,10n**21n],
+    Yoctometer:['Length',1n,10n**24n], Rontometer:['Length',1n,10n**27n],
+    Quectometer:['Length',1n,10n**30n],
     Second:['Time',1n,1n], Millis:['Time',1n,1000n], Micros:['Time',1n,1000000n], Nanos:['Time',1n,1000000000n],
     Minute:['Time',60n,1n], Hour:['Time',3600n,1n], Day:['Time',86400n,1n],
     Kilogram:['Mass',1n,1n], Gram:['Mass',1n,1000n], Milligram:['Mass',1n,1000000n],
@@ -154,6 +164,12 @@ test('measurement catalog: every declared linear scale and dimension is independ
   const cv=(value,unit)=>({op:'convert',value,unit});
   const div=(left,right)=>({op:'divide',left,right});
   const run=expr=>evaluateQuantityMain(declarations,expr);
+  assert.equal(actual.size,48);
+  assert.equal(run(div(cv(lit('42','Quettameter'),'Ronnameter'),lit('1000','Ronnameter'))),42n);
+  assert.equal(run(div(cv(lit('42','Rontometer'),'Quectometer'),lit('1000','Quectometer'))),42n);
+  assert.equal(run(div(cv(lit('0','Quettameter'),'Quectometer'),lit('1','Quectometer'))),0n);
+  assert.throws(()=>run(cv(lit('1','Quettameter'),'Quectometer')),{code:'E_UNIT_RANGE'});
+  assert.throws(()=>run(cv(lit('1','Quectometer'),'Quettameter')),{code:'E_UNIT_INEXACT'});
   assert.equal(run(div(cv(lit('-100','Centimeter'),'Meter'),lit('1','Meter'))),-1n);
   assert.equal(run(div(cv(lit('1000','Millis'),'Second'),lit('1','Second'))),1n);
   assert.equal(run(div(cv(lit('1','Kibibyte'),'Byte'),lit('1','Byte'))),1024n);
