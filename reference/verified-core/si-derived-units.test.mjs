@@ -23,7 +23,7 @@ test("complete named SI derived inventory, case-sensitive symbols and exact scal
 test("independent dimensional equations for named derived units",()=>{
  assert.deepEqual(powers("Radian"),[0,0,0,0,0,0,0]);
  assert.deepEqual(powers("Steradian"),powers("Radian"));
- assert.deepEqual(powers("Hertz"),T.map(n=>-n));
+ assert.deepEqual(powers("Hertz"),T.map(n=>n===0?0:-n));
  assert.deepEqual(powers("Newton"),sub(add(M,L),add(T,T)));
  assert.deepEqual(powers("Pascal"),sub(powers("Newton"),add(L,L)));
  assert.deepEqual(powers("Joule"),add(powers("Newton"),L));
@@ -32,7 +32,7 @@ test("independent dimensional equations for named derived units",()=>{
  assert.deepEqual(powers("Volt"),sub(powers("Watt"),I));
  assert.deepEqual(powers("Farad"),sub(powers("Coulomb"),powers("Volt")));
  assert.deepEqual(powers("Ohm"),sub(powers("Volt"),I));
- assert.deepEqual(powers("Siemens"),powers("Ohm").map(n=>-n));
+ assert.deepEqual(powers("Siemens"),powers("Ohm").map(n=>n===0?0:-n));
  assert.deepEqual(powers("Weber"),add(powers("Volt"),T));
  assert.deepEqual(powers("Tesla"),sub(powers("Weber"),add(L,L)));
  assert.deepEqual(powers("Henry"),sub(powers("Weber"),I));
