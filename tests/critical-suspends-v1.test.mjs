@@ -77,3 +77,30 @@ test("critical ticket ABI preserves nonparking acquisition across runtimes", () 
     assert.ok(abi.backend_state[backend], backend);
   assert.match(abi.evidence, /No native Oreslang guest execution/);
 });
+
+test("runtime parking targets preserve explicit effect and direct result distinction", () => {
+  const byId = new Map(manifest.cases.map(c => [c.id, c]));
+  for (const [tag, alias] of [["long", "suspends"], ["short", "susp"], ["partial", "∂"], ["hourglass", "⧖"]]) {
+    const good = byId.get("direct-result-" + tag);
+    const bad = byId.get("unannotated-await-" + tag);
+    assert.equal(good.expected, "accept");
+    assert.equal(good.lowering_pending, true);
+    assert.ok(good.source.includes("pub " + alias + " fnc caller(): int"));
+    assert.ok(good.source.includes("await value()"));
+    assert.equal(bad.expected, "reject");
+    assert.equal(bad.lowering_pending, false);
+    assert.ok(bad.source.includes("pub fnc caller(): int"));
+    assert.ok(bad.source.includes("await value()"));
+  }
+  for (const tag of ["direct", "transitive"]) {
+    const ordinary = byId.get("ordinary-stdout-" + tag);
+    const critical = byId.get("critical-stdout-" + tag);
+    assert.equal(ordinary.expected, "accept");
+    assert.equal(ordinary.lowering_pending, true);
+    assert.doesNotMatch(ordinary.source, /suspends|\bawait\b|∂|⧖/);
+    assert.equal(critical.expected, "reject");
+    assert.equal(critical.lowering_pending, false);
+    assert.ok(critical.source.includes("critical {"));
+  }
+  assert.equal(manifest.backend_status, "not-verified");
+});
