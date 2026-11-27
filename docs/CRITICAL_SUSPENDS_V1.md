@@ -5,8 +5,10 @@ Version: 1, adopted for implementation review 2026-11-01.
 
 ## Effects and syntax
 
-* `fnc` and `routine` are synchronous unless declared `suspends`.
-* `suspends` means **may suspend**, including waiting for a critical guard; uncontended paths need not suspend.
+* Ordinary `fnc`, `mtd` and `routine` do not admit explicit language-level suspension; they may still be transparently parked by the runtime (e.g. bounded stdout admission or scheduler cooperation).
+* `suspends` means permission for **explicit** logical suspension, not a requirement to suspend. The declared return type is unchanged, including `void` and explicitly declared `Future<T>`; no automatic Future wrapping, flattening, task creation or mandatory Future allocation. Awaited direct calls produce the declared result.
+* Infer runtime parking/resumability independently and transitively through ordinary callers. A potentially parking operation must not retain an unsafe critical guard or exclusive loan; reject unless safe/nonparking admission is established. Preserve actor non-reentrancy, ownership, cancellation and AOT. This is the 2026-11-27 language decision; backend implementation requires separate executed evidence.
+* Accepted suspension modifier spellings (2026-11-26): `suspends`, `susp`, `⧖` (U+29D6 WHITE HOURGLASS), and `∂` (U+2202 PARTIAL DIFFERENTIAL). All denote the same effect in every supported callable modifier position, including methods and routines. The ASCII aliases match whole identifiers; the two symbols are exact Unicode scalar tokens, not lookalikes. Preserve original lexemes and positions for diagnostics and formatting. Do not rewrite comments, string literals or ordinary identifiers. Duplicate or incompatible effects remain errors irrespective of spelling. No runtime, allocation, GC or AOT distinction is permitted. Unsupported backends must fail closed for every spelling rather than accept a synchronous approximation. This is a source-language decision, not an execution receipt.
 * `async` is not a callable modifier in v1. Do not silently translate historical `async` code: audit Future/await and function-type semantics.
 * `critical suspends fnc` and `suspends critical fnc` are rejected, including actor methods and routines.
 * `critical fnc`/actor `critical method` are non-suspending *bodies* with a scheduler-mediated entrypoint.
