@@ -20,8 +20,8 @@
     },
     {
       "path": "stdlib/core/measure.atto",
-      "sha256": "6c6898335767a192e93422035b75805abb8bad786c4117e4981dbeec5a5a62d3",
-      "bytes": 2044
+      "sha256": "a411966eb3188104cd13cc2201b4d1d0de1e12404378aba313b396ae726a3376",
+      "bytes": 3072
     },
     {
       "path": "stdlib/core/size_math.atto",
