@@ -1,6 +1,7 @@
 // Exact-source differential audit for the ordinary Forge and Cranelift AOT scalar lanes.
 // No source rewriting, reference evaluator, JIT, or strict-profile injection.
 import {spawnSync} from 'node:child_process';
+import {classifyNativeCompilerResult} from './native-compiler-result-v1.mjs';
 import {createHash} from 'node:crypto';
 import {readFileSync,writeFileSync,mkdtempSync,rmSync,existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -9,7 +10,7 @@ const [profile,rootArg,head,tree,compilerArg,cxx='c++']=process.argv.slice(2);
 if(!['forge','cranelift'].includes(profile)||!rootArg||!compilerArg||![head,tree].every(x=>typeof x==='string'&&/^[a-f0-9]{40}$/.test(x)))throw Error('usage: runner forge|cranelift ROOT HEAD TREE COMPILER [CXX]');
 const root=resolve(rootArg),compiler=resolve(compilerArg),hash=b=>createHash('sha256').update(b).digest('hex');
 const run=(cmd,args,timeout=30000)=>spawnSync(cmd,args,{cwd:root,encoding:null,timeout,maxBuffer:16*1024*1024});
-const str=b=>b.toString('utf8').trim();
+const str=b=>b?.toString('utf8').trim() ?? '';
 const checked=(r,label)=>{if(r.error||r.signal||r.status!==0)throw Error(label+': '+str(r.stderr));return str(r.stdout)};
 const git=(...args)=>checked(run('git',args),'git');
 const verify=()=>{if(git('rev-parse','HEAD')!==head||git('rev-parse','HEAD^{tree}')!==tree||git('write-tree')!==tree||git('status','--porcelain','--untracked-files=all')!=='')throw Error('source identity mismatch')};
@@ -25,9 +26,11 @@ try{
   const source=join(tmp,c.id+'.atto'),output=join(tmp,c.id+(profile==='forge'?'.cpp':'.o'));
   writeFileSync(source,c.source,'utf8');
   const r=run(compiler,profile==='forge'?[source,'-o',output]:['emit-object',source]);
-  const row={id:c.id,expected:c.expect,sourceSha256:hash(readFileSync(source)),compilerExit:r.status,artifact:profile==='forge'?existsSync(output):r.stdout.length>0,status:'FAIL'};
+  const artifact=profile==='forge'?existsSync(output):Boolean(r.stdout?.length);
+  const outcome=classifyNativeCompilerResult(r,artifact);
+  const row={id:c.id,expected:c.expect,sourceSha256:hash(readFileSync(source)),compilerExit:r.status,artifact,processOutcome:outcome.status,status:'FAIL'};
   try{
-   if(r.error||r.signal)throw Error('compiler infrastructure failure');
+   if(outcome.status==='INFRASTRUCTURE_FAILURE')throw Error('compiler infrastructure failure: '+(r.error?.message||r.signal||'missing process status'));
    if(c.expect==='reject'){
     const d=str(r.stderr).replace(/\s*\[file: [^\r\n]*\]\s*$/,'');
     row.diagnostic=d;
@@ -42,7 +45,7 @@ try{
       const control=join(tmp,c.id+'-control.atto'),controlOut=join(tmp,c.id+'-control'+(profile==='forge'?'.cpp':'.o'));
       writeFileSync(control,'pub fnc main(): int { val bool b = true; if b then return 42; else return 0; fi }');
       const w=run(compiler,profile==='forge'?[control,'-o',controlOut]:['emit-object',control]);
-      if(w.error||w.signal||w.status!==0||(profile==='forge'?!existsSync(controlOut):!w.stdout.length))throw Error('bound Boolean control not admitted: '+str(w.stderr));
+      if(w.error||w.signal||w.status!==0||(profile==='forge'?!existsSync(controlOut):!w.stdout?.length))throw Error('bound Boolean control not admitted: '+str(w.stderr));
       if(profile==='cranelift')writeFileSync(controlOut,w.stdout);
       const app=join(tmp,c.id+'-control-guest');
       checked(run(profile==='forge'?cxx:'cc',profile==='forge'?['-std=c++20','-O2','-I'+join(root,'include'),controlOut,'-o',app]:[driver,controlOut,'-o',app]),'bound Boolean control link');
