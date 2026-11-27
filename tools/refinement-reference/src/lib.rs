@@ -114,7 +114,9 @@ const HAN18_RANGES: &[(u32, u32)] = &[
 ];
 
 fn ucd18_han(codepoint: u32) -> bool {
-    HAN18_RANGES.iter().any(|&(start, stop)| (start..=stop).contains(&codepoint))
+    HAN18_RANGES
+        .iter()
+        .any(|&(start, stop)| (start..=stop).contains(&codepoint))
 }
 
 impl CharPolicy {
@@ -192,7 +194,9 @@ fn short_bound_re() -> &'static Regex {
 }
 fn short_length_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"^\s*(min_length|max_length)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap())
+    R.get_or_init(|| {
+        Regex::new(r"^\s*(min_length|max_length)\s+(-?[0-9]+(?:_[0-9]+)*)\s*$").unwrap()
+    })
 }
 fn char_policy_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
@@ -432,7 +436,9 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
         for term in and_re().split(clause.trim()) {
             if let Some(c) = char_policy_re().captures(term) {
                 if base != Base::String || char_policy != CharPolicy::Any {
-                    return Err(syntax("character policy requires string and must be unique"));
+                    return Err(syntax(
+                        "character policy requires string and must be unique",
+                    ));
                 }
                 char_policy = match c.get(1).unwrap().as_str() {
                     "ascii_letters" => CharPolicy::AsciiLetters,
@@ -447,34 +453,41 @@ pub fn parse(source: &str) -> Result<Refined, ConstraintSyntaxError> {
             }
             // Two disjoint grammars avoid treating `min0` or
             // `min gte 0` as valid shorthand.
-            let (constraint_property, op, bound) =
-                if let Some(c) = cmp_re().captures(term) {
-                    (
-                        property(c.get(1).unwrap().as_str()).unwrap(),
-                        op_alias(c.get(2).unwrap().as_str()).unwrap(),
-                        parse_bound(c.get(3).unwrap().as_str())?,
-                    )
-                } else if let Some(c) = short_bound_re().captures(term) {
-                    if base != Base::Int {
-                        return Err(syntax("min/max shorthand requires integer base"));
-                    }
-                    (
-                        Property::Value,
-                        if c.get(1).unwrap().as_str() == "min" { Op::Gte } else { Op::Lte },
-                        parse_bound(c.get(2).unwrap().as_str())?,
-                    )
-                } else if let Some(c) = short_length_re().captures(term) {
-                    if base != Base::String {
-                        return Err(syntax("min_length/max_length shorthand requires string"));
-                    }
-                    (
-                        Property::Length,
-                        if c.get(1).unwrap().as_str() == "min_length" { Op::Gte } else { Op::Lte },
-                        parse_bound(c.get(2).unwrap().as_str())?,
-                    )
-                } else {
-                    return Err(syntax("unsupported with expression"));
-                };
+            let (constraint_property, op, bound) = if let Some(c) = cmp_re().captures(term) {
+                (
+                    property(c.get(1).unwrap().as_str()).unwrap(),
+                    op_alias(c.get(2).unwrap().as_str()).unwrap(),
+                    parse_bound(c.get(3).unwrap().as_str())?,
+                )
+            } else if let Some(c) = short_bound_re().captures(term) {
+                if base != Base::Int {
+                    return Err(syntax("min/max shorthand requires integer base"));
+                }
+                (
+                    Property::Value,
+                    if c.get(1).unwrap().as_str() == "min" {
+                        Op::Gte
+                    } else {
+                        Op::Lte
+                    },
+                    parse_bound(c.get(2).unwrap().as_str())?,
+                )
+            } else if let Some(c) = short_length_re().captures(term) {
+                if base != Base::String {
+                    return Err(syntax("min_length/max_length shorthand requires string"));
+                }
+                (
+                    Property::Length,
+                    if c.get(1).unwrap().as_str() == "min_length" {
+                        Op::Gte
+                    } else {
+                        Op::Lte
+                    },
+                    parse_bound(c.get(2).unwrap().as_str())?,
+                )
+            } else {
+                return Err(syntax("unsupported with expression"));
+            };
             predicates.push(Predicate {
                 property: constraint_property,
                 op,
@@ -738,7 +751,10 @@ mod tests {
         let positive = ok("define pub type Positive = int with value gt 0;");
         assert_eq!(old.predicates, positive.predicates);
         let legacy = ok("pub define type Positive = int with min 1;");
-        assert_eq!(legacy.predicates, ok("type Positive = int with value gte 1;").predicates);
+        assert_eq!(
+            legacy.predicates,
+            ok("type Positive = int with value gte 1;").predicates
+        );
     }
 
     #[test]
@@ -757,21 +773,36 @@ mod tests {
             "type No = int with min -9223372036854775809;",
             "define type No = int as positive integer;",
         ] {
-            assert!(parse(source).is_err(), "accepted invalid refinement: {source}");
+            assert!(
+                parse(source).is_err(),
+                "accepted invalid refinement: {source}"
+            );
         }
     }
 
     #[test]
     fn string_length_and_ascii_character_policies() {
-        let equivalent = ok("type A = string with min_length 2 and max_length 4 and chars ascii_letters;");
-        let canonical = ok("type A = string with length gte 2 and length lte 4 and chars ascii_letters;");
+        let equivalent =
+            ok("type A = string with min_length 2 and max_length 4 and chars ascii_letters;");
+        let canonical =
+            ok("type A = string with length gte 2 and length lte 4 and chars ascii_letters;");
         assert_eq!(equivalent, canonical);
         for (candidate, accepted) in [
-            ("AB", true), ("aBc", true), ("ABCd", true),
-            ("A", false), ("ABCDE", false), ("A1", false),
-            ("éA", false), ("你好", false), ("😀A", false),
+            ("AB", true),
+            ("aBc", true),
+            ("ABCd", true),
+            ("A", false),
+            ("ABCDE", false),
+            ("A1", false),
+            ("éA", false),
+            ("你好", false),
+            ("😀A", false),
         ] {
-            assert_eq!(equivalent.accepts(Candidate::Str(candidate)), accepted, "{candidate:?}");
+            assert_eq!(
+                equivalent.accepts(Candidate::Str(candidate)),
+                accepted,
+                "{candidate:?}"
+            );
         }
         let upper = ok("type U = string with chars ascii_uppercase;");
         let lower = ok("type L = string with chars ascii_lowercase;");
@@ -780,7 +811,10 @@ mod tests {
         assert!(lower.accepts(Candidate::Str("abc")));
         assert!(!lower.accepts(Candidate::Str("Abc")));
         assert!(!upper.accepts(Candidate::Str("123")));
-        assert_eq!(ok("type H = string with chars han;").char_policy, CharPolicy::Han);
+        assert_eq!(
+            ok("type H = string with chars han;").char_policy,
+            CharPolicy::Han
+        );
         // Han Script property is pinned to UCD 18.0; casing still blocked.
         assert!(ok("type H = string with chars han;").accepts(Candidate::Str("中文")));
         assert!(!ok("type H = string with chars han;").accepts(Candidate::Str("中A")));
@@ -796,16 +830,24 @@ mod tests {
             .filter(|line| !line.starts_with('#') && !line.is_empty())
             .map(|line| {
                 let (first, last) = line.split_once(',').expect("canonical Han interval");
-                (first.parse().expect("decimal start"), last.parse().expect("decimal end"))
+                (
+                    first.parse().expect("decimal start"),
+                    last.parse().expect("decimal end"),
+                )
             })
             .collect();
-        assert_eq!(manifest, HAN18_RANGES, "runtime must exactly match pinned UCD18 source");
+        assert_eq!(
+            manifest, HAN18_RANGES,
+            "runtime must exactly match pinned UCD18 source"
+        );
         let total: u32 = HAN18_RANGES.iter().map(|&(a, b)| b - a + 1).sum();
         assert_eq!(HAN18_RANGES.len(), 25);
         assert_eq!(total, 103352);
         for (index, &(first, last)) in HAN18_RANGES.iter().enumerate() {
             assert!(first <= last);
-            if index > 0 { assert!(HAN18_RANGES[index - 1].1 < first); }
+            if index > 0 {
+                assert!(HAN18_RANGES[index - 1].1 < first);
+            }
             assert!(ucd18_han(first), "{first:X}");
             assert!(ucd18_han(last), "{last:X}");
         }
