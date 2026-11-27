@@ -27,7 +27,7 @@ export function replay(events) {
         require(e.kind === "main" || e.kind === "actor", "context kind");
         if (e.kind === "main") { require(mainContext===null,"duplicate main"); mainContext=e.context; }
         else { require(mainContext!==null && contexts.get(mainContext)?.state==="open", "actor outside main lifetime"); liveActors++; }
-        contexts.set(e.context,{kind:e.kind,quota:BigInt(e.quota),bytes:0n,state:"open",tasks:0,pins:new Set()});
+        contexts.set(e.context,{kind:e.kind,quota:BigInt(e.quota),bytes:0n,state:"open",tasks:0,pins:new Set(),pinHistory:new Set()});
         break;
       }
       case "enter": {
@@ -75,7 +75,7 @@ export function replay(events) {
         shape(e,["op","context","pin"]);
         const c=getContext(e.context);
         require(id(e.pin),"invalid pin");
-        if(e.op==="pin"){require(!c.pins.has(e.pin),"duplicate pin");c.pins.add(e.pin);}
+        if(e.op==="pin"){require(!c.pinHistory.has(e.pin),"pin incarnation reused");c.pinHistory.add(e.pin);c.pins.add(e.pin);}
         else {require(c.pins.delete(e.pin),"unknown pin");}
         break;
       }
@@ -103,6 +103,8 @@ function selfTest(){
   const out=replay(good());
   if(out.peak_bytes!=="32"||out.released!==2||out.retired!==2||out.certified!==false)throw Error("positive mismatch");
   let n=1;
+  const renewed=good();renewed.splice(11,0,{op:"pin",context:"actor",pin:"io2"},{op:"unpin",context:"actor",pin:"io2"});
+  if(replay(renewed).certified!==false)throw Error("fresh pin incarnation");n++;
   const bad=[
     x=>x[0].kind="actor", x=>x[1].kind="main", x=>x[1].context="main",
     x=>x[0].quota=0,x=>x[4].bytes=0,x=>x[4].align=3,x=>x[4].align=0,
@@ -117,7 +119,10 @@ function selfTest(){
     x=>{x.push(open("late","actor"),retire("late"));},
     x=>{const r=x.splice(13,1)[0];x.push(r);},
     x=>{x.splice(13,0,task("enter","actor","a"),task("leave","actor","a"));},
-    x=>{x.splice(14,0,task("enter","main","a"),task("leave","main","a"));}
+    x=>{x.splice(14,0,task("enter","main","a"),task("leave","main","a"));},
+    x=>{x.splice(11,0,{op:"pin",context:"actor",pin:"io"},{op:"unpin",context:"actor",pin:"io"});},
+    x=>{x.splice(10,0,{op:"pin",context:"actor",pin:"io"});},
+    x=>{x.splice(11,0,{op:"unpin",context:"actor",pin:"io"});}
   ];
   for(const mutate of bad){const x=good();mutate(x);let denied=false;try{replay(x)}catch{denied=true}if(!denied)throw Error("negative accepted "+n);n++;}
   // Valid repeated alloc/release on a long-lived contextual owner, no new contexts.
