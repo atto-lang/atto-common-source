@@ -119,3 +119,73 @@ test('measurement source declarations elaborate in the existing host reference o
     }
   }
 });
+
+test('measurement catalog: every declared linear scale and dimension is independently pinned', () => {
+  // Independent expected inventory, not derived from the declaration under test.
+  const expected = new Map(Object.entries({
+    Meter:['Length',1n,1n], Millimeter:['Length',1n,1000n], Centimeter:['Length',1n,100n],
+    Kilometer:['Length',1000n,1n], Micrometer:['Length',1n,1000000n], Nanometer:['Length',1n,1000000000n],
+    Second:['Time',1n,1n], Millis:['Time',1n,1000n], Micros:['Time',1n,1000000n], Nanos:['Time',1n,1000000000n],
+    Minute:['Time',60n,1n], Hour:['Time',3600n,1n], Day:['Time',86400n,1n],
+    Kilogram:['Mass',1n,1n], Gram:['Mass',1n,1000n], Milligram:['Mass',1n,1000000n],
+    Ampere:['ElectricCurrent',1n,1n], Milliampere:['ElectricCurrent',1n,1000n],
+    Kelvin:['Temperature',1n,1n], Mole:['AmountOfSubstance',1n,1n], Candela:['LuminousIntensity',1n,1n],
+    Bit:['Information',1n,1n], Byte:['Information',8n,1n],
+    Kilobyte:['Information',8000n,1n], Megabyte:['Information',8000000n,1n], Gigabyte:['Information',8000000000n,1n],
+    Kibibyte:['Information',8192n,1n], Mebibyte:['Information',8388608n,1n], Gibibyte:['Information',8589934592n,1n],
+  }));
+  const declarations=[];
+  for (const line of read('stdlib/core/measure.atto').split('\n')) {
+    let m;
+    if ((m=/^define dimension (\w+);$/.exec(line))) declarations.push({kind:'dimension',name:m[1]});
+    else if ((m=/^define unit (\w+): (\w+)(?: = (\w+) ([*/]) (\d+))?;$/.exec(line))) {
+      declarations.push({kind:'unit',name:m[1],dimension:m[2],...(m[3]?{relativeTo:m[3],divide:m[4]==='/',factor:m[5]}:{})});
+    } else if (line.startsWith('define ')) assert.fail('unrecognized measure declaration: '+line);
+  }
+  const actual=elaborateQuantityDeclarations(declarations);
+  assert.deepEqual([...actual.keys()].sort(), [...expected.keys()].sort());
+  for (const [name,[dimension,n,d]] of expected) {
+    const unit=actual.get(name);
+    assert.deepEqual(unit.powers,[[dimension,1]],name);
+    assert.equal(unit.n,n,name);
+    assert.equal(unit.d,d,name);
+  }
+  const lit=(value,unit)=>({op:'literal',value,unit});
+  const cv=(value,unit)=>({op:'convert',value,unit});
+  const div=(left,right)=>({op:'divide',left,right});
+  const run=expr=>evaluateQuantityMain(declarations,expr);
+  assert.equal(run(div(cv(lit('-100','Centimeter'),'Meter'),lit('1','Meter'))),-1n);
+  assert.equal(run(div(cv(lit('1000','Millis'),'Second'),lit('1','Second'))),1n);
+  assert.equal(run(div(cv(lit('1','Kibibyte'),'Byte'),lit('1','Byte'))),1024n);
+  assert.equal(run(div(cv(lit('1','Kilobyte'),'Byte'),lit('1','Byte'))),1000n);
+  assert.throws(()=>run(cv(lit('1','Bit'),'Byte')),{code:'E_UNIT_INEXACT'});
+  assert.throws(()=>run(cv(lit('9223372036854775807','Byte'),'Bit')),{code:'E_UNIT_RANGE'});
+  assert.throws(()=>run(cv(lit('-9223372036854775808','Byte'),'Bit')),{code:'E_UNIT_RANGE'});
+  assert.throws(()=>run(div(lit('1','Second'),lit('1','Millis'))),{code:'E_UNIT_ERASURE'});
+  assert.throws(()=>run(div(lit('1','Meter'),lit('0','Meter'))),{code:'E_I64_DIV_ZERO'});
+  assert.throws(()=>run(div(lit('-9223372036854775808','Meter'),lit('-1','Meter'))),{code:'E_I64_OVERFLOW'});
+  assert.throws(()=>run(cv(lit('1','Second'),'Meter')),{code:'E_UNIT_DIMENSION'});
+});
+
+test('unit declaration admission fails closed on duplicate, unknown, nonpositive and oversized declarations', () => {
+  const base=[{kind:'dimension',name:'Length'},{kind:'unit',name:'Meter',dimension:'Length'}];
+  const derived=(name,relativeTo,factor)=>({kind:'unit',name,dimension:'Length',relativeTo,factor});
+  const rejects=(d,code)=>assert.throws(()=>elaborateQuantityDeclarations(d),{code});
+  rejects([...base,{kind:'dimension',name:'Meter'}],'E_UNIT_DUPLICATE');
+  rejects([...base,{kind:'unit',name:'OtherBase',dimension:'Length'}],'E_UNIT_DUPLICATE');
+  rejects([...base,derived('Cycle','Cycle','1')],'E_UNIT_NAME');
+  rejects([...base,derived('Missing','MissingBase','1')],'E_UNIT_NAME');
+  rejects([...base,derived('Zero','Meter','0')],'E_UNIT_SCALE');
+  rejects([...base,derived('Negative','Meter','-1')],'E_UNIT_SCALE');
+  rejects([...base,derived('Wide','Meter','9223372036854775808')],'E_UNIT_SCALE');
+  const many=Array.from({length:129},(_,i)=>({kind:'dimension',name:'D'+i}));
+  rejects(many,'E_UNIT_LIMIT');
+  const long=[...base];
+  let previous='Meter';
+  for(let i=0;i<5;i++) {
+    const name='Wide'+i;
+    long.push(derived(name,previous,'9223372036854775807'));
+    previous=name;
+  }
+  rejects(long,'E_UNIT_LIMIT');
+});
