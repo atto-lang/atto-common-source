@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { elaborateQuantityDeclarations, evaluateQuantityMain } from '../reference/verified-core/quantities.mjs';
+import { constrain, checkedRefinement, full, signedI32 } from '../reference/verified-core/intervals.mjs';
 
 // Source-level only: these checks do NOT parse/compile/link/execute .atto.
 const read = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
@@ -10,6 +12,7 @@ const sourcePaths = [
   'stdlib/alloc/byte_region.atto',
   'stdlib/core/byte_bounds.atto',
   'stdlib/core/identity.atto',
+  'stdlib/core/measure.atto',
   'stdlib/core/size_math.atto',
   'stdlib/core/u32_endian.atto',
   'stdlib/std/buffer.atto',
@@ -65,4 +68,54 @@ test('std byte equality builds on alloc without host I/O', () => {
   assert.match(std, /import module alloc_bytes from "stdlib\/alloc\/byte_region.atto";/);
   assert.match(std, /pub fnc bytes_equal/);
   assert.match(std, /left\.read_byte\(index\) != right\.read_byte\(index\)/);
+});
+
+test('measurement source declarations elaborate in the existing host reference oracle', () => {
+  const declarations = [], aliases = new Map();
+  for (const line of read('stdlib/core/measure.atto').split('\n')) {
+    if (!line || line.startsWith('//')) continue;
+    let m;
+    if ((m = /^define dimension (\w+);$/.exec(line))) {
+      declarations.push({kind:'dimension', name:m[1]});
+    } else if ((m = /^define unit (\w+): (\w+)(?: = (\w+) ([*/]) (\d+))?;$/.exec(line))) {
+      declarations.push({kind:'unit', name:m[1], dimension:m[2],
+        ...(m[3] ? {relativeTo:m[3], divide:m[4]==='/', factor:m[5]} : {})});
+    } else if ((m = /^type (\w+) = (int|i32) where self (>=|<=|>|<) 0;$/.exec(line))) {
+      assert.ok(!aliases.has(m[1]));
+      aliases.set(m[1], constrain(m[2]==='int'?full:signedI32,m[3],0n));
+    } else assert.fail('unknown catalog declaration: '+line);
+  }
+  const u = elaborateQuantityDeclarations(declarations);
+  const scales = [['Centimeter','Meter',1n,100n],['Millis','Second',1n,1000n],
+    ['Micros','Second',1n,1000000n],['Nanos','Second',1n,1000000000n],
+    ['Gram','Kilogram',1n,1000n],['Byte','Bit',8n,1n],
+    ['Kilobyte','Byte',1000n,1n],['Kibibyte','Byte',1024n,1n],
+    ['Hour','Second',3600n,1n],['Day','Second',86400n,1n]];
+  assert.equal(declarations.filter(d=>d.kind==='dimension').length,8);
+  for (const [from,to,n,d] of scales) {
+    const a=u.get(from), b=u.get(to);
+    assert.deepEqual(a.powers,b.powers);
+    assert.equal(a.n*b.d*d,b.n*a.d*n);
+  }
+  const lit=(value,unit)=>({op:'literal',value,unit});
+  const div=(left,right)=>({op:'divide',left,right});
+  const convert=(value,unit)=>({op:'convert',value,unit});
+  assert.equal(evaluateQuantityMain(declarations,div(convert(lit('4200','Centimeter'),'Meter'),lit('1','Meter'))),42n);
+  assert.throws(()=>evaluateQuantityMain(declarations,convert(lit('1','Centimeter'),'Meter')),{code:'E_UNIT_INEXACT'});
+  assert.throws(()=>evaluateQuantityMain(declarations,{op:'add',left:lit('1','Meter'),right:lit('1','Second')}),{code:'E_UNIT_DIMENSION'});
+  assert.throws(()=>evaluateQuantityMain(declarations,{op:'add',left:lit('1','Meter'),right:lit('1','Centimeter')}),{code:'E_UNIT_SCALE'});
+  assert.equal(aliases.size,8);
+  for (const [suffix,carrier] of [['Int',full],['I32',signedI32]]) {
+    const [min,max]=carrier;
+    for (const [name,accepted,rejected] of [
+      ['Positive',[1n,max],[0n,-1n]],
+      ['Negative',[-1n,min],[0n,1n]],
+      ['NonNegative',[0n,max],[-1n]],
+      ['NonPositive',[0n,min],[1n]]
+    ]) {
+      const bounds=aliases.get(name+suffix);
+      for (const v of accepted) assert.equal(checkedRefinement(bounds,v),v);
+      for (const v of [...rejected,min-1n,max+1n]) assert.throws(()=>checkedRefinement(bounds,v),/E_REFINEMENT_CHECK_FAILED/);
+    }
+  }
 });

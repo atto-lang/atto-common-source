@@ -36,3 +36,7 @@ The freestanding `library-layers-v1.json` guard from #23 is consolidated into th
 ## Integration ownership clarification (2026-11-26)
 
 The `CANONICAL_ATTO_BYTES_ONLY` manifest and byte comparator intentionally validate copies of the shared reference artifacts only. They do not require identical production library implementations across backends, which remain backend-owned. Behavioral guest parity and source-copy identity are separate checks. Common-source #150's import-token and inventory hardening is incorporated in the reconciled #30 candidate; its earlier passing run does not certify the new integration head.
+
+## Allocation-free measurement and sign refinement candidate
+
+`stdlib/core/measure.atto` defines seven SI base dimensions, common exact linear units and an independent Information dimension with decimal/binary storage units. Its signed int/i32 interval aliases use the existing file-local Verified Core syntax. It is a shared reference prelude, not yet an importable public library: nominal cross-package identity, public type exports, generic and non-interval refinements, compound named units, absolute/affine temperature, and real guest execution are separately gated. No allocator or host dependency is required. Never add a sign as a dimension or unit. Production backend implementations remain independently owned. See atto-spec proposals/verified-core-quantities-v1.md and proposals/verified-core-refinements-v1.md. The byte and layer checks remain HOST_ONLY.
