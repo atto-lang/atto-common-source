@@ -1,0 +1,28 @@
+{
+  "schema": "atto.contextual-value.target.v1",
+  "status": "DRAFT_REFERENCE_MODEL_NOT_GUEST_EXECUTED",
+  "spec": "https://github.com/atto-lang/atto-spec/pull/294",
+  "maxContextSlots": 32,
+  "types": [
+    "int",
+    "bool",
+    "allocator"
+  ],
+  "ownership": [
+    "copy",
+    "move",
+    "borrow"
+  ],
+  "rules": [
+    "Nominal owner identity and schema identity are resolved compiler symbols, not source spelling or runtime reflection.",
+    "Context values evaluate once in source order, then map to declaration slots. Invocation reuses the capture.",
+    "Scalar slots can copy; allocator slots cannot be implicitly copied by this model. Allocator identity, owner, generation and region proof must be resolved by backend.",
+    "A context containing a borrow cannot escape the lexical lifetime or transfer across actors. This reference model does not issue, validate or revoke actual allocator authority.",
+    "Copy or move operations cannot re-evaluate capture expressions. Optimizations must preserve failure, effects, quota and lifetime observations.",
+    "Direct primitive construction and user-defined contextual new/make members are distinct until the compiler proves equivalence."
+  ],
+  "limitations": [
+    "Reference schema and symbolic transfer/lifetime admission only.",
+    "No runtime handle, borrow checker, compiler integration, construction, allocation or guest execution proof."
+  ]
+}
