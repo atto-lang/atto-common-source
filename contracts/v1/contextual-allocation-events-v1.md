@@ -23,7 +23,7 @@ All events are closed records with an `op`. The reference consumes already-parse
 | pin / unpin | context, pin |
 | retire | context |
 
-The charge is the rounded-up payload size, not a physical RSS measurement or proof of the allocator's actual footprint. The deny event models quota failure only, not native malloc failure or arbitrary placement failure. The model rejects retirement with active/suspended tasks, pins or live allocations. A full trace terminates with every context retired. The model returns `certified:false` deliberately.
+The charge is the rounded-up payload size, not a physical RSS measurement or proof of the allocator's actual footprint. The deny event models quota failure only, not native malloc failure or arbitrary placement failure. The model rejects retirement with active/suspended tasks, pins or live allocations. A pin identifier denotes one lifetime-lease incarnation within its context. Once issued, it must never be issued again within that context's trace, even after unpin; this prevents stale completion from aliasing a later pin. Distinct contexts namespace their pin identities. A full trace terminates with every context retired. The model returns `certified:false` deliberately.
 
 ## Backend work required
 
