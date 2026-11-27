@@ -4,6 +4,8 @@ on:
     paths:
       - 'contracts/v1/critical-suspends-v1/**'
       - 'tests/critical-suspends-v1.test.mjs'
+      - 'tests/suspension-alias-matrix.test.mjs'
+      - 'scripts/verify-suspension-alias-matrix.mjs'
       - '.github/workflows/critical-suspends-v1.yml'
   workflow_dispatch:
 jobs:
@@ -15,4 +17,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate target-source manifest metadata (NOT guest execution)
-        run: node --test tests/critical-suspends-v1.test.mjs
+        run: node --test tests/critical-suspends-v1.test.mjs tests/suspension-alias-matrix.test.mjs
