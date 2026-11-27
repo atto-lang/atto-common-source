@@ -10,6 +10,9 @@ test('normal compiler outcomes are distinct from unavailable runners and crashes
     [{status:null,error:new Error('ENOENT'),stdout:null},false,'INFRASTRUCTURE_FAILURE'],
     [{status:null,signal:'SIGSEGV',stdout:null},false,'INFRASTRUCTURE_FAILURE'],
     [{status:1,error:new Error('ETIMEDOUT')},false,'INFRASTRUCTURE_FAILURE'],
-    [{status:null},true,'INFRASTRUCTURE_FAILURE']
+    [{status:null},true,'INFRASTRUCTURE_FAILURE'],
+    [{status:2,stderr:'usage: oresforge check <file>'},false,'INFRASTRUCTURE_FAILURE'],
+    [{status:2,stderr:'E_USAGE: forge_scalar input.atto -o output.cpp'},false,'INFRASTRUCTURE_FAILURE'],
+    [{status:2,stderr:'E_PARSE: unexpected token at byte 10'},false,'REJECTED']
   ]) assert.deepEqual(classify(r,artifact),{status:expected,artifact});
 });
