@@ -32,7 +32,24 @@ try{
     const d=str(r.stderr).replace(/\s*\[file: [^\r\n]*\]\s*$/,'');
     row.diagnostic=d;
     if(r.status!==(profile==='forge'?2:1)||row.artifact||!d||!new RegExp(c.diagnostic,'i').test(d)||/entrypoint|main must|unsupported|limit|budget|panic|usage|file not found/i.test(d))throw Error('rejection reason not demonstrated');
-    // Generic syntax alone cannot prove typed rejection, duplicate, bidi or unbound.
+    // Malformed operator cases must have reached the operator, not failed on
+    // the earlier typed Boolean declaration. The companion source also
+    // demonstrates the declaration and condition are actually supported.
+    if(['postfix','composite-eq','composite-equal'].includes(c.id)){
+      const at=Buffer.byteLength(c.source.slice(0,c.source.indexOf('¬')),'utf8');
+      const reported=d.match(/\bbyte(?:=|\s+)(\d+)\b/i);
+      if(!reported||Number(reported[1])<at)throw Error('operator site not reached');
+      const control=join(tmp,c.id+'-control.atto'),controlOut=join(tmp,c.id+'-control'+(profile==='forge'?'.cpp':'.o'));
+      writeFileSync(control,'pub fnc main(): int { val bool b = true; if b then return 42; else return 0; fi }');
+      const w=run(compiler,profile==='forge'?[control,'-o',controlOut]:['emit-object',control]);
+      if(w.error||w.signal||w.status!==0||(profile==='forge'?!existsSync(controlOut):!w.stdout.length))throw Error('bound Boolean control not admitted: '+str(w.stderr));
+      if(profile==='cranelift')writeFileSync(controlOut,w.stdout);
+      const app=join(tmp,c.id+'-control-guest');
+      checked(run(profile==='forge'?cxx:'cc',profile==='forge'?['-std=c++20','-O2','-I'+join(root,'include'),controlOut,'-o',app]:[driver,controlOut,'-o',app]),'bound Boolean control link');
+      const actual=checked(run(app,[],20000),'bound Boolean control execution');
+      if(actual!=='42')throw Error('bound Boolean control wrong result');
+      row.operatorControl={actual,sourceSha256:hash(readFileSync(control)),artifactSha256:hash(readFileSync(controlOut)),guestSha256:hash(readFileSync(app))};
+    }
    }else{
     if(r.status!==0||!row.artifact)throw Error('compiler rejected positive: '+str(r.stderr));
     if(profile==='cranelift')writeFileSync(output,r.stdout);
