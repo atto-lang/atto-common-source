@@ -24,7 +24,7 @@ try{
   try{
    if(r.error||r.signal)throw Error('compiler infrastructure failure');
    if(c.expect==='reject'){
-    const d=r.stderr.trim();
+    const d=r.stderr.trim().replace(/\s*\[file: [^\r\n]*\]\s*$/,'');
     if(r.status===0||row.artifact||!d||!new RegExp(c.diagnostic,'i').test(d)||/entrypoint|main must|file not found|unsupported feature/i.test(d))throw Error('unexpected rejection: '+d);
     row.diagnostic=d;
    }else{
@@ -38,7 +38,7 @@ try{
      if(g.error||g.signal||g.status!==(c.expect&255))throw Error('guest exit mismatch: '+g.status);
      row.guests.push({opt,actualExit:g.status,sha256:hash(readFileSync(app))});
     }
-    // Exit code is only an 8-bit witness. Require exact i64 for >255 by
+    // Exit code is only an 8-bit witness. Check the full emitted entry ABI by
     // renaming generated main in IR and calling through a separate host harness.
     const irText=readFileSync(ir,'utf8');
     const main=irText.match(/define\s+(?:[^\n@]*?\s)?(i64|i32)\s+@main\(\s*\)/);
