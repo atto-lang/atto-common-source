@@ -32,6 +32,15 @@
       "execution": "NOT_EXECUTED"
     },
     {
+      "path": "stdlib/core/measure.atto",
+      "layer": "core",
+      "imports": [],
+      "capabilities": [
+        "pure"
+      ],
+      "execution": "NOT_EXECUTED"
+    },
+    {
       "path": "stdlib/core/size_math.atto",
       "layer": "core",
       "imports": [],
