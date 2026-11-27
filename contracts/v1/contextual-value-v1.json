@@ -20,10 +20,13 @@
     "A context containing a borrow cannot escape the lexical lifetime or transfer across actors. This reference model does not issue, validate or revoke actual allocator authority.",
     "Copy or move operations cannot re-evaluate capture expressions. Optimizations must preserve failure, effects, quota and lifetime observations.",
     "Direct primitive construction and user-defined contextual new/make members are distinct until the compiler proves equivalence.",
-    "Reference model requires explicit region identity path prefix, not numeric depth. Production must prove region identity and current generation using resolved compiler/runtime authority; symbolic input is not that proof."
+    "Reference model requires explicit region identity path prefix, not numeric depth. Production must prove region identity and current generation using resolved compiler/runtime authority; symbolic input is not that proof.",
+    "Ordered invocation plan separates source-order operand evaluation from declaration-order parameter references. Direct context expressions execute before ordinary arguments; stored invocation references captured slots without recapture.",
+    "Resolve schema identity and exact typed slot shape before generating an invocation; duplicate JSON keys, duplicate symbolic operand occurrence IDs and forged extra fields are denied."
   ],
   "limitations": [
     "Reference schema and symbolic transfer/lifetime admission only.",
-    "No runtime handle, borrow checker, compiler integration, construction, allocation or guest execution proof."
+    "No runtime handle, borrow checker, compiler integration, construction, allocation or guest execution proof.",
+    "Operand IDs and schema identities in the host reference model are symbolic; production typed IR verification, runtime capability authentication, alias analysis and actual evaluation order remain backend obligations."
   ]
 }
