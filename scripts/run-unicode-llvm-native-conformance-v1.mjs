@@ -25,7 +25,7 @@ try{
    if(r.error||r.signal)throw Error('compiler infrastructure failure');
    if(c.expect==='reject'){
     const d=r.stderr.trim().replace(/\s*\[file: [^\r\n]*\]\s*$/,'');
-    if(r.status===0||row.artifact||!d||!new RegExp(c.diagnostic,'i').test(d)||/entrypoint|main must|file not found|unsupported feature/i.test(d))throw Error('unexpected rejection: '+d);
+    if(r.status!==1||row.artifact||!d||!new RegExp(c.diagnostic,'i').test(d)||/entrypoint|main must|file not found|unsupported feature/i.test(d))throw Error('unexpected rejection: '+d);
     row.diagnostic=d;
    }else{
     if(r.status!==0||!row.artifact)throw Error('compile failed: '+r.stderr);
@@ -35,24 +35,28 @@ try{
      const link=run(clang,['-O'+opt,'-x','ir',ir,'-o',app]);
      if(link.error||link.signal||link.status!==0||!existsSync(app))throw Error('link failed: '+link.stderr);
      const g=run(app,[],20000);
-     if(g.error||g.signal||g.status!==(c.expect&255))throw Error('guest exit mismatch: '+g.status);
+     if(g.error||g.signal||g.status!==(c.expect>=0&&c.expect<=255?c.expect:1))throw Error('guest exit mismatch: '+g.status);
      row.guests.push({opt,actualExit:g.status,sha256:hash(readFileSync(app))});
     }
-    // Exit code is only an 8-bit witness. Check the full emitted entry ABI by
-    // renaming generated main in IR and calling through a separate host harness.
+    // The emitted C main deliberately rejects results outside [0,255].
+    // Preserve that check above. The separate scalar-only witness calls
+    // the actual emitted i64 guest, not the process-status wrapper.
     const irText=readFileSync(ir,'utf8');
-    const main=irText.match(/define\s+(?:[^\n@]*?\s)?(i64|i32)\s+@main\(\s*\)/);
-    if(!main)throw Error('cannot identify guest main ABI for full-width witness');
-    const ty=main[1],renamed=join(tmp,c.id+'-wide.ll'),harness=join(tmp,c.id+'-harness.c');
-    writeFileSync(renamed,irText.replace(/@main\b/g,'@atto_guest_main'));
-    writeFileSync(harness,'#include <stdint.h>\n#include <stdio.h>\nextern '+(ty==='i64'?'int64_t':'int32_t')+' atto_guest_main(void);\nint main(void){printf("%lld\\n",(long long)atto_guest_main());return 0;}\n');
+    if(!/^define\s+[^\n@]*\bi64\s+@__oreslang_guest_main\(\s*\)/m.test(irText)||
+       !/^define\s+[^\n@]*\bi32\s+@main\(\s*\)/m.test(irText)||
+       /@atto_test_guest_result\b|@atto_test_process_main\b/.test(irText))
+      throw Error('unexpected native guest ABI');
+    const renamed=join(tmp,c.id+'-wide.ll'),harness=join(tmp,c.id+'-harness.c');
+    writeFileSync(renamed,irText.replace(/@main\b/g,'@atto_test_process_main')+
+      '\ndefine i64 @atto_test_guest_result() {\nentry:\n  %v = call i64 @__oreslang_guest_main()\n  ret i64 %v\n}\n');
+    writeFileSync(harness,'#include <stdint.h>\n#include <stdio.h>\nextern int64_t atto_test_guest_result(void);\nint main(void){printf("%lld\\n",(long long)atto_test_guest_result());return 0;}\n');
     for(const opt of [0,2]){
      const app=join(tmp,c.id+'-wide-O'+opt);
      const link=run(clang,['-O'+opt,renamed,harness,'-o',app]);
      if(link.error||link.signal||link.status!==0)throw Error('wide witness link failed: '+link.stderr);
      const g=run(app,[],20000);
      if(g.error||g.signal||g.status!==0||g.stdout.trim()!==String(c.expect))throw Error('full-width guest result mismatch: '+g.stdout);
-     row.guests.find(x=>x.opt===opt).actual=g.stdout.trim();
+     Object.assign(row.guests.find(x=>x.opt===opt),{actual:g.stdout.trim(),wideBinarySha256:hash(readFileSync(app))});
     }
    }
    row.status='PASS';
