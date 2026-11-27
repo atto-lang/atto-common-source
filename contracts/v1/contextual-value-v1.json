@@ -19,7 +19,8 @@
     "Scalar slots can copy; allocator slots cannot be implicitly copied by this model. Allocator identity, owner, generation and region proof must be resolved by backend.",
     "A context containing a borrow cannot escape the lexical lifetime or transfer across actors. This reference model does not issue, validate or revoke actual allocator authority.",
     "Copy or move operations cannot re-evaluate capture expressions. Optimizations must preserve failure, effects, quota and lifetime observations.",
-    "Direct primitive construction and user-defined contextual new/make members are distinct until the compiler proves equivalence."
+    "Direct primitive construction and user-defined contextual new/make members are distinct until the compiler proves equivalence.",
+    "Reference model requires explicit region identity path prefix, not numeric depth. Production must prove region identity and current generation using resolved compiler/runtime authority; symbolic input is not that proof."
   ],
   "limitations": [
     "Reference schema and symbolic transfer/lifetime admission only.",
