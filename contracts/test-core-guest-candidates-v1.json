@@ -1,0 +1,35 @@
+{
+  "schema": "atto.test.core.guest-candidates.v1",
+  "source_only": true,
+  "claims": {
+    "atto_guest_compilation_executed": false,
+    "backend_parity_certified": false
+  },
+  "stdlib": {
+    "path": "stdlib/test.atto",
+    "git_blob_sha": "c2f03784d80bbb1d0835e7bebcc1e30949062a95"
+  },
+  "fixtures": [
+    {
+      "id": "pure_suite",
+      "path": "fixtures/pure-suite.atto",
+      "git_blob_sha": "4550d3327e5f4923994a7c9316004acad3a2048b",
+      "expected_exit": 0
+    },
+    {
+      "id": "filter_fail_fast",
+      "path": "fixtures/filter-fail-fast.atto",
+      "git_blob_sha": "267d0f807ef94090674759c1d2455a718c3ec9c2",
+      "expected_exit": 0
+    }
+  ],
+  "backend_status": {
+    "java_graal": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net_nativeaot": "NOT_EXECUTED",
+    "rust_wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "independent_wasm": "NOT_EXECUTED"
+  },
+  "gate": "Compile real .atto program and stdlib import against pinned compiler toolchain, execute produced guest and validate exact exit; source-only integrity is not guest evidence."
+}
