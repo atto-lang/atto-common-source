@@ -1,0 +1,317 @@
+{
+  "schema": "atto.primitive-type-naming.corpus.v1",
+  "status": "TARGET_ONLY_NOT_EXECUTED",
+  "spec": {
+    "repository": "atto-lang/atto-spec",
+    "commit": "f05b4609cffa56c5cd0bb23ad634381c9a36266d",
+    "path": "contracts/primitive-type-naming-v1.json",
+    "blob": "14cb0005c478d0a77dd80ff6251c083893a246d0"
+  },
+  "notes": [
+    "Candidate source fixtures, not compiler or runtime evidence. Type-admission cases do not prove payload semantics, allocations, or UTF-8 correctness.",
+    "Require the exact profile and authenticated declarations for wrapper cases. Legacy aliases only apply to historical aliasing backends.",
+    "Negative cases need the expected diagnostic family and no artifact; parser failures or unsupported profiles are not passing evidence.",
+    "No automatic fallback; record exact compiler head, fixture blob, profile, toolchain, real guest result and actual execution steps."
+  ],
+  "registry": {
+    "schemaVersion": 1,
+    "status": "TARGET_ONLY_NOT_EXECUTED",
+    "profile": "primitive-type-naming-v1",
+    "primitives": [
+      "bool",
+      "int",
+      "uint",
+      "i8",
+      "i16",
+      "i32",
+      "i64",
+      "u8",
+      "u16",
+      "u32",
+      "u64",
+      "float",
+      "f32",
+      "f64",
+      "bigint",
+      "decimal",
+      "complex",
+      "complex64",
+      "complex128",
+      "string",
+      "void"
+    ],
+    "compatibilityAliases": {
+      "boolean": "bool"
+    },
+    "legacyAliasesRequiringProfileMigration": {
+      "Bool": "bool",
+      "String": "string"
+    },
+    "wrapperCandidates": {
+      "Bool": "bool",
+      "Integer": "int",
+      "String": "string"
+    },
+    "futureWrapperCandidates": {
+      "UInteger": "uint",
+      "Int8": "i8",
+      "Int16": "i16",
+      "Int32": "i32",
+      "Int64": "i64",
+      "UInt8": "u8",
+      "UInt16": "u16",
+      "UInt32": "u32",
+      "UInt64": "u64",
+      "Float": "float",
+      "Float32": "f32",
+      "Float64": "f64",
+      "BigInteger": "bigint",
+      "Decimal": "decimal",
+      "Complex": "complex"
+    },
+    "rules": {
+      "caseSensitive": true,
+      "implicitBoxing": false,
+      "implicitUnboxing": false,
+      "capitalizationDeterminesStorage": false,
+      "wrapperResolution": "authenticated-declaration-identity",
+      "legacyProfileRequired": true
+    },
+    "backends": {
+      "atto-source.java": "NOT_EXECUTED",
+      "atto-source.llvm": "NOT_EXECUTED",
+      "atto-source.net": "NOT_EXECUTED",
+      "atto-source.wasm": "NOT_EXECUTED",
+      "atto-source.forge": "NOT_EXECUTED",
+      "atto-source.cranelift": "NOT_EXECUTED",
+      "atto-source.rs": "NOT_EXECUTED",
+      "atto-source.js": "NOT_EXECUTED",
+      "atto-source.hdl": "NOT_EXECUTED",
+      "atto-source.atto": "NOT_EXECUTED",
+      "atto-source.realtime": "NOT_EXECUTED"
+    }
+  },
+  "profiles": {
+    "strict": "new profile, no wrapper declarations admitted",
+    "strict-wrapper": "new profile, authenticated candidate declarations admitted",
+    "legacy-alias": "historical aliasing route only; not .NET owned String"
+  },
+  "cases": [
+    {
+      "id": "int",
+      "profile": "strict",
+      "expect": "run",
+      "source": "pub fnc main(): int { const int x = 42; return x; }\n",
+      "git_blob_sha1": "52d4bba3c6b3ea6cbd327a972b1644dd7eefb96d",
+      "coverage": "value-return",
+      "expected_i64": "42"
+    },
+    {
+      "id": "bool",
+      "profile": "strict",
+      "expect": "run",
+      "source": "pub fnc main(): int { const bool x = true; return 42; }\n",
+      "git_blob_sha1": "3ae2b4064f3e4a717f0daa2244982aaf3bfc23a9",
+      "coverage": "type-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "boolean",
+      "profile": "strict",
+      "expect": "run",
+      "source": "pub fnc main(): int { const boolean x = true; return 42; }\n",
+      "git_blob_sha1": "5e0b1d7ccbf48569748b6ab57e027e61dd326662",
+      "coverage": "type-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "string",
+      "profile": "strict",
+      "expect": "run",
+      "source": "pub fnc main(): int { const string x = \"hello\"; return 42; }\n",
+      "git_blob_sha1": "ff14ce99eb95fcddd4a9ccbb1bda0dc75ab46733",
+      "coverage": "type-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "string-unicode",
+      "profile": "strict",
+      "expect": "run",
+      "source": "pub fnc main(): int { const string x = \"é水🙂\"; return 42; }\n",
+      "git_blob_sha1": "920d408522bc2572cf110ffa12f616e5bd1a4473",
+      "coverage": "type-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "unknown-INT",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const INT x = 42; return 42; }\n",
+      "git_blob_sha1": "5b5441ffa62fbf1a1fc4a5de47bbc98d80d93da5",
+      "coverage": "type-admission",
+      "diagnostic_family": "unknown-type"
+    },
+    {
+      "id": "unknown-BOOL",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const BOOL x = true; return 42; }\n",
+      "git_blob_sha1": "fc92d3c03cac8c8c57011a9547636e158fb28f96",
+      "coverage": "type-admission",
+      "diagnostic_family": "unknown-type"
+    },
+    {
+      "id": "unknown-STRING",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const STRING x = \"hello\"; return 42; }\n",
+      "git_blob_sha1": "94ac7a921cb2c7de1587e0c3bdf0b6989ce13793",
+      "coverage": "type-admission",
+      "diagnostic_family": "unknown-type"
+    },
+    {
+      "id": "unknown-bOoL",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const bOoL x = true; return 42; }\n",
+      "git_blob_sha1": "6c734ec25bcb0bfa3c9e7cbbe0868cca95fd6cc4",
+      "coverage": "type-admission",
+      "diagnostic_family": "unknown-type"
+    },
+    {
+      "id": "unknown-iNt",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const iNt x = 42; return 42; }\n",
+      "git_blob_sha1": "309fd73498bdeb8187d6a60236499e7c90d93ba2",
+      "coverage": "type-admission",
+      "diagnostic_family": "unknown-type"
+    },
+    {
+      "id": "implicit-Integer-box",
+      "profile": "strict-wrapper",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const Integer x = 42; return 42; }\n",
+      "git_blob_sha1": "46e04ca375da738a349c8a5abb0c6c2a0c84237d",
+      "coverage": "type-admission",
+      "diagnostic_family": "implicit-conversion"
+    },
+    {
+      "id": "implicit-Integer-unbox",
+      "profile": "strict-wrapper",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const int x = Integer.new(42); return 42; }\n",
+      "git_blob_sha1": "d0740a5b8b04fdfabd38f0772b004a8ae0a7d4f1",
+      "coverage": "type-admission",
+      "diagnostic_family": "implicit-conversion"
+    },
+    {
+      "id": "unadmitted-Integer",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const Integer x = 42; return 42; }\n",
+      "git_blob_sha1": "46e04ca375da738a349c8a5abb0c6c2a0c84237d",
+      "coverage": "type-admission",
+      "diagnostic_family": "unadmitted-wrapper"
+    },
+    {
+      "id": "implicit-Bool-box",
+      "profile": "strict-wrapper",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const Bool x = true; return 42; }\n",
+      "git_blob_sha1": "7895998729fb7f30eee37f37ec23fb5408b34bcf",
+      "coverage": "type-admission",
+      "diagnostic_family": "implicit-conversion"
+    },
+    {
+      "id": "implicit-Bool-unbox",
+      "profile": "strict-wrapper",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const bool x = Bool.new(true); return 42; }\n",
+      "git_blob_sha1": "4caeaed9dc2e1a19fe95eeb05ca3983f1adf8616",
+      "coverage": "type-admission",
+      "diagnostic_family": "implicit-conversion"
+    },
+    {
+      "id": "unadmitted-Bool",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const Bool x = true; return 42; }\n",
+      "git_blob_sha1": "7895998729fb7f30eee37f37ec23fb5408b34bcf",
+      "coverage": "type-admission",
+      "diagnostic_family": "unadmitted-wrapper"
+    },
+    {
+      "id": "implicit-String-box",
+      "profile": "strict-wrapper",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const String x = \"hello\"; return 42; }\n",
+      "git_blob_sha1": "2ffd20df4934bf7f58b71f32119f59f8fab60d98",
+      "coverage": "type-admission",
+      "diagnostic_family": "implicit-conversion"
+    },
+    {
+      "id": "implicit-String-unbox",
+      "profile": "strict-wrapper",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const string x = String.new(\"hello\"); return 42; }\n",
+      "git_blob_sha1": "fae1443e6783e842198ba949e918c73eb87e2699",
+      "coverage": "type-admission",
+      "diagnostic_family": "implicit-conversion"
+    },
+    {
+      "id": "unadmitted-String",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const String x = \"hello\"; return 42; }\n",
+      "git_blob_sha1": "2ffd20df4934bf7f58b71f32119f59f8fab60d98",
+      "coverage": "type-admission",
+      "diagnostic_family": "unadmitted-wrapper"
+    },
+    {
+      "id": "integer-box-unbox",
+      "profile": "strict-wrapper",
+      "expect": "run",
+      "source": "pub fnc main(): int { const Integer x = Integer.new(42); return x.unbox(); }\n",
+      "git_blob_sha1": "91b871b6f7c0237dbcf259053b8e6070830b6320",
+      "coverage": "value-return",
+      "expected_i64": "42"
+    },
+    {
+      "id": "bool-box-unbox",
+      "profile": "strict-wrapper",
+      "expect": "run",
+      "source": "pub fnc main(): int { const Bool x = Bool.new(true); const bool y = x.unbox(); return 42; }\n",
+      "git_blob_sha1": "500630f4361accb4be1ac3d1dea2fd1bee7715a6",
+      "coverage": "conversion-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "legacy-Bool",
+      "profile": "legacy-alias",
+      "expect": "run",
+      "source": "pub fnc main(): int { const Bool x = true; return 42; }\n",
+      "git_blob_sha1": "7895998729fb7f30eee37f37ec23fb5408b34bcf",
+      "coverage": "type-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "legacy-String",
+      "profile": "legacy-alias",
+      "expect": "run",
+      "source": "pub fnc main(): int { const String x = \"hello\"; return 42; }\n",
+      "git_blob_sha1": "2ffd20df4934bf7f58b71f32119f59f8fab60d98",
+      "coverage": "type-admission",
+      "expected_i64": "42"
+    },
+    {
+      "id": "primitive-mismatch",
+      "profile": "strict",
+      "expect": "reject",
+      "source": "pub fnc main(): int { const bool x = 42; return 42; }\n",
+      "git_blob_sha1": "88da265efae8596bed649571909b89cc186cee37",
+      "coverage": "type-admission",
+      "diagnostic_family": "type-mismatch"
+    }
+  ]
+}

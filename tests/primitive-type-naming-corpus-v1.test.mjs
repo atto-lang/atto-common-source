@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+const c=JSON.parse(readFileSync(new URL('../contracts/primitive-type-naming-v1/corpus.json',import.meta.url)));
+const blob=s=>{const b=Buffer.from(s);return createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');};
+test('exact registry blob',()=>assert.equal(blob(JSON.stringify(c.registry,null,2)+'\n'),c.spec.blob));
+test('fixture byte integrity',()=>{for(const x of c.cases)assert.equal(blob(x.source),x.git_blob_sha1,x.id);});
+test('unique vectors and explicit profile',()=>{assert.equal(c.cases.length,24);assert.equal(new Set(c.cases.map(x=>x.id)).size,24);for(const x of c.cases){assert.ok(Object.hasOwn(c.profiles,x.profile));assert.ok(x.source.endsWith('\n'));assert.ok(x.source.includes('fnc main'));assert.ok(['run','reject'].includes(x.expect));assert.equal(Object.hasOwn(x,'expected_i64'),x.expect==='run');assert.equal(Object.hasOwn(x,'diagnostic_family'),x.expect==='reject');}});
+test('strict and legacy expectations are distinct',()=>{for(const w of ['Bool','String']){assert.ok(c.cases.some(x=>x.id==='legacy-'+w&&x.profile==='legacy-alias'&&x.expect==='run'));assert.ok(c.cases.some(x=>x.id==='unadmitted-'+w&&x.profile==='strict'&&x.expect==='reject'));}assert.equal(c.registry.rules.implicitBoxing,false);assert.equal(c.registry.rules.implicitUnboxing,false);});
+test('no unverified execution claims',()=>{assert.equal(c.status,'TARGET_ONLY_NOT_EXECUTED');assert.equal(Object.keys(c.registry.backends).length,11);assert.ok(Object.values(c.registry.backends).every(x=>x==='NOT_EXECUTED'));});
