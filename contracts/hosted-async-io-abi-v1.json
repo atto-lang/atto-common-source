@@ -1,0 +1,39 @@
+{
+  "schema": "atto.stdlib.async_io_abi.v1",
+  "status": "PROPOSED_NOT_EXECUTED",
+  "guestSources": "CANONICAL_ATTO_ONLY",
+  "authority": "atto-lang/atto-spec/language/hosted-async-http-fs-v1.md",
+  "modules": {
+    "std.http": {
+      "layer": "std",
+      "operations": ["get", "response.text", "response.close"],
+      "hostCapabilities": ["NETWORK_CONNECT", "DNS", "TLS", "ASYNC_COMPLETION", "CANCELLATION"],
+      "scope": "actor_incarnation_tenant",
+      "default": "DENY"
+    },
+    "std.fs": {
+      "layer": "std",
+      "operations": ["read_text", "write_text"],
+      "hostCapabilities": ["FILESYSTEM_READ", "FILESYSTEM_WRITE", "ASYNC_COMPLETION", "CANCELLATION"],
+      "scope": "tenant_granted_root",
+      "default": "DENY"
+    }
+  },
+  "hostRules": {
+    "noRawOsHandlesInGuest": true,
+    "noImplicitHostWorkingDirectory": true,
+    "noGuestCarrierBlocking": true,
+    "permissionCheckBeforeSideEffect": true,
+    "redirectPermissionsRechecked": true,
+    "absolutePathsOnlyWithExplicitGrant": true,
+    "symlinkEscapeDenied": true,
+    "bodyOwnershipSingleConsume": true,
+    "unsafeRetriesForbidden": true,
+    "noSimulatedGuestPass": true
+  },
+  "targets": [
+    "llvm", "java", "net", "wasm", "rs", "forge", "cranelift",
+    "js", "atto", "hdl", "realtime"
+  ],
+  "execution": "NOT_EXECUTED"
+}

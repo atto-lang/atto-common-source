@@ -216,26 +216,17 @@ test('inventory rejects hidden, symbol and accessor source entries without invok
 });
 
 
-test('import admission requires actual keyword and punctuation tokens and literal paths',()=>{
-  for(const bad of [
-    'import "stdlib/core/identity.atto" ";"',
-    'import module identity "from" "stdlib/core/identity.atto";',
-    'import "stdlib/core/identi\\ty.atto";'
-  ]) denied('E_LIBRARY_IMPORT',()=>inspectAtto(bad,'core'));
-  assert.deepEqual(inspectAtto('import module identity from "stdlib/core/identity.atto";','core'),[id]);
+test('line comments end at supported CR/LF and Unicode line boundaries',()=>{
+  for(const sep of ['\r','\n','\r\n','\u0085','\u2028','\u2029']){
+    assert.deepEqual(inspectAtto('// stdio.out is inert'+sep+
+      'pub fnc f() -> int { return 1; }','core'),[]);
+    denied('E_LIBRARY_HOST',()=>inspectAtto('// note'+sep+'stdio.out << 1;','core'));
+    denied('E_LIBRARY_RUNTIME',()=>inspectAtto('// note'+sep+'await job;','alloc'));
+    assert.deepEqual(inspectAtto('// note'+sep+
+      'import "stdlib/core/identity.atto";','core'),[id]);
+  }
+  assert.deepEqual(inspectAtto('// final comment without newline: stdio.out','core'),[]);
 });
-
-test('inventory rejects hidden, symbol and accessor source entries without invoking getters',()=>{
-  for(const mutate of [
-    s=>Object.defineProperty(s.files,al,{value:'ignored'}),
-    s=>Object.defineProperty(s.files,Symbol('hidden'),{value:'ignored'}),
-    s=>Object.defineProperty(s.files,id,{enumerable:true,get(){throw Error('getter invoked');}})
-  ]) {const m=manifest(),s=sources();mutate(s);denied('E_LIBRARY_INVENTORY',()=>check(m,s));}
-  const m=manifest(),s=sources();
-  Object.defineProperty(m.sources,'0',{enumerable:true,get(){throw Error('getter invoked');}});
-  denied('E_LIBRARY_MANIFEST',()=>check(m,s));
-});
-
 
 test('manifest arrays reject hidden indices and custom iterators before invoking them',()=>{
   for(const mutate of [

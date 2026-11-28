@@ -37,10 +37,12 @@ This README records the intended role of this repository; it is not a claim of f
 **Belongs here:** Backend-neutral compiler interfaces, IR/ABI schemas, shared semantic fixtures and portable reference `.atto` sources and fixtures. Production core, alloc and std implementations are independently maintained in each `atto-source.*` backend; compatible public semantics do not require byte-identical implementations.
 
 **Belongs elsewhere:** Backend-specific codegen and host runtime shims belong in the respective atto-source.* repositories; changing language rules requires atto-spec.
+- [Critical / suspends / actor-turn v1](contracts/v1/CRITICAL_SUSPENDS_ACTOR_TURN_V1.md) — **review-pending** separation of nonblocking critical guards, suspending effects and nonreentrant logical actor turns; [36 target vectors](contracts/v1/critical-suspends-actor-turn-v1.json), no guest execution claimed.
 
 **Security and portability boundary:** Explicitly pinned shared fixtures and versioned artifacts must retain their declared identities; never silently let platform code redefine portable ownership, imports or concurrency.
 
 AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
+- [Top-12 AOT-first language features and formal admission gates](docs/TOP12_FEATURE_ADMISSION_AOT_V1.md) — proposed source-contract matrix for all 12 opportunities; backend execution unverified.
 
 **Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
 

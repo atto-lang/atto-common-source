@@ -1,0 +1,34 @@
+// Candidate linear SI derived declarations. Insert after base/unit declarations and before refinement aliases.
+// No nominal kind coercions or affine conversions are defined by this file.
+define dimension Frequency = Time / Time / Time;
+define unit Hertz: Frequency;
+define dimension Force = Length * Mass / Time / Time;
+define unit Newton: Force;
+define dimension Pressure = Mass / Length / Time / Time;
+define unit Pascal: Pressure;
+define dimension Energy = Length * Length * Mass / Time / Time;
+define unit Joule: Energy;
+define dimension Power = Length * Length * Mass / Time / Time / Time;
+define unit Watt: Power;
+define dimension ElectricCharge = Time * ElectricCurrent;
+define unit Coulomb: ElectricCharge;
+define dimension ElectricPotential = Power / ElectricCurrent;
+define unit Volt: ElectricPotential;
+define dimension Capacitance = ElectricCharge / ElectricPotential;
+define unit Farad: Capacitance;
+define dimension Resistance = ElectricPotential / ElectricCurrent;
+define unit Ohm: Resistance;
+define dimension Conductance = Time / Time / Resistance;
+define unit Siemens: Conductance;
+define dimension MagneticFlux = ElectricPotential * Time;
+define unit Weber: MagneticFlux;
+define dimension MagneticFluxDensity = MagneticFlux / Length / Length;
+define unit Tesla: MagneticFluxDensity;
+define dimension Inductance = MagneticFlux / ElectricCurrent;
+define unit Henry: Inductance;
+define dimension Illuminance = LuminousIntensity / Length / Length;
+define unit Lux: Illuminance;
+define dimension AbsorbedDose = Length * Length / Time / Time;
+define unit Gray: AbsorbedDose;
+define dimension CatalyticActivity = AmountOfSubstance / Time;
+define unit Katal: CatalyticActivity;

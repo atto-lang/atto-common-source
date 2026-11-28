@@ -16,7 +16,11 @@ jobs:
           persist-credentials: false
       - name: Format Rust memory evidence gate
         run: cargo fmt --manifest-path tools/memory-evidence/Cargo.toml -- --check
+      # Resolve and fetch dependencies explicitly on the hosted runner before
+      # the offline-only lint/test phases. Never turn a missing cache into a pass.
+      - name: Prepare Cargo dependency cache
+        run: cargo fetch --manifest-path tools/memory-evidence/Cargo.toml
       - name: Lint Rust memory evidence gate
-        run: cargo clippy --offline --manifest-path tools/memory-evidence/Cargo.toml --all-targets -- -D warnings
+        run: cargo clippy --offline --locked --manifest-path tools/memory-evidence/Cargo.toml --all-targets -- -D warnings
       - name: Test Rust memory evidence gate
-        run: cargo test --offline --manifest-path tools/memory-evidence/Cargo.toml
+        run: cargo test --offline --locked --manifest-path tools/memory-evidence/Cargo.toml

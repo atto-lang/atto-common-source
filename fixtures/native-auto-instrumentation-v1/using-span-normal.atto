@@ -1,0 +1,23 @@
+// Expected stdout: FBCA
+// SOURCE FIXTURE ONLY — no backend execution or OTLP claims.
+define module telemetry as
+  pub define class SpanScope as
+    pub close_scope(): void {
+      stdio.stdout.write("C");
+      return;
+    }
+  end
+
+  pub fnc span(string operation): SpanScope {
+    stdio.stdout.write("F");
+    return new SpanScope();
+  }
+end
+
+pub fnc main(): void {
+  using telemetry.span("checkout") as span {
+    stdio.stdout.write("B");
+  }
+  stdio.stdout.write("A");
+  return;
+}

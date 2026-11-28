@@ -19,9 +19,14 @@
       "bytes": 55
     },
     {
+      "path": "stdlib/core/measure.atto",
+      "sha256": "a411966eb3188104cd13cc2201b4d1d0de1e12404378aba313b396ae726a3376",
+      "bytes": 3072
+    },
+    {
       "path": "stdlib/core/size_math.atto",
-      "sha256": "cd370ae9c28e139fbcc67b3c8640848a2551a51cb76b9e1e5e2ab156ff4a3e38",
-      "bytes": 748
+      "sha256": "67bfaa2333c85c330de3c92a4cac55f265a9a4a6899ecaed9bc81051e68915cf",
+      "bytes": 1293
     },
     {
       "path": "stdlib/core/u32_endian.atto",

@@ -9,7 +9,23 @@ pub fnc size_add_fits(int a, int b, int limit) -> bool {
 pub fnc size_mul_fits(int a, int b, int limit) -> bool {
   if a < 0 || b < 0 || limit < 0 then return false; fi
   if a == 0 || b == 0 then return true; fi
-  return a <= limit / b;
+  // Exact bounded doubling: no division (which may produce a float),
+  // shifts, or unchecked product. Every addition fits the current budget.
+  let mut int remaining = a;
+  let mut int budget = limit;
+  while remaining > 0 do
+    if b > budget then return false; fi
+    let mut int count = 1;
+    let mut int chunk = b;
+    while count <= remaining - count do
+      if chunk > budget - chunk then return false; fi
+      count = count + count;
+      chunk = chunk + chunk;
+    done
+    remaining = remaining - count;
+    budget = budget - chunk;
+  done
+  return true;
 }
 
 pub fnc clamp_int(int value, int lower, int upper) -> int {

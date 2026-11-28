@@ -190,6 +190,328 @@
       "expected_output": "returned",
       "source": "define actor CriticalReturnWorker as suspends receive(ActorMail<String> mail): void { self.send(\"returned\"); critical { return; } } end",
       "test_evidence": "Java native .ores guest fixture and Graal test authored; runner admission steps=null, no verified pass"
+    },
+    {
+      "id": "suspends-callable-short",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp fnc value(): int { return 7; }"
+    },
+    {
+      "id": "suspends-routine-short",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp routine value(): int { return 7; }"
+    },
+    {
+      "id": "critical-suspends-fnc-short",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub critical susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "suspends-critical-fnc-short",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub susp critical fnc invalid(): void { return; }"
+    },
+    {
+      "id": "indirect-await-in-critical-short",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub susp fnc fetch(): int { return 7; } pub susp fnc invalid(): int { critical { return fetch(); } }"
+    },
+    {
+      "id": "actor-critical-suspends-short",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "define isolated actor Worker as pub critical susp run(): void { return; } end"
+    },
+    {
+      "id": "duplicate-suspends-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "suspends-callable-hourglass",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ fnc value(): int { return 7; }"
+    },
+    {
+      "id": "suspends-routine-hourglass",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ routine value(): int { return 7; }"
+    },
+    {
+      "id": "critical-suspends-fnc-hourglass",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub critical ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "suspends-critical-fnc-hourglass",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ critical fnc invalid(): void { return; }"
+    },
+    {
+      "id": "indirect-await-in-critical-hourglass",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ fnc fetch(): int { return 7; } pub ⧖ fnc invalid(): int { critical { return fetch(); } }"
+    },
+    {
+      "id": "actor-critical-suspends-hourglass",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "define isolated actor Worker as pub critical ⧖ run(): void { return; } end"
+    },
+    {
+      "id": "duplicate-suspends-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "suspends-callable-partial",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ fnc value(): int { return 7; }"
+    },
+    {
+      "id": "suspends-routine-partial",
+      "expected": "accept",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ routine value(): int { return 7; }"
+    },
+    {
+      "id": "critical-suspends-fnc-partial",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub critical ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "suspends-critical-fnc-partial",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ critical fnc invalid(): void { return; }"
+    },
+    {
+      "id": "indirect-await-in-critical-partial",
+      "expected": "reject",
+      "category": "critical-body-suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ fnc fetch(): int { return 7; } pub ∂ fnc invalid(): int { critical { return fetch(); } }"
+    },
+    {
+      "id": "actor-critical-suspends-partial",
+      "expected": "reject",
+      "category": "critical-suspends",
+      "lowering_pending": false,
+      "source": "define isolated actor Worker as pub critical ∂ run(): void { return; } end"
+    },
+    {
+      "id": "duplicate-suspends-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-long-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub suspends suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-short-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub susp ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-hourglass-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ⧖ ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-long",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ suspends fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-short",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ susp fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-hourglass",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ ⧖ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "duplicate-suspends-partial-partial",
+      "expected": "reject",
+      "category": "suspends",
+      "lowering_pending": false,
+      "source": "pub ∂ ∂ fnc invalid(): void { return; }"
+    },
+    {
+      "id": "direct-result-long",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub suspends fnc value(): int { return 42; } pub suspends fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-long",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub suspends fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "direct-result-short",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub susp fnc value(): int { return 42; } pub susp fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-short",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub susp fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "direct-result-partial",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub ∂ fnc value(): int { return 42; } pub ∂ fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-partial",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub ∂ fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "direct-result-hourglass",
+      "expected": "accept",
+      "category": "direct-suspension-result",
+      "lowering_pending": true,
+      "source": "pub ⧖ fnc value(): int { return 42; } pub ⧖ fnc caller(): int { let int x = await value(); return x; }"
+    },
+    {
+      "id": "unannotated-await-hourglass",
+      "expected": "reject",
+      "category": "explicit-suspension-effect",
+      "lowering_pending": false,
+      "source": "pub ⧖ fnc value(): int { return 42; } pub fnc caller(): int { return await value(); }"
+    },
+    {
+      "id": "ordinary-stdout-direct",
+      "expected": "accept",
+      "category": "runtime-parking",
+      "lowering_pending": true,
+      "source": "pub fnc output(): void { stdio.out.write(\"A\"); process.stdout.write(\"B\"); }"
+    },
+    {
+      "id": "ordinary-stdout-transitive",
+      "expected": "accept",
+      "category": "runtime-parking",
+      "lowering_pending": true,
+      "source": "pub fnc output(): void { stdio.out.write(\"A\"); } pub fnc caller(): int { output(); process.stdout.write(\"B\"); return 42; }"
+    },
+    {
+      "id": "critical-stdout-direct",
+      "expected": "reject",
+      "category": "runtime-parking-critical",
+      "lowering_pending": false,
+      "source": "pub suspends fnc invalid(): void { critical { stdio.out.write(\"A\"); } }"
+    },
+    {
+      "id": "critical-stdout-transitive",
+      "expected": "reject",
+      "category": "runtime-parking-critical",
+      "lowering_pending": false,
+      "source": "pub fnc output(): void { process.stdout.write(\"A\"); } pub suspends fnc invalid(): void { critical { output(); } }"
     }
   ]
 }

@@ -1,0 +1,115 @@
+{
+  "schema": "atto.unicode-identifiers-negation.v1",
+  "status": "target-unverified",
+  "sourceEncoding": "UTF-8",
+  "evidencePolicy": "Each successful case must execute the source-compiled guest and return the expected int; each rejection must produce a relevant diagnostic and no guest artifact. A source-only manifest or successful build alone is not guest parity. Record source blob, compiler head/tree, command, runner steps, and actual result. Compare negation aliases after removing optional metadata, never hide operational differences.",
+  "confirmedBackends": [],
+  "cases": [
+    {
+      "id": "greek-alphabet",
+      "expect": 300,
+      "source": "pub fnc main(): int { val Α = 6; val Β = 6; val Γ = 6; val Δ = 6; val Ε = 6; val Ζ = 6; val Η = 6; val Θ = 6; val Ι = 6; val Κ = 6; val Λ = 6; val Μ = 6; val Ν = 6; val Ξ = 6; val Ο = 6; val Π = 6; val Ρ = 6; val Σ = 6; val Τ = 6; val Υ = 6; val Φ = 6; val Χ = 6; val Ψ = 6; val Ω = 6; val α = 6; val β = 6; val γ = 6; val δ = 6; val ε = 6; val ζ = 6; val η = 6; val θ = 6; val ι = 6; val κ = 6; val λ = 6; val μ = 6; val ν = 6; val ξ = 6; val ο = 6; val π = 6; val ρ = 6; val σ = 6; val τ = 6; val υ = 6; val φ = 6; val χ = 6; val ψ = 6; val ω = 6; val ς = 12; return Α + Β + Γ + Δ + Ε + Ζ + Η + Θ + Ι + Κ + Λ + Μ + Ν + Ξ + Ο + Π + Ρ + Σ + Τ + Υ + Φ + Χ + Ψ + Ω + α + β + γ + δ + ε + ζ + η + θ + ι + κ + λ + μ + ν + ξ + ο + π + ρ + σ + τ + υ + φ + χ + ψ + ω + ς; }"
+    },
+    {
+      "id": "han-and-case",
+      "expect": 100,
+      "source": "pub fnc main(): int { val Φ = 10; val φ = 20; val 数量 = 30; val 𠮷 = 40; return Φ + φ + 数量 + 𠮷; }"
+    },
+    {
+      "id": "han-mixed-and-distinct",
+      "expect": 21,
+      "source": "pub fnc main(): int { val 价格 = 1; val 價格 = 2; val 変数 = 3; val 〇 = 4; val x𠮷2 = 5; val p = 6; return 价格 + 價格 + 変数 + 〇 + x𠮷2 + p; }"
+    },
+    {
+      "id": "boolean-negation",
+      "expect": 42,
+      "source": "pub fnc main(): int { if ¬false && ¬¬true && ¬(true && false) then return 42; else return 0; fi }"
+    },
+    {
+      "id": "ascii-negation-equivalent",
+      "expect": 42,
+      "source": "pub fnc main(): int { if !false && !!true && !(true && false) then return 42; else return 0; fi }"
+    },
+    {
+      "id": "nonboolean",
+      "source": "pub fnc main(): int { if ¬1 then return 42; else return 0; fi }",
+      "expect": "reject",
+      "diagnostic": "type|bool"
+    },
+    {
+      "id": "postfix",
+      "source": "pub fnc main(): int { val bool b = true; if b¬ then return 42; else return 0; fi }",
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token"
+    },
+    {
+      "id": "composite-eq",
+      "source": "pub fnc main(): int { val bool b = true; if b ¬eq true then return 42; else return 0; fi }",
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token"
+    },
+    {
+      "id": "composite-equal",
+      "source": "pub fnc main(): int { val bool b = true; if b ¬= true then return 42; else return 0; fi }",
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token"
+    },
+    {
+      "id": "unbound",
+      "source": "pub fnc main(): int { return 未定義; }",
+      "expect": "reject",
+      "diagnostic": "unbound|unresolved|unknown|undefined"
+    },
+    {
+      "id": "bidi-comment",
+      "source": "pub fnc main(): int { return 42; } // ‮",
+      "expect": "reject",
+      "diagnostic": "bidi|bidirectional"
+    },
+    {
+      "id": "bidi-string",
+      "source": "pub fnc main(): int { val string name = \"x⁦\"; return 42; }",
+      "expect": "reject",
+      "diagnostic": "bidi|bidirectional"
+    },
+    {
+      "id": "duplicate",
+      "source": "pub fnc main(): int { val ρ = 1; val ρ = 2; return ρ; }",
+      "expect": "reject",
+      "diagnostic": "duplicate|shadow|already"
+    },
+    {
+      "id": "bidi-block-comment",
+      "source": "pub fnc main(): int { return 42; } /* ⁦ */",
+      "expect": "reject",
+      "diagnostic": "bidi|bidirectional"
+    },
+    {
+      "id": "greek-rho-distinct-from-latin-p",
+      "source": "pub fnc main(): int { val ρ = 10; val p = 32; return ρ + p; }",
+      "expect": 42
+    },
+    {
+      "id": "unicode-helper-parameters",
+      "source": "fnc 合計(int Φ, int φ, int 数量, int 𠮷): int { return Φ + φ + 数量 + 𠮷; } pub fnc main(): int { return 合計(10,20,30,40); }",
+      "expect": 100
+    },
+    {
+      "id": "negation-precedence",
+      "source": "pub fnc main(): int { return (false || true && ¬false) ? 42 : 0; }",
+      "expect": 42
+    },
+    {
+      "id": "dead-rhs-still-typed",
+      "source": "pub fnc main(): int { if false && ¬1 then return 42; else return 0; fi }",
+      "expect": "reject",
+      "diagnostic": "type|bool"
+    },
+    {
+      "id": "unicode-not-not-a-bang-keyword",
+      "source": "pub fnc main(): int { return copy¬ 42; }",
+      "expect": "reject",
+      "diagnostic": "syntax|expected|unexpected|token|unbound|unknown|undefined local ['\"]copy['\"]"
+    }
+  ]
+}

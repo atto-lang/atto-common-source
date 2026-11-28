@@ -1,0 +1,22 @@
+name: Atto library source integrity (source-only)
+on:
+  pull_request:
+    paths:
+      - 'library/**'
+      - 'scripts/verify_atto_library_sources.py'
+      - 'tests/test_atto_library_source_integrity.py'
+      - '.github/workflows/atto-library-source-integrity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 scripts/verify_atto_library_sources.py
+      - run: python3 -m unittest discover -s tests -p 'test_atto_library_source_integrity.py' -v
+      - run: echo 'ATTO_LIBRARY_SOURCE_ONLY_PASS (NOT_COMPILED)'

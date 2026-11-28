@@ -1,0 +1,103 @@
+{
+  "schema": "atto.stdlib.hosted_io_pure_policy.v1",
+  "status": "CANDIDATE_SOURCE_ONLY",
+  "authority": "atto-lang/atto-spec/language/hosted-async-http-fs-v1.md",
+  "sourcePolicy": "NATIVE_ATTO_BYTES_ONLY",
+  "sources": [
+    {
+      "path": "stdlib/std/fs_text_policy.atto",
+      "git_blob_sha1": "0cd53216e91ef8de1a764ba5b80ce85c5796c1f2",
+      "description": "pure signed byte-size, range and replacement quota checks"
+    },
+    {
+      "path": "stdlib/std/http_response_policy.atto",
+      "git_blob_sha1": "22757dafe89bc9601d04c8726a09ddf676206c7e",
+      "description": "pure HTTP GET status and body policy"
+    }
+  ],
+  "targets": [
+    {
+      "backend": "java",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "llvm",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "net",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "forge",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "cranelift",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "wasm",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "rs",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "js",
+      "source": "STAGED_SHA_MATCHED_2026_11_19",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "atto",
+      "source": "NOT_STAGED",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "hdl",
+      "source": "NOT_STAGED",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "backend": "realtime",
+      "source": "NOT_STAGED",
+      "compiler": "NOT_EXECUTED",
+      "guest": "NOT_EXECUTED",
+      "http_fs_io": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    }
+  ],
+  "limitations": [
+    "Pure policy functions are not implementation of std.http.get or std.fs read/write",
+    "No package linking, susp/await, TLS, root confinement, or actor capability enforcement added",
+    "Git blob checks alone do not certify that a backend compiles or executes native Atto",
+    "Hosted std is not required on freestanding HDL or realtime targets"
+  ]
+}
