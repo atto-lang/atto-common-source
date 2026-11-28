@@ -1,0 +1,17 @@
+name: Actor reliability contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/runtime/v1/actor-reliability.json'
+      - 'docs/ACTOR_RELIABILITY_V1.md'
+      - 'tests/test_actor_reliability_contract.py'
+      - '.github/workflows/actor-reliability-contract.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest tests.test_actor_reliability_contract -v

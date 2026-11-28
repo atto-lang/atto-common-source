@@ -1,0 +1,36 @@
+name: M9 supervisor wire and CONTROL Rust conformance
+on:
+  push:
+    branches: [feat/m9-rust-wire-conformance-20261115]
+  pull_request:
+    paths:
+      - 'contracts/m9-supervisor-control-v1.json'
+      - 'contracts/m9-supervisor-notice-wire-v1.json'
+      - 'tests/m9_notice_wire.rs'
+      - 'tests/fixtures/m9/**'
+      - '.github/workflows/m9-supervisor-contract.yml'
+permissions:
+  contents: read
+jobs:
+  m9-rust-control-wire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify immutable source HEAD and Rust toolchain
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          rustc --version
+          git rev-parse HEAD^{tree}
+      - name: Execute Rust M9 wire/CONTROL adversarial conformance
+        run: |
+          rustc --edition=2021 --test tests/m9_notice_wire.rs -o "$RUNNER_TEMP/m9-wire-tests"
+          "$RUNNER_TEMP/m9-wire-tests" --nocapture
+          echo M9_RUST_WIRE_CONTRACT_EXECUTED=PASS
+      - name: Scope
+        run: echo 'Rust schema and negative conformance, not general actor compiler or full backend parity'

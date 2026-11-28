@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oreslang.org/contracts/reachability/ores-reachability-v1.schema.json",
+  "title": "Oreslang Reachability Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "buildKind",
+    "roots",
+    "retainedSymbols",
+    "removedSymbols",
+    "compileTimeConstants"
+  ],
+  "properties": {
+    "format": { "const": "ores-reachability/1" },
+    "buildKind": { "enum": ["executable", "library"] },
+    "roots": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": { "$ref": "#/$defs/symbol" },
+      "uniqueItems": true
+    },
+    "retainedSymbols": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": { "$ref": "#/$defs/symbol" },
+      "uniqueItems": true
+    },
+    "removedSymbols": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": { "$ref": "#/$defs/symbol" },
+      "uniqueItems": true
+    },
+    "compileTimeConstants": {
+      "type": "object",
+      "maxProperties": 1000000,
+      "propertyNames": { "$ref": "#/$defs/symbol" },
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "null"]
+      }
+    }
+  },
+  "$defs": {
+    "symbol": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    }
+  }
+}

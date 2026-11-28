@@ -1,0 +1,444 @@
+{
+  "schema": "oreslang.actor-on-handler-syntax.v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "handler_identity": [
+    "normalized_symbol",
+    "arity"
+  ],
+  "body_forms": [
+    "end",
+    "brace"
+  ],
+  "state_entry_forms": [
+    "type_first",
+    "name_first"
+  ],
+  "cases": [
+    {
+      "id": "end-implicit-void-zero",
+      "selector": "#increment",
+      "arity": 0,
+      "body": "end",
+      "return_type": null,
+      "returns_value": false,
+      "expected": "accept",
+      "normalized_return": "void"
+    },
+    {
+      "id": "brace-explicit-void-zero",
+      "selector": "#increment",
+      "arity": 0,
+      "body": "brace",
+      "return_type": "void",
+      "returns_value": false,
+      "expected": "accept",
+      "normalized_return": "void"
+    },
+    {
+      "id": "end-guarded-void-one",
+      "selector": "#add",
+      "arity": 1,
+      "body": "end",
+      "return_type": null,
+      "guard": "amount > 0",
+      "guard_effect": "pure",
+      "returns_value": false,
+      "expected": "accept",
+      "normalized_return": "void"
+    },
+    {
+      "id": "brace-guarded-void-one",
+      "selector": "#add",
+      "arity": 1,
+      "body": "brace",
+      "return_type": "void",
+      "guard": "amount > 0",
+      "guard_effect": "pure",
+      "returns_value": false,
+      "expected": "accept",
+      "normalized_return": "void"
+    },
+    {
+      "id": "end-nonvoid-zero",
+      "selector": "#get",
+      "arity": 0,
+      "body": "end",
+      "return_type": "int",
+      "returns_value": true,
+      "normal_fallthrough": false,
+      "expected": "accept"
+    },
+    {
+      "id": "brace-nonvoid-zero",
+      "selector": "#get",
+      "arity": 0,
+      "body": "brace",
+      "return_type": "int",
+      "returns_value": true,
+      "normal_fallthrough": false,
+      "expected": "accept"
+    },
+    {
+      "id": "quoted-symbol-selector",
+      "selector": "#'get'",
+      "normalized_selector": "get",
+      "arity": 0,
+      "body": "brace",
+      "return_type": "int",
+      "returns_value": true,
+      "normal_fallthrough": false,
+      "expected": "accept"
+    },
+    {
+      "id": "value-without-result-type",
+      "selector": "#get",
+      "arity": 0,
+      "body": "brace",
+      "return_type": null,
+      "returns_value": true,
+      "expected": "reject"
+    },
+    {
+      "id": "nonvoid-fallthrough",
+      "selector": "#get",
+      "arity": 0,
+      "body": "brace",
+      "return_type": "int",
+      "returns_value": false,
+      "normal_fallthrough": true,
+      "expected": "reject"
+    },
+    {
+      "id": "void-value-return",
+      "selector": "#increment",
+      "arity": 0,
+      "body": "brace",
+      "return_type": "void",
+      "returns_value": true,
+      "expected": "reject"
+    },
+    {
+      "id": "mixed-open-brace-close-end",
+      "selector": "#get",
+      "arity": 0,
+      "body": "mixed_brace_end",
+      "return_type": "int",
+      "expected": "reject"
+    },
+    {
+      "id": "mixed-open-end-close-brace",
+      "selector": "#get",
+      "arity": 0,
+      "body": "mixed_end_brace",
+      "return_type": "int",
+      "expected": "reject"
+    },
+    {
+      "id": "string-selector",
+      "selector": "\"get\"",
+      "arity": 0,
+      "body": "brace",
+      "return_type": "int",
+      "expected": "reject"
+    },
+    {
+      "id": "effectful-guard",
+      "selector": "#add",
+      "arity": 1,
+      "body": "brace",
+      "return_type": "void",
+      "guard": "send_other(amount)",
+      "guard_effect": "effectful",
+      "expected": "reject"
+    },
+    {
+      "id": "suspending-guard",
+      "selector": "#add",
+      "arity": 1,
+      "body": "brace",
+      "return_type": "void",
+      "guard": "await allowed(amount)",
+      "guard_effect": "suspending",
+      "expected": "reject"
+    },
+    {
+      "id": "guard-reads-state",
+      "selector": "#add",
+      "arity": 1,
+      "body": "brace",
+      "return_type": "void",
+      "guard": "state.count > 0",
+      "guard_effect": "state_read",
+      "expected": "reject"
+    },
+    {
+      "id": "parameter-named-state",
+      "selector": "#set",
+      "arity": 1,
+      "parameter_names": [
+        "state"
+      ],
+      "body": "brace",
+      "return_type": "void",
+      "expected": "reject"
+    },
+    {
+      "id": "local-binding-named-state",
+      "selector": "#set",
+      "arity": 1,
+      "local_bindings": [
+        "state"
+      ],
+      "body": "brace",
+      "return_type": "void",
+      "expected": "reject"
+    },
+    {
+      "id": "nonvoid-handler-tail-expression",
+      "selector": "#get",
+      "arity": 0,
+      "body": "end",
+      "return_type": "int",
+      "tail_expression": "state.count",
+      "explicit_return": false,
+      "expected": "reject"
+    },
+    {
+      "id": "nonvoid-handler-explicit-return",
+      "selector": "#get",
+      "arity": 0,
+      "body": "end",
+      "return_type": "int",
+      "explicit_return": true,
+      "expected": "accept"
+    }
+  ],
+  "state_cases": [
+    {
+      "id": "state-type-first",
+      "entry": "int count = 0;",
+      "form": "type_first",
+      "initializer_kind": "detached_literal",
+      "expected": "accept",
+      "canonical": true
+    },
+    {
+      "id": "state-name-first",
+      "entry": "count: int = 0;",
+      "form": "name_first",
+      "initializer_kind": "detached_literal",
+      "expected": "accept",
+      "canonical": false
+    },
+    {
+      "id": "state-two-blocks",
+      "blocks": 2,
+      "expected": "reject"
+    },
+    {
+      "id": "state-duplicate-key",
+      "entries": [
+        "int count = 0;",
+        "count: int = 1;"
+      ],
+      "expected": "reject"
+    },
+    {
+      "id": "state-effectful-default",
+      "entry": "int count = compute();",
+      "initializer_kind": "call",
+      "expected": "reject"
+    },
+    {
+      "id": "state-external-default",
+      "entry": "int count = external_count;",
+      "initializer_kind": "external_binding",
+      "expected": "reject"
+    },
+    {
+      "id": "state-reference-default",
+      "entry": "Map<string,int> cache = new Map<string,int>();",
+      "initializer_kind": "reference_allocation",
+      "expected": "reject"
+    },
+    {
+      "id": "state-direct-read",
+      "operation": "return state.count",
+      "required_effects": [
+        "read"
+      ],
+      "expected": "accept"
+    },
+    {
+      "id": "state-direct-write",
+      "operation": "state.count = 1",
+      "required_effects": [
+        "write"
+      ],
+      "expected": "accept"
+    },
+    {
+      "id": "state-compound-write",
+      "operation": "state.count += 1",
+      "required_effects": [
+        "read",
+        "write"
+      ],
+      "expected": "accept"
+    },
+    {
+      "id": "state-escape-borrow",
+      "operation": "return rt borrow state.count",
+      "expected": "reject"
+    },
+    {
+      "id": "state-dynamic-index",
+      "operation": "state[key]",
+      "expected": "reject"
+    },
+    {
+      "id": "self-state",
+      "operation": "self.state",
+      "expected": "reject"
+    }
+  ],
+  "duplicate_cases": [
+    {
+      "id": "same-selector-same-arity",
+      "handlers": [
+        [
+          "#add",
+          1
+        ],
+        [
+          "#add",
+          1
+        ]
+      ],
+      "expected": "reject"
+    },
+    {
+      "id": "normalized-symbol-collision",
+      "handlers": [
+        [
+          "#ready",
+          0
+        ],
+        [
+          "#'ready'",
+          0
+        ]
+      ],
+      "normalized_handlers": [
+        [
+          "ready",
+          0
+        ],
+        [
+          "ready",
+          0
+        ]
+      ],
+      "expected": "reject"
+    },
+    {
+      "id": "same-selector-different-arity",
+      "handlers": [
+        [
+          "#add",
+          0
+        ],
+        [
+          "#add",
+          1
+        ]
+      ],
+      "expected": "accept"
+    },
+    {
+      "id": "different-selector-same-arity",
+      "handlers": [
+        [
+          "#add",
+          1
+        ],
+        [
+          "#set",
+          1
+        ]
+      ],
+      "expected": "accept"
+    }
+  ],
+  "abi": {
+    "handler_key": [
+      "normalized_symbol",
+      "arity"
+    ],
+    "signature_fields": [
+      "parameter_types",
+      "result_type",
+      "interaction_kind"
+    ],
+    "argument_shape": "ordered_tuple",
+    "body_delimiter_is_semantic": false,
+    "guard_expression_is_abi_identity": false,
+    "state_schema_fingerprint_fields": [
+      "key_names",
+      "key_types"
+    ]
+  },
+  "runtime_obligations": {
+    "void_handler": "event",
+    "nonvoid_handler": "correlated_request_reply",
+    "selector_carried_by_runtime_envelope": true,
+    "arguments_shape": "ordered_tuple",
+    "unknown_selector_before_user_code": true,
+    "guard_false_before_user_code": true,
+    "nonvoid_must_not_use_output_stream": true,
+    "guest_reply_token_forgeable": false,
+    "correlation_authority": "runtime_only",
+    "suspending_handler_requires_continuation_lowering": true
+  },
+  "return_policy": {
+    "nonvoid_nonlambda_callable_requires_explicit_return": true,
+    "trailing_expression_is_function_return": false,
+    "lambda_expression_body_exception": true,
+    "value_match_expression_requires_enclosing_explicit_return": true,
+    "value_match_expression_arm_form": "on pattern [when guard] -> expression;",
+    "value_match_block_arm_form": "on pattern [when guard] -> :: statements end",
+    "value_match_block_arm_requires_explicit_arm_result_return": true,
+    "block_arm_return_destination": "ARM_RESULT",
+    "enclosing_return_match_destination": "FUNCTION_RETURN"
+  },
+  "match_arm_cases": [
+    {
+      "id": "value-expression-arm-semicolon",
+      "source": "on Err(error) -> Err(error);",
+      "arm_form": "expression",
+      "explicit_arm_result": true,
+      "expected": "accept"
+    },
+    {
+      "id": "value-block-arm-explicit-return",
+      "source": "on n -> :: state.balance -= n; return Ok(state.balance); end",
+      "arm_form": "block",
+      "explicit_arm_result": true,
+      "return_destination": "ARM_RESULT",
+      "expected": "accept"
+    },
+    {
+      "id": "value-block-arm-tail-expression",
+      "source": "on n -> :: state.balance -= n; Ok(state.balance); end",
+      "arm_form": "block",
+      "explicit_arm_result": false,
+      "expected": "reject"
+    },
+    {
+      "id": "value-expression-arm-missing-semicolon",
+      "source": "on Err(error) -> Err(error)",
+      "arm_form": "expression",
+      "expected": "reject"
+    }
+  ]
+}

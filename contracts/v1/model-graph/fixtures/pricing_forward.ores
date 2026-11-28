@@ -1,0 +1,6 @@
+// Non-ML general-purpose model: deterministic pricing transform.
+define model PriceEstimate(tax_bps: int = 1500) as
+    PriceInput()
+    ApplyTaxBps(tax_bps)
+    RoundCents()
+end

@@ -1,0 +1,165 @@
+{
+  "schema": "attolang.native-actor-result-supervision.v1",
+  "status": "EXPERIMENTAL_SELECTED_BACKEND_ONLY",
+  "based_on": [
+    "contracts/v1/core-protocols-v1.json",
+    "contracts/v1/core-actor-foundation-v1.json"
+  ],
+  "normative_actor_semantics": {
+    "source_language": "NATIVE_ATTO",
+    "module_header": "use namespace",
+    "actor_declaration": "declare actor",
+    "state_declaration": "define state on actor",
+    "state_access": "CHECKED_CRITICAL_SCOPED_LOAN_ONLY",
+    "private_ingress": [
+      "init",
+      "receive"
+    ],
+    "actor_ref_authority": "RUNTIME_MINTED_CODE_IMAGE_AND_GENERATION_BOUND",
+    "mailbox": "BOUNDED_CHANNEL_LINEARIZABLE_ADMISSION",
+    "full_mailbox": "SUSPEND_TASK_NOT_CARRIER",
+    "guest_actor_output": "OWNED_DATA_ONLY_IMMUTABLE_SEQUENCE",
+    "output_sender": "ACTIVE_ACTOR_TURN_ONLY",
+    "output_after_loan_release": true,
+    "output_no_ambient_control": true,
+    "output_exact_current_actor_identity": true,
+    "terminal_settlement": "EXACTLY_ONCE",
+    "async_guest_result": "REQUIRES_TYPED_AWAIT_LOWERING",
+    "ordinary_actor_turns": "BOUNDED_CONCURRENT_EFFECTIVE_TURNS",
+    "serial_actor_turns": "AT_MOST_ONE_ACTIVE_GUEST_TURN",
+    "task_executor": "OWNING_ACTOR_TASK_POOL_NOT_SUPERVISOR_CONTROL",
+    "task_continuation_identity": "ACTOR_ID_INCARNATION_GENERATION_CODE_IMAGE",
+    "reader_loan_overlap": "IMMUTABLE_READERS_ONLY_WHEN_SUPPORTED",
+    "writer_loan_exclusion": "EXCLUSIVE_READ_WRITE",
+    "task_suspension_parks_carrier": false,
+    "task_may_resume_on_supervisor_control_pool": false,
+    "experimental_scalar_projection": "JAVA_CLOSED_WORLD_TEST_ONLY_NOT_FINAL_LANGUAGE_API"
+  },
+  "supervisor_contract": {
+    "native_actor_base": "SupervisorActor",
+    "implementation_status": "PROPOSED_NOT_EXECUTABLE",
+    "base_inheritance_mints_supervision": false,
+    "control_source": "TRUSTED_RUNTIME_ONLY",
+    "control_priority": "SEPARATE_FROM_USER_MAILBOX",
+    "child_parent_generation": "RUNTIME_VERIFIED",
+    "control_may_be_forged_by_guest": false,
+    "panic_interceptable_by_panicking_actor": false,
+    "terminal_failure_notices": "ONE_PER_CHILD_INCARNATION_UNTIL_ACK",
+    "saturated_user_mailbox_may_drop_terminal_notice": false,
+    "manual_retry_required": false,
+    "child_physical_done_before_terminal_ack": false,
+    "stale_incarnation_may_restart_or_send": false,
+    "failed_physical_cleanup_requires_quarantine": true
+  },
+  "service_contract": {
+    "native_actor_base": "ServiceActor<Request,Reply>",
+    "implementation_status": "PROPOSED_NOT_EXECUTABLE",
+    "ordinary_service_trait_mints_actor_ref": false,
+    "request_sender": "RUNTIME_MINTED_ACTOR_REF_ONLY",
+    "reply_port": "OWNED_LINEAR_ONE_SHOT_CAPABILITY",
+    "result": "Future<Result<Reply,E>>",
+    "pending_wakes_on_close_cancel_panic": true,
+    "terminal_settlement": "EXACTLY_ONCE",
+    "cancellation_quota_release": "EXACTLY_ONCE",
+    "durable_ack_implied_by_send_success": false
+  },
+  "experimental_java_witness": {
+    "source_path": "tests/fixtures/native-actor-result-v1/java-closed-world-output-readback.atto",
+    "git_blob_sha": "3ba0cf61163d48b757f09a33e1d4075498816c87",
+    "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2981",
+    "temporary_expression": "return a.output_value();",
+    "scenarios": {
+      "direct_output_values": [
+        41,
+        98,
+        7
+      ],
+      "repeated_context_eval": true,
+      "negative_compile_or_admission_variants": 15,
+      "supported_number_of_inputs_per_actor": 1
+    },
+    "known_limitations": [
+      "Closed-world Truffle root is not general typed spawn/await lowering",
+      "Main uses temporary bounded host-side waits and cannot run on actor/Mailman carriers",
+      "Native actor output is an immutable scalar sample, not owned generic request/reply",
+      "Host compiler/actor subset does not establish whole original Git tree identity",
+      "No LLVM/Wasm/Forge/.NET compiled conformance to the Java test syntax"
+    ],
+    "computed_source_path": "tests/fixtures/native-actor-result-v1/java-checked-computed-output.atto",
+    "computed_git_blob_sha": "10695cb41e3e5250567593b1d173bfd5dc2ed192",
+    "computed_pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2982",
+    "computed_scenarios": {
+      "guest_values": [
+        42,
+        99,
+        8
+      ],
+      "checked_addend": 1,
+      "invalid_expression_variants": 9,
+      "overflow_must_fail_without_output": true,
+      "unaffected_sibling_continues": true
+    }
+  },
+  "baseline_scoped_receipts": [
+    {
+      "backend": "java_jvm21",
+      "kind": "SELECTED_SOURCE_GIT_BLOBS_ONLY",
+      "outcome": "PASSED",
+      "total_tests": 94,
+      "failed": 0,
+      "skipped": 0,
+      "run_url": "https://github.com/voxletra/voxletra-e2e/actions/runs/43240063996",
+      "source_pr_sha": "d20098a7270e98a91b34fb2a5f7d17a78fccbd07",
+      "carrier_sha": "16c78bd931e39469853991fd5bb35aaae3ec7264"
+    },
+    {
+      "backend": "java_graalvm25_jvm",
+      "kind": "SELECTED_SOURCE_GIT_BLOBS_ONLY",
+      "outcome": "PASSED",
+      "total_tests": 94,
+      "failed": 0,
+      "skipped": 0,
+      "run_url": "https://github.com/voxletra/voxletra-e2e/actions/runs/43240482935",
+      "source_pr_sha": "d20098a7270e98a91b34fb2a5f7d17a78fccbd07",
+      "carrier_sha": "e2bc743a8a135ca1c728c7cbb9b480160c40d48a",
+      "optimizing_machine_code_tier_proven": false,
+      "native_image_proven": false
+    },
+    {
+      "backend": "java_graalvm25_checked_computed",
+      "kind": "SELECTED_SOURCE_GIT_BLOBS_ONLY",
+      "outcome": "PASSED",
+      "total_tests": 99,
+      "failed": 0,
+      "skipped": 0,
+      "run_url": "https://github.com/voxletra/voxletra-e2e/actions/runs/43243158563",
+      "source_pr_sha": "a076149cc13e047f0f75c622aa148122200eb6e7",
+      "carrier_sha": "897ea9b43a14766cfcf99b9291cc750c9063715f",
+      "optimizing_machine_code_tier_proven": false,
+      "native_image_proven": false
+    }
+  ],
+  "full_backend_execution": {
+    "java": "NOT_EXECUTED_FULL_TREE",
+    "llvm": "NOT_EXECUTED_CANONICAL_ATTO_ACTOR_RESULT",
+    "wasm": "NOT_EXECUTED_CANONICAL_ATTO_ACTOR_RESULT",
+    "forge": "NOT_EXECUTED_CANONICAL_ATTO_ACTOR_RESULT",
+    "net": "NOT_EXECUTED_CANONICAL_ATTO_ACTOR_RESULT"
+  },
+  "required_scenarios": [
+    "NATIVE_ATTO_TWO_ACTORS_INDEPENDENT_SEALED_STATE",
+    "GUEST_MAIN_RECEIVES_ACTOR_OUTPUT_DATA_WITHOUT_STATE_ALIAS",
+    "ASYNC_SEND_BACKPRESSURE_NONPARKING",
+    "OUTPUT_QUEUE_FULL_FAILS_SAFELY",
+    "STOP_CANCEL_PANIC_CLOSE_SETTLE_WAITERS_ONCE",
+    "CONTROL_PRIORITY_SURVIVES_SATURATED_USER_MAILBOX",
+    "SUPERVISOR_PER_CHILD_FAILURE_NO_LOSS_NO_RETRY",
+    "CHILD_DONE_WAITS_FOR_TERMINAL_ACK",
+    "RESTART_REJECTS_STALE_GENERATION",
+    "SERVICE_REQUEST_REPLY_OWNED_LINEAR_ENDPOINT",
+    "SERVICE_CANCEL_TIMEOUT_RELEASES_CREDIT_ONCE",
+    "BORROW_CANNOT_ESCAPE_CRITICAL_OR_CROSS_AWAIT",
+    "HOST_PROVIDER_PERMISSION_NONBLOCKING_IO_ONLY",
+    "EXACT_SOURCE_TREE_COMPILER_AND_GUEST_REPLAY_EACH_BACKEND"
+  ]
+}

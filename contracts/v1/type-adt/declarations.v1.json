@@ -1,0 +1,170 @@
+{
+  "schema": "oreslang.type-adt-declarations.v1",
+  "status": "source-free reference contract; not compiler conformance",
+  "as_of": "2026-10-23",
+  "source_status_semantics": {
+    "grammar": "Form is represented in published Java grammar; not proof of executable multi-backend support",
+    "spelling-proposed": "Kind exists in language design, but requested define spelling is not in published Java grammar",
+    "draft": "Integration is staged/in progress; do not infer merged executable support",
+    "prototype": "Foundation exists but full source semantics are not integrated",
+    "proposed": "Prospective syntax or semantics only",
+    "implemented-java-source": "Java mainline parser and relevant JUnit source tests exist; this does not establish currently executed CI, backend support or released toolchain behavior"
+  },
+  "declaration_rule": "define introduces named kinds; Java already implements same-file forward signatures with contextual declare for type/trait/interface (no runtime value allocation). Other backends still require guest execution receipts",
+  "export_rule": "declare pub X and define pub X express public visibility; visibility must not widen during resolution",
+  "forward_declarations": [
+    {
+      "kind": "type",
+      "private_form": "declare type Name;",
+      "public_form": "declare pub type Name;",
+      "status": "implemented-java-source"
+    },
+    {
+      "kind": "trait",
+      "private_form": "declare trait Name;",
+      "public_form": "declare pub trait Name;",
+      "status": "implemented-java-source"
+    },
+    {
+      "kind": "interface",
+      "private_form": "declare interface Name;",
+      "public_form": "declare pub interface Name;",
+      "status": "implemented-java-source"
+    }
+  ],
+  "declaration_kinds": [
+    {
+      "kind": "class",
+      "form": "define class",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "grammar"
+    },
+    {
+      "kind": "actor",
+      "form": "define actor",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "implemented-java-source"
+    },
+    {
+      "kind": "supervisor_actor",
+      "form": "define supervisor actor",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "proxy_actor",
+      "form": "define proxy actor",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "model",
+      "form": "define model",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "draft"
+    },
+    {
+      "kind": "enum",
+      "form": "define enum",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "draft"
+    },
+    {
+      "kind": "struct",
+      "form": "define struct",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "record",
+      "form": "define record",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "newtype",
+      "form": "define newtype",
+      "semantic_class": "concrete",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "interface",
+      "form": "define interface",
+      "semantic_class": "contract",
+      "declares_runtime_instance": false,
+      "reifiable_type_object": false,
+      "source_status": "grammar"
+    },
+    {
+      "kind": "trait",
+      "form": "define trait",
+      "semantic_class": "contract",
+      "declares_runtime_instance": false,
+      "reifiable_type_object": false,
+      "source_status": "implemented-java-source"
+    },
+    {
+      "kind": "contract",
+      "form": "define contract",
+      "semantic_class": "contract",
+      "declares_runtime_instance": false,
+      "reifiable_type_object": false,
+      "source_status": "grammar"
+    },
+    {
+      "kind": "type",
+      "form": "define type",
+      "semantic_class": "alias",
+      "declares_runtime_instance": false,
+      "reifiable_type_object": false,
+      "source_status": "implemented-java-source"
+    },
+    {
+      "kind": "pattern",
+      "form": "define pattern",
+      "semantic_class": "pattern",
+      "declares_runtime_instance": false,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "symbol",
+      "form": "define symbol",
+      "semantic_class": "constant",
+      "declares_runtime_instance": true,
+      "reifiable_type_object": false,
+      "source_status": "proposed"
+    },
+    {
+      "kind": "module",
+      "form": "define module",
+      "semantic_class": "namespace",
+      "declares_runtime_instance": false,
+      "reifiable_type_object": false,
+      "source_status": "grammar"
+    }
+  ],
+  "backend_evidence": {
+    "java": "Java parser and source tests inspected; actual CI execution not verified",
+    "llvm": "not-verified-for-this-contract",
+    "other": "not-verified-for-this-contract"
+  }
+}

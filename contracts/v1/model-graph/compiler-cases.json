@@ -1,0 +1,77 @@
+{
+  "contract": "oreslang.model.graph.compiler-fixtures.v1",
+  "status": "PROPOSED",
+  "guest_execution": "NOT_EXECUTED",
+  "note": "Syntax expectations are backend-independent. typed_expect is normative future ModelGraph admission, not evidence that current compilers implement lowering.",
+  "cases": [
+    {
+      "id": "pricing-forward",
+      "fixture": "fixtures/pricing_forward.ores",
+      "domain": "finance",
+      "syntax_expect": "accept",
+      "typed_expect": "accept",
+      "gradient_requested": false,
+      "resolved_digest_vector": "base",
+      "default_config": {
+        "tax_bps": "1500"
+      },
+      "override_config": {
+        "tax_bps": "1501",
+        "expected_digest": "1dcfd1569621a30e53c969b9bf0e2add7fe94a04c2bf4474fae821555996d21b"
+      }
+    },
+    {
+      "id": "dsp-forward",
+      "fixture": "fixtures/dsp_forward.ores",
+      "domain": "signal-processing",
+      "syntax_expect": "accept",
+      "typed_expect": "accept",
+      "gradient_requested": false
+    },
+    {
+      "id": "forward-without-vjp",
+      "fixture": "fixtures/forward_without_vjp.ores",
+      "domain": "signal-processing",
+      "syntax_expect": "accept",
+      "typed_expect": "accept",
+      "gradient_requested": false,
+      "note": "No VJP is required for forward-only admission."
+    },
+    {
+      "id": "gradient-without-vjp",
+      "fixture": "fixtures/forward_without_vjp.ores",
+      "domain": "signal-processing",
+      "syntax_expect": "accept",
+      "typed_expect": "reject",
+      "diagnostic_class": "MODEL_MISSING_VJP",
+      "gradient_requested": true,
+      "note": "Same declaration; rejection occurs only when the requested live derivative path crosses Quantize8."
+    },
+    {
+      "id": "empty-body",
+      "fixture": "fixtures/reject_empty.ores",
+      "domain": "generic",
+      "syntax_expect": "reject",
+      "typed_expect": "not_reached",
+      "diagnostic_class": "MODEL_EMPTY_BODY"
+    },
+    {
+      "id": "expression-body",
+      "fixture": "fixtures/reject_expression_body.ores",
+      "domain": "generic",
+      "syntax_expect": "reject",
+      "typed_expect": "not_reached",
+      "diagnostic_class": "MODEL_NON_LAYER_EXPRESSION"
+    },
+    {
+      "id": "named-config-unresolved",
+      "fixture": "fixtures/reject_unresolved_named_config.ores",
+      "domain": "finance",
+      "syntax_expect": "accept",
+      "typed_expect": "reject",
+      "diagnostic_class": "MODEL_NAMED_ARGUMENT_UNRESOLVED",
+      "gradient_requested": false,
+      "note": "Named configuration is syntax-valid but cannot alias positional constants until a trusted operation signature declares parameter names."
+    }
+  ]
+}

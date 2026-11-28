@@ -1,0 +1,148 @@
+{
+  "schema": "attolang.macro-declaration-aot-v1",
+  "status": "SOURCE_CONTRACT_ONLY_NOT_EXECUTED",
+  "semantics_reference": "fixtures/macro-semantics-v1.json",
+  "language_extension": ".atto",
+  "stage": "TARGET_SYNTAX_NOT_YET_ADMITTED",
+  "description": "Target AttoLang compiler-only typed declaration macros. These .atto files have NOT been compiled or executed by any backend.",
+  "macro_result_kinds": [
+    "Syntax<Decl>",
+    "SyntaxList<Decl>"
+  ],
+  "compile_order": [
+    "parse",
+    "resolve_macro_imports",
+    "bind_macro_signatures",
+    "compile_macro_bodies",
+    "resolve_macro_arguments",
+    "expand",
+    "reject_residual_macros",
+    "ordinary_semantic_checks",
+    "finite_generic_closure",
+    "backend_codegen"
+  ],
+  "limits": {
+    "max_expansions_per_consumer_unit": 128,
+    "max_nesting_depth": 64,
+    "compile_time_only": true
+  },
+  "cases": [
+    {
+      "id": "MA-D-001",
+      "source": "generated-entry-42.atto",
+      "blob_sha1": "57aa0fb784ba1b7a09f98a92321b0397076d1a33",
+      "expected": "compile_and_execute",
+      "expected_guest_int": "42",
+      "result_kind": "Syntax<Decl>",
+      "proof": "program-specific native AOT entrypoint is generated"
+    },
+    {
+      "id": "MA-D-002",
+      "source": "generated-pair-42.atto",
+      "blob_sha1": "8e577b756845a0b1f9720600ea0d4a8fb56886a5",
+      "expected": "compile_and_execute",
+      "expected_guest_int": "42",
+      "result_kind": "SyntaxList<Decl>",
+      "proof": "two hygienic declarations compile and their call resolves"
+    },
+    {
+      "id": "MA-D-003",
+      "source": "decl-result-in-expr-reject.atto",
+      "blob_sha1": "af426091fac29de1e18bfd7db434c85376ab4ed0",
+      "expected": "reject_before_codegen",
+      "diagnostic_class": "macro_result_kind",
+      "emitted_ir_bytes": 0,
+      "emitted_artifacts": 0
+    },
+    {
+      "id": "MA-D-004",
+      "source": "generated-import-reject.atto",
+      "blob_sha1": "6052d1713858906d4498e5069cfb8274da66503b",
+      "expected": "reject_before_codegen",
+      "diagnostic_class": "macro_generated_authority",
+      "emitted_ir_bytes": 0,
+      "emitted_artifacts": 0
+    },
+    {
+      "id": "MA-D-005",
+      "source": "generated-macro-reject.atto",
+      "blob_sha1": "2aa48a53d908765f6003cad42d0accb1cb625e42",
+      "expected": "reject_before_codegen",
+      "diagnostic_class": "macro_generated_macro",
+      "emitted_ir_bytes": 0,
+      "emitted_artifacts": 0
+    },
+    {
+      "id": "MA-D-006",
+      "source": "duplicate-main-reject.atto",
+      "blob_sha1": "06d8fcaf5e216475fdfa5e3afda30397068818a8",
+      "expected": "reject_before_codegen",
+      "diagnostic_class": "macro_generated_duplicate",
+      "emitted_ir_bytes": 0,
+      "emitted_artifacts": 0
+    },
+    {
+      "id": "MA-D-007",
+      "source": "generated-type-error-reject.atto",
+      "blob_sha1": "28966bc06bf5ac428e99528f53d25edce3c14386",
+      "expected": "reject_before_codegen",
+      "diagnostic_class": "generated_type_check",
+      "emitted_ir_bytes": 0,
+      "emitted_artifacts": 0
+    },
+    {
+      "id": "MA-D-008",
+      "source": "generated-cycle-reject.atto",
+      "blob_sha1": "0fc42faab2521eb9cce896be9c911123362b9bf2",
+      "expected": "reject_before_codegen",
+      "diagnostic_class": "macro_expansion_cycle",
+      "emitted_ir_bytes": 0,
+      "emitted_artifacts": 0
+    }
+  ],
+  "backend_states": [
+    {
+      "backend": "java",
+      "evidence": "NOT_EXECUTED",
+      "acceptance": "PROGRAM_SPECIFIC_AOT_GUEST_REQUIRED"
+    },
+    {
+      "backend": "llvm",
+      "evidence": "NOT_EXECUTED",
+      "acceptance": "PROGRAM_SPECIFIC_AOT_GUEST_REQUIRED"
+    },
+    {
+      "backend": "net",
+      "evidence": "NOT_EXECUTED",
+      "acceptance": "PROGRAM_SPECIFIC_AOT_GUEST_REQUIRED"
+    },
+    {
+      "backend": "wasm",
+      "evidence": "NOT_EXECUTED",
+      "acceptance": "PROGRAM_SPECIFIC_AOT_GUEST_REQUIRED"
+    },
+    {
+      "backend": "forge",
+      "evidence": "NOT_EXECUTED",
+      "acceptance": "PROGRAM_SPECIFIC_AOT_GUEST_REQUIRED"
+    },
+    {
+      "backend": "cranelift",
+      "evidence": "NOT_EXECUTED",
+      "acceptance": "PROGRAM_SPECIFIC_AOT_GUEST_REQUIRED"
+    }
+  ],
+  "evidence_policy": {
+    "compiler_execution_required": true,
+    "strict_aot_guest_required": true,
+    "source_tree_head_and_blob_sha_required": true,
+    "verified_stepful_job_required": true,
+    "compiler_and_artifact_sha256_required": true,
+    "zero_step_is_execution": false,
+    "source_only_is_guest_proof": false,
+    "synthetic_receipt_is_guest_proof": false,
+    "runtime_macro_fallback_allowed": false,
+    "source_transfer_allowed_without_independent_approval": false,
+    "backend_adapter_must_not_interpret_macro_at_runtime": true
+  }
+}

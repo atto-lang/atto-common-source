@@ -34,7 +34,7 @@ Cross-backend fixture registry: [atto-platform-conformance/contracts/byte-buffer
 
 ## Evidence
 
-The current `canonical-stdlib-v1.json` SHA-pins seven `.atto` modules spanning core, alloc and std, preserving five-backend `NOT_EXECUTED` verification. A separate conformance registry covers ten backend targets. The conformance registry separately inventories **all ten** known `atto-source.*` backends, also `NOT_EXECUTED`. Host byte-identity checking does not demonstrate compiler acceptance of bitwise operators or endian guest behavior.
+The current `canonical-stdlib-v1.json` SHA-pins seven `.atto` modules spanning core, alloc and std, with all eleven current backend entries `NOT_EXECUTED`. Host byte-identity checking does not demonstrate compiler acceptance of bitwise operators or endian guest behavior.
 
 ## Current source milestone and remaining gates
 
@@ -42,8 +42,10 @@ The current `canonical-stdlib-v1.json` SHA-pins seven `.atto` modules spanning c
 - NOT IMPLEMENTED: sealed runtime OwnedBytes for any backend; typed Buffer*Error classes/linkage; compiled module imports; executable guest methods; ownership/loan integration; try_* Result adapters; borrowed zero-copy views and pooled storage.
 - Source validation: node --test tests/canonical-stdlib-bytes.test.mjs tests/byte_buffer_source_contract.test.mjs tests/alloc_core_std_source.test.mjs.
 - Rust host reference: rustc --edition=2021 --test -D warnings tests/byte_buffer_reference.rs -o /tmp/atto-byte-reference && /tmp/atto-byte-reference. Neither is a compiled Atto guest test.
-- Related atto-common-source PR #23 layering inventory currently expects only one .atto source. Reconcile its manifest and tests against the new sources before merging either branch; never weaken its effect or import checks.
+- The #23 layering guard and #150 admission hardening are incorporated in the reconciled #30 candidate; the manifest now inventories seven reference sources. Retest the integrated head before merging; never weaken effect or import checks.
 - For secure runtime admission: prove actor/tenant isolation, exclusive loans, stale generation rejection, typed error identity, zeroized reuse, quota accounting, fail-atomic ordinary errors, no host fallback and full AOT where applicable.
 - Checked alternate private CI carrier's explicit allowlist does not currently authorize copying atto-common-source. Do not mirror private source without authenticated security approval. Any zero-step CI is NOT_EXECUTED.
 
 The current `ByteRegion.empty()` constructor is intended to avoid an extra zero-length allocation when constructing `std.ByteBuffer`. The C++20 native host-model allocator has an explicit, idempotent `drop_now()` teardown path for trusted cancellation handlers; it is not exposed as an unchecked guest operation. Actor suspension/loan checks, quota enforcement under an actual TenantVM, and compiler import/link integration are still required.
+
+Production implementations of these public semantics remain owned by each `atto-source.*` compiler. The shared byte manifest pins reference fixtures only; independently implemented backend libraries need behavioral guest parity, not identical source bytes.

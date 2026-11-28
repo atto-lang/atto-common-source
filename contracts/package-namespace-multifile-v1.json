@@ -1,0 +1,377 @@
+{
+  "contract_version": "oreslang.package-namespace-multifile.v1",
+  "status": "proposed-contract-not-compiler-executed",
+  "manifest": ".ores.pkg.toml",
+  "manifest_schema": "2 (proposed, requires backend admission)",
+  "namespace_declaration": "namespace <flat_ident>;",
+  "namespace_import": "import namespace <flat_ident> [as <local_alias>] from \"<verified-package-locator>\";",
+  "same_package_locator": "+/",
+  "cross_package_locator": "pinned dependency package alias (example: checkout)",
+  "assumptions": {
+    "package_membership": "Only manifest-listed canonical files belong to a multi-file package; unlisted files are singleton packages.",
+    "namespace_membership": "Within one verified package instance, files with the same source namespace header contribute to that namespace.",
+    "exports": "Only access-authorized declarations are visible; pub[pkg] is internal to exact package instance; private and pub[file] never cross files.",
+    "static_graph": "Import namespace selects a compile-time aggregate, not a runtime module, and never executes imports.",
+    "ownership": "Package instance identity includes locked dependency instance and owning manifest, not textual package or namespace name.",
+    "duplicates": "A namespace's same-domain exported binding must have one provider, except separately proven legal callable overload families.",
+    "zero_implicit_reexport": "An importing file does not publish imported namespace members by default."
+  },
+  "packages": [
+    {
+      "id": "checkout@sha256:alpha",
+      "key": "checkout",
+      "manifest": "checkout/.ores.pkg.toml",
+      "files": [
+        {
+          "path": "src/billing/invoice.ores",
+          "header": "namespace billing;",
+          "namespace": "billing",
+          "exports": [
+            {
+              "name": "issue",
+              "visibility": "pub"
+            },
+            {
+              "name": "internal_sequence",
+              "visibility": "private"
+            }
+          ]
+        },
+        {
+          "path": "src/billing/charges.ores",
+          "header": "namespace billing;",
+          "namespace": "billing",
+          "exports": [
+            {
+              "name": "charge",
+              "visibility": "pub"
+            },
+            {
+              "name": "calculate_fee",
+              "visibility": "pub[pkg]"
+            }
+          ]
+        },
+        {
+          "path": "src/billing/refunds.ores",
+          "header": "namespace billing;",
+          "namespace": "billing",
+          "exports": [
+            {
+              "name": "refund",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/billing/ledger.ores",
+          "header": "namespace billing;",
+          "namespace": "billing",
+          "exports": [
+            {
+              "name": "balance",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/identity/accounts.ores",
+          "header": "namespace identity;",
+          "namespace": "identity",
+          "exports": [
+            {
+              "name": "find_account",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/identity/sessions.ores",
+          "header": "namespace identity;",
+          "namespace": "identity",
+          "exports": [
+            {
+              "name": "start_session",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/identity/policies.ores",
+          "header": "namespace identity;",
+          "namespace": "identity",
+          "exports": [
+            {
+              "name": "authorize",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/telemetry/events.ores",
+          "header": "namespace telemetry;",
+          "namespace": "telemetry",
+          "exports": [
+            {
+              "name": "emit_event",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/telemetry/metrics.ores",
+          "header": "namespace telemetry;",
+          "namespace": "telemetry",
+          "exports": [
+            {
+              "name": "measure",
+              "visibility": "pub"
+            }
+          ]
+        },
+        {
+          "path": "src/telemetry/traces.ores",
+          "header": "namespace telemetry;",
+          "namespace": "telemetry",
+          "exports": [
+            {
+              "name": "start_trace",
+              "visibility": "pub"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "app@sha256:beta",
+      "key": "app",
+      "manifest": "app/.ores.pkg.toml",
+      "files": [
+        {
+          "path": "src/main.ores",
+          "header": "namespace app;",
+          "namespace": "app",
+          "exports": [
+            {
+              "name": "main",
+              "visibility": "pub"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "checkout@sha256:gamma",
+      "key": "checkout",
+      "manifest": "other-checkout/.ores.pkg.toml",
+      "files": [
+        {
+          "path": "src/billing.ores",
+          "header": "namespace billing;",
+          "namespace": "billing",
+          "exports": [
+            {
+              "name": "issue",
+              "visibility": "pub"
+            },
+            {
+              "name": "other",
+              "visibility": "pub"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "reference_cases": [
+    {
+      "id": "within-pkg-1-of-4-issue",
+      "importer": "checkout@sha256:alpha",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "issue",
+      "expect": "admit",
+      "provider_file": "src/billing/invoice.ores"
+    },
+    {
+      "id": "within-pkg-1-of-4-charge",
+      "importer": "checkout@sha256:alpha",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "charge",
+      "expect": "admit",
+      "provider_file": "src/billing/charges.ores"
+    },
+    {
+      "id": "within-pkg-1-of-4-refund",
+      "importer": "checkout@sha256:alpha",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "refund",
+      "expect": "admit",
+      "provider_file": "src/billing/refunds.ores"
+    },
+    {
+      "id": "within-pkg-1-of-4-balance",
+      "importer": "checkout@sha256:alpha",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "balance",
+      "expect": "admit",
+      "provider_file": "src/billing/ledger.ores"
+    },
+    {
+      "id": "cross-pkg-issue",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "issue",
+      "expect": "admit",
+      "provider_file": "src/billing/invoice.ores"
+    },
+    {
+      "id": "cross-pkg-charge",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "charge",
+      "expect": "admit",
+      "provider_file": "src/billing/charges.ores"
+    },
+    {
+      "id": "cross-pkg-refund",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "refund",
+      "expect": "admit",
+      "provider_file": "src/billing/refunds.ores"
+    },
+    {
+      "id": "cross-pkg-balance",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "balance",
+      "expect": "admit",
+      "provider_file": "src/billing/ledger.ores"
+    },
+    {
+      "id": "same-package-scoped-symbol",
+      "importer": "checkout@sha256:alpha",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "calculate_fee",
+      "expect": "admit",
+      "provider_file": "src/billing/charges.ores"
+    },
+    {
+      "id": "external-package-scoped-symbol",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "calculate_fee",
+      "expect": "reject",
+      "reason": "not-public-to-package"
+    },
+    {
+      "id": "private-symbol-denied",
+      "importer": "checkout@sha256:alpha",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "internal_sequence",
+      "expect": "reject",
+      "reason": "not-public-to-package"
+    },
+    {
+      "id": "wrong-namespace-denied",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "billing",
+      "symbol": "authorize",
+      "expect": "reject",
+      "reason": "not-exported-by-namespace"
+    },
+    {
+      "id": "third-namespace-allowed",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "telemetry",
+      "symbol": "measure",
+      "expect": "admit",
+      "provider_file": "src/telemetry/metrics.ores"
+    },
+    {
+      "id": "unknown-namespace-denied",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:alpha",
+      "namespace": "missing",
+      "symbol": "issue",
+      "expect": "reject",
+      "reason": "no-such-namespace"
+    },
+    {
+      "id": "distinct-dependency-instance-not-merged",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:gamma",
+      "namespace": "billing",
+      "symbol": "charge",
+      "expect": "reject",
+      "reason": "not-exported-by-namespace"
+    },
+    {
+      "id": "distinct-dependency-instance-own-export",
+      "importer": "app@sha256:beta",
+      "provider": "checkout@sha256:gamma",
+      "namespace": "billing",
+      "symbol": "other",
+      "expect": "admit",
+      "provider_file": "src/billing.ores"
+    }
+  ],
+  "invalid_package_cases": [
+    {
+      "id": "duplicate-public-export",
+      "mutation": "copy-export",
+      "namespace": "billing",
+      "symbol": "charge",
+      "source_file": "src/billing/refunds.ores",
+      "expect": "duplicate-export"
+    },
+    {
+      "id": "header-mismatch",
+      "mutation": "mismatch-header",
+      "source_file": "src/billing/refunds.ores",
+      "expect": "header-mismatch"
+    },
+    {
+      "id": "duplicate-file-membership",
+      "mutation": "duplicate-file",
+      "source_file": "src/billing/ledger.ores",
+      "expect": "duplicate-file"
+    },
+    {
+      "id": "source-path-traversal",
+      "mutation": "path-traversal",
+      "source_file": "src/billing/refunds.ores",
+      "expect": "invalid-source-path"
+    },
+    {
+      "id": "unlisted-package-file",
+      "mutation": "unlisted-file",
+      "source_file": "src/billing/not-listed.ores",
+      "expect": "unlisted-file"
+    }
+  ],
+  "required_backend_evidence": [
+    "exact-source-tree",
+    "10-file-3-namespace-single-import-link",
+    "cross-package-single-namespace-import",
+    "static-type-lookup",
+    "runtime-dispatch",
+    "negative-visibility-and-duplicate-tests",
+    "ABI-invalidation",
+    "cache-reload",
+    "LLVM-.NET-Wasm-fail-closed-until-implemented"
+  ]
+}

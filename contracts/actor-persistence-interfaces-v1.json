@@ -1,0 +1,121 @@
+{
+  "schema": "atto.actor-persistence-interfaces.v1",
+  "version": 1,
+  "status": "TARGET_API_ONLY_NOT_BACKEND_EXECUTED",
+  "source": "interfaces/actor_persistence_v1.atto",
+  "owner": "atto-lang/atto-common-source",
+  "specification": "atto-lang/atto-spec/language/actor-persistence-v1.md",
+  "modifiers": {
+    "persistent": {
+      "kind": "actor-only",
+      "storage": "developer-hooks",
+      "requires": [
+        "ActorPersistence.load_state",
+        "ActorPersistence.save_state"
+      ],
+      "guarantee": "hook-result-only; no runtime claim of true disk durability"
+    },
+    "durable": {
+      "kind": "actor-only",
+      "storage": "runtime-managed-os-disk",
+      "requires": [],
+      "guarantee": "fail-closed crash-safe committed state after storage barrier; backend not yet implemented"
+    }
+  },
+  "mutualExclusion": [
+    "persistent",
+    "durable"
+  ],
+  "traits": [
+    {
+      "name": "Persistable",
+      "params": [],
+      "methods": [],
+      "kind": "marker",
+      "rule": "compiler-generated versioned AOT codec; reject raw pointers, sockets, loans and unsupported graphs"
+    },
+    {
+      "name": "ActorPersistence",
+      "params": [
+        "State"
+      ],
+      "methods": [
+        {
+          "name": "load_state",
+          "effect": "susp",
+          "params": [
+            "ctx: PersistenceContext"
+          ],
+          "returns": "Result<Option<ActorStateSnapshot<State>>, PersistenceError>",
+          "required": true
+        },
+        {
+          "name": "save_state",
+          "effect": "susp",
+          "params": [
+            "ctx: PersistenceContext",
+            "snapshot: ActorStateSnapshot<State>"
+          ],
+          "returns": "Result<CheckpointReceipt, PersistenceError>",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "ActorCheckpointStore",
+      "params": [
+        "State"
+      ],
+      "methods": [
+        {
+          "name": "read_state",
+          "effect": "susp",
+          "params": [
+            "ctx: PersistenceContext"
+          ],
+          "returns": "Result<Option<ActorStateSnapshot<State>>, PersistenceError>"
+        },
+        {
+          "name": "commit_state",
+          "effect": "susp",
+          "params": [
+            "ctx: PersistenceContext",
+            "snapshot: ActorStateSnapshot<State>"
+          ],
+          "returns": "Result<CheckpointReceipt, PersistenceError>"
+        }
+      ]
+    }
+  ],
+  "runtimeOwnedOpaqueTypes": [
+    "ActorId",
+    "ActorEpoch",
+    "CheckpointSequence",
+    "PersistenceContext",
+    "ActorStateSnapshot<State>",
+    "CheckpointReceipt",
+    "PersistenceError"
+  ],
+  "invariants": {
+    "actorState": "snapshot only reachable actor-owned Persistable graph at a safe boundary; sealed state remains sealed",
+    "lifetime": "no continuation/stack/sockets/active loans automatically checkpointed",
+    "fencing": "snapshot and receipts bind actor ID, epoch, sequence and schema/version; stale incarnation rejected",
+    "ordering": "commits serialized per actor and monotonic; failed hook/IO does not acknowledge durable change",
+    "restore": "recover verified state without repeating constructor side effects; corrupt state is an error, not empty state",
+    "durability": "durable requires on-disk journaling and commit barrier, never silent in-memory downgrade",
+    "sideEffects": "message replay can duplicate external side effects; exactly-once is not claimed"
+  },
+  "backendStatus": {
+    "rs": "NOT_EXECUTED",
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED"
+  },
+  "evidenceRule": "Static contract tests do not prove Atto parser acceptance, compiled guest execution, disk fsync or crash recovery"
+}

@@ -1,0 +1,29 @@
+name: M8 compiler safe-point IR contract
+on:
+  push:
+    branches: [feat/m8-compiler-safepoint-ir-20261115]
+  pull_request:
+    paths:
+      - 'contracts/m8-compiler-safepoint-ir-v1.json'
+      - 'tests/test_m8_compiler_safepoint_ir.py'
+      - '.github/workflows/m8-compiler-ir.yml'
+permissions:
+  contents: read
+jobs:
+  m8-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head and M8 safe-point contract
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python3 -m unittest discover -s tests -p test_m8_compiler_safepoint_ir.py -v
+          echo M8_COMPILER_SAFEPOINT_IR_CONTRACT=PASS
+      - name: Scope
+        run: echo 'M8 source-free IR schema validation, not compiler runtime proof'

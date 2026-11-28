@@ -1,0 +1,4 @@
+pub fnc main(): int {
+  const text = '\uD83D\uDE00';
+  return 42;
+}

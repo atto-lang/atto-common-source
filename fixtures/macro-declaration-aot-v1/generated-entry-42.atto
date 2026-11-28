@@ -1,0 +1,9 @@
+// Target: a compiler-only declaration macro emits the program entrypoint.
+define macro generate_entry() -> Syntax<Decl> {
+    return quote {
+        fnc main() -> int {
+            return 42;
+        }
+    };
+}
+generate_entry!();

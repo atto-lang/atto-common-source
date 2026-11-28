@@ -1,0 +1,43 @@
+name: AttoLang core protocol source integrity (not guest execution)
+on:
+  pull_request:
+    paths:
+      - 'library/ores.core/protocols.atto'
+      - 'contracts/v1/core-protocols-v1.json'
+      - 'tests/core-protocols-v1.test.mjs'
+      - 'tests/core-protocol-signatures-v1.test.mjs'
+      - 'contracts/v1/core-protocol-signatures-v1.json'
+      - 'tests/core-actor-foundation-v1.test.mjs'
+      - 'tests/core-actor-security-v1.test.mjs'
+      - 'tests/core-actor-concurrency-affinity-v1.test.mjs'
+      - 'tests/native-actor-result-supervision-v1.test.mjs'
+      - 'contracts/v1/native-actor-result-supervision-v1.json'
+      - 'docs/NATIVE_ACTOR_RESULT_SUPERVISION_V1.md'
+      - 'tests/fixtures/native-actor-result-v1/**'
+      - 'contracts/v1/core-actor-foundation-v1.json'
+      - 'docs/CORE_AND_ACTOR_BASE_CLASSES_V1.md'
+      - 'tests/fixtures/core-protocols-v1/**'
+      - '.github/workflows/core-protocols-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core-source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact HEAD
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet
+          git diff --cached --quiet
+      - name: Verify source-only protocol contract
+        run: |
+          node --test tests/core-protocols-v1.test.mjs tests/core-protocol-signatures-v1.test.mjs tests/core-actor-foundation-v1.test.mjs tests/core-actor-security-v1.test.mjs tests/core-actor-concurrency-affinity-v1.test.mjs tests/native-actor-result-supervision-v1.test.mjs
+          echo "ATTO_CORE_PROTOCOLS_GUEST_EXECUTION=NOT_EXECUTED"

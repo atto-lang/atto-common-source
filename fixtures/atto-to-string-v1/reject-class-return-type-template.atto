@@ -1,0 +1,8 @@
+define class Box as
+  pub to_string(): int { return 42; }
+end
+pub fnc main(): void {
+  val Box box = new Box();
+  stdio.stdout.write(`bad:${box.to_string()}`);
+  return;
+}

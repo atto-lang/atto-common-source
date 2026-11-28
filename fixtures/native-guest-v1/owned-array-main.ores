@@ -1,0 +1,9 @@
+define class Shelf as
+  pub let mut Array<int> items = new Array<int>();
+end
+pub fnc main(): int {
+  let mut Shelf shelf = new Shelf();
+  shelf.items.add(21);
+  shelf.items.set(0, 42);
+  return shelf.items.get(0);
+}

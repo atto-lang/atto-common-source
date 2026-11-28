@@ -1,0 +1,183 @@
+{
+  "schema": "oreslang.authority-boundary.v1",
+  "evidence": "SOURCE_FREE_ORACLE_ONLY",
+  "description": "Reference admission model; does not execute Oreslang source, enforce host sandboxing, or establish compiler parity.",
+  "target_backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "net",
+    "js"
+  ],
+  "rules": {
+    "unknown": "opaque untrusted input; explicit type validation required before any narrowing",
+    "any": "typed opaque safe scalar in v1; cannot erase actor, borrow, function, or mutable authority",
+    "message": "only validated, independently copyable scalar values in this conservative oracle; opaque any/unknown never cross",
+    "permissions": "process policy ceilings, parent-child delegation only, effects declaration is not a capability grant",
+    "critical": "state loans forbid boundary crossing and effectful I/O until returned",
+    "upgrade": "no cap escalation, generation invalidation, quiescence check, schema compatibility, children coordinated separately",
+    "unsupported": "fail closed"
+  },
+  "cases": [
+    {
+      "id": "scalar-int",
+      "expect": "allow"
+    },
+    {
+      "id": "scalar-bool",
+      "expect": "allow"
+    },
+    {
+      "id": "scalar-option-none",
+      "expect": "allow"
+    },
+    {
+      "id": "scalar-option-some",
+      "expect": "allow"
+    },
+    {
+      "id": "unknown-guard-int",
+      "expect": "allow"
+    },
+    {
+      "id": "explicit-narrow-message",
+      "expect": "allow"
+    },
+    {
+      "id": "actor-send-valid",
+      "expect": "allow"
+    },
+    {
+      "id": "root-net-effect-allowed",
+      "expect": "allow"
+    },
+    {
+      "id": "child-file-effect-allowed",
+      "expect": "allow"
+    },
+    {
+      "id": "critical-release-valid",
+      "expect": "allow"
+    },
+    {
+      "id": "upgrade-child-restrict",
+      "expect": "allow"
+    },
+    {
+      "id": "upgrade-reject-atomic",
+      "expect": "allow"
+    },
+    {
+      "id": "bool-as-int",
+      "expect": "deny"
+    },
+    {
+      "id": "int-overflow",
+      "expect": "deny"
+    },
+    {
+      "id": "raw-null-to-int",
+      "expect": "deny"
+    },
+    {
+      "id": "unknown-to-any-implicit",
+      "expect": "deny"
+    },
+    {
+      "id": "unknown-guard-wrong-type",
+      "expect": "deny"
+    },
+    {
+      "id": "any-to-other-type",
+      "expect": "deny"
+    },
+    {
+      "id": "capability-into-any",
+      "expect": "deny"
+    },
+    {
+      "id": "callable-into-any",
+      "expect": "deny"
+    },
+    {
+      "id": "list-into-any",
+      "expect": "deny"
+    },
+    {
+      "id": "opaque-any-message",
+      "expect": "deny"
+    },
+    {
+      "id": "opaque-unknown-message",
+      "expect": "deny"
+    },
+    {
+      "id": "mutable-message",
+      "expect": "deny"
+    },
+    {
+      "id": "actor-cap-message",
+      "expect": "deny"
+    },
+    {
+      "id": "actor-send-fake-source",
+      "expect": "deny"
+    },
+    {
+      "id": "actor-send-fake-dest",
+      "expect": "deny"
+    },
+    {
+      "id": "process-policy-escalation",
+      "expect": "deny"
+    },
+    {
+      "id": "spawn-escalation",
+      "expect": "deny"
+    },
+    {
+      "id": "child-net-effect-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "unknown-effect-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "annotation-does-not-grant",
+      "expect": "deny"
+    },
+    {
+      "id": "critical-send-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "critical-io-denied",
+      "expect": "deny"
+    },
+    {
+      "id": "foreign-loan-release",
+      "expect": "deny"
+    },
+    {
+      "id": "upgrade-expands-rights",
+      "expect": "deny"
+    },
+    {
+      "id": "upgrade-with-live-loan",
+      "expect": "deny"
+    },
+    {
+      "id": "upgrade-incompatible-schema",
+      "expect": "deny"
+    },
+    {
+      "id": "upgrade-parent-with-child",
+      "expect": "deny"
+    },
+    {
+      "id": "stale-child-after-upgrade",
+      "expect": "deny"
+    }
+  ]
+}

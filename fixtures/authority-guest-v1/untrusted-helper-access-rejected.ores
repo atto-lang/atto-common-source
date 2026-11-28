@@ -1,0 +1,8 @@
+fnc helper(): void {
+  val id = process.context_id;
+  return;
+}
+pub untrusted actor fnc worker(): void {
+  helper();
+  return;
+}

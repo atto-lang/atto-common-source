@@ -1,0 +1,436 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "in-memory-actor-pubsub-v1",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "note": "Pending conformance specifications. This manifest does not demonstrate that any Oreslang compiler parses or executes these cases.",
+  "required_backends": [
+    "java",
+    "llvm",
+    "cranelift",
+    "net",
+    "wasm",
+    "forge"
+  ],
+  "cases": [
+    {
+      "id": "group_join_two",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "one actor accepts authorized joins to groups A and B without changing lifecycle owner",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_leave_independent",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "leaving A leaves membership and active subscriptions in B intact",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_close_independent",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "closing A retires A leases but not B leases or the common actor",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_invitation_wrong_target",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "an invitation for actor A cannot be redeemed by actor B",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_invitation_replay",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "revoked/redeemed/stale invitation cannot be reused after generation rotation",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_ownership_separate",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "group membership cannot grant stop/cancel authority over the actor",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_membership_not_subscription",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "joining A never auto-subscribes to A topics",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_topic_isolation",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "A and B topic #updates with same payload schema remain disjoint",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "group_cross_publish_explicit",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "same actor may publish to A and B separately with distinct receipts",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "runtime_topic_cross_groups",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "authorized actors in A and B share one runtime-scoped topic",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "runtime_topic_no_group_requirement",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "runtime scoped subscription is independent of group join",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "runtime_topic_wrong_runtime",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "cross-runtime topic grant cannot authenticate",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_schema_nominal_mismatch",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "topic publisher of SchemaA cannot publish SchemaB despite structural similarity",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_non_sendable",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "non-Sendable reference or borrowed actor state cannot be published",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_grant_unauthorized_publish",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "subscriber-only grant cannot publish",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_grant_unauthorized_subscribe",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "publisher-only grant cannot subscribe",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_grant_forged_id",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "numeric ID, name, cast, serialized bytes cannot forge capability",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_grant_mailbox_transport",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "opaque grant may not be placed into ordinary ActorMail payload",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_grant_wrong_incarnation",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "old generation grant cannot publish or subscribe after actor restart",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_grant_revoked_concurrent",
+      "category": "race",
+      "expected": "reject",
+      "assertion": "revoked publisher cannot commit a publication after revocation fence",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_empty_audience",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "successful publication with zero subscribers has zero counts",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_one_to_many",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "a single publication is delivered to each active subscriber lease",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_many_to_many",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "independent publisher events reach each active authorized subscriber",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_duplicate_lease",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "distinct lease IDs may intentionally yield two deliveries to one actor",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_subscription_future_only",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "new subscriptions receive no pre-admission past event",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_reliable_atomic_failure",
+      "category": "race",
+      "expected": "reject",
+      "assertion": "one saturated subscriber prevents any recipient observing an uncommitted reliable publication",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_reliable_bounded_waiters",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "no unbounded queues, waiters, memory, or parked scheduler carrier",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_latest_replace",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "one unread slot replaces old event and refunds its reservation",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_lossy_drop",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "full subscriber queue drops new event and reports drop count",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_per_lease_order",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "admitted publications preserve per-topic order at each subscription",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_fanout_lock_safe",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "callbacks and Future completion never execute under coordinator/group/topic locks",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_no_reentrant_callback",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "delivery work runs on observer actor turn, never inline on publisher turn",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_control_priority",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "supervisor CONTROL notices cannot be spoofed or starved by topic traffic",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_lease_cancel_idempotent",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "cancel twice yields one close/EOF with exact resource release",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_close_await",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "pending next() wakes on close and does not leak waiter registration",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_hot_reload_aba",
+      "category": "race",
+      "expected": "reject",
+      "assertion": "stale publisher/subscriber incarnation cannot resume after hot reload",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_1000_way_race",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "1000 concurrent subscribe/publish/leave/close operations never resurrect memberships or leak credits",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_self_reliable_deadlock",
+      "category": "runtime",
+      "expected": "reject",
+      "assertion": "self-subscriber cannot park own actor on full RELIABLE queue",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_shared_domain",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "frozen payload shared only when SHARED actor policy permits",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_private_domain_unimplemented",
+      "category": "runtime",
+      "expected": "reject",
+      "assertion": "private/untrusted cross-isolate subscriber fails closed without verified copy transport",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_borrow_across_await",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "borrowed event/channel storage cannot outlive turn or cross await",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_no_durable_replay",
+      "category": "runtime",
+      "expected": "reject",
+      "assertion": "in-memory topic must not claim persistent replay or exactly-once processing",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_no_redis_implicit",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "no implicit network forwarding/Redis transport or serialization of local grants",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_policy_semantics",
+      "category": "source_positive",
+      "expected": "accept",
+      "assertion": "typed option names #reliable #latest #lossy and Result receipt checked by compiler",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_sealed_state",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "subscriber hook cannot directly access another actor sealed state",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_aot_ownership",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "native AOT/zero-GC runtime performs bounded release and no hidden tracing GC",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_hard_rt_bounds",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "LLVM hard-RT profile enforces finite fanout, event size, memory and time budget",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_address_bus_separate",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "address bus work sharing/broadcast is not topic fanout",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_observable_actor_separate",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "publisher-scoped observation filters before fanout quota reservation",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_system_publish_not_general",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "A general Topic handle must not expose an unauthenticated publishSystem or equivalent host/supervisor publication bypass",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_registry_shutdown_fence",
+      "category": "race",
+      "expected": "accept",
+      "assertion": "Closing the pubsub runtime registry invalidates cached group/topic/subscription handles, releases registrations, and prevents actor reincarnation in the closed registry",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_handle_constructor_forgery",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "An exported host class, predictable group identifier, caller-made Symbol, or foreign runtime reference cannot construct a usable group/topic capability handle",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_unicode_control_rejection",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "Topic identifiers containing C0 or C1 Unicode control code points must be rejected without mutating the topic registry on every backend",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_stale_membership_grant_after_rejoin",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "Leaving and rejoining an ActorGroup must not reauthorize a publisher or subscriber capability issued under an earlier membership-generation epoch",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "topic_unicode_whitespace_only_rejection",
+      "category": "security",
+      "expected": "reject",
+      "assertion": "Every backend rejects Topic names made entirely of ASCII or Unicode whitespace, including U+00A0, U+2003, U+202F and U+3000, and preserves distinguishable ordinary names",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_topic_payload_capability_rejected",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "A Topic<T>, Subscription<T> or TopicPublisher<T> capability nested anywhere inside an ActorStream DATA payload must be rejected by the type checker before route publication",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_no_implicit_pubsub_bridge",
+      "category": "source_negative",
+      "expected": "reject",
+      "assertion": "An infix actor pipe never treats an ActorGroup Topic<T> or Subscription<T> as a live actor stage or silently creates a broker-to-actor transport adapter",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_control_failure_independent_of_pubsub",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "A full lossy pubsub topic or cancelled event subscriber cannot suppress a panic, child-down, STOP or physical DONE CONTROL notice to the owning supervisor",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_actor_completion_independent_of_subscriptions",
+      "category": "runtime",
+      "expected": "accept",
+      "assertion": "ActorStream get_done requires physical retirement of every stage and cannot settle successfully merely because a topic published, a subscription was cancelled, or an event queue drained",
+      "status": "pending_backend_execution"
+    },
+    {
+      "id": "pipe_keyword_distinct_from_value_forward",
+      "category": "source_positive",
+      "expected": "accept",
+      "assertion": "Infix pipe and ActorUtils::pipe construct the same bounded authenticated actor route; functional |> only composes values/functions, never creates actor mailbox or supervisor authority",
+      "status": "pending_backend_execution"
+    }
+  ]
+}

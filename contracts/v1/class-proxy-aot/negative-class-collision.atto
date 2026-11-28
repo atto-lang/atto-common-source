@@ -1,0 +1,7 @@
+// AOT_PROXY_UNSUPPORTED: generated FooProxy conflicts with declared FooProxy.
+define class Foo as end
+define class FooProxy as end
+pub routine main(): void {
+  val wrapped = new Proxy(new Foo());
+  return;
+}

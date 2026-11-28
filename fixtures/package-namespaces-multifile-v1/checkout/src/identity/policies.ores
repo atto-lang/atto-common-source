@@ -1,0 +1,2 @@
+namespace identity;
+pub fnc authorize(): int { return 1; }
