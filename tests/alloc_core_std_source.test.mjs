@@ -49,10 +49,13 @@ test('layer DAG is core -> alloc -> std only; no ambient host capabilities', () 
     assert.doesNotMatch(text, /\b(?:stdio|process|socket|syscall|ffi)\s*\./);
   }
 });
-test('freestanding size helpers reject signed inputs before subtract/divide', () => {
+test('freestanding size helpers reject signed inputs and guard all doubling', () => {
   assert.match(core, /if a < 0 \|\| b < 0 \|\| limit < 0 then return false; fi/g);
   assert.match(core, /return b <= limit - a;/);
-  assert.match(core, /return a <= limit \/ b;/);
+  assert.match(core, /while count <= remaining - count do/);
+  assert.match(core, /if chunk > budget - chunk then return false; fi/);
+  assert.match(core, /budget = budget - chunk;/);
+  assert.doesNotMatch(core, /return a <= limit \/ b;/);
   assert.doesNotMatch(core, /\b(?:new|alloc|await|spawn)\b/);
 });
 test('alloc ByteRegion is sealed-backed, checks bounds and requires mutable receiver', () => {
