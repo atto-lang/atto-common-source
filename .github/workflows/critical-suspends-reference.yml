@@ -1,0 +1,61 @@
+name: Critical, suspends and actor-turn reference models (not guest parity)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'models/critical-suspends-actor-turn-v1.mjs'
+      - 'models/critical-effect-closure-v1.mjs'
+      - 'contracts/v1/critical-suspends-actor-turn-v1.json'
+      - 'contracts/v1/CRITICAL_SUSPENDS_ACTOR_TURN_V1.md'
+      - 'tests/critical-suspends-actor-turn-v1.test.mjs'
+      - 'tests/critical-suspends-hardening-v1.test.mjs'
+      - 'tests/critical-effect-closure-v1.test.mjs'
+      - '.github/workflows/critical-suspends-reference.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'models/critical-suspends-actor-turn-v1.mjs'
+      - 'models/critical-effect-closure-v1.mjs'
+      - 'contracts/v1/critical-suspends-actor-turn-v1.json'
+      - 'contracts/v1/CRITICAL_SUSPENDS_ACTOR_TURN_V1.md'
+      - 'tests/critical-suspends-actor-turn-v1.test.mjs'
+      - 'tests/critical-suspends-hardening-v1.test.mjs'
+      - 'tests/critical-effect-closure-v1.test.mjs'
+      - '.github/workflows/critical-suspends-reference.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: critical-suspends-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reference-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Require exact PR head and clean tree
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          printf 'head=%s tree=%s\n' "$EXPECTED_HEAD" "$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Execute all three source-free reference suites (never guest certification)
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/critical-suspends-actor-turn-v1.test.mjs \
+            tests/critical-suspends-hardening-v1.test.mjs \
+            tests/critical-effect-closure-v1.test.mjs
