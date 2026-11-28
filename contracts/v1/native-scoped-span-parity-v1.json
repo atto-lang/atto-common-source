@@ -1,0 +1,207 @@
+{
+  "schema": "atto-native-scoped-span-parity.v1",
+  "status": "PARTIAL_EXECUTABLE_CONFORMANCE",
+  "updated_at": "2026-11-12",
+  "source_language": "atto",
+  "public_contract": {
+    "surface": "using telemetry.span(operation) as span { statements }",
+    "keyword": "using",
+    "logical_type": "ScopedResource<SpanScope>",
+    "constructor": "telemetry.span",
+    "canonical_cleanup": "close_scope",
+    "function_names": "snake_case",
+    "span_identity": "runtime_owned_unforgeable",
+    "scope_alias": "affine_non_escaping",
+    "resource_expression_evaluated_once": true,
+    "normal_exit_cleanup_exactly_once": true,
+    "nonlocal_exit_cleanup_exactly_once": true,
+    "in_flight_scope_end_after_runtime_disable": true,
+    "disabled_probe_must_not_read_clock": true,
+    "disabled_probe_must_not_allocate": true,
+    "no_implicit_network_export": true,
+    "no_implicit_egress_permission": true,
+    "cancellation_cleanup_requires_continuation_ownership": true,
+    "suspension_must_not_end_live_scope": true,
+    "no_unbudgeted_hard_realtime_probe": true,
+    "no_user_defined_namespace_impersonation": true,
+    "cleanup_effects": {
+      "no_throw": true,
+      "no_raise": true,
+      "no_panic": true,
+      "no_suspend": true,
+      "no_blocking_io": true
+    },
+    "permitted_observers": [
+      "set_attribute",
+      "add_event",
+      "record_error",
+      "set_status"
+    ],
+    "source_must_not_call_cleanup_directly": true,
+    "actor_transfer_of_scope_alias": "forbidden",
+    "inter_actor_trace_context": "immutable_value_separate_from_span_scope"
+  },
+  "profiles": {
+    "llvm_host_aot": {
+      "status": "EXECUTED_RESTRICTED_SUBSET",
+      "implementation": "opaque_compiler_owned_token",
+      "operation_argument": "string_literal_only",
+      "in_scope_alias_observers": "not_yet_supported",
+      "suspension": "compile_time_rejected",
+      "actor_migration": "compile_time_rejected",
+      "cleanup_paths_proven": [
+        "fallthrough",
+        "return",
+        "nested_return",
+        "conditional_taken",
+        "conditional_not_taken"
+      ],
+      "test_evidence": {
+        "source_sha": "3466e3702094eaeb413382c16cdadd9a7a56161f",
+        "source_tree_mirrored": false,
+        "exact_blob_count": 48,
+        "source_approval": "streempilot-test/browser-studio-e2e",
+        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43325381462",
+        "run_result": "SUCCESS",
+        "test_receipt": "LLVM_AOT_GUEST_TELEMETRY_SCOPE_EXECUTION_PASS:5:5",
+        "compiler": "LLVM 19",
+        "host_linker_optimization": [
+          "O0",
+          "O2"
+        ],
+        "positive_native_guest_cases": 5,
+        "negative_compiler_cases": 5
+      },
+      "limitations": [
+        "full_shared_nominal_SpanScope",
+        "async_await",
+        "cancel",
+        "throw_raise_panic",
+        "runtime_observers",
+        "otlp_export",
+        "trace_context_actor_transfer"
+      ],
+      "live_probe_control": {
+        "status": "EXECUTED_RESTRICTED_SUBSET",
+        "activation_kind": "precompiled_dormant_aot_probe",
+        "authority": "trusted_host_only",
+        "process_restarted": false,
+        "jit_added_new_probes": false,
+        "source_sha": "3466e3702094eaeb413382c16cdadd9a7a56161f",
+        "exact_blob_count": 48,
+        "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43325381462",
+        "result": "SUCCESS",
+        "receipt": "LLVM_AOT_LIVE_PROBE_TOGGLE_EXECUTION_PASS:O0:O2",
+        "same_process_activation": [
+          "off",
+          "on",
+          "off",
+          "on"
+        ],
+        "guest_calls": 4,
+        "spans_recorded": 2,
+        "unchanged_guest_result": 51
+      }
+    },
+    "java_graal": {
+      "status": "SOURCE_ONLY_COMPILER_CANDIDATE",
+      "implementation": "compiler_marked_native_scope_intrinsic_sync_only",
+      "provider_identity": "runtime_owned_opaque_token_source_integrated_not_executed",
+      "in_scope_alias_observers": "compiler_typed_native_dispatch_source_only",
+      "suspension": "syntactic_await_yield_select_task_denied_unverified_transitive_effects",
+      "actor_migration": "unverified",
+      "test_evidence": {
+        "runtime_execution": "NOT_EXECUTED",
+        "source_ci_failure_reason": "JOB_ADMISSION_ZERO_STEPS",
+        "source_ci_run": "https://github.com/ores-truffle-oreslang/oreslang-source.java/actions/runs/43323197054",
+        "scope_junit_minimum_with_borrow_regression": 42,
+        "native_scope_host_junit_methods": 15
+      },
+      "limitations": [
+        "trusted_native_span_provider",
+        "transitive_cleanup_effects",
+        "suspension_and_cancel",
+        "runtime_jit_attach",
+        "native_otel_export",
+        "guest_compiler_literal_gate_unexecuted",
+        "continuation_owned_frames_unimplemented",
+        "host_junit_unexecuted",
+        "native_using_intrinsic_execution_unverified",
+        "native_observers_not_exported",
+        "no_authorized_live_controller",
+        "transitive_callable_effect_summaries_not_proven"
+      ],
+      "operation_argument": "nonempty_string_literal_at_most_256_utf8_bytes_candidate",
+      "source_scope_test_methods": 26,
+      "unwind": "throw_raise_panic_parser_denied_not_execution_proven",
+      "native_scope_runtime_core": {
+        "status": "SOURCE_ONLY_COMPILER_RUNTIME_INTEGRATION_CANDIDATE",
+        "component": "dev.oreslang.runtime.NativeTelemetryScopes",
+        "identity": "host_constructed_opaque_continuation_carrier_token",
+        "tests": "dev.oreslang.runtime.NativeTelemetryScopesTest",
+        "test_methods": 15,
+        "executed": false,
+        "compiler_using_integrated": true,
+        "guest_value_export_allowed": false,
+        "live_truffle_attach_integrated": false,
+        "actor_task_continuation_integrated": false,
+        "same_process_host_toggle_source_only": true,
+        "disabled_begin_token_allocation": false,
+        "disabled_begin_clock_read": false,
+        "bounded_depth": 64,
+        "operation_utf8_max_bytes": 256,
+        "negative_cases": [
+          "cross_carrier",
+          "stale_token",
+          "double_close",
+          "out_of_order_close",
+          "retired_continuation",
+          "stack_overflow",
+          "invalid_utf8_operation"
+        ],
+        "compiler_using_execution_verified": false,
+        "compiler_mode": "marked_using_scope_bypasses_guest_factory_and_close_scope",
+        "opaque_token_guest_binding": false,
+        "typed_observers": [
+          "set_attribute",
+          "add_event",
+          "record_error",
+          "set_status"
+        ],
+        "observers_exported": false,
+        "synchronous_exit_cleanup_source_implemented": true,
+        "full_async_unwind_or_actor_migration_verified": false,
+        "transitive_user_calls_without_effect_summary": "compile_time_rejected",
+        "telemetry_budget_policy": "drop_probe_without_guest_error",
+        "max_active_frames": 64,
+        "max_observers_per_recorded_scope": 256,
+        "max_observer_string_utf16_units": 1024
+      }
+    },
+    "forge": {
+      "status": "NOT_EXECUTED"
+    },
+    "net": {
+      "status": "NOT_EXECUTED"
+    },
+    "wasm": {
+      "status": "NOT_EXECUTED"
+    }
+  },
+  "equivalence_gate": {
+    "current": "NOT_MET",
+    "must_match": [
+      "syntax",
+      "nominal_resource_ownership",
+      "constructor_trust",
+      "cleanup_paths",
+      "effect_constraints",
+      "no_escape",
+      "disabled_semantics"
+    ],
+    "aot_compiler_backends_may_use_opaque_lowering": true,
+    "cannot_claim_full_parity_with_source_only_tests": true,
+    "cannot_claim_full_parity_with_host_C_tests": true,
+    "authorized_exact_head_receipts_required": true
+  }
+}

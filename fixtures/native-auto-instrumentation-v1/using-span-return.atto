@@ -1,0 +1,23 @@
+// Expected stdout: FBC
+// SOURCE FIXTURE ONLY — scope must finalize before return.
+define module telemetry as
+  pub define class SpanScope as
+    pub close_scope(): void {
+      stdio.stdout.write("C");
+      return;
+    }
+  end
+
+  pub fnc span(string operation): SpanScope {
+    stdio.stdout.write("F");
+    return new SpanScope();
+  }
+end
+
+pub fnc main(): void {
+  using telemetry.span("checkout") as span {
+    stdio.stdout.write("B");
+    return;
+  }
+  stdio.stdout.write("unreachable");
+}

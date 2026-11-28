@@ -1,0 +1,1119 @@
+{
+  "schema": "atto-native-auto-instrumentation.v1",
+  "status": "PROPOSAL_SOURCE_ONLY_NOT_EXECUTED",
+  "reference_date": "2026-11-12",
+  "supported_target_backends": [
+    "java",
+    "llvm",
+    "rust",
+    "cranelift",
+    "wasm",
+    "forge",
+    "net"
+  ],
+  "invariants": {
+    "monkey_patching": false,
+    "dynamic_code_generation": false,
+    "runtime_default": "off",
+    "build_default": "boundaries",
+    "core_diagnostics_independent": true,
+    "otel_userland_import_implicit": false,
+    "std_exporter_requires_host_opt_in": true,
+    "trace_context_location": "immutable_actor_envelope_and_continuation",
+    "no_thread_local_context_assumption": true,
+    "no_synchronous_exporter": true,
+    "queue_memory_bounded": true,
+    "saturation_behavior": "drop_and_count",
+    "core_can_depend_on_std": false,
+    "guest_semantics_unchanged_on_export_failure": true,
+    "function_instrumentation_opt_in": true,
+    "trace_id_bits": 128,
+    "span_id_bits": 64
+  },
+  "build_modes": [
+    "none",
+    "boundaries",
+    "functions"
+  ],
+  "runtime_modes": [
+    "off",
+    "on"
+  ],
+  "exporter_modes": [
+    "none",
+    "otlp",
+    "file"
+  ],
+  "defaults": {
+    "build": "boundaries",
+    "runtime": "off",
+    "exporter": "none",
+    "buffer_events": 8192,
+    "capture_request_bodies": false,
+    "capture_arbitrary_headers": false,
+    "capture_sql_bindings": false,
+    "capture_guest_objects": false,
+    "propagation": "off",
+    "capture_trace_baggage": false,
+    "capture_file_paths": false,
+    "probe_self_exclusion": [
+      "collector_actor",
+      "otlp_exporter_actor",
+      "raw_export_transport",
+      "sampling_clock",
+      "trace_allocator"
+    ]
+  },
+  "hooks": [
+    {
+      "id": 1,
+      "name": "fn.enter",
+      "kind": "compiler",
+      "profile": "functions"
+    },
+    {
+      "id": 2,
+      "name": "fn.exit",
+      "kind": "compiler",
+      "profile": "functions"
+    },
+    {
+      "id": 10,
+      "name": "http.server.start",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 11,
+      "name": "http.server.finish",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 12,
+      "name": "http.client.attempt",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 13,
+      "name": "http.client.finish",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 20,
+      "name": "actor.send",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 21,
+      "name": "actor.admit",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 22,
+      "name": "actor.process",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 30,
+      "name": "continuation.suspend",
+      "kind": "compiler",
+      "profile": "boundaries"
+    },
+    {
+      "id": 31,
+      "name": "continuation.resume",
+      "kind": "compiler",
+      "profile": "boundaries"
+    },
+    {
+      "id": 40,
+      "name": "io.complete",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 50,
+      "name": "db.execute",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 60,
+      "name": "collector.drop",
+      "kind": "internal",
+      "profile": "boundaries"
+    },
+    {
+      "id": 14,
+      "name": "channel.send",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 15,
+      "name": "channel.receive",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 16,
+      "name": "fs.operation",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 17,
+      "name": "critical.contention",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 18,
+      "name": "supervisor.restart",
+      "kind": "boundary",
+      "profile": "boundaries"
+    },
+    {
+      "id": 19,
+      "name": "io.submit",
+      "kind": "boundary",
+      "profile": "boundaries"
+    }
+  ],
+  "privacy": {
+    "forbidden_default_fields": [
+      "http.request.body",
+      "http.request.header.authorization",
+      "http.request.header.cookie",
+      "db.query.parameters",
+      "guest.object",
+      "actor.message.payload",
+      "file.path",
+      "url.query"
+    ],
+    "allowed_default_fields": [
+      "http.request.method",
+      "http.route",
+      "http.response.status_code",
+      "server.address",
+      "network.protocol.name",
+      "messaging.system.name",
+      "error.type"
+    ],
+    "untrusted_remote_headers": "validate_then_context_only",
+    "external_headers": [
+      "traceparent",
+      "tracestate"
+    ],
+    "exporter_requires_egress_capability": true,
+    "no_raw_user_attributes_in_core_hooks": true
+  },
+  "scenarios": [
+    {
+      "id": "disabled-default",
+      "build": "boundaries",
+      "runtime": "off",
+      "expect": {
+        "recorded_spans": 0,
+        "clock_reads": 0,
+        "event_allocations": 0,
+        "export_attempts": 0,
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "compile-out",
+      "build": "none",
+      "runtime": "on",
+      "expect": {
+        "recorded_spans": 0,
+        "probes": 0,
+        "diagnostic": "instrumentation_unavailable",
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "http-server-auto",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "std.http.inbound",
+      "expect": {
+        "span_kind": "SERVER",
+        "parent": "validated_remote_or_new_root",
+        "name": "method_and_route_template",
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "http-client-retry",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "std.http.outbound",
+      "expect": {
+        "span_kind": "CLIENT",
+        "per_wire_attempt": true,
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "actor-message",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor.send",
+      "expect": {
+        "context": "immutable_envelope",
+        "payload_unmodified": true,
+        "actor_generation_fenced": true,
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "actor-fanout",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor.multicast",
+      "expect": {
+        "relation": "span_links",
+        "single_ambiguous_parent": false
+      }
+    },
+    {
+      "id": "async-resume",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "future.await",
+      "expect": {
+        "context": "same_logical_continuation",
+        "carrier_thread_independent": true
+      }
+    },
+    {
+      "id": "exception-teardown",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "throw_raise_panic_cancel",
+      "expect": {
+        "end_span_count_per_started_span": 1,
+        "guest_effects": "unchanged",
+        "control_priority_unblocked": true
+      }
+    },
+    {
+      "id": "pressure",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "bounded_collector_full",
+      "expect": {
+        "waits": 0,
+        "drop_count_increases": true,
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "export-denied",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "otlp_without_host_egress_permission",
+      "expect": {
+        "network_exports": 0,
+        "guest_effects": "unchanged",
+        "failure_isolated": true
+      }
+    },
+    {
+      "id": "privacy",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "http_request_with_authorization_and_query",
+      "expect": {
+        "secret_in_attributes": false,
+        "route_template_preferred": true,
+        "remote_trace_id_trusted_as_authority": false
+      }
+    },
+    {
+      "id": "unsupported-ffi",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "unregistered_native_driver_call",
+      "expect": {
+        "automatic_db_span": false,
+        "coverage_gap_reported": true
+      }
+    },
+    {
+      "id": "function-probes",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "ordinary_guest_function",
+      "expect": {
+        "callable_entry_and_exit": true,
+        "static_descriptor": true,
+        "manual_guest_calls": 0
+      }
+    },
+    {
+      "id": "wasm-no-import",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "no_import_wasm_guest",
+      "expect": {
+        "new_host_imports": 0,
+        "fail_closed_if_unavailable": true
+      }
+    },
+    {
+      "id": "propagation-only",
+      "build": "boundaries",
+      "runtime": "off",
+      "operation": "runtime_off_propagation_on",
+      "expect": {
+        "span_records": 0,
+        "clock_reads": 0,
+        "trace_headers_admitted_only": true
+      }
+    },
+    {
+      "id": "sdk-disabled",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "OTEL_SDK_DISABLED=true",
+      "expect": {
+        "span_records": 0,
+        "exports": 0,
+        "explicit_propagator_unaffected": true
+      }
+    },
+    {
+      "id": "untrusted-sampled",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "remote_traceparent_sampled_with_no_egress_permission",
+      "expect": {
+        "recorded_spans_bounded": true,
+        "network_exports": 0,
+        "remote_flag_grants_permission": false
+      }
+    },
+    {
+      "id": "parentbased-sampling",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "local_and_remote_parent_plus_root",
+      "expect": {
+        "span_context_preserved": true,
+        "sampled_distinct_from_is_recording": true,
+        "whole_trace_consistency": true
+      }
+    },
+    {
+      "id": "http-semantic-dedup",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "http_handler_with_function_probe",
+      "expect": {
+        "server_spans": 1,
+        "additional_function_span_possible": true,
+        "duplicate_server_semantic_span": false
+      }
+    },
+    {
+      "id": "critical-guard",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "critical_write_under_contention",
+      "expect": {
+        "borrow_or_lock_acquired_by_probe": false,
+        "probe_awaits": 0,
+        "metric_bounded": true
+      }
+    },
+    {
+      "id": "exporter-unsupported-io",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "strict_backend_without_async_export_provider",
+      "expect": {
+        "worker_blocking_fallback": false,
+        "network_exports": 0,
+        "application_continues": true
+      }
+    },
+    {
+      "id": "otel-config",
+      "build": "boundaries",
+      "runtime": "off",
+      "operation": "OTEL_EXPORTER_OTLP_ENDPOINT_present_while_runtime_off",
+      "expect": {
+        "enabled_spans": 0,
+        "auto_enable": false,
+        "collector_network_requests": 0
+      }
+    },
+    {
+      "id": "scope-early-exit",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "guest_return_trap_throw_raise_panic_cancel",
+      "expect": {
+        "exactly_one_terminal_transition": true,
+        "guest_effects": "unchanged",
+        "scope_generation_fenced": true
+      }
+    },
+    {
+      "id": "collector-recursion",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "collector_sends_otlp_over_std_network",
+      "expect": {
+        "nested_auto_span_count": 0,
+        "bounded_exporter_activity": true,
+        "recording_does_not_recurse": true
+      }
+    },
+    {
+      "id": "fs-privacy",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "std_fs_read_async",
+      "expect": {
+        "path_text_collected": false,
+        "span_or_metric_follows_policy": true,
+        "io_semantics": "unchanged"
+      }
+    },
+    {
+      "id": "mailbox-migration",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor_continuation_migrated_between_os_carriers",
+      "expect": {
+        "same_logical_trace_context": true,
+        "thread_local_not_required": true,
+        "actor_private_state_not_read": true
+      }
+    },
+    {
+      "id": "restart-fencing",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "actor_supervisor_restart_and_hot_upgrade",
+      "expect": {
+        "old_scope_reactivation": false,
+        "supervisor_control_blocked": false,
+        "span_end_idempotent": true
+      }
+    },
+    {
+      "id": "message-batch-fanout",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "nats_kafka_rabbitmq_batch_adapter",
+      "expect": {
+        "uses_links_for_multiple_causes": true,
+        "actor_payload_unmodified": true,
+        "operation_kinds_follow_messaging_semconv": true
+      }
+    },
+    {
+      "id": "build-reproducibility",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "identical_source_compiler_flags_and_manifest",
+      "expect": {
+        "descriptor_identity_deterministic": true,
+        "no_runtime_reflection": true,
+        "registration_static": true
+      }
+    },
+    {
+      "id": "default-no-wire-change",
+      "build": "boundaries",
+      "runtime": "off",
+      "operation": "runtime_off_and_propagation_off",
+      "expect": {
+        "injected_trace_headers": 0,
+        "export_attempts": 0,
+        "guest_effects": "unchanged"
+      }
+    },
+    {
+      "id": "using-fallthrough",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-fallthrough",
+      "expect": {
+        "close_scope_calls": 1,
+        "resource_acquire_calls": 1,
+        "body_executed": true
+      }
+    },
+    {
+      "id": "using-early-return",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-early-return",
+      "expect": {
+        "close_scope_calls": 1,
+        "guest_return_unchanged": true
+      }
+    },
+    {
+      "id": "using-exception-and-cancel",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-exception-and-cancel",
+      "expect": {
+        "cleanup_on": [
+          "throw",
+          "raise",
+          "panic",
+          "cancel"
+        ],
+        "close_scope_calls_per_activated_scope": 1,
+        "supervisor_control_unmodified": true
+      }
+    },
+    {
+      "id": "using-await-survival",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-await-survival",
+      "expect": {
+        "close_on_suspend": false,
+        "close_on_lexical_exit": true,
+        "span_context_preserved": true
+      }
+    },
+    {
+      "id": "using-scope-borrow-escape",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "using-scope-borrow-escape",
+      "expect": {
+        "scope_token_escape_rejected": true,
+        "actor_transfer_rejected": true,
+        "non_scoped_resource_rejected": true
+      }
+    },
+    {
+      "id": "using-no-op-disabled",
+      "build": "functions",
+      "runtime": "off",
+      "operation": "using-no-op-disabled",
+      "expect": {
+        "recorded_spans": 0,
+        "clock_reads": 0,
+        "resource_scope_valid": true,
+        "user_argument_side_effects_preserved": true
+      }
+    },
+    {
+      "id": "jit-live-attach",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-live-attach",
+      "expect": {
+        "same_process": true,
+        "requires_instrumentable_nodes": true,
+        "attached_truffle_probes": true,
+        "deopt_and_recompile": true,
+        "subsequent_calls_recorded": true
+      }
+    },
+    {
+      "id": "jit-live-detach",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-live-detach",
+      "expect": {
+        "same_process": true,
+        "probes_removed_from_future_entries": true,
+        "already_started_scopes_finalized_per_policy": true
+      }
+    },
+    {
+      "id": "jit-security-denial",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-security-denial",
+      "expect": {
+        "unauthorized_request_denied": true,
+        "no_execution_mutation": true,
+        "no_extra_egress_permission": true
+      }
+    },
+    {
+      "id": "jit-bounded-churn",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-bounded-churn",
+      "expect": {
+        "trace_filter_bounded": true,
+        "compile_work_bounded": true,
+        "supervisor_control_unblocked": true
+      }
+    },
+    {
+      "id": "aot-instrument-none",
+      "build": "none",
+      "runtime": "on",
+      "operation": "aot-instrument-none",
+      "expect": {
+        "available_probes": 0,
+        "runtime_activation": "instrumentation_unavailable",
+        "spontaneous_jit": false
+      }
+    },
+    {
+      "id": "aot-instrument-boundaries",
+      "build": "boundaries",
+      "runtime": "on",
+      "operation": "aot-instrument-boundaries",
+      "expect": {
+        "runtime_enable_without_jit": true,
+        "semantic_boundary_probe_records": true,
+        "manual_using_supported": true
+      }
+    },
+    {
+      "id": "aot-hotload-signed",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "aot-hotload-signed",
+      "expect": {
+        "signed_precompiled_new_generation": true,
+        "old_generation_completion_fenced": true,
+        "not_same_binary_reinstrumentation": true
+      }
+    },
+    {
+      "id": "jit-no-retroactive-span",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "jit-no-retroactive-span",
+      "expect": {
+        "already_running_frame_not_retroactively_timed": true,
+        "next_function_entry_traced": true
+      }
+    },
+    {
+      "id": "truffle-source-mapping",
+      "build": "functions",
+      "runtime": "on",
+      "operation": "truffle-source-mapping",
+      "expect": {
+        "source_tags_retained": true,
+        "deterministic_descriptor_ids": true,
+        "no_opaque_binary_guessing": true
+      }
+    },
+    {
+      "id": "jit-none-with-retained-tags",
+      "build": "none",
+      "runtime": "on",
+      "operation": "truffle_dynamic_attach_when_no_static_probes_but_instrumentable_nodes_retained",
+      "expect": {
+        "static_probe_sites": 0,
+        "retained_instrumentation_tags": true,
+        "authorized_new_jit_probes": true,
+        "future_function_entries_traced": true
+      }
+    },
+    {
+      "id": "jit-none-no-metadata",
+      "build": "none",
+      "runtime": "on",
+      "operation": "strict_stripped_no_ast_tags_ir_or_dynamic_runtime",
+      "expect": {
+        "static_probe_sites": 0,
+        "dynamic_jit_probes": 0,
+        "activation_result": "instrumentation_unavailable",
+        "guest_effects": "unchanged"
+      }
+    }
+  ],
+  "evidence": {
+    "self_test_scope": "contract_shape_only",
+    "source_only_is_backend_execution": false,
+    "requires_guest_compiler": true,
+    "requires_actual_backend_artifact": true,
+    "requires_stepful_execution": true,
+    "requires_exact_sha": true,
+    "required_results": [
+      "source_contract",
+      "compiler_lowering",
+      "executed_guest",
+      "aot_artifact",
+      "privacy_and_pressure",
+      "performance"
+    ],
+    "backend_execution_status": {
+      "java": "NOT_EXECUTED",
+      "llvm": "NOT_EXECUTED",
+      "rust": "NOT_EXECUTED",
+      "cranelift": "NOT_EXECUTED",
+      "wasm": "NOT_EXECUTED",
+      "forge": "NOT_EXECUTED",
+      "net": "NOT_EXECUTED"
+    }
+  },
+  "architecture_v1_reconciliation": {
+    "target_public_core": "ores.core.trace",
+    "target_public_std": "ores.std.telemetry",
+    "public_grammar": "no_new_keyword_required",
+    "producers": [
+      "typed_compiler_mir",
+      "trusted_actor_scheduler_runtime",
+      "registered_native_atto_stdlib"
+    ],
+    "common_abi": "versioned_fixed_id_typed_nonthrowing_nonsuspending",
+    "semantic_probe_deduplication": true,
+    "scope_terminal_paths": [
+      "return",
+      "question_early_exit",
+      "trap",
+      "throw",
+      "raise",
+      "panic",
+      "cancel",
+      "preempt",
+      "unwind"
+    ],
+    "scope_reclamation": "exactly_once_with_generation_fence",
+    "descriptor_id": "stable_for_identical_artifact_input",
+    "context_storage": "immutable_envelope_and_continuation_not_tls_or_guest_payload",
+    "non_recording_context_propagates": true,
+    "recording_and_sampled_distinct": true,
+    "sampling": "otel_parentbased_root_sampler_and_local_rate_cap",
+    "untrusted_remote_sampled_flag_is_not_permission": true,
+    "propagation_separate_from_recording": true,
+    "no_new_trace_headers_when_default_off": true,
+    "tracing_off_does_not_implicitly_disable_explicit_propagators": true,
+    "no_implicit_default_exporter": true,
+    "no_default_new_io_permissions": true,
+    "std_implementation_language": ".atto_when_expressible",
+    "producer_and_exporter_recursion_prevented": true,
+    "collector_transport": "nonblocking_bounded_async_actor",
+    "strict_io": "fail_closed_if_no_nonblocking_provider",
+    "otlp_initial_protocol": "http/protobuf",
+    "hard_real_time": "compile_none_or_prove_bounded_probes",
+    "excludes_automatic_native_ffi_introspection": true
+  },
+  "otel_environment": {
+    "variables": [
+      "OTEL_SERVICE_NAME",
+      "OTEL_RESOURCE_ATTRIBUTES",
+      "OTEL_SDK_DISABLED",
+      "OTEL_TRACES_SAMPLER",
+      "OTEL_TRACES_SAMPLER_ARG",
+      "OTEL_PROPAGATORS",
+      "OTEL_TRACES_EXPORTER",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_EXPORTER_OTLP_PROTOCOL"
+    ],
+    "semantics": "compatible_with_otel_sdk_environment_spec_when_supported",
+    "interpret_once_per_runtime_start": true,
+    "precedence": [
+      "capability_denial",
+      "sdk_disabled_for_recording_export_only",
+      "explicit_atto_cli",
+      "otel_sdk_environment_for_enabled_sdk",
+      "atto_package_defaults"
+    ],
+    "endpoint_alone_enables_tracing": false,
+    "sdk_disabled_implicitly_disables_propagators": false,
+    "unsupported_configuration": "fail_closed"
+  },
+  "capability_policy": {
+    "traces_require_runtime_enable": true,
+    "network_export_requires_explicit_host_permission": true,
+    "emitter_may_not_suspend": true,
+    "emitter_may_not_throw_or_panic": true,
+    "emitter_may_not_execute_guest_callbacks": true,
+    "emitter_no_per_event_allocation_when_disabled": true,
+    "memory_is_bounded": true,
+    "exporter_errors_are_isolated": true
+  },
+  "package_configuration_target": {
+    "implemented": false,
+    "proposed_keys": [
+      "telemetry.enabled",
+      "telemetry.instrumentation",
+      "telemetry.sampling_rate",
+      "telemetry.auto.functions",
+      "telemetry.auto.http",
+      "telemetry.auto.network",
+      "telemetry.auto.database",
+      "telemetry.auto.actors",
+      "telemetry.auto.tasks",
+      "telemetry.auto.channels",
+      "telemetry.auto.filesystem",
+      "telemetry.export.protocol"
+    ]
+  },
+  "scoped_using_v1": {
+    "status": "TARGET_NOT_IMPLEMENTED",
+    "existing_keyword": "using",
+    "grammar": "using expression as identifier { statements }",
+    "new_keyword_required": false,
+    "generic_scoped_resource_protocol": "ScopedResource",
+    "cleanup_member_candidate": "close_scope",
+    "static_resource_check_required": true,
+    "resource_expression_evaluated_once": true,
+    "binding_lexically_scoped": true,
+    "acquired_resource_cleanup_exactly_once": true,
+    "cleanup_paths": [
+      "fallthrough",
+      "return",
+      "question_early_exit",
+      "trap",
+      "throw",
+      "raise",
+      "panic",
+      "cancel",
+      "unwind"
+    ],
+    "tail_call_cleanup_barrier": true,
+    "cleanup_on_await_suspension": false,
+    "preserve_scope_across_suspension": true,
+    "telemetry_cleanup_nothrow": true,
+    "telemetry_cleanup_nosuspend": true,
+    "telemetry_cleanup_no_io": true,
+    "no_op_scope_when_disabled": true,
+    "no_op_does_not_elide_user_argument_effects": true,
+    "no_span_scope_token_escape": true,
+    "no_cross_actor_span_scope_transfer": true,
+    "links_to_automatic_trace_pipeline": true,
+    "generate_source_parse_typecheck_guest_tests": true
+  },
+  "scoped_span_parity_v1": {
+    "status": "PARTIAL_EXECUTED_SCALAR_SCOPED_SPANS",
+    "syntax": "using telemetry.span(operation) as scoped_name { statements }",
+    "execution_composition": {
+      "aot_baseline_required": true,
+      "statement_macro_output": "recheck_as_ordinary_using_scope",
+      "expression_macro_output": "recheck_as_ordinary_scope_operand",
+      "runtime_macro_expansion": false,
+      "aot_recording": "statically_lowered_scope_sites",
+      "jit_recording": "authorized_call_probes_in_checked_code",
+      "hybrid_context": "shared_logical_trace_context",
+      "hybrid_max_spans_per_lexical_site_entry": 1,
+      "in_flight_scope_cleanup_after_toggle_or_detach": "exactly_once",
+      "portable_scope_fixtures": {
+        "scoped-nested.atto": {
+          "guest_result": 42,
+          "recorded_spans_when_enabled": 3,
+          "recorded_spans_when_disabled": 0,
+          "active_scopes_on_return": 0,
+          "close_order": ["finished", "payment", "checkout"]
+        },
+        "scoped-return.atto": {
+          "guest_result": 42,
+          "recorded_spans_when_enabled": 1,
+          "recorded_spans_when_disabled": 0,
+          "active_scopes_on_return": 0
+        },
+        "scoped-escape.atto": {
+          "must_reject": true,
+          "artifact_emitted": false
+        }
+      },
+      "required_evidence": {
+        "aot": "linked_guest_runs_with_runtime_compiler_absent_or_disabled",
+        "jit": "guest_executes_newly_instrumented_code",
+        "hybrid": "both_paths_execute_in_one_workload_with_parentage_and_cleanup_verified"
+      }
+    },
+    "portable_target": {
+      "factory": "trusted_stdlib_telemetry_span",
+      "resource_type": "opaque_linear_SpanScope",
+      "factory_evaluated_once": true,
+      "scope_name_does_not_escape": true,
+      "cleanup_exactly_once": true,
+      "cleanup_nonthrowing": true,
+      "cleanup_nonsuspending": true,
+      "continuation_owns_scope_across_await": true,
+      "thread_local_context_is_not_authority": true,
+      "runtime_probe_activation_does_not_add_new_aot_probes": true,
+      "observer_calls_require_verified_typed_intrinsics": true,
+      "guest_cannot_enable_host_probes": true
+    },
+    "backend_slices": {
+      "java": {
+        "status": "SOURCE_IMPLEMENTED_NOT_EXECUTED",
+        "pull_request": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2993",
+        "implementation": "parser_lowered_test_defined_nominal_SpanScope_try_finally",
+        "known_gap": [
+          "runtime_scoped_resource_provenance",
+          "transitive_cleanup_effects",
+          "suspension_and_cancellation_execution",
+          "actual_GraalVM_guest_test_execution",
+          "live_Truffle_attach_detach"
+        ]
+      },
+      "llvm": {
+        "status": "EXECUTED_NONSUSPENDING_SUBSET_ONLY",
+        "pull_request": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1716",
+        "implementation": "compiler_owned_opaque_token_C11_dormant_aot_probe",
+        "supported": [
+          "literal_operation",
+          "normal_exit",
+          "early_return",
+          "nested_scope",
+          "strict_no_handle_escape",
+          "bounded_64_scope_stack",
+          "host_only_recording_switch"
+        ],
+        "known_gap": [
+          "dynamic_operation_expression",
+          "typed_span_observer_calls",
+          "await_or_carrier_migration",
+          "exception_and_cancellation_unwinding",
+          "OTLP_export",
+          "cross_backend_stdlib_SpanScope"
+        ]
+      },
+      "wasm": {
+        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+      },
+      "rust": {
+        "status": "EXECUTED_SYNCHRONOUS_WASM_SCOPE_SUBSET",
+        "implementation": "wasm_finally_with_compiler_owned_host_tokens",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
+      },
+      "cranelift": {
+        "status": "EXECUTED_SCALAR_AOT_AND_JIT_SCOPE_SUBSET",
+        "implementation": "shared_clif_with_host_scope_hooks_and_checked_status_epilogue",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
+      },
+      "forge": {
+        "status": "EXECUTED_SCALAR_AOT_SCOPE_SUBSET",
+        "implementation": "generated_cpp_lexical_cleanup_with_host_scope_hooks",
+        "known_gap": ["macro_expansion", "scope_observers", "suspension_and_actor_migration", "live_jit_attach"]
+      },
+      "net": {
+        "status": "NOT_IMPLEMENTED_NOT_EXECUTED"
+      }
+    },
+    "execution_evidence": {
+      "scope": "only_nonsuspending_llvm_native_guest_subset",
+      "source_pr_head": "3466e3702094eaeb413382c16cdadd9a7a56161f",
+      "source_blobs_verified": 48,
+      "full_git_tree_mirrored": false,
+      "source_carrier": "streempilot-test/browser-studio-e2e",
+      "source_carrier_approved": true,
+      "carrier_run": "https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43325381462",
+      "run_conclusion": "success",
+      "guest_positive_cases": 5,
+      "guest_negative_cases": 5,
+      "enabled_disabled_modes_executed": [
+        "on",
+        "off"
+      ],
+      "conditional_taken_and_untaken_executed": true,
+      "same_process_aot_toggle": {
+        "status": "EXECUTED_HOST_CONTROLLED_PROBES_ONLY",
+        "cycles": [
+          "off",
+          "on",
+          "off",
+          "on"
+        ],
+        "guest_invocations": 4,
+        "recorded_spans": 2,
+        "no_process_restart": true,
+        "no_recompilation_between_invocations": true,
+        "clang_optimization_levels": [
+          "O0",
+          "O2"
+        ],
+        "dynamic_jit_probe_insertion": false
+      },
+      "clang_optimization_levels": [
+        "O0",
+        "O2"
+      ],
+      "runtime_tests": [
+        "gcc_c11",
+        "clang_c11",
+        "pthread_cross_carrier"
+      ],
+      "full_backend_matrix_certified": false
+    }
+  },
+  "live_instrumentation_v1": {
+    "status": "TARGET_NOT_IMPLEMENTED",
+    "control_actions": [
+      "enable",
+      "disable",
+      "set_filter",
+      "snapshot_status"
+    ],
+    "no_process_restart_for_existing_probe_activation": true,
+    "runtime_implementation": [
+      {
+        "mode": "precompiled-probes",
+        "requires": "compiled_in_boundary_or_function_probes",
+        "available_on": [
+          "java-jit",
+          "java-aot",
+          "llvm-aot",
+          "forge-aot",
+          "forge-jit",
+          "net-aot",
+          "wasm"
+        ],
+        "spontaneous_new_probes": false
+      },
+      {
+        "mode": "truffle-dynamic-attach",
+        "requires": "instrumentable_truffle_ast_or_bytecode_plus_authorized_instrumenter",
+        "available_on": [
+          "java-jit"
+        ],
+        "spontaneous_new_probes": true,
+        "safepoint_deopt_recompile": true
+      },
+      {
+        "mode": "forge-jit-dynamic",
+        "requires": "engine_supported_ir_retention_tiering_and_authorized_control",
+        "available_on": [
+          "forge-jit"
+        ],
+        "spontaneous_new_probes": "conditional"
+      },
+      {
+        "mode": "signed-hotload-generation",
+        "requires": "verified_precompiled_artifact_and_generation_safe_handoff",
+        "available_on": [
+          "explicitly_hotload_capable_profiles"
+        ],
+        "spontaneous_new_probes": "new_code_generation_only"
+      }
+    ],
+    "no_silent_jit_in_full_guest_aot": true,
+    "runtime_activation_requires_authorized_control_plane": true,
+    "runtime_activation_no_extra_capabilities": true,
+    "control_rate_limited": true,
+    "dynamic_jit_budgeted": true,
+    "stop_or_change_at_safe_points": true,
+    "preserve_actor_owner_and_control_priority": true,
+    "activation_reports_coverage_mode": true,
+    "no_retroactive_spans": true,
+    "in_flight_scopes_generation_fenced": true,
+    "source_metadata_or_ir_required_for_late_jit_attach": true,
+    "default_no_remote_attach_port": true,
+    "wasm_no_monkey_patching": true,
+    "instrumentation_none_cannot_enable_missing_precompiled_probes": true,
+    "instrumentation_none_may_support_separate_dynamic_jit_attach": true,
+    "strict_none_without_tagged_ir_has_no_dynamic_attach": true
+  }
+}

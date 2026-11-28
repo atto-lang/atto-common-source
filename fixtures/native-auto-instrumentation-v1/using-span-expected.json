@@ -1,0 +1,20 @@
+{
+  "schema": "atto-auto-instrumentation-scope-guest-v1",
+  "status": "SOURCE_ONLY_NOT_EXECUTED",
+  "cases": [
+    {
+      "source": "using-span-normal.atto",
+      "expected_stdout": "FBCA",
+      "expected_exit": 0
+    },
+    {
+      "source": "using-span-return.atto",
+      "expected_stdout": "FBC",
+      "expected_exit": 0
+    }
+  ],
+  "notes": [
+    "Test-only telemetry module writes markers to stdout; production tracers must never do this in the request hot path.",
+    "Both stdout expectations require the actual .atto guest compiler and runtime; file creation is not evidence."
+  ]
+}
