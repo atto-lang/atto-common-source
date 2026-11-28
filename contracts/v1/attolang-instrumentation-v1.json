@@ -1,0 +1,471 @@
+{
+  "schema": "attolang.auto-instrumentation.v1",
+  "status": "PROPOSED_NOT_IMPLEMENTED",
+  "source_extension": ".atto",
+  "legacy_alias_policy": "preserve existing .ores imports; no silent ABI rename",
+  "owners": {
+    "core": "core.trace",
+    "std": "std.telemetry",
+    "compatibility": [
+      "stdlib/trace.ores",
+      "oreslang-otel/src/otel.ores",
+      "CorePerf"
+    ],
+    "resolved_core_namespace": "ores.core",
+    "resolved_std_namespace": "ores.std",
+    "internal_abi": "compiler-runtime fixed telemetry probe v1"
+  },
+  "surface": {
+    "types": [
+      "TraceContext",
+      "SpanContext",
+      "Span",
+      "SpanKind",
+      "SpanStatus",
+      "AttributeValue",
+      "SpanEvent",
+      "SpanLink"
+    ],
+    "kinds": [
+      "INTERNAL",
+      "SERVER",
+      "CLIENT",
+      "PRODUCER",
+      "CONSUMER"
+    ],
+    "statuses": [
+      "UNSET",
+      "OK",
+      "ERROR"
+    ],
+    "methods": [
+      "telemetry.span.start",
+      "trace.current",
+      "span.context",
+      "span.is_recording",
+      "span.attribute",
+      "span.event",
+      "span.record_error",
+      "span.set_status",
+      "span.end",
+      "trace.extract_http",
+      "trace.inject_http",
+      "metrics.counter",
+      "metrics.gauge",
+      "metrics.histogram",
+      "log.emit"
+    ],
+    "required_scoped_using": {
+      "syntax": "using telemetry.span(name) as span { body }",
+      "requirement": "MUST_IMPLEMENT",
+      "current_support": "NOT_COMPILER_VERIFIED",
+      "keyword": "using",
+      "import_keyword_distinct": "use",
+      "bound_effect_keyword_distinct": "with",
+      "resource_identity": "sealed_type_checked_scoped_resource_not_name_matched",
+      "cleanup": "nonblocking compiler-owned exactly once while live runtime can retire",
+      "suspension": "allowed for telemetry span guard; live state.read/write loans still restricted",
+      "ownership": "non-sendable actor/execution-bound guard; immutable context is sendable",
+      "disabled": "no heap allocation, clock read, export",
+      "explicit_end": "idempotent; lexical cleanup no-op after end",
+      "negative": [
+        "forged resource",
+        "loan escape",
+        "cross_actor_span_move",
+        "state_write_borrow_await",
+        "cancellation_finalization_race",
+        "double_end",
+        "stale_generation"
+      ]
+    }
+  },
+  "boundaries": {
+    "context_storage": "logical_execution_or_continuation_not_carrier_tls",
+    "span_ownership": "actor_local_non_sendable",
+    "transfer": "immutable_validated_context_only",
+    "actor_messages": "metadata_envelope_with_generation_fencing",
+    "producer_consumer": "link_by_default",
+    "exporter": "off_carrier_capability_checked_bounded_nonblocking",
+    "disabled": "no_clock_no_allocation_no_formatting_no_network",
+    "telemetry_failure": "cannot_change_application_result",
+    "sensitive_by_default": "deny_payloads_cookies_auth_headers_raw_path_and_query",
+    "w3c_ids": "16_byte_trace_id_and_8_byte_span_id_not_ores_trace_id",
+    "serialization": "existing_oreslang_otel_jsonl_not_otlp"
+  },
+  "fixture_vectors": {
+    "traceparent": [
+      {
+        "id": "valid_sampled",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "ACCEPT"
+      },
+      {
+        "id": "zero_trace_id",
+        "input": "00-00000000000000000000000000000000-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "zero_parent_id",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-0000000000000000-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "invalid_separator",
+        "input": "00_4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "nonhex_trace_id",
+        "input": "00-zbf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "truncated_flags",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-0",
+        "expect": "REJECT"
+      },
+      {
+        "id": "extra_suffix_v00",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-junk",
+        "expect": "REJECT"
+      },
+      {
+        "id": "leading_space",
+        "input": " 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      },
+      {
+        "id": "new_line_injection",
+        "input": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01\r\nx-forwarded-host: evil",
+        "expect": "REJECT"
+      },
+      {
+        "id": "invalid_ff_version",
+        "input": "ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        "expect": "REJECT"
+      }
+    ],
+    "runtime": [
+      "manual_nested_spans",
+      "idempotent_end_and_elapsed_freeze",
+      "record_error_preserves_guest_exception",
+      "await_resume_on_different_carrier",
+      "task_inherit_and_detach_no_ambient_leak",
+      "mailbox_send_receive_and_fan_in_links",
+      "actor_stop_restart_upgrade_generation_fence",
+      "http_server_client_real_wire_attempt_no_duplicate",
+      "http_retry_cancellation_and_redirect_denial",
+      "fs_tcp_dns_async_trace_without_carrier_block",
+      "telemetry_queue_full_saturating_drop_counts",
+      "no_network_credential_or_body_export",
+      "disabled_no_clock_or_allocation",
+      "untrusted_otlp_endpoint_fails_capability_admission",
+      "exporter_recursion_and_shutdown_bounded",
+      "actual_otlp_decode_and_trace_join",
+      "compiler_function_exactly_one_scope_across_suspends_resume",
+      "full_diagnostic_sampling_and_depth_limit",
+      "instrumented_uninstrumented_observational_equivalence",
+      "probes_do_not_add_guest_visible_effects",
+      "tracing_context_and_span_lifetime_across_critical_section",
+      "compiler_tail_call_and_routine_direct_call_semantics",
+      "recording_and_sampled_flag_matrix",
+      "scoped_using_telemetry_span_grammar_and_effects",
+      "manual_scoped_span_cancellation_await_and_generation",
+      "adaptive_trusted_ir_recompile_and_versioned_dispatch",
+      "adaptive_compiler_refuses_untrusted_source",
+      "jit_quota_and_old_suspended_frame_fencing",
+      "no_jit_uninstrumented_sealed_aot_remains_no_probes"
+    ],
+    "compiler_runtime": [
+      {
+        "id": "normal_return",
+        "mode": "calls",
+        "expect": "one enter, one exit; unchanged return"
+      },
+      {
+        "id": "recursive_depth_budget",
+        "mode": "full",
+        "expect": "bounded spans and deterministic drop count"
+      },
+      {
+        "id": "exception_and_uncatchable_trap",
+        "mode": "calls",
+        "expect": "original error/trap unchanged; best-effort terminal probe"
+      },
+      {
+        "id": "await_resume_carrier_migration",
+        "mode": "calls",
+        "expect": "one enter/exit, no new function span on resume"
+      },
+      {
+        "id": "cancel_race_same_scope",
+        "mode": "calls",
+        "expect": "exactly one terminal outcome; no continuation leak"
+      },
+      {
+        "id": "actor_restart_generation_fence",
+        "mode": "boundaries",
+        "expect": "old generation cannot reenter or export new actor span"
+      },
+      {
+        "id": "critical_contention",
+        "mode": "boundaries",
+        "expect": "no telemetry blocking, wait and hold timing only"
+      },
+      {
+        "id": "http_retries_and_native_io",
+        "mode": "boundaries",
+        "expect": "no duplicate HTTP CLIENT spans; nested diagnostic spans only"
+      },
+      {
+        "id": "disabled_trace_capable",
+        "mode": "boundaries",
+        "expect": "no clock, record allocation, format, network export"
+      },
+      {
+        "id": "stripped_build_runtime_enabled",
+        "mode": "none",
+        "expect": "no probes despite runtime request; explicit config handling"
+      },
+      {
+        "id": "otel_sample_flags",
+        "mode": "boundaries",
+        "expect": "sampled nonrecording forbidden; recording unsampled allowed"
+      },
+      {
+        "id": "using_scope_suspension_cancel",
+        "mode": "calls",
+        "expect": "exactly once cleanup; not executable until grammar admission"
+      },
+      {
+        "id": "native_ffi_limit",
+        "mode": "calls",
+        "expect": "external native function internals not observed without adapter"
+      },
+      {
+        "id": "using_telemetry_scope_early_return",
+        "mode": "calls",
+        "expect": "one exit, unchanged return, original context restored"
+      },
+      {
+        "id": "using_telemetry_scope_await_migration",
+        "mode": "calls",
+        "expect": "same guard and span retained after continuation resumes on another carrier"
+      },
+      {
+        "id": "using_telemetry_scope_cancel_and_stop",
+        "mode": "calls",
+        "expect": "idempotent nonblocking finalization without stale owner"
+      },
+      {
+        "id": "using_telemetry_scope_disabled",
+        "mode": "none",
+        "expect": "no heap allocation, timestamp read or exporter I/O"
+      },
+      {
+        "id": "using_telemetry_spoofed_identity",
+        "mode": "calls",
+        "expect": "reject forged user method/resource alias"
+      },
+      {
+        "id": "using_telemetry_state_loan_suspension",
+        "mode": "calls",
+        "expect": "reject await with live exclusive state loan even when span scope is allowed"
+      },
+      {
+        "id": "jit_adaptive_recompile",
+        "mode": "adaptive",
+        "expect": "source/ABI identical new immutable function version, new calls traced, old frames safe"
+      },
+      {
+        "id": "jit_old_suspended_frame",
+        "mode": "adaptive",
+        "expect": "old suspended continuation not retroactively instrumented; no double span"
+      },
+      {
+        "id": "jit_disable_ttl_and_quiescence",
+        "mode": "adaptive",
+        "expect": "baseline target restored; code reclaimed after frame quiescence"
+      },
+      {
+        "id": "jit_cross_tenant_rejection",
+        "mode": "adaptive",
+        "expect": "unauthorized trace request rejected without recompile"
+      },
+      {
+        "id": "jit_budget_exhaustion",
+        "mode": "adaptive",
+        "expect": "fail closed with bounded control receipt and unchanged app behavior"
+      },
+      {
+        "id": "jit_sealed_aot_rejection",
+        "mode": "none",
+        "expect": "runtime trace request cannot produce missing probes; no hidden JIT"
+      }
+    ]
+  },
+  "targets": [
+    "java-jit",
+    "java-guest-native-aot",
+    "llvm-native",
+    "dotnet-native-aot",
+    "wasm-worker",
+    "forge-native",
+    "js"
+  ],
+  "evidence_rule": "exact_head_and_tree_nonzero_steps_real_guest_and_wire_receipts_independent_review",
+  "claims": "Design contract only: scoped using tracing REQUIRED by language policy but NOT YET compiler implemented; opt-in JIT adaptive re-instrumentation NOT IMPLEMENTED. No guest code executed, no CI or native AOT proof.",
+  "compiler": {
+    "no_monkey_patching": true,
+    "no_java_agents": true,
+    "no_reflection": true,
+    "no_runtime_bytecode_rewriting": true,
+    "aot_probe_ids": "stable within immutable build; statically linked numeric symbol ids",
+    "probe_abi": {
+      "version": 1,
+      "conceptual_only": true,
+      "events": [
+        "ENTER",
+        "SUSPEND",
+        "RESUME",
+        "EXIT"
+      ],
+      "exits": [
+        "RETURN",
+        "ERROR",
+        "CANCEL",
+        "TRAP",
+        "ACTOR_STOP",
+        "GENERATION_REVOKED"
+      ],
+      "scope_storage": "stack_or_continuation_slot_no_heap_allocation_disabled",
+      "function_span_rule": "one_enter_one_exit_per_logical_invocation_not_per_resume",
+      "implicit_effect": "trusted_nonblocking_bookkeeping_without_guest_capabilities",
+      "semantics": "preserve_return_trap_error_cancellation_tail_call_critical_nonreentrancy"
+    },
+    "coverage": {
+      "none": {
+        "probes": "stripped",
+        "runtime_toggle": false
+      },
+      "boundaries": {
+        "probes": "http_io_actor_task_channel_critical",
+        "runtime_toggle": true
+      },
+      "calls": {
+        "probes": "boundaries_plus_selected_functions",
+        "runtime_toggle": true
+      },
+      "full": {
+        "probes": "calls_plus_diagnostic_scheduler_allocator",
+        "runtime_toggle": true
+      },
+      "adaptive": {
+        "probes": "NONE_INITIAL; trusted typed-IR compilation of selected callable with instrumentation on demand",
+        "runtime_toggle": true,
+        "jit_only": true,
+        "requires": "privileged control, retained SHA-pinned typed IR, executable memory and generation fences",
+        "sealed_aot": false
+      }
+    },
+    "runtime_enabled_by_default": false,
+    "function_selection": "build_time_filters_static_symbol_metadata",
+    "limits": [
+      "per_tenant_byte_budget",
+      "per_actor_event_budget",
+      "max_nested_spans",
+      "max_links",
+      "max_event_attributes",
+      "drop_counter_saturates"
+    ],
+    "guarantees": [
+      "no_export_from_app_carrier",
+      "no_probes_in_critical_that_suspend",
+      "no_exporter_self_instrumentation",
+      "exact_one_end_per_admitted_scope_except_process_death",
+      "disabled_no_clock_no_format_no_record_alloc"
+    ],
+    "runtime_reinstrumentation": {
+      "state": "PROPOSED_NOT_IMPLEMENTED",
+      "strategy": "compile_new_immutable_code_generation_from_pinned_typed_IR",
+      "no_inplace_code_patch": true,
+      "no_java_agent": true,
+      "no_arbitrary_source_or_reflection": true,
+      "no_guest_api_privilege_escalation": true,
+      "scopes": "new_invocations_only; preserve old active suspended frames",
+      "enable_rebuild_without_deployment": "JIT_capable_approved_profile_only",
+      "supported_backends": {
+        "java-truffle-jit": "POTENTIALLY_FEASIBLE_PENDING_INTEGRATION_AND_EXECUTED_PROOF",
+        "llvm-sealed-aot": "NOT_SUPPORTED_WITHOUT_PRECOMPILED_PROBES_OR_NEW_BINARY",
+        "dotnet-native-aot": "NOT_SUPPORTED_WITHOUT_PRECOMPILED_PROBES_OR_NEW_BINARY",
+        "forge-sealed-aot": "NOT_SUPPORTED_WITHOUT_PRECOMPILED_PROBES_OR_NEW_BINARY",
+        "wasm-static": "NOT_SUPPORTED_WITHOUT_REPLACEMENT_MODULE_OR_CUSTOM_APPROVED_JIT",
+        "js": "BACKEND_SPECIFIC_PENDING_VERIFICATION"
+      },
+      "guards": [
+        "authenticated_supervisor_tenant_scope",
+        "source_hash_compiler_version_identity",
+        "type_effect_borrow_state_abi_parity",
+        "bounded_jit_time_cpu_code_cache",
+        "call_target_epoch_fence",
+        "retire_after_active_and_suspended_quiescence",
+        "ttl_and_rate_limit",
+        "admin_receipt_for_policy_change",
+        "forbid_OSR_without_proof"
+      ],
+      "fallback": "NO_SILENT_FALLBACK",
+      "disabled_none": "cannot_dynamically_enable_missing_probes",
+      "hard_realtime": "use_static_dormant_probes_instead_of_jit"
+    }
+  },
+  "telemetry_configuration": {
+    "file": ".ores.pkg.toml",
+    "status": "PROPOSED_NOT_COMPILER_VERIFIED",
+    "telemetry": {
+      "enabled": false,
+      "instrumentation": "boundaries",
+      "sampling_rate": 0.05
+    },
+    "auto": {
+      "functions": false,
+      "http": true,
+      "network": true,
+      "database": true,
+      "actors": true,
+      "tasks": true,
+      "channels": true,
+      "filesystem": true
+    },
+    "export": {
+      "protocol": "otlp"
+    },
+    "standard_environment": [
+      "OTEL_SERVICE_NAME",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_SDK_DISABLED"
+    ],
+    "requires_privileged_startup_and_export_capability": true,
+    "compiler_stripping_is_upper_bound": true,
+    "context_propagation_independent_of_collection": true,
+    "build_mode": "--instrument=none|boundaries|calls|full|adaptive",
+    "jit_adaptive_opt_in": true,
+    "jit_adaptive_enabled_by_default": false
+  },
+  "otel_semantics": {
+    "kinds": [
+      "INTERNAL",
+      "SERVER",
+      "CLIENT",
+      "PRODUCER",
+      "CONSUMER"
+    ],
+    "nonrecording_sampled_invalid": true,
+    "recording_unsampled_allowed": true,
+    "valid_span_context_may_propagate_while_not_recording": true,
+    "messaging_process_uses_links_for_fan_in": true,
+    "no_body_credentials_cookies_raw_query_or_user_sql_by_default": true,
+    "w3c_traceparent_and_tracestate_required_for_wire_interop": true,
+    "otlp_exporter_not_yet_implemented": true,
+    "legacy_jsonl_not_otlp": true
+  }
+}
