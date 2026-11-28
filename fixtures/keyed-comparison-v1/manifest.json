@@ -1,0 +1,301 @@
+{
+  "schema": "atto.keyed-comparison.v1",
+  "status": "PROPOSED_SOURCE_EXPECTATIONS_ONLY",
+  "notes": "Fixture null denotes present Option.None, never missing; absent entry denotes missing. Strings and safe integer/None payloads only in host reference. No guest backend certified.",
+  "backend_status": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED",
+    "atto": "NOT_EXECUTED",
+    "hdl": "NOT_EXECUTED",
+    "realtime": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "empty",
+      "left": [],
+      "right": [],
+      "expected": {
+        "same_keys": true,
+        "has_overlap": false,
+        "overlapping_values_equal": true,
+        "conflict_free": true,
+        "contains_keys": true,
+        "contains_entries": true,
+        "value_equal": true
+      }
+    },
+    {
+      "id": "disjoint",
+      "left": [
+        [
+          "x",
+          0
+        ]
+      ],
+      "right": [
+        [
+          "y",
+          0
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": false,
+        "overlapping_values_equal": false,
+        "conflict_free": true,
+        "contains_keys": false,
+        "contains_entries": false,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "one-empty",
+      "left": [],
+      "right": [
+        [
+          "x",
+          0
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": false,
+        "overlapping_values_equal": false,
+        "conflict_free": true,
+        "contains_keys": false,
+        "contains_entries": false,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "overlap-agrees",
+      "left": [
+        [
+          "x",
+          0
+        ],
+        [
+          "y",
+          1
+        ]
+      ],
+      "right": [
+        [
+          "x",
+          0
+        ],
+        [
+          "z",
+          1
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": true,
+        "overlapping_values_equal": true,
+        "conflict_free": true,
+        "contains_keys": false,
+        "contains_entries": false,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "overlap-conflicts",
+      "left": [
+        [
+          "x",
+          0
+        ],
+        [
+          "y",
+          1
+        ]
+      ],
+      "right": [
+        [
+          "x",
+          1
+        ],
+        [
+          "z",
+          1
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": true,
+        "overlapping_values_equal": false,
+        "conflict_free": false,
+        "contains_keys": false,
+        "contains_entries": false,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "same-keys-different-values",
+      "left": [
+        [
+          "x",
+          0
+        ]
+      ],
+      "right": [
+        [
+          "x",
+          1
+        ]
+      ],
+      "expected": {
+        "same_keys": true,
+        "has_overlap": true,
+        "overlapping_values_equal": false,
+        "conflict_free": false,
+        "contains_keys": true,
+        "contains_entries": false,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "order-independent",
+      "left": [
+        [
+          "x",
+          0
+        ],
+        [
+          "y",
+          1
+        ]
+      ],
+      "right": [
+        [
+          "y",
+          1
+        ],
+        [
+          "x",
+          0
+        ]
+      ],
+      "expected": {
+        "same_keys": true,
+        "has_overlap": true,
+        "overlapping_values_equal": true,
+        "conflict_free": true,
+        "contains_keys": true,
+        "contains_entries": true,
+        "value_equal": true
+      }
+    },
+    {
+      "id": "present-none",
+      "left": [
+        [
+          "x",
+          null
+        ]
+      ],
+      "right": [
+        [
+          "x",
+          null
+        ]
+      ],
+      "expected": {
+        "same_keys": true,
+        "has_overlap": true,
+        "overlapping_values_equal": true,
+        "conflict_free": true,
+        "contains_keys": true,
+        "contains_entries": true,
+        "value_equal": true
+      }
+    },
+    {
+      "id": "none-vs-missing",
+      "left": [
+        [
+          "x",
+          null
+        ]
+      ],
+      "right": [
+        [
+          "y",
+          null
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": false,
+        "overlapping_values_equal": false,
+        "conflict_free": true,
+        "contains_keys": false,
+        "contains_entries": false,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "prototype-name",
+      "left": [
+        [
+          "__proto__",
+          1
+        ],
+        [
+          "constructor",
+          0
+        ]
+      ],
+      "right": [
+        [
+          "constructor",
+          0
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": true,
+        "overlapping_values_equal": true,
+        "conflict_free": true,
+        "contains_keys": true,
+        "contains_entries": true,
+        "value_equal": false
+      }
+    },
+    {
+      "id": "directional",
+      "left": [
+        [
+          "x",
+          0
+        ],
+        [
+          "y",
+          1
+        ]
+      ],
+      "right": [
+        [
+          "x",
+          0
+        ]
+      ],
+      "expected": {
+        "same_keys": false,
+        "has_overlap": true,
+        "overlapping_values_equal": true,
+        "conflict_free": true,
+        "contains_keys": true,
+        "contains_entries": true,
+        "value_equal": false
+      }
+    }
+  ]
+}
