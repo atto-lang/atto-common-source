@@ -1,0 +1,6 @@
+// Must fail static type checking: filter must return bool.
+pub fnc main(): int {
+  val Array<int> values = new Array<int>();
+  val filtered = values.filter(|int n| -> int { return n; });
+  return 0;
+}
