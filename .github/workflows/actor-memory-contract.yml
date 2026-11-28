@@ -1,0 +1,44 @@
+name: actor memory AOT contract (source-free model)
+on:
+  pull_request:
+    paths:
+      - 'docs/ACTOR_MEMORY_AOT_V1.md'
+      - 'tools/actor_memory_aot_v1.cpp'
+      - 'tools/ref32_heap_v1.cpp'
+      - '.github/workflows/actor-memory-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build strict standalone model
+        run: g++ -std=c++20 -O2 -Wall -Wextra -Werror -pedantic tools/actor_memory_aot_v1.cpp -o /tmp/atto-actor-model
+      - name: Run source-free adversarial model
+        run: /tmp/atto-actor-model
+      - name: Build and execute sanitizer model
+        run: |
+          clang++ -std=c++20 -O1 -g -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer tools/actor_memory_aot_v1.cpp -o /tmp/atto-actor-model-san
+          /tmp/atto-actor-model-san
+      - name: Compile and execute exact four-byte Ref32 model
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Werror -pedantic tools/ref32_heap_v1.cpp -o /tmp/atto-ref32-model
+          /tmp/atto-ref32-model | tee /tmp/atto-ref32-native.log
+          test "$(grep -c '^PASS ' /tmp/atto-ref32-native.log)" -eq 11
+          grep -q 'NO production or cross-backend certification' /tmp/atto-ref32-native.log
+      - name: Ref32 model ASan plus UBSan
+        run: |
+          clang++ -std=c++20 -O1 -g -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer tools/ref32_heap_v1.cpp -o /tmp/atto-ref32-model-san
+          ASAN_OPTIONS=detect_leaks=1 /tmp/atto-ref32-model-san | tee /tmp/atto-ref32-sanitizer.log
+          test "$(grep -c '^PASS ' /tmp/atto-ref32-sanitizer.log)" -eq 11
+      - name: Real 32-bit x86 compile and execution (no simulation)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends g++-multilib
+          g++ -m32 -std=c++20 -O2 -Wall -Wextra -Werror -pedantic tools/ref32_heap_v1.cpp -o /tmp/atto-ref32-model-32
+          test "$(file /tmp/atto-ref32-model-32 | grep -c 'ELF 32-bit')" -eq 1
+          /tmp/atto-ref32-model-32 | tee /tmp/atto-ref32-32.log
+          test "$(grep -c '^PASS ' /tmp/atto-ref32-32.log)" -eq 11
