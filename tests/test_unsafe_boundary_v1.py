@@ -30,7 +30,7 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
 
     def test_nonvacuous_positive_and_negative_scenarios(self):
         cases = self.contract["cases"]
-        self.assertEqual(len(cases), 52)
+        self.assertEqual(len(cases), 76)
         ids = [case["id"] for case in cases]
         self.assertEqual(len(ids), len(set(ids)))
         expected = {case["expected"] for case in cases}
@@ -89,9 +89,35 @@ class UnsafeBoundaryContractV1Test(unittest.TestCase):
     def test_import_is_not_authority_and_unsupported_code_fails_closed(self):
         cases = {item["id"]: item for item in self.contract["cases"]}
         self.assertEqual(cases["untrusted-actor-import-only"]["expected"],
-                         "accept_after_g2")
+                         "reject")
         self.assertEqual(cases["untrusted-actor-native-after-import"]["expected"],
                          "reject")
+        self.assertEqual(cases["vm-isolate-import-only"]["expected"], "reject")
+        self.assertEqual(cases["trusted-code-in-vm-isolate-import"]["expected"], "reject")
+        self.assertEqual(cases["trusted-native-host-allowlisted-binding"]["expected"],
+                         "accept_after_g2")
+        for case_id in (
+                "vm-isolate-native-flag-upgrade",
+                "untrusted-actor-manifest-ffi",
+                "untrusted-actor-transitive-unsafe-package",
+                "untrusted-actor-reexports-unsafe",
+                "vm-isolate-dynamic-unsafe-resolution",
+                "vm-isolate-prelinked-native-symbol",
+                "legacy-std-unsafe-path-fallback",
+                "vm-isolate-forged-ffi-call",
+                "untrusted-actor-ffi-result-pointer",
+                "vm-isolate-raw-capability-hidden-in-any",
+                "unsafe-stdlib-dot-segment-alias",
+                "unsafe-stdlib-parent-segment-alias",
+                "unsafe-stdlib-duplicate-separator",
+                "unsafe-stdlib-escaped-import-string",
+                "unsafe-stdlib-escape-from-namespace-root",
+                "unsafe-stdlib-relative-dot-prefix",
+                "unsafe-stdlib-relative-parent-prefix",
+                "unsafe-stdlib-relative-graph-erase"):
+            self.assertEqual(cases[case_id]["expected"], "reject", case_id)
+        self.assertIn("all VM-isolates", self.doc)
+        self.assertIn("native host", self.doc)
         self.assertIn("qualified import/path segment only", self.doc)
         self.assertIn("IDENT(\"unsafe\")", self.doc)
         self.assertIn("absolute source offset", self.doc)
