@@ -41,6 +41,7 @@ This README records the intended role of this repository; it is not a claim of f
 **Security and portability boundary:** Explicitly pinned shared fixtures and versioned artifacts must retain their declared identities; never silently let platform code redefine portable ownership, imports or concurrency.
 
 AttoLang is the canonical project name; new source, examples and documentation use `.atto` and the `atto-lang` repository organization. This README defines scope, not feature readiness.
+- [Top-12 AOT-first language features and formal admission gates](docs/TOP12_FEATURE_ADMISSION_AOT_V1.md) — proposed source-contract matrix for all 12 opportunities; backend execution unverified.
 
 **Acceptance:** name the exact source SHA/tree, runtime/toolchain, positive and negative checks and execution receipt before claiming support. Host-only tests and empty CI steps do not prove guest execution.
 
