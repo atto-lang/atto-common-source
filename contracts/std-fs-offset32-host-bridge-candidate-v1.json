@@ -1,0 +1,197 @@
+{
+  "schema": "atto.std.fs.offset32_host_bridge.candidate.v1",
+  "status": "HOST_ONLY_PROTOTYPE_NOT_GUEST_EXECUTION",
+  "normative_spec": "atto-spec#117 and #122 (draft)",
+  "host_prototype": "atto-source.llvm#62 (draft; Linux C11 host only)",
+  "guest_module": "std.fs",
+  "supported_operations": [
+    "read_text",
+    "write_text"
+  ],
+  "wire_candidate": {
+    "transport": "TRUSTED_ACTOR_TURN_HOST_CALL",
+    "api_version": "ORES_VM_GUEST_IO_ABI_VERSION_5_CANDIDATE_NOT_LOADER_ADMITTED",
+    "identity_source": "HOST_SCHEDULER_AUTHENTICATED_ACTOR_TURN_NEVER_GUEST_FIELDS",
+    "trusted_context": [
+      "tenant_id",
+      "actor_incarnation",
+      "generation",
+      "cage_base",
+      "cage_size",
+      "actor_region_start_host_only",
+      "actor_region_bytes_host_only",
+      "broker_capability"
+    ],
+    "guest_arguments": [
+      "path_offset32",
+      "path_length32",
+      "data_or_output_offset32",
+      "data_or_capacity32"
+    ],
+    "output": [
+      "negative_errno_host_internal_to_typed_atto_error",
+      "read_byte_count32",
+      "owned_guest_bytes"
+    ],
+    "rules": [
+      "NO_RAW_HOST_POINTERS_OR_FDS_IN_GUEST",
+      "CHECK_OFFSETS_WITHOUT_OVERFLOW",
+      "COPY_UNTRUSTED_GUEST_BYTES_BEFORE_HOST_SIDE_EFFECT",
+      "CAGE_OUTPUT_UNCHANGED_ON_DENIAL",
+      "DENY_IF_STALE_GENERATION",
+      "INTEGRITY_VERIFIED_ARTIFACT_CEILING_REQUIRED",
+      "EXPLICIT_LAUNCH_GRANT_REQUIRED",
+      "TENANT_AND_ACTOR_CAPABILITY_REQUIRED",
+      "DENIES_OVERRIDE_ALL_ALLOWS",
+      "NEVER_RUN_BLOCKING_FILE_IO_ON_ACTOR_CARRIER",
+      "LIMIT_HOST_IO_QUEUES_AND_MEMORY",
+      "CANCELLATION_AND_COMPLETION_EXACTLY_ONCE",
+      "SECURE_OS_OR_INSTRUCTION_LEVEL_SYSCALL_BOUNDARY_REQUIRED_FOR_HOSTILE_NATIVE_GUESTS",
+      "ALL_OFFSETS_AND_LENGTHS_WITHIN_CURRENT_ACTOR_REGION_NOT_JUST_TENANT_CAGE",
+      "HOST_READ_TO_GUEST_COPY_COMMITTED_INSIDE_SAME_MUTEX_AS_GENERATION_REVOKE",
+      "ALL_SIX_PERMISSION_LAYERS_MUST_ALLOW_HOST_ARTIFACT_RUNTIME_TENANT_ACTOR_DELEGATION",
+      "ANY_DENY_IN_ANY_LAYER_PRECEDES_ALL_ALLOWS",
+      "MISSING_LAYER_ALLOW_IS_DENIAL",
+      "GUEST_BRIDGE_REFUSES_SINGLE_LAYER_HOST_ONLY_POLICY",
+      "PERMISSION_LAYERS_ARE_TRUSTED_SNAPSHOTS_NOT_VERIFIED_SIGNATURES",
+      "ABI_V4_UNCHANGED_AND_V5_LOADER_MUST_REJECT_UNTIL_TRUSTED_DISPATCH",
+      "NEVER_PARK_GUEST_CARRIER_ON_FILESYSTEM_IO",
+      "HOST_WORKER_NEVER_HOLDS_GUEST_CAGE_POINTER",
+      "COMPLETION_PUBLISH_MUST_REVALIDATE_ACTOR_AND_BROKER_REVOKE_GENERATION",
+      "TICKETS_ARE_SINGLE_USE_AND_BOUND_TO_ACTOR_INCARNATION",
+      "CANCEL_RUNNING_WRITE_MAY_HAVE_SIDE_EFFECT_AND_IS_NOT_SAFE_TO_RETRY",
+      "ONE_ASYNC_FS_SERVICE_PER_TRUSTED_ACTOR_INCARNATION_NO_SIBLING_ACTOR_REUSE",
+      "HOST_ACTOR_ID_GENERATION_FROM_PRIVATE_TENANT_VM_SCHEDULER_NOT_GUEST_ARGUMENTS"
+    ],
+    "async_calls": [
+      "fs_submit_read(path_offset32,path_length32,max_bytes)->ticket_or_error",
+      "fs_submit_write(path_offset32,path_length32,payload_offset32,payload_length32)->ticket_or_error",
+      "fs_poll(ticket,output_offset32,capacity32)->nonnegative_bytes_or_negative_status",
+      "fs_cancel(ticket)->request_cancellation"
+    ]
+  },
+  "prototype_limitations": {
+    "linux_host_only": true,
+    "guest_compiler_lowering": false,
+    "compiled_atto_execution": false,
+    "trusted_actor_turn_authentication": false,
+    "signed_permission_descriptor": false,
+    "async_completion": false,
+    "utf8_path_support": false,
+    "os_isolation_verified": false,
+    "all_eleven_backend_parity": false
+  },
+  "release_gates": [
+    "Compiler accepts explicit import from pkg std.fs and lowers async read/write to reviewed versioned host ABI",
+    "Authenticated actor ticket derived from trusted scheduler (not passed by guest)",
+    "Host maps denied accesses to typed PermissionDenied and returns no side effects",
+    "Artifact build ceiling AND runtime/TenantVM/actor grant intersection verified independently",
+    "Run real compiled .atto copy guest and denied/adversarial fixtures with byte-level observations",
+    "Record exact compiler/toolchain SHA, native host source blobs and nonzero executed CI steps",
+    "Signed artifact ceiling must be verified against immutable loaded artifact bytes before any layered broker is constructed",
+    "Guest bridge must reject a missing/single-layer policy and reject sibling-actor memory offsets",
+    "A revocation must not allow an in-flight host read to commit bytes to guest memory after revoke returns",
+    "Prove ABI v5 runtime loader admission only with authenticated host callback table; v4 must remain unchanged and v5 must fail closed until connected",
+    "Pass exact-source real-broker asynchronous I/O tests; mock-based worker tests are insufficient",
+    "Bind signed artifact verifier to mandatory six-layer broker constructor; reject unverified descriptors before privileges are admitted",
+    "Bind actor cancellation, destruction, and hot loading to ticket revocation and bounded worker drainage",
+    "Treat signed loaded-guest result as private host state, not a guest bearer capability; require guest image/module owner and broker/worker lifetimes to be tied together",
+    "Run real C shared-library signed-image loader CTest and real broker permission intersection CTest on exact head before claiming host integration",
+    "Approve dependencies and relocations of loaded native code; signed artifact alone does not prove no direct syscalls or unsafe ELF dependencies",
+    "Enforce one trusted actor incarnation per async filesystem service and ensure the actor policy ceiling matches that incarnation",
+    "Require a genuinely executed alternate GH Actions run; an exact mirror with zero job steps is not runtime evidence"
+  ],
+  "host_reference_observation": {
+    "classification": "HOST_ONLY_NOT_GUEST_CONFORMANCE",
+    "source_pr": "atto-source.llvm#62",
+    "test_matrix": "GCC_CLANG_X_O1_O2_ASAN_UBSAN",
+    "executed_test_binaries": 8,
+    "adversarial_layer_cases": 24,
+    "actor_region_isolation": true,
+    "read_revoke_commit_serialization": true,
+    "artifact_signature_verified": false,
+    "guest_compiler_lowering": false,
+    "local_signed_verifier_executions": 4,
+    "local_async_worker_mock_executions": 4,
+    "production_os_broker_integration": false,
+    "actor_bound_queue_hardening": {
+      "status": "HOST_ONLY_MOCK_TESTED",
+      "source_commit": "2034b3dc3e17f791c9f6ad95529d929428636bb4",
+      "source_blob": "3e8c8345d0253773000c922d02adf7b17dd718e1",
+      "test_blob": "cc0c2bf0f12bb5785e7961c6e7ac595410555b20",
+      "gcc_o1": "PASS",
+      "gcc_o2": "PASS",
+      "clang_o1": "PASS",
+      "clang_o2": "PASS",
+      "guest_status": "NOT_EXECUTED",
+      "carrier_exact_tree": "7c8f69da1a1f6eaa69e2da57aea78ff3947522ba",
+      "carrier_run": "agent-pontifex/atto-ci#44684065317",
+      "carrier_executed_steps": 0
+    }
+  },
+  "artifact_ceiling_candidate": {
+    "schema": "ATTO-FS-CEILING-V1",
+    "max_artifact_bytes": 67108864,
+    "signature": "Ed25519 of canonical wire descriptor with trust anchor supplied by host, never artifact",
+    "artifact_identity": "SHA-256 of exact loaded artifact bytes",
+    "descriptor_fields": [
+      "fixed ASCII domain magic",
+      "sha256 bytes",
+      "literal 0xD1 explicit-denies-present",
+      "u16le allow_read ASCII bytes",
+      "u16le allow_write ASCII bytes",
+      "u16le deny_read ASCII bytes",
+      "u16le deny_write ASCII bytes"
+    ],
+    "fail_closed": [
+      "invalid signature",
+      "wrong trusted public key",
+      "artifact digest mismatch",
+      "unsigned or malformed scope",
+      "trailing signed bytes",
+      "NUL or traversal scope",
+      "missing explicit deny marker"
+    ],
+    "status": "VERIFIER_EXECUTED_IN_HOST_TEST_ONLY_NO_LOADER_WIRING"
+  },
+  "host_signed_admission_candidate": {
+    "source_repo": "atto-lang/atto-source.llvm",
+    "source_pr": 62,
+    "classification": "HOST_ONLY_CANDIDATE_NOT_ATTO_GUEST_PARITY",
+    "same_image_loader": {
+      "component": "oreslang/runtime/TenantVmGuestLoader.cpp with signed pre-dlopen gate",
+      "signed_wrapper": "oreslang/runtime/TenantVmSignedFsLoader.cpp",
+      "invariant": "Ed25519 verification receives exactly the same library image bytes that open_verified copies to a sealed executable before dlopen",
+      "unprivileged_v4_compatibility": true,
+      "abi_v5_loader_enabled": false,
+      "dynamic_library_dependency_closure_verified": false
+    },
+    "policy_binding": {
+      "native": "atto_fs_broker_admit_signed",
+      "cplusplus": "admit_signed_loaded_guest_fs_broker",
+      "artifact_layer": "ONLY_INDEPENDENTLY_VERIFIED_SIGNED_CEILING",
+      "other_layers": [
+        "HOST",
+        "RUNTIME_OPERATOR",
+        "TENANT_VM",
+        "ACTOR",
+        "DELEGATION"
+      ],
+      "caller": "TRUSTED_HOST_ONLY",
+      "token_kind": "MUTABLE_HOST_OBJECT_NOT_UNFORGEABLE_GUEST_CAPABILITY",
+      "module_owner_lifetime_bound_to_broker_and_worker": false
+    },
+    "evidence": {
+      "gcc_o1_signed_admission_mock": "PASS",
+      "gcc_o2_signed_admission_mock": "PASS",
+      "clang_o1_signed_admission_mock": "PASS",
+      "clang_o2_signed_admission_mock": "PASS",
+      "gxx_o1_signed_loader_and_broker_mock": "PASS",
+      "gxx_o2_signed_loader_and_broker_mock": "PASS",
+      "clangxx_o1_signed_loader_and_broker_mock": "PASS",
+      "clangxx_o2_signed_loader_and_broker_mock": "PASS",
+      "actual_sealed_library_and_real_broker_ctest": "NOT_EXECUTED",
+      "compiled_atto_std_fs_guest": "NOT_EXECUTED"
+    }
+  }
+}
